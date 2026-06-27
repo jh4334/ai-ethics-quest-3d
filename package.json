@@ -1,0 +1,21 @@
+{
+  "name": "ai-ethics-quest-3d",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "test": "node --test tests/*.test.js",
+    "smoke": "node tests/dom-smoke.mjs"
+  },
+  "dependencies": {
+    "three": "latest"
+  },
+  "devDependencies": {
+    "vite": "latest"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  }
+}

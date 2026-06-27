@@ -1,0 +1,1010 @@
+import './styles.css';
+import * as THREE from 'three';
+import {
+  ETHICS_TOPICS,
+  FINAL_CORE_MISSION,
+  SHRINES,
+  WORLD_ZONES,
+  applyShrineResult,
+  canUnlockFinalCore,
+  completeFinalCore,
+  createInitialProgress,
+  getNextObjective,
+  getProgressSummary,
+  getShrineById,
+  getTopicById,
+  recordLearningVisit
+} from './worldData.js';
+
+const APP_MARKER = 'AI Ethics Quest 3D';
+const PLAYER_START = new THREE.Vector3(0, 0.55, 8.5);
+const ISLAND_RADIUS = 12.1;
+const INTERACTION_RADIUS = 2.25;
+const CORE_RADIUS = 2.8;
+const clock = new THREE.Clock();
+
+let activeQuest = null;
+
+export function initEthicsQuest3D(root = document.querySelector('#app')) {
+  if (!root) {
+    throw new Error('AI Ethics Quest 3D root element not found');
+  }
+
+  root.dataset.appMarker = APP_MARKER;
+  root.innerHTML = createShell();
+
+  const canvas = root.querySelector('[data-game-canvas]');
+  const ui = bindUi(root);
+  const game = createGameState(ui);
+
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+  } catch (error) {
+    showRendererFallback(ui, error);
+    return null;
+  }
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 180);
+  const renderState = {
+    renderer,
+    scene,
+    camera,
+    playerGroup: new THREE.Group(),
+    interactables: [],
+    shrineCrystals: new Map(),
+    coreCrystal: null,
+    coreGlow: null
+  };
+
+  configureRenderer(renderer);
+  createWorld(renderState);
+  createPlayer(renderState);
+  scene.add(renderState.playerGroup);
+
+  const cleanupInput = bindInput(game, ui);
+  bindHudActions(game, ui, renderState);
+
+  resize(renderer, camera, root);
+  updateHud(game, ui);
+  updateCoreVisual(game, renderState);
+
+  let animationId = 0;
+  const onResize = () => resize(renderer, camera, root);
+  const onVisibilityChange = () => {
+    game.paused = document.hidden || !ui.dialog.hidden;
+  };
+
+  window.addEventListener('resize', onResize);
+  document.addEventListener('visibilitychange', onVisibilityChange);
+  canvas.addEventListener('webglcontextlost', (event) => {
+    event.preventDefault();
+    game.paused = true;
+    ui.prompt.textContent = '그래픽 화면이 잠시 멈췄어요. 새로고침하면 다시 시작할 수 있어요.';
+    ui.prompt.hidden = false;
+  });
+
+  function frame() {
+    animationId = window.requestAnimationFrame(frame);
+    const delta = Math.min(clock.getDelta(), 0.04);
+    if (!game.paused) {
+      updateGame(delta, game, renderState, ui);
+    }
+    renderer.render(scene, camera);
+  }
+
+  frame();
+
+  return {
+    marker: APP_MARKER,
+    destroy() {
+      window.cancelAnimationFrame(animationId);
+      cleanupInput();
+      window.removeEventListener('resize', onResize);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      renderer.dispose();
+      root.innerHTML = '';
+    }
+  };
+}
+
+function createShell() {
+  return `
+    <main class="quest-shell" data-app-marker="${APP_MARKER}">
+      <canvas class="quest-canvas" data-game-canvas aria-label="AI 윤리의 섬 3D 게임 화면"></canvas>
+
+      <section class="objective-chip" aria-live="polite">
+        <p class="eyebrow">AI 윤리의 섬</p>
+        <h1>알고리즘의 신전</h1>
+        <p data-objective>사당을 찾아 윤리 조각을 모으세요.</p>
+      </section>
+
+      <section class="status-strip" aria-label="진행 상황">
+        <strong data-fragment-count>조각 0/4</strong>
+        <span data-core-status>AI 코어 잠김</span>
+        <div class="fragment-row" data-fragment-row></div>
+      </section>
+
+      <button class="journal-toggle" type="button" data-journal-toggle aria-expanded="false">
+        기록
+      </button>
+
+      <aside class="journal-panel" data-journal hidden>
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">수업 기록</p>
+            <h2>탐험 노트</h2>
+          </div>
+          <button type="button" data-close-journal aria-label="탐험 노트 닫기">닫기</button>
+        </div>
+        <div data-journal-content></div>
+      </aside>
+
+      <section class="class-hint" aria-label="수업 안내">
+        <span>1차시: 탐험과 개념</span>
+        <span>2차시: AI 코어 토론</span>
+      </section>
+
+      <div class="interaction-prompt" data-prompt hidden></div>
+
+      <div class="touch-controls" aria-label="터치 이동">
+        <button type="button" data-touch="up" aria-label="위로 이동">▲</button>
+        <button type="button" data-touch="left" aria-label="왼쪽 이동">◀</button>
+        <button type="button" data-touch="action" aria-label="상호작용">E</button>
+        <button type="button" data-touch="right" aria-label="오른쪽 이동">▶</button>
+        <button type="button" data-touch="down" aria-label="아래로 이동">▼</button>
+      </div>
+
+      <section class="dialog-panel" data-dialog hidden aria-live="polite">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow" data-dialog-kicker>학습</p>
+            <h2 data-dialog-title>대화</h2>
+          </div>
+          <button type="button" data-dialog-close aria-label="닫기">닫기</button>
+        </div>
+        <div data-dialog-body></div>
+      </section>
+    </main>
+  `;
+}
+
+function bindUi(root) {
+  return {
+    root,
+    objective: root.querySelector('[data-objective]'),
+    fragmentCount: root.querySelector('[data-fragment-count]'),
+    coreStatus: root.querySelector('[data-core-status]'),
+    fragmentRow: root.querySelector('[data-fragment-row]'),
+    prompt: root.querySelector('[data-prompt]'),
+    dialog: root.querySelector('[data-dialog]'),
+    dialogKicker: root.querySelector('[data-dialog-kicker]'),
+    dialogTitle: root.querySelector('[data-dialog-title]'),
+    dialogBody: root.querySelector('[data-dialog-body]'),
+    dialogClose: root.querySelector('[data-dialog-close]'),
+    journal: root.querySelector('[data-journal]'),
+    journalToggle: root.querySelector('[data-journal-toggle]'),
+    journalClose: root.querySelector('[data-close-journal]'),
+    journalContent: root.querySelector('[data-journal-content]'),
+    touchButtons: [...root.querySelectorAll('[data-touch]')]
+  };
+}
+
+function createGameState(ui) {
+  return {
+    progress: createInitialProgress(),
+    player: {
+      position: PLAYER_START.clone(),
+      direction: new THREE.Vector3(0, 0, 1),
+      speed: 5.2
+    },
+    keys: new Set(),
+    nearest: null,
+    paused: false,
+    ui
+  };
+}
+
+function configureRenderer(renderer) {
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+  renderer.setClearColor(0x9ed7e7, 1);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+}
+
+function createWorld({ scene, interactables, shrineCrystals }) {
+  scene.background = new THREE.Color(0x9ed7e7);
+  scene.fog = new THREE.Fog(0x9ed7e7, 28, 76);
+
+  const hemiLight = new THREE.HemisphereLight(0xe9f9ff, 0x57745c, 1.8);
+  scene.add(hemiLight);
+
+  const sun = new THREE.DirectionalLight(0xfff2c0, 2.4);
+  sun.position.set(-12, 18, 8);
+  sun.castShadow = true;
+  sun.shadow.camera.left = -20;
+  sun.shadow.camera.right = 20;
+  sun.shadow.camera.top = 20;
+  sun.shadow.camera.bottom = -20;
+  scene.add(sun);
+
+  const water = new THREE.Mesh(
+    new THREE.PlaneGeometry(96, 96),
+    new THREE.MeshStandardMaterial({ color: 0x4eabc2, roughness: 0.72, metalness: 0.04 })
+  );
+  water.rotation.x = -Math.PI / 2;
+  water.position.y = -0.55;
+  water.receiveShadow = true;
+  scene.add(water);
+
+  const island = new THREE.Mesh(
+    new THREE.CylinderGeometry(13, 11.2, 0.92, 96),
+    new THREE.MeshStandardMaterial({ color: 0x74a967, roughness: 0.95 })
+  );
+  island.position.y = -0.18;
+  island.receiveShadow = true;
+  island.castShadow = true;
+  scene.add(island);
+
+  const beach = new THREE.Mesh(
+    new THREE.TorusGeometry(12.15, 0.34, 12, 128),
+    new THREE.MeshStandardMaterial({ color: 0xd8c77a, roughness: 0.9 })
+  );
+  beach.rotation.x = Math.PI / 2;
+  beach.position.y = 0.08;
+  scene.add(beach);
+
+  createCenterCore(scene);
+
+  for (const zone of WORLD_ZONES) {
+    const zonePosition = new THREE.Vector3(...zone.position);
+    createPath(scene, zonePosition);
+    createZone(scene, zone, zonePosition);
+    createNpc(scene, zone, zonePosition, interactables);
+    const shrineCrystal = createShrine(scene, zone, zonePosition, interactables);
+    shrineCrystals.set(zone.shrineId, shrineCrystal);
+  }
+
+  for (let i = 0; i < 28; i += 1) {
+    const angle = (i / 28) * Math.PI * 2;
+    const radius = 9.5 + (i % 4) * 0.55;
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius;
+    if (Math.abs(x) < 2.6 || Math.abs(z) < 2.6) {
+      continue;
+    }
+    createSmallTree(scene, new THREE.Vector3(x, 0, z), i % 3);
+  }
+}
+
+function createCenterCore(scene) {
+  const pedestal = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.35, 1.65, 0.55, 8),
+    new THREE.MeshStandardMaterial({ color: 0x75827c, roughness: 0.8 })
+  );
+  pedestal.position.set(0, 0.28, 0);
+  pedestal.castShadow = true;
+  pedestal.receiveShadow = true;
+  scene.add(pedestal);
+
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(1.95, 0.08, 10, 48),
+    new THREE.MeshStandardMaterial({ color: 0xc8b35a, roughness: 0.42, metalness: 0.18 })
+  );
+  ring.rotation.x = Math.PI / 2;
+  ring.position.y = 0.64;
+  scene.add(ring);
+
+  const crystal = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(0.72, 0),
+    new THREE.MeshStandardMaterial({
+      color: 0x7c8790,
+      emissive: 0x182026,
+      emissiveIntensity: 0.35,
+      roughness: 0.35,
+      metalness: 0.05
+    })
+  );
+  crystal.position.set(0, 1.4, 0);
+  crystal.castShadow = true;
+  scene.add(crystal);
+
+  const coreLight = new THREE.PointLight(0x8fb4c9, 0.8, 8);
+  coreLight.position.set(0, 1.7, 0);
+  scene.add(coreLight);
+
+  activeQuest = { coreCrystal: crystal, coreGlow: coreLight };
+}
+
+function createPath(scene, target) {
+  const distance = Math.max(target.length() - 1.8, 1);
+  const midpoint = target.clone().multiplyScalar(0.5);
+  const path = new THREE.Mesh(
+    new THREE.BoxGeometry(1.25, 0.045, distance),
+    new THREE.MeshStandardMaterial({ color: 0xd7c785, roughness: 0.88 })
+  );
+  path.position.set(midpoint.x, 0.11, midpoint.z);
+  path.rotation.y = Math.atan2(target.x, target.z);
+  path.receiveShadow = true;
+  scene.add(path);
+}
+
+function createZone(scene, zone, position) {
+  const topic = getTopicById(zone.topicId);
+  const color = new THREE.Color(topic.color);
+  const disc = new THREE.Mesh(
+    new THREE.CircleGeometry(2.85, 42),
+    new THREE.MeshStandardMaterial({
+      color,
+      transparent: true,
+      opacity: 0.26,
+      roughness: 0.9,
+      side: THREE.DoubleSide
+    })
+  );
+  disc.rotation.x = -Math.PI / 2;
+  disc.position.set(position.x, 0.13, position.z);
+  scene.add(disc);
+
+  const marker = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.2, 0.2, 1.5, 12),
+    new THREE.MeshStandardMaterial({ color, roughness: 0.45, metalness: 0.1 })
+  );
+  marker.position.set(position.x, 0.86, position.z);
+  marker.castShadow = true;
+  scene.add(marker);
+
+  const label = createLabelSprite(zone.nameKo, topic.color);
+  label.position.set(position.x, 2.35, position.z);
+  scene.add(label);
+
+  if (zone.topicId === 'privacy') {
+    createPrivacyVillage(scene, position);
+  } else if (zone.topicId === 'bias') {
+    createFairnessForest(scene, position);
+  } else if (zone.topicId === 'copyright') {
+    createCopyrightRuins(scene, position);
+  } else {
+    createDeepfakeCave(scene, position);
+  }
+}
+
+function createPrivacyVillage(scene, position) {
+  for (const offset of [
+    [-1.5, -0.7],
+    [1.3, -0.5],
+    [-0.2, 1.2]
+  ]) {
+    const house = new THREE.Group();
+    const base = new THREE.Mesh(
+      new THREE.BoxGeometry(0.88, 0.7, 0.88),
+      new THREE.MeshStandardMaterial({ color: 0xf3d6a4, roughness: 0.88 })
+    );
+    const roof = new THREE.Mesh(
+      new THREE.ConeGeometry(0.72, 0.58, 4),
+      new THREE.MeshStandardMaterial({ color: 0xa75b4f, roughness: 0.82 })
+    );
+    base.position.y = 0.48;
+    roof.position.y = 1.1;
+    roof.rotation.y = Math.PI / 4;
+    house.add(base, roof);
+    house.position.set(position.x + offset[0], 0, position.z + offset[1]);
+    house.traverse((child) => {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    });
+    scene.add(house);
+  }
+}
+
+function createFairnessForest(scene, position) {
+  for (let i = 0; i < 6; i += 1) {
+    const angle = (i / 6) * Math.PI * 2;
+    const radius = i % 2 === 0 ? 1.5 : 2.2;
+    createSmallTree(
+      scene,
+      new THREE.Vector3(position.x + Math.cos(angle) * radius, 0, position.z + Math.sin(angle) * radius),
+      i
+    );
+  }
+}
+
+function createCopyrightRuins(scene, position) {
+  for (const offset of [-1.5, 0, 1.5]) {
+    const column = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.22, 0.28, 1.45, 12),
+      new THREE.MeshStandardMaterial({ color: 0xc7bea2, roughness: 0.78 })
+    );
+    column.position.set(position.x + offset, 0.78, position.z - 1.4);
+    column.castShadow = true;
+    scene.add(column);
+  }
+
+  const tablet = new THREE.Mesh(
+    new THREE.BoxGeometry(1.35, 0.9, 0.18),
+    new THREE.MeshStandardMaterial({ color: 0x9d927b, roughness: 0.86 })
+  );
+  tablet.position.set(position.x, 0.68, position.z + 1.25);
+  tablet.castShadow = true;
+  scene.add(tablet);
+}
+
+function createDeepfakeCave(scene, position) {
+  const cave = new THREE.Mesh(
+    new THREE.DodecahedronGeometry(1.9, 0),
+    new THREE.MeshStandardMaterial({ color: 0x514464, roughness: 0.92 })
+  );
+  cave.scale.set(1.35, 0.82, 0.88);
+  cave.position.set(position.x, 0.78, position.z - 0.35);
+  cave.castShadow = true;
+  scene.add(cave);
+
+  const opening = new THREE.Mesh(
+    new THREE.CircleGeometry(0.82, 24),
+    new THREE.MeshBasicMaterial({ color: 0x1c1826 })
+  );
+  opening.position.set(position.x, 0.72, position.z - 1.86);
+  opening.rotation.x = 0;
+  scene.add(opening);
+}
+
+function createNpc(scene, zone, zonePosition, interactables) {
+  const topic = getTopicById(zone.topicId);
+  const npc = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.28, 0.36, 0.72, 16),
+    new THREE.MeshStandardMaterial({ color: topic.color, roughness: 0.6 })
+  );
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(0.25, 16, 12),
+    new THREE.MeshStandardMaterial({ color: 0xffd6ae, roughness: 0.7 })
+  );
+  body.position.y = 0.5;
+  head.position.y = 1.02;
+  npc.add(body, head);
+  npc.position.set(zonePosition.x - 1.25, 0, zonePosition.z + 1.05);
+  npc.traverse((child) => {
+    child.castShadow = true;
+  });
+  scene.add(npc);
+
+  interactables.push({
+    type: 'npc',
+    topicId: zone.topicId,
+    zoneId: zone.id,
+    position: npc.position.clone(),
+    labelKo: `${zone.npc.nameKo}와 대화`
+  });
+}
+
+function createShrine(scene, zone, zonePosition, interactables) {
+  const topic = getTopicById(zone.topicId);
+  const shrine = new THREE.Group();
+  const base = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.72, 0.9, 0.34, 8),
+    new THREE.MeshStandardMaterial({ color: 0x7e8073, roughness: 0.75 })
+  );
+  const arch = new THREE.Mesh(
+    new THREE.TorusGeometry(0.68, 0.08, 12, 32, Math.PI),
+    new THREE.MeshStandardMaterial({ color: 0xb8ab80, roughness: 0.64 })
+  );
+  const crystal = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.36, 0),
+    new THREE.MeshStandardMaterial({
+      color: topic.color,
+      emissive: topic.color,
+      emissiveIntensity: 0.28,
+      roughness: 0.32
+    })
+  );
+  base.position.y = 0.24;
+  arch.position.y = 0.78;
+  arch.rotation.z = Math.PI;
+  crystal.position.y = 0.82;
+  shrine.add(base, arch, crystal);
+  shrine.position.set(zonePosition.x + 1.35, 0, zonePosition.z - 1.05);
+  shrine.rotation.y = Math.atan2(-shrine.position.x, -shrine.position.z);
+  shrine.traverse((child) => {
+    child.castShadow = true;
+    child.receiveShadow = true;
+  });
+  scene.add(shrine);
+
+  interactables.push({
+    type: 'shrine',
+    topicId: zone.topicId,
+    shrineId: zone.shrineId,
+    position: shrine.position.clone(),
+    labelKo: `${getShrineById(zone.shrineId).nameKo} 풀기`
+  });
+
+  return crystal;
+}
+
+function createSmallTree(scene, position, variant) {
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.12, 0.16, 0.75, 8),
+    new THREE.MeshStandardMaterial({ color: 0x7a5333, roughness: 0.9 })
+  );
+  const leaves = new THREE.Mesh(
+    new THREE.ConeGeometry(0.58 + (variant % 2) * 0.12, 1.18, 9),
+    new THREE.MeshStandardMaterial({ color: variant % 3 === 0 ? 0x3f7f55 : 0x4f935a, roughness: 0.88 })
+  );
+  trunk.position.set(position.x, 0.43, position.z);
+  leaves.position.set(position.x, 1.22, position.z);
+  trunk.castShadow = true;
+  leaves.castShadow = true;
+  scene.add(trunk, leaves);
+}
+
+function createPlayer({ playerGroup }) {
+  const cloak = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.32, 0.42, 0.75, 18),
+    new THREE.MeshStandardMaterial({ color: 0x2f6f8f, roughness: 0.58 })
+  );
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(0.25, 18, 14),
+    new THREE.MeshStandardMaterial({ color: 0xffd2a0, roughness: 0.7 })
+  );
+  const scarf = new THREE.Mesh(
+    new THREE.BoxGeometry(0.72, 0.08, 0.16),
+    new THREE.MeshStandardMaterial({ color: 0xe0bb4b, roughness: 0.5 })
+  );
+  cloak.position.y = 0.42;
+  head.position.y = 0.94;
+  scarf.position.set(0, 0.72, 0.18);
+  playerGroup.add(cloak, head, scarf);
+  playerGroup.position.copy(PLAYER_START);
+  playerGroup.traverse((child) => {
+    child.castShadow = true;
+  });
+}
+
+function createLabelSprite(text, color) {
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  canvas.width = 512;
+  canvas.height = 128;
+  context.fillStyle = 'rgba(18, 28, 35, 0.78)';
+  roundRect(context, 22, 22, 468, 84, 18);
+  context.fill();
+  context.strokeStyle = color;
+  context.lineWidth = 8;
+  roundRect(context, 22, 22, 468, 84, 18);
+  context.stroke();
+  context.fillStyle = '#fffaf0';
+  context.font = '700 42px system-ui, -apple-system, BlinkMacSystemFont, sans-serif';
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.fillText(text, 256, 66);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true
+    })
+  );
+  sprite.scale.set(3.15, 0.78, 1);
+  return sprite;
+}
+
+function roundRect(context, x, y, width, height, radius) {
+  context.beginPath();
+  context.moveTo(x + radius, y);
+  context.lineTo(x + width - radius, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + radius);
+  context.lineTo(x + width, y + height - radius);
+  context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  context.lineTo(x + radius, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - radius);
+  context.lineTo(x, y + radius);
+  context.quadraticCurveTo(x, y, x + radius, y);
+  context.closePath();
+}
+
+function bindInput(game, ui) {
+  const keyMap = new Map([
+    ['KeyW', 'up'],
+    ['ArrowUp', 'up'],
+    ['KeyS', 'down'],
+    ['ArrowDown', 'down'],
+    ['KeyA', 'left'],
+    ['ArrowLeft', 'left'],
+    ['KeyD', 'right'],
+    ['ArrowRight', 'right']
+  ]);
+
+  const onKeyDown = (event) => {
+    const target = event.target;
+    const isFormControl = target instanceof HTMLButtonElement
+      || target instanceof HTMLInputElement
+      || target instanceof HTMLTextAreaElement
+      || target instanceof HTMLSelectElement
+      || target?.isContentEditable;
+
+    if (keyMap.has(event.code)) {
+      game.keys.add(keyMap.get(event.code));
+      event.preventDefault();
+    }
+    if (!isFormControl && (event.code === 'KeyE' || event.code === 'Enter' || event.code === 'Space')) {
+      event.preventDefault();
+      interact(game, ui);
+    }
+    if (event.code === 'KeyJ') {
+      event.preventDefault();
+      toggleJournal(game, ui);
+    }
+    if (event.code === 'Escape') {
+      closeDialog(game, ui);
+      closeJournal(game, ui);
+    }
+  };
+  const onKeyUp = (event) => {
+    if (keyMap.has(event.code)) {
+      game.keys.delete(keyMap.get(event.code));
+    }
+  };
+
+  window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('keyup', onKeyUp);
+
+  const touchStops = ui.touchButtons.map((button) => {
+    const action = button.dataset.touch;
+    const down = (event) => {
+      event.preventDefault();
+      if (action === 'action') {
+        interact(game, ui);
+      } else {
+        game.keys.add(action);
+      }
+    };
+    const up = () => {
+      game.keys.delete(action);
+    };
+    button.addEventListener('pointerdown', down);
+    button.addEventListener('pointerup', up);
+    button.addEventListener('pointercancel', up);
+    button.addEventListener('pointerleave', up);
+    return () => {
+      button.removeEventListener('pointerdown', down);
+      button.removeEventListener('pointerup', up);
+      button.removeEventListener('pointercancel', up);
+      button.removeEventListener('pointerleave', up);
+    };
+  });
+
+  return () => {
+    window.removeEventListener('keydown', onKeyDown);
+    window.removeEventListener('keyup', onKeyUp);
+    for (const stop of touchStops) {
+      stop();
+    }
+  };
+}
+
+function bindHudActions(game, ui, renderState) {
+  ui.dialogClose.addEventListener('click', () => closeDialog(game, ui));
+  ui.journalToggle.addEventListener('click', () => toggleJournal(game, ui));
+  ui.journalClose.addEventListener('click', () => closeJournal(game, ui));
+  renderState.coreCrystal = activeQuest.coreCrystal;
+  renderState.coreGlow = activeQuest.coreGlow;
+}
+
+function updateGame(delta, game, renderState, ui) {
+  updatePlayer(delta, game, renderState.playerGroup);
+  updateCamera(renderState.camera, game.player.position);
+  animateWorld(delta, renderState, game);
+  updateNearestInteractable(game, renderState.interactables, ui);
+}
+
+function updatePlayer(delta, game, playerGroup) {
+  const move = new THREE.Vector3(
+    (game.keys.has('right') ? 1 : 0) - (game.keys.has('left') ? 1 : 0),
+    0,
+    (game.keys.has('down') ? 1 : 0) - (game.keys.has('up') ? 1 : 0)
+  );
+
+  if (move.lengthSq() > 0) {
+    move.normalize();
+    game.player.direction.copy(move);
+    game.player.position.addScaledVector(move, game.player.speed * delta);
+    game.player.position.copy(clampToIsland(game.player.position));
+    playerGroup.rotation.y = Math.atan2(move.x, move.z);
+  }
+
+  playerGroup.position.lerp(game.player.position, 0.82);
+}
+
+function clampToIsland(position) {
+  const flatLength = Math.hypot(position.x, position.z);
+  if (flatLength <= ISLAND_RADIUS) {
+    return position;
+  }
+
+  const scale = ISLAND_RADIUS / flatLength;
+  return new THREE.Vector3(position.x * scale, position.y, position.z * scale);
+}
+
+function updateCamera(camera, target) {
+  const desired = new THREE.Vector3(target.x, target.y + 9.6, target.z + 11.4);
+  camera.position.lerp(desired, 0.08);
+  camera.lookAt(target.x, target.y + 0.55, target.z);
+}
+
+function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow }, game) {
+  const elapsed = clock.elapsedTime;
+  for (const [shrineId, crystal] of shrineCrystals.entries()) {
+    crystal.rotation.y += delta * 1.6;
+    const shrine = getShrineById(shrineId);
+    const completed = game.progress.completedShrines.includes(shrineId);
+    crystal.position.y = 0.82 + Math.sin(elapsed * 2.2 + shrine.topicId.length) * 0.08;
+    crystal.material.emissiveIntensity = completed ? 0.72 : 0.24;
+  }
+
+  if (coreCrystal) {
+    const unlocked = canUnlockFinalCore(game.progress.collectedFragments);
+    coreCrystal.rotation.y += delta * (unlocked ? 1.2 : 0.45);
+    coreCrystal.position.y = 1.4 + Math.sin(elapsed * 1.8) * 0.08;
+    coreCrystal.material.color.set(unlocked ? 0x6fe0be : 0x7c8790);
+    coreCrystal.material.emissive.set(unlocked ? 0x2fbf9d : 0x182026);
+    coreCrystal.material.emissiveIntensity = unlocked ? 0.82 : 0.35;
+    if (coreGlow) {
+      coreGlow.intensity = unlocked ? 2.4 : 0.8;
+      coreGlow.color.set(unlocked ? 0x6fe0be : 0x8fb4c9);
+    }
+  }
+}
+
+function updateNearestInteractable(game, interactables, ui) {
+  const coreDistance = Math.hypot(game.player.position.x, game.player.position.z);
+  let nearest = coreDistance <= CORE_RADIUS
+    ? {
+        type: 'core',
+        position: new THREE.Vector3(0, 0, 0),
+        labelKo: canUnlockFinalCore(game.progress.collectedFragments) ? 'AI 코어 최종 미션' : 'AI 코어 잠금 상태 확인'
+      }
+    : null;
+  let nearestDistance = nearest ? coreDistance : Infinity;
+
+  for (const item of interactables) {
+    const distance = game.player.position.distanceTo(item.position);
+    if (distance < INTERACTION_RADIUS && distance < nearestDistance) {
+      nearest = item;
+      nearestDistance = distance;
+    }
+  }
+
+  game.nearest = nearest;
+  if (nearest && ui.dialog.hidden) {
+    ui.prompt.hidden = false;
+    ui.prompt.textContent = `E: ${nearest.labelKo}`;
+  } else if (ui.dialog.hidden) {
+    ui.prompt.hidden = false;
+    ui.prompt.textContent = 'WASD/방향키 이동 · E 대화/사당 · J 기록';
+  }
+}
+
+function interact(game, ui) {
+  if (!ui.dialog.hidden) {
+    return;
+  }
+
+  if (!game.nearest) {
+    ui.prompt.hidden = false;
+    ui.prompt.textContent = '가까운 NPC, 사당, AI 코어로 이동해 보세요.';
+    return;
+  }
+
+  if (game.nearest.type === 'npc') {
+    openNpcDialog(game, ui, game.nearest.topicId);
+  } else if (game.nearest.type === 'shrine') {
+    openShrineDialog(game, ui, game.nearest.shrineId);
+  } else {
+    openCoreDialog(game, ui);
+  }
+}
+
+function openNpcDialog(game, ui, topicId) {
+  const topic = getTopicById(topicId);
+  const zone = WORLD_ZONES.find((item) => item.topicId === topicId);
+  game.progress = recordLearningVisit(game.progress, topicId);
+  updateHud(game, ui);
+
+  ui.dialogKicker.textContent = zone.nameKo;
+  ui.dialogTitle.textContent = zone.npc.nameKo;
+  ui.dialogBody.innerHTML = `
+    <p class="prompt-line">${zone.npc.prompt}</p>
+    <p>${zone.npc.lesson}</p>
+    <dl class="topic-rule">
+      <dt>${topic.titleKo} 약속</dt>
+      <dd>${topic.safeRule}</dd>
+    </dl>
+    <p class="reflection">${zone.npc.reflection}</p>
+  `;
+  openDialog(game, ui);
+}
+
+function openShrineDialog(game, ui, shrineId) {
+  const shrine = getShrineById(shrineId);
+  const topic = getTopicById(shrine.topicId);
+  const completed = game.progress.completedShrines.includes(shrineId);
+  ui.dialogKicker.textContent = topic.titleKo;
+  ui.dialogTitle.textContent = shrine.nameKo;
+
+  const choices = shrine.choices
+    .map((choice) => `<button type="button" class="choice-button" data-choice="${choice.id}">${choice.textKo}</button>`)
+    .join('');
+
+  ui.dialogBody.innerHTML = `
+    <p class="prompt-line">${shrine.questionKo}</p>
+    <div class="choice-list">${choices}</div>
+    <p class="feedback-line" data-feedback>${completed ? '이미 해결한 사당입니다. 다른 구역도 둘러보세요.' : ''}</p>
+  `;
+
+  const feedback = ui.dialogBody.querySelector('[data-feedback]');
+  for (const button of ui.dialogBody.querySelectorAll('[data-choice]')) {
+    button.disabled = completed;
+    button.addEventListener('click', () => {
+      const outcome = applyShrineResult(game.progress, shrineId, button.dataset.choice);
+      game.progress = outcome.progress;
+      feedback.textContent = outcome.result.feedbackKo;
+      feedback.dataset.correct = String(outcome.result.correct);
+      for (const sibling of ui.dialogBody.querySelectorAll('[data-choice]')) {
+        sibling.disabled = outcome.result.correct;
+      }
+      updateHud(game, ui);
+    });
+  }
+
+  openDialog(game, ui);
+}
+
+function openCoreDialog(game, ui) {
+  const unlocked = canUnlockFinalCore(game.progress.collectedFragments);
+  ui.dialogKicker.textContent = unlocked ? '최종 미션' : '중앙 코어';
+  ui.dialogTitle.textContent = FINAL_CORE_MISSION.nameKo;
+
+  if (!unlocked) {
+    const summary = getProgressSummary(game.progress.collectedFragments);
+    ui.dialogBody.innerHTML = `
+      <p>AI 코어는 아직 조용합니다.</p>
+      <p>${FINAL_CORE_MISSION.unlockRequirement}개 이상의 윤리 조각이 필요해요. 현재 ${summary.collected}개를 모았습니다.</p>
+    `;
+    openDialog(game, ui);
+    return;
+  }
+
+  const choices = FINAL_CORE_MISSION.choices
+    .map((choice) => `<button type="button" class="choice-button" data-core-choice="${choice.id}">${choice.textKo}</button>`)
+    .join('');
+
+  ui.dialogBody.innerHTML = `
+    <p class="prompt-line">${FINAL_CORE_MISSION.promptKo}</p>
+    <div class="choice-list">${choices}</div>
+    <p class="feedback-line" data-feedback>${game.progress.aiCoreCompleted ? FINAL_CORE_MISSION.completionKo : ''}</p>
+  `;
+
+  const feedback = ui.dialogBody.querySelector('[data-feedback]');
+  for (const button of ui.dialogBody.querySelectorAll('[data-core-choice]')) {
+    button.disabled = game.progress.aiCoreCompleted;
+    button.addEventListener('click', () => {
+      const outcome = completeFinalCore(game.progress, button.dataset.coreChoice);
+      game.progress = outcome.progress;
+      feedback.textContent = outcome.messageKo;
+      feedback.dataset.correct = String(outcome.result?.correct ?? false);
+      if (outcome.result?.correct) {
+        for (const sibling of ui.dialogBody.querySelectorAll('[data-core-choice]')) {
+          sibling.disabled = true;
+        }
+      }
+      updateHud(game, ui);
+    });
+  }
+  openDialog(game, ui);
+}
+
+function openDialog(game, ui) {
+  game.paused = true;
+  ui.dialog.hidden = false;
+  ui.prompt.hidden = true;
+}
+
+function closeDialog(game, ui) {
+  ui.dialog.hidden = true;
+  game.paused = false;
+  ui.root.querySelector('[data-game-canvas]')?.focus?.();
+}
+
+function toggleJournal(game, ui) {
+  if (ui.journal.hidden) {
+    renderJournal(game, ui);
+    ui.journal.hidden = false;
+    ui.journalToggle.setAttribute('aria-expanded', 'true');
+  } else {
+    closeJournal(game, ui);
+  }
+}
+
+function closeJournal(game, ui) {
+  ui.journal.hidden = true;
+  ui.journalToggle.setAttribute('aria-expanded', 'false');
+}
+
+function updateHud(game, ui) {
+  const summary = getProgressSummary(game.progress.collectedFragments);
+  ui.objective.textContent = getNextObjective(game.progress);
+  ui.fragmentCount.textContent = `조각 ${summary.collected}/${summary.total}`;
+  ui.coreStatus.textContent = game.progress.aiCoreCompleted
+    ? 'AI 코어 완료'
+    : summary.finalCoreUnlocked
+      ? 'AI 코어 열림'
+      : 'AI 코어 잠김';
+  ui.fragmentRow.innerHTML = ETHICS_TOPICS.map((topic) => {
+    const collected = summary.collectedTopicIds.includes(topic.id);
+    return `<span class="fragment-dot" style="--topic-color:${topic.color}" data-collected="${collected}" title="${topic.fragmentKo}">${topic.titleKo}</span>`;
+  }).join('');
+  renderJournal(game, ui);
+}
+
+function renderJournal(game, ui) {
+  const summary = getProgressSummary(game.progress.collectedFragments);
+  ui.journalContent.innerHTML = `
+    <p class="controls-note">이동: WASD/방향키 · 상호작용: E/Enter · 기록: J</p>
+    <ul class="topic-list">
+      ${ETHICS_TOPICS.map((topic) => {
+        const visited = game.progress.visitedTopics.includes(topic.id);
+        const collected = summary.collectedTopicIds.includes(topic.id);
+        return `
+          <li>
+            <strong>${topic.titleKo}</strong>
+            <span>${collected ? '조각 획득' : visited ? '대화 완료' : '탐험 전'}</span>
+            <p>${topic.studentTakeaway}</p>
+          </li>
+        `;
+      }).join('')}
+    </ul>
+    <p class="class-note">수업 활동: 각 구역에서 배운 약속을 활동지에 쓰고, AI 코어 미션 뒤 모둠 토론으로 정리하세요.</p>
+  `;
+}
+
+function updateCoreVisual(game, { coreCrystal, coreGlow }) {
+  if (!coreCrystal) {
+    return;
+  }
+  const unlocked = canUnlockFinalCore(game.progress.collectedFragments);
+  coreCrystal.material.color.set(unlocked ? 0x6fe0be : 0x7c8790);
+  coreCrystal.material.emissive.set(unlocked ? 0x2fbf9d : 0x182026);
+  coreCrystal.material.emissiveIntensity = unlocked ? 0.82 : 0.35;
+  if (coreGlow) {
+    coreGlow.color.set(unlocked ? 0x6fe0be : 0x8fb4c9);
+  }
+}
+
+function resize(renderer, camera, root) {
+  const width = Math.max(root.clientWidth, 320);
+  const height = Math.max(root.clientHeight, 360);
+  renderer.setSize(width, height, false);
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+}
+
+function showRendererFallback(ui, error) {
+  ui.dialogKicker.textContent = '그래픽 오류';
+  ui.dialogTitle.textContent = '3D 화면을 시작할 수 없어요';
+  ui.dialogBody.innerHTML = `
+    <p>이 브라우저 또는 기기에서 WebGL을 사용할 수 없습니다. 최신 브라우저에서 다시 열어 주세요.</p>
+    <p class="technical-note">${error.message}</p>
+  `;
+  ui.dialog.hidden = false;
+}
+
+if (typeof window !== 'undefined') {
+  window.initEthicsQuest3D = initEthicsQuest3D;
+  window.addEventListener('DOMContentLoaded', () => {
+    initEthicsQuest3D();
+  });
+}

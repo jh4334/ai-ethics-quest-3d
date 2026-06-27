@@ -1,0 +1,29 @@
+{
+  "project": "ai-ethics-quest-3d",
+  "stage": "red_tests",
+  "loop_mode": "serious",
+  "iteration": 0,
+  "max_iterations": 15,
+  "claude_calls_used": 1,
+  "codex_builder_runs": 0,
+  "codex_reviewer_runs": 0,
+  "last_failure": "Claude PM print-mode timed out twice without output; continuing with Hermes PM docs and Codex Builder per fallback policy.",
+  "verification_commands": [],
+  "deployment": {
+    "approved": true,
+    "reason": "public demo, no secrets/student data/backend/payment",
+    "url": null
+  },
+  "choices": {
+    "target": "초등 고학년",
+    "implementation": "Three.js web 3D",
+    "topics": [
+      "개인정보",
+      "편향",
+      "저작권",
+      "딥페이크"
+    ],
+    "zelda_scope": "탐험 + 사당 퍼즐 중심",
+    "deliverables": "game + GitHub Pages + presentation draft + class docs"
+  }
+}
