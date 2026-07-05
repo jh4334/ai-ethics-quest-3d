@@ -33,3 +33,7 @@ npm run smoke
 - Class documents in `docs/` — trilogy program (기획서·성취기준 매핑·지도안) in `docs/trilogy/`
 
 The prototype uses procedural Three.js geometry and DOM UI, so it can be deployed as a static Vite site, including GitHub Pages.
+
+`.github/workflows/pages.yml` deploys `dist/` (game + `/trilogy.html` hub) to GitHub Pages on every push to `main` — set repository Settings → Pages → Source to "GitHub Actions" once to enable it.
+
+Student progress (shrine choices, learning report) is kept in the browser's localStorage only; the journal (J) has a reset button for shared devices.

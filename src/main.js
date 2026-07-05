@@ -9,14 +9,17 @@ import {
   canUnlockFinalCore,
   completeFinalCore,
   createInitialProgress,
+  getLearningReport,
   getNextObjective,
   getProgressSummary,
   getShrineById,
   getTopicById,
+  normalizeProgress,
   recordLearningVisit
 } from './worldData.js';
 
 const APP_MARKER = 'AI Ethics Quest 3D';
+const STORAGE_KEY = 'ai-ethics-quest-3d/progress/v1';
 const PLAYER_START = new THREE.Vector3(0, 0.55, 8.5);
 const ISLAND_RADIUS = 12.1;
 const INTERACTION_RADIUS = 2.25;
@@ -191,9 +194,37 @@ function bindUi(root) {
   };
 }
 
+function loadStoredProgress() {
+  try {
+    const raw = window.localStorage?.getItem(STORAGE_KEY);
+    if (!raw) {
+      return createInitialProgress();
+    }
+    return normalizeProgress(JSON.parse(raw));
+  } catch {
+    return createInitialProgress();
+  }
+}
+
+function persistProgress(progress) {
+  try {
+    window.localStorage?.setItem(STORAGE_KEY, JSON.stringify(progress));
+  } catch {
+    // 사생활 모드 등 저장이 막힌 환경에서는 세션 안에서만 진행을 유지한다.
+  }
+}
+
+function clearStoredProgress() {
+  try {
+    window.localStorage?.removeItem(STORAGE_KEY);
+  } catch {
+    // 저장소가 없으면 지울 것도 없다.
+  }
+}
+
 function createGameState(ui) {
   return {
-    progress: createInitialProgress(),
+    progress: loadStoredProgress(),
     player: {
       position: PLAYER_START.clone(),
       direction: new THREE.Vector3(0, 0, 1),
@@ -812,6 +843,7 @@ function openNpcDialog(game, ui, topicId) {
   const topic = getTopicById(topicId);
   const zone = WORLD_ZONES.find((item) => item.topicId === topicId);
   game.progress = recordLearningVisit(game.progress, topicId);
+  persistProgress(game.progress);
   updateHud(game, ui);
 
   ui.dialogKicker.textContent = zone.nameKo;
@@ -843,16 +875,25 @@ function openShrineDialog(game, ui, shrineId) {
     <p class="prompt-line">${shrine.questionKo}</p>
     <div class="choice-list">${choices}</div>
     <p class="feedback-line" data-feedback>${completed ? '이미 해결한 사당입니다. 다른 구역도 둘러보세요.' : ''}</p>
+    <p class="reflection" data-shrine-reflection hidden></p>
   `;
 
+  const zone = WORLD_ZONES.find((item) => item.shrineId === shrineId);
   const feedback = ui.dialogBody.querySelector('[data-feedback]');
+  const reflection = ui.dialogBody.querySelector('[data-shrine-reflection]');
   for (const button of ui.dialogBody.querySelectorAll('[data-choice]')) {
     button.disabled = completed;
     button.addEventListener('click', () => {
       const outcome = applyShrineResult(game.progress, shrineId, button.dataset.choice);
       game.progress = outcome.progress;
+      persistProgress(game.progress);
       feedback.textContent = outcome.result.feedbackKo;
       feedback.dataset.correct = String(outcome.result.correct);
+      // 1부(어드벤처)와 같은 원칙: 위험한 선택은 처벌 대신 회고 질문으로 잇는다.
+      reflection.hidden = outcome.result.correct;
+      if (!outcome.result.correct) {
+        reflection.textContent = `생각해 보기 — ${zone.npc.reflection}`;
+      }
       for (const sibling of ui.dialogBody.querySelectorAll('[data-choice]')) {
         sibling.disabled = outcome.result.correct;
       }
@@ -894,6 +935,7 @@ function openCoreDialog(game, ui) {
     button.addEventListener('click', () => {
       const outcome = completeFinalCore(game.progress, button.dataset.coreChoice);
       game.progress = outcome.progress;
+      persistProgress(game.progress);
       feedback.textContent = outcome.messageKo;
       feedback.dataset.correct = String(outcome.result?.correct ?? false);
       if (outcome.result?.correct) {
@@ -952,6 +994,7 @@ function updateHud(game, ui) {
 
 function renderJournal(game, ui) {
   const summary = getProgressSummary(game.progress.collectedFragments);
+  const report = getLearningReport(game.progress);
   ui.journalContent.innerHTML = `
     <p class="controls-note">이동: WASD/방향키 · 상호작용: E/Enter · 기록: J</p>
     <ul class="topic-list">
@@ -967,8 +1010,36 @@ function renderJournal(game, ui) {
         `;
       }).join('')}
     </ul>
-    <p class="class-note">수업 활동: 각 구역에서 배운 약속을 활동지에 쓰고, AI 코어 미션 뒤 모둠 토론으로 정리하세요.</p>
+    <section class="learning-report" data-learning-report>
+      <h3>학습 리포트</h3>
+      <p>사당 해결 ${report.solvedCount}/4 · 첫 도전 성공 ${report.firstTryCount}개 · 선택 ${report.totalChoices}번 · AI 코어 ${report.core.completed ? '완료' : '미완료'}</p>
+      <ul class="report-list">
+        ${report.topics
+          .map((topic) => `<li><strong>${topic.titleKo}</strong> ${topic.statusKo}${topic.attempts > 0 ? ` (${topic.attempts}회 도전)` : ''}</li>`)
+          .join('')}
+      </ul>
+      ${report.reviewTopics.length > 0
+        ? `<p class="report-review-heading">다시 이야기해 볼 질문</p>
+           <ul class="report-list">
+             ${report.reviewTopics.map((topic) => `<li>${topic.reviewQuestionKo}</li>`).join('')}
+           </ul>`
+        : ''}
+      <p class="class-note">이 리포트는 내 배움을 돌아보는 자료예요. 활동지에 옮겨 쓰고 모둠 토론에서 나눠 보세요.</p>
+      <button type="button" class="report-reset" data-reset-progress>기록 초기화 (새 친구가 시작할 때)</button>
+    </section>
   `;
+
+  ui.journalContent.querySelector('[data-reset-progress]')?.addEventListener('click', () => {
+    const confirmed = typeof window.confirm === 'function'
+      ? window.confirm('탐험 기록을 모두 지우고 처음부터 시작할까요?')
+      : true;
+    if (!confirmed) {
+      return;
+    }
+    clearStoredProgress();
+    game.progress = createInitialProgress();
+    updateHud(game, ui);
+  });
 }
 
 function updateCoreVisual(game, { coreCrystal, coreGlow }) {
