@@ -285,7 +285,35 @@ export function createInitialProgress() {
     visitedTopics: [],
     completedShrines: [],
     collectedFragments: [],
+    choiceLog: [],
     aiCoreCompleted: false
+  };
+}
+
+export function normalizeProgress(candidate) {
+  const base = createInitialProgress();
+  if (!candidate || typeof candidate !== 'object') {
+    return base;
+  }
+
+  const stringArray = (value) => (Array.isArray(value) ? value.filter((item) => typeof item === 'string') : []);
+  const logArray = (value) =>
+    Array.isArray(value)
+      ? value.filter(
+          (entry) =>
+            entry
+            && typeof entry === 'object'
+            && typeof entry.choiceId === 'string'
+            && typeof entry.correct === 'boolean'
+        )
+      : [];
+
+  return {
+    visitedTopics: uniqueValidTopicIds(stringArray(candidate.visitedTopics)),
+    completedShrines: stringArray(candidate.completedShrines).filter((id) => Boolean(getShrineById(id))),
+    collectedFragments: uniqueValidTopicIds(stringArray(candidate.collectedFragments)),
+    choiceLog: logArray(candidate.choiceLog),
+    aiCoreCompleted: candidate.aiCoreCompleted === true
   };
 }
 
@@ -324,13 +352,18 @@ export function evaluateShrineChoice(shrineId, choiceId) {
 export function applyShrineResult(progress, shrineId, choiceId) {
   const result = evaluateShrineChoice(shrineId, choiceId);
   const visitedTopics = [...new Set([...progress.visitedTopics, result.topicId])];
+  const choiceLog = [
+    ...(progress.choiceLog ?? []),
+    { kind: 'shrine', shrineId, topicId: result.topicId, choiceId, correct: result.correct }
+  ];
 
   if (!result.correct) {
     return {
       result,
       progress: {
         ...progress,
-        visitedTopics
+        visitedTopics,
+        choiceLog
       }
     };
   }
@@ -340,6 +373,7 @@ export function applyShrineResult(progress, shrineId, choiceId) {
     progress: {
       ...progress,
       visitedTopics,
+      choiceLog,
       completedShrines: [...new Set([...progress.completedShrines, shrineId])],
       collectedFragments: [...new Set([...progress.collectedFragments, result.topicId])]
     }
@@ -377,9 +411,65 @@ export function completeFinalCore(progress, choiceId) {
     result,
     progress: {
       ...progress,
+      choiceLog: [
+        ...(progress.choiceLog ?? []),
+        { kind: 'core', topicId: null, choiceId, correct: result.correct }
+      ],
       aiCoreCompleted: progress.aiCoreCompleted || result.correct
     },
     messageKo: result.feedbackKo
+  };
+}
+
+const TOPIC_STATUS_LABELS = {
+  'first-try': '첫 도전에 해결',
+  retry: '다시 도전해 해결',
+  struggling: '복습 추천',
+  visited: '대화만 완료',
+  'not-started': '탐험 전'
+};
+
+export function getLearningReport(progress) {
+  const log = progress.choiceLog ?? [];
+
+  const topics = ETHICS_TOPICS.map((topic) => {
+    const attempts = log.filter((entry) => entry.kind === 'shrine' && entry.topicId === topic.id);
+    const solved = progress.collectedFragments.includes(topic.id);
+    const visited = progress.visitedTopics.includes(topic.id);
+
+    let status = 'not-started';
+    if (solved) {
+      status = attempts.length > 0 && attempts[0].correct ? 'first-try' : 'retry';
+    } else if (attempts.length > 0) {
+      status = 'struggling';
+    } else if (visited) {
+      status = 'visited';
+    }
+
+    return {
+      topicId: topic.id,
+      titleKo: topic.titleKo,
+      attempts: attempts.length,
+      solved,
+      status,
+      statusKo: TOPIC_STATUS_LABELS[status],
+      // 오답 경험이 있는 주제는 수업 회고 질문으로 연결한다.
+      reviewQuestionKo: status === 'retry' || status === 'struggling' ? topic.classroomQuestion : null
+    };
+  });
+
+  const coreAttempts = log.filter((entry) => entry.kind === 'core');
+
+  return {
+    topics,
+    reviewTopics: topics.filter((topic) => topic.reviewQuestionKo),
+    totalChoices: log.length,
+    firstTryCount: topics.filter((topic) => topic.status === 'first-try').length,
+    solvedCount: topics.filter((topic) => topic.solved).length,
+    core: {
+      attempts: coreAttempts.length,
+      completed: progress.aiCoreCompleted
+    }
   };
 }
 
