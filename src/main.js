@@ -4,6 +4,8 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { createAudioEngine } from './audio.js';
+import { createBurstSystem, createFloatingIcon, setIconEmoji } from './effects.js';
 import {
   ETHICS_TOPICS,
   FINAL_CORE_MISSION,
@@ -66,7 +68,9 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
     coreCrystal: null,
     coreGlow: null,
     composer: null,
-    animated: []
+    animated: [],
+    icons: [],
+    burst: null
   };
 
   configureRenderer(renderer);
@@ -74,6 +78,11 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
   createPlayer(renderState);
   scene.add(renderState.playerGroup);
   setupPostProcessing(renderState, root);
+  renderState.burst = createBurstSystem(scene);
+  createInteractionIcons(renderState);
+
+  game.audio = createAudioEngine();
+  game.renderState = renderState;
 
   const cleanupInput = bindInput(game, ui);
   bindHudActions(game, ui, renderState);
@@ -147,6 +156,12 @@ function createShell() {
         기록
       </button>
 
+      <button class="sound-toggle" type="button" data-sound-toggle aria-pressed="false" aria-label="소리 켜기/끄기" title="소리 켜기/끄기">
+        🔈
+      </button>
+
+      <div class="screen-flash" data-flash></div>
+
       <aside class="journal-panel" data-journal hidden>
         <div class="panel-heading">
           <div>
@@ -204,8 +219,21 @@ function bindUi(root) {
     journalToggle: root.querySelector('[data-journal-toggle]'),
     journalClose: root.querySelector('[data-close-journal]'),
     journalContent: root.querySelector('[data-journal-content]'),
+    soundToggle: root.querySelector('[data-sound-toggle]'),
+    flash: root.querySelector('[data-flash]'),
     touchButtons: [...root.querySelectorAll('[data-touch]')]
   };
+}
+
+function triggerFlash(ui, colorHex) {
+  if (!ui.flash) {
+    return;
+  }
+  ui.flash.style.setProperty('--flash-color', colorHex ?? '#ffffff');
+  ui.flash.classList.remove('is-active');
+  // 리플로우를 강제해 애니메이션을 재시작한다.
+  void ui.flash.offsetWidth;
+  ui.flash.classList.add('is-active');
 }
 
 function loadStoredProgress() {
@@ -237,16 +265,22 @@ function clearStoredProgress() {
 }
 
 function createGameState(ui) {
+  const progress = loadStoredProgress();
   return {
-    progress: loadStoredProgress(),
+    progress,
     player: {
       position: PLAYER_START.clone(),
       direction: new THREE.Vector3(0, 0, 1),
-      speed: 5.2
+      speed: 5.2,
+      bob: 0,
+      moving: false
     },
     keys: new Set(),
     nearest: null,
     paused: false,
+    audio: null,
+    renderState: null,
+    coreWasUnlocked: canUnlockFinalCore(progress.collectedFragments),
     ui
   };
 }
@@ -289,6 +323,9 @@ function updateAmbient(delta, renderState) {
   const elapsed = clock.elapsedTime;
   for (const item of renderState.animated) {
     item.update(elapsed, delta);
+  }
+  if (renderState.burst) {
+    renderState.burst.update(delta);
   }
 }
 
@@ -509,6 +546,46 @@ function createGrassField(scene) {
   grass.castShadow = false;
   grass.receiveShadow = true;
   scene.add(grass);
+}
+
+function createInteractionIcons(renderState) {
+  const { scene, interactables, icons } = renderState;
+  interactables.forEach((item, index) => {
+    if (item.type !== 'npc' && item.type !== 'shrine') {
+      return;
+    }
+    const topic = getTopicById(item.topicId);
+    const isShrine = item.type === 'shrine';
+    const sprite = createFloatingIcon(isShrine ? '❗' : '💬', isShrine ? '#eba52c' : topic.color);
+    const baseY = isShrine ? item.position.y + 2.5 : item.position.y + 2.15;
+    sprite.position.set(item.position.x, baseY, item.position.z);
+    scene.add(sprite);
+    icons.push({ sprite, item, baseY, phase: index * 1.3 });
+  });
+}
+
+function updateInteractionIcons(game, renderState) {
+  const elapsed = clock.elapsedTime;
+  for (const icon of renderState.icons) {
+    // 위아래로 통통 떠서 시선을 끈다.
+    icon.sprite.position.y = icon.baseY + Math.sin(elapsed * 2.2 + icon.phase) * 0.13;
+
+    if (icon.item.type === 'shrine') {
+      const done = game.progress.completedShrines.includes(icon.item.shrineId);
+      if (done && !icon.done) {
+        setIconEmoji(icon.sprite, '✅', '#2fae74');
+        icon.done = true;
+      }
+      icon.sprite.material.opacity = done ? 0.42 : 1;
+      const bump = icon.item.shrineId === game.nearest?.shrineId ? 1.18 : 1;
+      icon.sprite.scale.setScalar(0.9 * bump);
+    } else {
+      const visited = game.progress.visitedTopics.includes(icon.item.topicId);
+      icon.sprite.material.opacity = visited ? 0.32 : 1;
+      const bump = icon.item.zoneId === game.nearest?.zoneId && game.nearest?.type === 'npc' ? 1.18 : 1;
+      icon.sprite.scale.setScalar(0.9 * bump);
+    }
+  }
 }
 
 function createCenterCore(scene, animated) {
@@ -878,6 +955,7 @@ function bindInput(game, ui) {
       || target?.isContentEditable;
 
     if (keyMap.has(event.code)) {
+      game.audio?.resume();
       game.keys.add(keyMap.get(event.code));
       event.preventDefault();
     }
@@ -941,14 +1019,43 @@ function bindHudActions(game, ui, renderState) {
   ui.dialogClose.addEventListener('click', () => closeDialog(game, ui));
   ui.journalToggle.addEventListener('click', () => toggleJournal(game, ui));
   ui.journalClose.addEventListener('click', () => closeJournal(game, ui));
+  ui.soundToggle?.addEventListener('click', () => {
+    game.audio?.resume();
+    const muted = game.audio?.toggleMute();
+    ui.soundToggle.textContent = muted ? '🔇' : '🔈';
+    ui.soundToggle.setAttribute('aria-pressed', String(!muted));
+    if (!muted) {
+      game.audio?.playClick();
+    }
+  });
   renderState.coreCrystal = activeQuest.coreCrystal;
   renderState.coreGlow = activeQuest.coreGlow;
+}
+
+function getInteractablePosition(game, type, id) {
+  const key = type === 'shrine' ? 'shrineId' : 'zoneId';
+  const found = game.renderState?.interactables?.find(
+    (item) => item.type === type && item[key] === id
+  );
+  return found ? found.position.clone() : new THREE.Vector3(0, 1, 0);
+}
+
+// 조각을 얻거나 코어가 각성할 때: 파티클·빛기둥·화면 반짝·효과음을 한 번에.
+function celebrate(game, worldPosition, colorHex, kind) {
+  game.renderState?.burst?.spawn(worldPosition, colorHex);
+  triggerFlash(game.ui, colorHex);
+  if (kind === 'core') {
+    game.audio?.playCoreAwaken();
+  } else {
+    game.audio?.playCollect();
+  }
 }
 
 function updateGame(delta, game, renderState, ui) {
   updatePlayer(delta, game, renderState.playerGroup);
   updateCamera(renderState.camera, game.player.position);
   animateWorld(delta, renderState, game);
+  updateInteractionIcons(game, renderState);
   updateNearestInteractable(game, renderState.interactables, ui);
 }
 
@@ -959,15 +1066,25 @@ function updatePlayer(delta, game, playerGroup) {
     (game.keys.has('down') ? 1 : 0) - (game.keys.has('up') ? 1 : 0)
   );
 
-  if (move.lengthSq() > 0) {
+  const moving = move.lengthSq() > 0;
+  game.player.moving = moving;
+  if (moving) {
     move.normalize();
     game.player.direction.copy(move);
     game.player.position.addScaledVector(move, game.player.speed * delta);
     game.player.position.copy(clampToIsland(game.player.position));
     playerGroup.rotation.y = Math.atan2(move.x, move.z);
+    // 걸을 때 통통 튀는 느낌 + 살짝 기우뚱.
+    game.player.bob += delta * 12;
+    playerGroup.rotation.z = Math.sin(game.player.bob) * 0.05;
+  } else {
+    game.player.bob += delta * 2;
+    playerGroup.rotation.z *= 0.85;
   }
 
   playerGroup.position.lerp(game.player.position, 0.82);
+  const hop = moving ? Math.abs(Math.sin(game.player.bob)) * 0.12 : Math.sin(game.player.bob) * 0.03;
+  playerGroup.position.y = game.player.position.y + hop;
 }
 
 function clampToIsland(position) {
@@ -1041,6 +1158,9 @@ function updateNearestInteractable(game, interactables, ui) {
 }
 
 function interact(game, ui) {
+  // 첫 상호작용에서 오디오를 깨운다(자동재생 정책 대응).
+  game.audio?.resume();
+
   if (!ui.dialog.hidden) {
     return;
   }
@@ -1050,6 +1170,8 @@ function interact(game, ui) {
     ui.prompt.textContent = '가까운 NPC, 사당, AI 코어로 이동해 보세요.';
     return;
   }
+
+  game.audio?.playClick();
 
   if (game.nearest.type === 'npc') {
     openNpcDialog(game, ui, game.nearest.topicId);
@@ -1148,6 +1270,11 @@ function openShrineDialog(game, ui, shrineId) {
         persistProgress(game.progress);
         practiceFeedback.textContent = outcome.result.feedbackKo;
         practiceFeedback.dataset.correct = String(outcome.result.correct);
+        if (outcome.result.correct) {
+          game.audio?.playCorrect();
+        } else {
+          game.audio?.playWrong();
+        }
         updateHud(game, ui);
         const isLast = index + 1 >= extraQuestions.length;
         nav.innerHTML = isLast
@@ -1163,6 +1290,7 @@ function openShrineDialog(game, ui, shrineId) {
   for (const button of ui.dialogBody.querySelectorAll('[data-choice]')) {
     button.disabled = completed;
     button.addEventListener('click', () => {
+      const wasUnlocked = canUnlockFinalCore(game.progress.collectedFragments);
       const outcome = applyShrineResult(game.progress, shrineId, button.dataset.choice);
       game.progress = outcome.progress;
       persistProgress(game.progress);
@@ -1177,7 +1305,20 @@ function openShrineDialog(game, ui, shrineId) {
         sibling.disabled = outcome.result.correct;
       }
       if (outcome.result.correct) {
+        // 조각 획득 연출: 사당 위치에서 파티클·빛기둥·효과음.
+        const topic = getTopicById(outcome.result.topicId);
+        const shrinePos = getInteractablePosition(game, 'shrine', shrineId);
+        celebrate(game, shrinePos.clone().setY(shrinePos.y + 1.2), topic?.color ?? '#ffd76a', 'collect');
+        // 코어가 막 열렸다면 각성 세리머니를 이어서.
+        if (!wasUnlocked && canUnlockFinalCore(game.progress.collectedFragments)) {
+          window.setTimeout(() => {
+            celebrate(game, new THREE.Vector3(0, 1.6, 0), '#7cf0ff', 'core');
+            game.coreWasUnlocked = true;
+          }, 650);
+        }
         showPracticeGate();
+      } else {
+        game.audio?.playWrong();
       }
       updateHud(game, ui);
     });
@@ -1228,6 +1369,10 @@ function openCoreDialog(game, ui) {
         for (const sibling of ui.dialogBody.querySelectorAll('[data-core-choice]')) {
           sibling.disabled = true;
         }
+        // 코어 완성 세리머니.
+        celebrate(game, new THREE.Vector3(0, 1.6, 0), '#7cf0ff', 'core');
+      } else {
+        game.audio?.playWrong();
       }
       updateHud(game, ui);
     });

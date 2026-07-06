@@ -200,6 +200,44 @@ button:disabled {
   padding: 8px 11px;
 }
 
+.sound-toggle {
+  position: absolute;
+  z-index: 3;
+  right: 82px;
+  top: 142px;
+  min-width: 40px;
+  min-height: 38px;
+  padding: 8px 9px;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* 조각 획득·코어 각성 순간 화면을 부드럽게 번쩍이는 오버레이 */
+.screen-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle at 50% 45%, var(--flash-color, #fff) 0%, transparent 62%);
+}
+
+.screen-flash.is-active {
+  animation: screen-flash-fade 620ms ease-out;
+}
+
+@keyframes screen-flash-fade {
+  0% { opacity: 0; }
+  18% { opacity: 0.5; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-flash.is-active {
+    animation-duration: 200ms;
+  }
+}
+
 .journal-panel {
   top: 188px;
   right: 16px;
