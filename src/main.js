@@ -29,6 +29,15 @@ import {
 
 const APP_MARKER = 'AI Ethics Quest 3D';
 const STORAGE_KEY = 'ai-ethics-quest-3d/progress/v1';
+
+// 터치 기기에서는 키보드(WASD/E/J) 안내가 의미 없으므로 조작 문구를 바꾼다.
+const IS_TOUCH = typeof window !== 'undefined'
+  && typeof window.matchMedia === 'function'
+  && window.matchMedia('(pointer: coarse)').matches;
+const MOVE_HINT = IS_TOUCH
+  ? '방향 버튼으로 이동 · 👆 버튼으로 대화·선택'
+  : 'WASD/방향키 이동 · E 대화/사당 · J 기록';
+const ACTION_LABEL = IS_TOUCH ? '' : 'E: ';
 const PLAYER_START = new THREE.Vector3(0, 0.55, 8.5);
 const ISLAND_RADIUS = 12.1;
 const INTERACTION_RADIUS = 2.25;
@@ -194,7 +203,7 @@ function createShell() {
       <div class="touch-controls" aria-label="터치 이동">
         <button type="button" data-touch="up" aria-label="위로 이동">▲</button>
         <button type="button" data-touch="left" aria-label="왼쪽 이동">◀</button>
-        <button type="button" data-touch="action" aria-label="상호작용">E</button>
+        <button type="button" data-touch="action" aria-label="대화·선택">👆</button>
         <button type="button" data-touch="right" aria-label="오른쪽 이동">▶</button>
         <button type="button" data-touch="down" aria-label="아래로 이동">▼</button>
       </div>
@@ -216,7 +225,7 @@ function createShell() {
           <h1 class="title-name">AI 윤리의 섬</h1>
           <p class="title-desc">섬을 탐험하며 네 가지 윤리 조각을 모아 AI 코어를 깨우는 수호자가 되어 보세요.</p>
           <div class="title-actions" data-title-actions></div>
-          <p class="title-controls">이동 WASD·방향키 · 대화/선택 E·Enter · 기록 J</p>
+          <p class="title-controls">${IS_TOUCH ? '방향 버튼으로 이동 · 👆 버튼으로 대화·선택' : '이동 WASD·방향키 · 대화/선택 E·Enter · 기록 J'}</p>
         </div>
       </section>
 
@@ -1264,10 +1273,10 @@ function updateNearestInteractable(game, interactables, ui) {
   game.nearest = nearest;
   if (nearest && ui.dialog.hidden) {
     ui.prompt.hidden = false;
-    ui.prompt.textContent = `E: ${nearest.labelKo}`;
+    ui.prompt.textContent = `${ACTION_LABEL}${nearest.labelKo}`;
   } else if (ui.dialog.hidden) {
     ui.prompt.hidden = false;
-    ui.prompt.textContent = 'WASD/방향키 이동 · E 대화/사당 · J 기록';
+    ui.prompt.textContent = MOVE_HINT;
   }
 }
 
@@ -1590,11 +1599,14 @@ function openDialog(game, ui) {
   game.paused = true;
   ui.dialog.hidden = false;
   ui.prompt.hidden = true;
+  // 모바일에서 대화창 뒤로 방향 버튼이 비치지 않도록 숨긴다(대화 중엔 이동 불가).
+  ui.root.classList.add('is-dialog-open');
 }
 
 function closeDialog(game, ui) {
   ui.dialog.hidden = true;
   game.paused = false;
+  ui.root.classList.remove('is-dialog-open');
   ui.root.querySelector('[data-game-canvas]')?.focus?.();
 }
 
