@@ -9,13 +9,15 @@ import {
   canUnlockFinalCore,
   completeFinalCore,
   createInitialProgress,
+  getExtraShrineQuestions,
   getLearningReport,
   getNextObjective,
   getProgressSummary,
   getShrineById,
   getTopicById,
   normalizeProgress,
-  recordLearningVisit
+  recordLearningVisit,
+  recordPracticeChoice
 } from './worldData.js';
 
 const APP_MARKER = 'AI Ethics Quest 3D';
@@ -855,6 +857,7 @@ function openNpcDialog(game, ui, topicId) {
       <dt>${topic.titleKo} 약속</dt>
       <dd>${topic.safeRule}</dd>
     </dl>
+    ${topic.realCaseKo ? `<p class="real-case"><strong>실제로 있었던 일</strong> ${topic.realCaseKo}</p>` : ''}
     <p class="reflection">${zone.npc.reflection}</p>
   `;
   openDialog(game, ui);
@@ -871,16 +874,73 @@ function openShrineDialog(game, ui, shrineId) {
     .map((choice) => `<button type="button" class="choice-button" data-choice="${choice.id}">${choice.textKo}</button>`)
     .join('');
 
+  const extraQuestions = getExtraShrineQuestions(shrineId);
+
   ui.dialogBody.innerHTML = `
     <p class="prompt-line">${shrine.questionKo}</p>
     <div class="choice-list">${choices}</div>
-    <p class="feedback-line" data-feedback>${completed ? '이미 해결한 사당입니다. 다른 구역도 둘러보세요.' : ''}</p>
+    <p class="feedback-line" data-feedback>${completed ? '이미 해결한 사당입니다. 연습 문제로 더 익혀 보세요.' : ''}</p>
     <p class="reflection" data-shrine-reflection hidden></p>
+    <div class="practice-area" data-practice-area></div>
   `;
 
   const zone = WORLD_ZONES.find((item) => item.shrineId === shrineId);
   const feedback = ui.dialogBody.querySelector('[data-feedback]');
   const reflection = ui.dialogBody.querySelector('[data-shrine-reflection]');
+  const practiceArea = ui.dialogBody.querySelector('[data-practice-area]');
+
+  function showPracticeGate() {
+    if (extraQuestions.length === 0) {
+      return;
+    }
+    practiceArea.innerHTML = `
+      <button type="button" class="practice-start" data-practice-start>연습 문제 더 풀기 (${extraQuestions.length}문제)</button>
+    `;
+    practiceArea
+      .querySelector('[data-practice-start]')
+      .addEventListener('click', () => renderPractice(0));
+  }
+
+  function renderPractice(index) {
+    const question = extraQuestions[index];
+    const optionButtons = question.choices
+      .map((choice) => `<button type="button" class="choice-button" data-practice-choice="${choice.id}">${choice.textKo}</button>`)
+      .join('');
+    practiceArea.innerHTML = `
+      <div class="practice-card">
+        <p class="practice-count">연습 ${index + 1}/${extraQuestions.length}</p>
+        <p class="prompt-line">${question.questionKo}</p>
+        <div class="choice-list">${optionButtons}</div>
+        <p class="feedback-line" data-practice-feedback></p>
+        <div data-practice-nav></div>
+      </div>
+    `;
+    const practiceFeedback = practiceArea.querySelector('[data-practice-feedback]');
+    const nav = practiceArea.querySelector('[data-practice-nav]');
+    let answered = false;
+    for (const button of practiceArea.querySelectorAll('[data-practice-choice]')) {
+      button.addEventListener('click', () => {
+        if (answered) {
+          return;
+        }
+        answered = true;
+        const outcome = recordPracticeChoice(game.progress, shrineId, question.id, button.dataset.practiceChoice);
+        game.progress = outcome.progress;
+        persistProgress(game.progress);
+        practiceFeedback.textContent = outcome.result.feedbackKo;
+        practiceFeedback.dataset.correct = String(outcome.result.correct);
+        updateHud(game, ui);
+        const isLast = index + 1 >= extraQuestions.length;
+        nav.innerHTML = isLast
+          ? '<p class="practice-done">연습 완료! 잘했어요. 다른 구역도 탐험해 보세요.</p>'
+          : '<button type="button" class="practice-next" data-practice-next>다음 문제 →</button>';
+        if (!isLast) {
+          nav.querySelector('[data-practice-next]').addEventListener('click', () => renderPractice(index + 1));
+        }
+      });
+    }
+  }
+
   for (const button of ui.dialogBody.querySelectorAll('[data-choice]')) {
     button.disabled = completed;
     button.addEventListener('click', () => {
@@ -897,8 +957,15 @@ function openShrineDialog(game, ui, shrineId) {
       for (const sibling of ui.dialogBody.querySelectorAll('[data-choice]')) {
         sibling.disabled = outcome.result.correct;
       }
+      if (outcome.result.correct) {
+        showPracticeGate();
+      }
       updateHud(game, ui);
     });
+  }
+
+  if (completed) {
+    showPracticeGate();
   }
 
   openDialog(game, ui);
@@ -1012,7 +1079,7 @@ function renderJournal(game, ui) {
     </ul>
     <section class="learning-report" data-learning-report>
       <h3>학습 리포트</h3>
-      <p>사당 해결 ${report.solvedCount}/4 · 첫 도전 성공 ${report.firstTryCount}개 · 선택 ${report.totalChoices}번 · AI 코어 ${report.core.completed ? '완료' : '미완료'}</p>
+      <p>사당 해결 ${report.solvedCount}/4 · 첫 도전 성공 ${report.firstTryCount}개 · 연습 문제 ${report.practiceCorrectCount}/${report.practiceCount} 정답 · AI 코어 ${report.core.completed ? '완료' : '미완료'}</p>
       <ul class="report-list">
         ${report.topics
           .map((topic) => `<li><strong>${topic.titleKo}</strong> ${topic.statusKo}${topic.attempts > 0 ? ` (${topic.attempts}회 도전)` : ''}</li>`)

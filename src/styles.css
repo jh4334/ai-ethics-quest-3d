@@ -345,6 +345,21 @@ button:disabled {
   border-radius: 0 8px 8px 0;
 }
 
+.real-case {
+  padding: 10px 12px;
+  margin: 12px 0;
+  border-left: 4px solid var(--accent, #2f8f7f);
+  background: rgba(47, 143, 127, 0.08);
+  border-radius: 0 8px 8px 0;
+  font-size: 0.92rem;
+}
+
+.real-case strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #21705f;
+}
+
 .topic-rule {
   display: grid;
   gap: 5px;
@@ -390,6 +405,55 @@ button:disabled {
 
 .feedback-line[data-correct="false"] {
   color: var(--danger);
+}
+
+.practice-area {
+  margin-top: 12px;
+}
+
+.practice-start {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: rgba(47, 143, 127, 0.1);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.practice-start:hover {
+  background: rgba(47, 143, 127, 0.18);
+}
+
+.practice-card {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.practice-count {
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--accent, #2f8f7f);
+}
+
+.practice-next {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.practice-done {
+  margin: 10px 0 0;
+  font-weight: 800;
+  color: #21705f;
 }
 
 .touch-controls {
