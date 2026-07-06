@@ -5,14 +5,16 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --panel: rgba(255, 252, 239, 0.92);
-  --panel-strong: #fff8df;
+  --panel: rgba(255, 255, 255, 0.86);
+  --panel-strong: #ffffff;
   --ink: #142220;
   --muted: #52605d;
-  --line: rgba(41, 65, 58, 0.2);
-  --accent: #287d73;
-  --gold: #c99a3e;
-  --danger: #a94c5b;
+  --line: rgba(41, 65, 58, 0.16);
+  --accent: #159c86;
+  --accent-2: #37b6ff;
+  --gold: #eba52c;
+  --danger: #e05a6c;
+  --radius: 16px;
 }
 
 * {
@@ -29,26 +31,34 @@ body,
 }
 
 button {
-  border: 1px solid rgba(20, 34, 32, 0.18);
-  border-radius: 8px;
-  background: #fffaf0;
+  border: 1px solid rgba(20, 34, 32, 0.14);
+  border-radius: 11px;
+  background: #ffffff;
   color: var(--ink);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
+  box-shadow: 0 2px 0 rgba(20, 34, 32, 0.08);
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
 }
 
 button:hover {
   transform: translateY(-1px);
-  border-color: rgba(20, 34, 32, 0.34);
+  border-color: color-mix(in srgb, var(--accent) 55%, white);
   background: #ffffff;
+  box-shadow: 0 4px 12px rgba(21, 156, 134, 0.22);
+}
+
+button:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 rgba(20, 34, 32, 0.1);
 }
 
 button:disabled {
   cursor: default;
   opacity: 0.55;
   transform: none;
+  box-shadow: none;
 }
 
 .quest-shell {
@@ -77,11 +87,27 @@ button:disabled {
   position: absolute;
   z-index: 2;
   color: var(--ink);
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  box-shadow: 0 10px 32px rgba(24, 45, 42, 0.18);
-  backdrop-filter: blur(8px);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 42%),
+    var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 34px rgba(20, 60, 80, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+}
+
+/* 게임 HUD 느낌의 상단 컬러 액센트 바 */
+.objective-chip::before,
+.status-strip::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 0;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  opacity: 0.9;
 }
 
 .objective-chip {
@@ -141,22 +167,27 @@ button:disabled {
 }
 
 .fragment-dot {
+  position: relative;
   min-width: 0;
-  padding: 5px 6px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(20, 34, 32, 0.14);
-  color: #68726f;
+  padding: 6px 6px;
+  border-radius: 9px;
+  background: rgba(240, 244, 243, 0.9);
+  border: 1px solid rgba(20, 34, 32, 0.12);
+  color: #8a938f;
   text-align: center;
   font-size: 0.72rem;
   font-weight: 800;
   white-space: nowrap;
+  transition: transform 160ms ease, box-shadow 200ms ease, background 200ms ease;
 }
 
 .fragment-dot[data-collected="true"] {
-  color: #10221f;
-  background: color-mix(in srgb, var(--topic-color) 32%, white);
-  border-color: color-mix(in srgb, var(--topic-color) 70%, white);
+  color: #0f2b26;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--topic-color) 45%, white), color-mix(in srgb, var(--topic-color) 22%, white));
+  border-color: color-mix(in srgb, var(--topic-color) 75%, white);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--topic-color) 40%, transparent),
+              0 6px 16px color-mix(in srgb, var(--topic-color) 45%, transparent);
+  transform: translateY(-1px);
 }
 
 .journal-toggle {
