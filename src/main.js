@@ -1,5 +1,9 @@
 import './styles.css';
 import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import {
   ETHICS_TOPICS,
   FINAL_CORE_MISSION,
@@ -60,23 +64,26 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
     interactables: [],
     shrineCrystals: new Map(),
     coreCrystal: null,
-    coreGlow: null
+    coreGlow: null,
+    composer: null,
+    animated: []
   };
 
   configureRenderer(renderer);
   createWorld(renderState);
   createPlayer(renderState);
   scene.add(renderState.playerGroup);
+  setupPostProcessing(renderState, root);
 
   const cleanupInput = bindInput(game, ui);
   bindHudActions(game, ui, renderState);
 
-  resize(renderer, camera, root);
+  resize(renderer, camera, root, renderState.composer);
   updateHud(game, ui);
   updateCoreVisual(game, renderState);
 
   let animationId = 0;
-  const onResize = () => resize(renderer, camera, root);
+  const onResize = () => resize(renderer, camera, root, renderState.composer);
   const onVisibilityChange = () => {
     game.paused = document.hidden || !ui.dialog.hidden;
   };
@@ -96,7 +103,12 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
     if (!game.paused) {
       updateGame(delta, game, renderState, ui);
     }
-    renderer.render(scene, camera);
+    updateAmbient(delta, renderState);
+    if (renderState.composer) {
+      renderState.composer.render();
+    } else {
+      renderer.render(scene, camera);
+    }
   }
 
   frame();
@@ -241,40 +253,77 @@ function createGameState(ui) {
 
 function configureRenderer(renderer) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
-  renderer.setClearColor(0x9ed7e7, 1);
+  renderer.setClearColor(0x8fd3ef, 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // 밝고 쨍한 판타지 톤: ACES 필름 톤매핑 + 약간 높은 노출로 색을 살린다.
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.04;
 }
 
-function createWorld({ scene, interactables, shrineCrystals }) {
-  scene.background = new THREE.Color(0x9ed7e7);
-  scene.fog = new THREE.Fog(0x9ed7e7, 28, 76);
+function setupPostProcessing(renderState, root) {
+  const { renderer, scene, camera } = renderState;
+  const width = Math.max(root.clientWidth, 320);
+  const height = Math.max(root.clientHeight, 360);
 
-  const hemiLight = new THREE.HemisphereLight(0xe9f9ff, 0x57745c, 1.8);
+  let composer;
+  try {
+    composer = new EffectComposer(renderer);
+    composer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+    composer.setSize(width, height);
+    composer.addPass(new RenderPass(scene, camera));
+    // 발광 크리스털·코어가 은은하게 빛나도록 블룸을 얹는다(저사양 고려해 약하게).
+    const bloom = new UnrealBloomPass(new THREE.Vector2(width, height), 0.55, 0.85, 0.72);
+    composer.addPass(bloom);
+    composer.addPass(new OutputPass());
+    renderState.composer = composer;
+    renderState.bloomPass = bloom;
+  } catch (error) {
+    // 후처리를 못 쓰는 환경이면 기본 렌더로 조용히 폴백한다.
+    renderState.composer = null;
+  }
+}
+
+function updateAmbient(delta, renderState) {
+  const elapsed = clock.elapsedTime;
+  for (const item of renderState.animated) {
+    item.update(elapsed, delta);
+  }
+}
+
+function createWorld(renderState) {
+  const { scene, interactables, shrineCrystals, animated } = renderState;
+  // 색을 살리기 위해 안개는 아주 옅게, 먼 배경만 살짝 감싸도록.
+  scene.fog = new THREE.Fog(0x9fd9f5, 34, 88);
+
+  createSky(scene, animated);
+
+  // 밝은 하늘빛 + 따뜻한 반사광의 반구광으로 색을 쨍하게 띄운다.
+  const hemiLight = new THREE.HemisphereLight(0xdff3ff, 0x6f8f66, 2.1);
   scene.add(hemiLight);
 
-  const sun = new THREE.DirectionalLight(0xfff2c0, 2.4);
-  sun.position.set(-12, 18, 8);
+  const sun = new THREE.DirectionalLight(0xfff0d0, 2.7);
+  sun.position.set(-13, 20, 9);
   sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
   sun.shadow.camera.left = -20;
   sun.shadow.camera.right = 20;
   sun.shadow.camera.top = 20;
   sun.shadow.camera.bottom = -20;
+  sun.shadow.bias = -0.0004;
   scene.add(sun);
 
-  const water = new THREE.Mesh(
-    new THREE.PlaneGeometry(96, 96),
-    new THREE.MeshStandardMaterial({ color: 0x4eabc2, roughness: 0.72, metalness: 0.04 })
-  );
-  water.rotation.x = -Math.PI / 2;
-  water.position.y = -0.55;
-  water.receiveShadow = true;
-  scene.add(water);
+  // 반대쪽에서 들어오는 청록 림 라이트로 판타지 느낌의 입체감을 준다.
+  const rim = new THREE.DirectionalLight(0x5ad2ff, 0.7);
+  rim.position.set(11, 7, -12);
+  scene.add(rim);
+
+  createStylizedWater(scene, animated);
 
   const island = new THREE.Mesh(
     new THREE.CylinderGeometry(13, 11.2, 0.92, 96),
-    new THREE.MeshStandardMaterial({ color: 0x74a967, roughness: 0.95 })
+    new THREE.MeshStandardMaterial({ color: 0x86c26a, roughness: 0.92 })
   );
   island.position.y = -0.18;
   island.receiveShadow = true;
@@ -283,13 +332,15 @@ function createWorld({ scene, interactables, shrineCrystals }) {
 
   const beach = new THREE.Mesh(
     new THREE.TorusGeometry(12.15, 0.34, 12, 128),
-    new THREE.MeshStandardMaterial({ color: 0xd8c77a, roughness: 0.9 })
+    new THREE.MeshStandardMaterial({ color: 0xf0dc98, roughness: 0.85 })
   );
   beach.rotation.x = Math.PI / 2;
   beach.position.y = 0.08;
   scene.add(beach);
 
-  createCenterCore(scene);
+  createGrassField(scene);
+
+  createCenterCore(scene, animated);
 
   for (const zone of WORLD_ZONES) {
     const zonePosition = new THREE.Vector3(...zone.position);
@@ -312,10 +363,158 @@ function createWorld({ scene, interactables, shrineCrystals }) {
   }
 }
 
-function createCenterCore(scene) {
+function createSky(scene, animated) {
+  // 위쪽은 짙은 하늘색, 아래쪽은 따뜻한 노을빛으로 이어지는 그라디언트 돔.
+  const canvas = document.createElement('canvas');
+  canvas.width = 16;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, 0, 256);
+  gradient.addColorStop(0, '#2f6bd8');
+  gradient.addColorStop(0.45, '#66b8f0');
+  gradient.addColorStop(0.75, '#b6e6ff');
+  gradient.addColorStop(1, '#ffe6c2');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 16, 256);
+  const skyTexture = new THREE.CanvasTexture(canvas);
+  skyTexture.colorSpace = THREE.SRGBColorSpace;
+
+  const sky = new THREE.Mesh(
+    new THREE.SphereGeometry(90, 32, 16),
+    new THREE.MeshBasicMaterial({ map: skyTexture, side: THREE.BackSide, fog: false, depthWrite: false })
+  );
+  scene.add(sky);
+
+  // 태양 글로우 스프라이트 (블룸이 잡아 반짝인다).
+  const sun = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xfff4d0, transparent: true, opacity: 0.9, depthWrite: false, fog: false }));
+  sun.scale.set(14, 14, 1);
+  sun.position.set(-34, 26, -46);
+  scene.add(sun);
+
+  // 부드럽게 흐르는 구름 스프라이트들.
+  const cloudTexture = createCloudTexture();
+  const cloudGroup = new THREE.Group();
+  for (let i = 0; i < 9; i += 1) {
+    const cloud = new THREE.Sprite(new THREE.SpriteMaterial({ map: cloudTexture, transparent: true, opacity: 0.72, depthWrite: false, fog: false }));
+    const angle = (i / 9) * Math.PI * 2;
+    const radius = 48 + (i % 3) * 8;
+    cloud.position.set(Math.cos(angle) * radius, 20 + (i % 4) * 4, Math.sin(angle) * radius);
+    const scale = 16 + (i % 3) * 7;
+    cloud.scale.set(scale, scale * 0.55, 1);
+    cloudGroup.add(cloud);
+  }
+  scene.add(cloudGroup);
+  animated.push({ update: (elapsed) => { cloudGroup.rotation.y = elapsed * 0.006; } });
+}
+
+function createCloudTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 128, 128);
+  for (const [cx, cy, r] of [[54, 74, 30], [78, 70, 26], [40, 78, 22], [66, 58, 24]]) {
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    g.addColorStop(0, 'rgba(255,255,255,0.95)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+function createStylizedWater(scene, animated) {
+  const geometry = new THREE.PlaneGeometry(120, 120, 48, 48);
+  const material = new THREE.MeshStandardMaterial({
+    color: 0x2fa7d8,
+    roughness: 0.35,
+    metalness: 0.1,
+    transparent: true,
+    opacity: 0.94
+  });
+  // 시간에 따라 물결이 출렁이도록 정점 셰이더에 파동을 주입한다.
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uTime = { value: 0 };
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\n uniform float uTime;')
+      .replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+         float wave = sin((position.x + uTime * 1.4) * 0.5) * 0.12
+                    + cos((position.y + uTime * 1.1) * 0.6) * 0.1;
+         transformed.z += wave;`
+      );
+    material.userData.shader = shader;
+  };
+
+  const water = new THREE.Mesh(geometry, material);
+  water.rotation.x = -Math.PI / 2;
+  water.position.y = -0.55;
+  water.receiveShadow = true;
+  scene.add(water);
+
+  animated.push({
+    update: (elapsed) => {
+      const shader = material.userData.shader;
+      if (shader) {
+        shader.uniforms.uTime.value = elapsed;
+      }
+    }
+  });
+}
+
+function createGrassField(scene) {
+  // 인스턴싱으로 가벼운 풀·꽃을 뿌려 바닥을 생기 있게 만든다.
+  const bladeGeometry = new THREE.ConeGeometry(0.09, 0.42, 4);
+  bladeGeometry.translate(0, 0.21, 0);
+  const grassColors = [0x5fbf5a, 0x7ed36a, 0x54b07a];
+  const flowerColors = [0xff7eb6, 0xffd23f, 0x9b7cff, 0xff9f43];
+  const count = 260;
+  const grass = new THREE.InstancedMesh(
+    bladeGeometry,
+    new THREE.MeshStandardMaterial({ vertexColors: false, color: 0xffffff, roughness: 0.9 }),
+    count
+  );
+  const dummy = new THREE.Object3D();
+  const color = new THREE.Color();
+  let placed = 0;
+  for (let i = 0; i < count * 2 && placed < count; i += 1) {
+    const angle = (i * 2.399963) % (Math.PI * 2);
+    const radius = 2.4 + ((i * 0.618) % 1) * 8.8;
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius;
+    // 중앙 코어와 길목은 비운다.
+    if (Math.hypot(x, z) < 2.6) {
+      continue;
+    }
+    dummy.position.set(x, 0.02, z);
+    const scale = 0.7 + ((i * 0.37) % 1) * 0.8;
+    dummy.scale.set(scale, scale, scale);
+    dummy.rotation.y = (i * 1.3) % (Math.PI * 2);
+    dummy.updateMatrix();
+    grass.setMatrixAt(placed, dummy.matrix);
+    const isFlower = i % 6 === 0;
+    color.setHex(isFlower ? flowerColors[i % flowerColors.length] : grassColors[i % grassColors.length]);
+    grass.setColorAt(placed, color);
+    placed += 1;
+  }
+  grass.instanceMatrix.needsUpdate = true;
+  if (grass.instanceColor) {
+    grass.instanceColor.needsUpdate = true;
+  }
+  grass.castShadow = false;
+  grass.receiveShadow = true;
+  scene.add(grass);
+}
+
+function createCenterCore(scene, animated) {
   const pedestal = new THREE.Mesh(
     new THREE.CylinderGeometry(1.35, 1.65, 0.55, 8),
-    new THREE.MeshStandardMaterial({ color: 0x75827c, roughness: 0.8 })
+    new THREE.MeshStandardMaterial({ color: 0x8b93b8, roughness: 0.7 })
   );
   pedestal.position.set(0, 0.28, 0);
   pedestal.castShadow = true;
@@ -324,27 +523,36 @@ function createCenterCore(scene) {
 
   const ring = new THREE.Mesh(
     new THREE.TorusGeometry(1.95, 0.08, 10, 48),
-    new THREE.MeshStandardMaterial({ color: 0xc8b35a, roughness: 0.42, metalness: 0.18 })
+    new THREE.MeshStandardMaterial({ color: 0xffd76a, emissive: 0xffb032, emissiveIntensity: 0.6, roughness: 0.32, metalness: 0.3 })
   );
   ring.rotation.x = Math.PI / 2;
   ring.position.y = 0.64;
   scene.add(ring);
 
+  // 코어를 감싸고 천천히 도는 두 번째 마법 고리.
+  const orbitRing = new THREE.Mesh(
+    new THREE.TorusGeometry(1.4, 0.05, 8, 40),
+    new THREE.MeshStandardMaterial({ color: 0x7cf0ff, emissive: 0x39d6ff, emissiveIntensity: 0.9, roughness: 0.3 })
+  );
+  orbitRing.position.y = 1.4;
+  scene.add(orbitRing);
+  animated.push({ update: (elapsed) => { orbitRing.rotation.x = elapsed * 0.6; orbitRing.rotation.y = elapsed * 0.4; } });
+
   const crystal = new THREE.Mesh(
     new THREE.IcosahedronGeometry(0.72, 0),
     new THREE.MeshStandardMaterial({
-      color: 0x7c8790,
-      emissive: 0x182026,
-      emissiveIntensity: 0.35,
-      roughness: 0.35,
-      metalness: 0.05
+      color: 0x9aa6b2,
+      emissive: 0x2a3440,
+      emissiveIntensity: 0.4,
+      roughness: 0.25,
+      metalness: 0.1
     })
   );
   crystal.position.set(0, 1.4, 0);
   crystal.castShadow = true;
   scene.add(crystal);
 
-  const coreLight = new THREE.PointLight(0x8fb4c9, 0.8, 8);
+  const coreLight = new THREE.PointLight(0x8fb4c9, 0.8, 10);
   coreLight.position.set(0, 1.7, 0);
   scene.add(coreLight);
 
@@ -371,8 +579,10 @@ function createZone(scene, zone, position) {
     new THREE.CircleGeometry(2.85, 42),
     new THREE.MeshStandardMaterial({
       color,
+      emissive: color,
+      emissiveIntensity: 0.25,
       transparent: true,
-      opacity: 0.26,
+      opacity: 0.32,
       roughness: 0.9,
       side: THREE.DoubleSide
     })
@@ -382,12 +592,20 @@ function createZone(scene, zone, position) {
   scene.add(disc);
 
   const marker = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.2, 0.2, 1.5, 12),
-    new THREE.MeshStandardMaterial({ color, roughness: 0.45, metalness: 0.1 })
+    new THREE.CylinderGeometry(0.16, 0.22, 1.7, 12),
+    new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.55, roughness: 0.4, metalness: 0.15 })
   );
-  marker.position.set(position.x, 0.86, position.z);
+  marker.position.set(position.x, 0.95, position.z);
   marker.castShadow = true;
   scene.add(marker);
+
+  // 표식 위에 떠서 반짝이는 작은 구슬 — 블룸으로 빛난다.
+  const beacon = new THREE.Mesh(
+    new THREE.SphereGeometry(0.16, 16, 12),
+    new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: color, emissiveIntensity: 1.4, roughness: 0.2 })
+  );
+  beacon.position.set(position.x, 1.95, position.z);
+  scene.add(beacon);
 
   const label = createLabelSprite(zone.nameKo, topic.color);
   label.position.set(position.x, 2.35, position.z);
@@ -763,9 +981,10 @@ function clampToIsland(position) {
 }
 
 function updateCamera(camera, target) {
-  const desired = new THREE.Vector3(target.x, target.y + 9.6, target.z + 11.4);
+  // 살짝 낮고 뒤로 물러난 각도 — 하늘·바다 지평선이 배경으로 드러난다.
+  const desired = new THREE.Vector3(target.x * 0.6, target.y + 7.9, target.z + 12.6);
   camera.position.lerp(desired, 0.08);
-  camera.lookAt(target.x, target.y + 0.55, target.z);
+  camera.lookAt(target.x * 0.4, target.y + 1.35, target.z - 1.2);
 }
 
 function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow }, game) {
@@ -1122,12 +1341,15 @@ function updateCoreVisual(game, { coreCrystal, coreGlow }) {
   }
 }
 
-function resize(renderer, camera, root) {
+function resize(renderer, camera, root, composer) {
   const width = Math.max(root.clientWidth, 320);
   const height = Math.max(root.clientHeight, 360);
   renderer.setSize(width, height, false);
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
+  if (composer) {
+    composer.setSize(width, height);
+  }
 }
 
 function showRendererFallback(ui, error) {
