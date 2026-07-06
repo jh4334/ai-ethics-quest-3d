@@ -569,31 +569,46 @@ button:disabled {
 }
 
 @media (pointer: coarse), (max-width: 760px) {
+  /* 상단 한 줄: [목표 칩] ... [소리][기록] 가 겹치지 않게 폭을 나눈다 */
   .objective-chip {
     top: 10px;
     left: 10px;
-    width: calc(100vw - 20px);
-    padding: 10px 12px;
+    width: calc(100vw - 148px);
+    padding: 9px 11px;
   }
 
   .objective-chip h1 {
-    font-size: 1rem;
+    font-size: 0.98rem;
+  }
+
+  .objective-chip p:last-child {
+    font-size: 0.82rem;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
   }
 
   .status-strip {
     top: auto;
     right: 10px;
     bottom: 176px;
-    min-width: min(260px, calc(100vw - 20px));
+    min-width: min(240px, calc(100vw - 20px));
   }
 
   .journal-toggle {
-    top: 96px;
+    top: 10px;
     right: 10px;
   }
 
+  /* 사운드 토글을 기록 버튼 왼쪽에 나란히 배치 */
+  .sound-toggle {
+    top: 10px;
+    right: 72px;
+  }
+
   .journal-panel {
-    top: 140px;
+    top: 58px;
     right: 10px;
     width: calc(100vw - 20px);
   }
@@ -606,6 +621,11 @@ button:disabled {
     display: grid;
   }
 
+  /* 대화창이 열리면 방향 버튼을 숨겨 화면을 정리한다 */
+  .is-dialog-open .touch-controls {
+    display: none;
+  }
+
   .interaction-prompt {
     left: 10px;
     right: 172px;
@@ -614,6 +634,23 @@ button:disabled {
     max-width: none;
     transform: none;
     font-size: 0.82rem;
+  }
+}
+
+/* 가로로 짧은 폰: 세로 공간이 부족하니 목표 칩을 더 납작하게 */
+@media (pointer: coarse) and (max-height: 480px) {
+  .objective-chip {
+    width: min(60vw, 420px);
+  }
+
+  .objective-chip p:last-child {
+    display: none;
+  }
+
+  .interaction-prompt {
+    bottom: 10px;
+    padding: 7px 10px;
+    font-size: 0.76rem;
   }
 }
 
