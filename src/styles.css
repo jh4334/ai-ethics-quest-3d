@@ -623,3 +623,281 @@ button:disabled {
   }
 }
 
+
+/* ===== Phase C: 타이틀 화면 ===== */
+.title-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: radial-gradient(circle at 50% 30%, rgba(24, 70, 96, 0.35), rgba(12, 30, 45, 0.72));
+  backdrop-filter: blur(3px);
+  transition: opacity 400ms ease;
+}
+
+.title-screen.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.title-card {
+  width: min(460px, calc(100vw - 40px));
+  padding: 30px 26px;
+  text-align: center;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(240, 250, 250, 0.92));
+  box-shadow: 0 24px 60px rgba(10, 40, 55, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+.title-eyebrow {
+  margin: 0 0 6px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+.title-name {
+  margin: 0 0 12px;
+  font-size: 2rem;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.title-desc {
+  margin: 0 0 20px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.title-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.title-start {
+  padding: 14px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #06312a;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 30%, white), color-mix(in srgb, var(--accent) 55%, white));
+  border-color: color-mix(in srgb, var(--accent) 60%, white);
+}
+
+.title-fresh {
+  padding: 11px;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.title-controls {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* ===== Phase C: 분류 미니게임 ===== */
+.classify-start {
+  margin-top: 8px;
+  background: linear-gradient(180deg, rgba(255, 247, 224, 0.95), rgba(255, 236, 196, 0.95));
+  border-color: color-mix(in srgb, var(--gold) 55%, white);
+}
+
+.classify-card {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.classify-hint {
+  margin: 0 0 10px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.clue-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-height: 44px;
+  padding: 8px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  border: 1px dashed var(--line);
+  background: rgba(240, 244, 243, 0.6);
+}
+
+.clue-card {
+  padding: 8px 11px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  border-radius: 9px;
+  background: #ffffff;
+}
+
+.clue-card.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent);
+  transform: translateY(-1px);
+}
+
+.clue-card[data-state="correct"] {
+  background: #e7f7ee;
+  border-color: #2fae74;
+}
+
+.clue-card[data-state="wrong"] {
+  background: #fdeaed;
+  border-color: var(--danger);
+}
+
+.clue-buckets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.clue-bucket {
+  min-height: 78px;
+  padding: 8px;
+  border-radius: 12px;
+  border: 2px solid var(--line);
+  background: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.clue-bucket:hover {
+  border-color: color-mix(in srgb, var(--accent) 55%, white);
+  background: #ffffff;
+}
+
+.clue-bucket-title {
+  margin: 0 0 7px;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.clue-bucket-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.classify-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.classify-check {
+  flex: 1;
+  min-height: 42px;
+  font-weight: 800;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 25%, white), color-mix(in srgb, var(--accent) 45%, white));
+  border-color: color-mix(in srgb, var(--accent) 55%, white);
+}
+
+.classify-back {
+  min-height: 42px;
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
+/* ===== Phase C: 수료증 엔딩 ===== */
+.certificate {
+  position: absolute;
+  inset: 0;
+  z-index: 22;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: radial-gradient(circle at 50% 35%, rgba(60, 120, 150, 0.4), rgba(12, 30, 45, 0.78));
+  backdrop-filter: blur(4px);
+}
+
+.certificate-card {
+  width: min(500px, calc(100vw - 40px));
+  padding: 30px 28px;
+  text-align: center;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #fffefb, #fff7e6);
+  border: 3px solid color-mix(in srgb, var(--gold) 60%, white);
+  box-shadow: 0 26px 64px rgba(10, 40, 55, 0.5);
+}
+
+.cert-eyebrow {
+  margin: 0 0 4px;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.cert-title {
+  margin: 0 0 14px;
+  font-size: 1.5rem;
+  color: #7a5a12;
+}
+
+.cert-body {
+  margin: 0 0 14px;
+  color: var(--muted);
+}
+
+.cert-badges {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+}
+
+.cert-badges li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--line);
+}
+
+.cert-badge {
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--topic-color) 60%, transparent));
+}
+
+.cert-pledge {
+  margin: 0 0 18px;
+  font-style: italic;
+  color: #4a5a56;
+  line-height: 1.55;
+}
+
+.cert-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.cert-print {
+  font-weight: 800;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 30%, white), color-mix(in srgb, var(--gold) 50%, white));
+  border-color: color-mix(in srgb, var(--gold) 55%, white);
+}
+
+/* display를 지정한 오버레이는 hidden 속성이 무시되므로 명시적으로 숨긴다 */
+.certificate[hidden],
+.title-screen[hidden] {
+  display: none;
+}

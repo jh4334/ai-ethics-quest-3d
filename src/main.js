@@ -6,6 +6,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { createAudioEngine } from './audio.js';
 import { createBurstSystem, createFloatingIcon, setIconEmoji } from './effects.js';
+import { CLASSIFY_BUCKETS, getClassifyChallenge, scoreClassify } from './classify.js';
 import {
   ETHICS_TOPICS,
   FINAL_CORE_MISSION,
@@ -106,10 +107,15 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
     ui.prompt.hidden = false;
   });
 
+  // 타이틀 화면 뒤로 보일 섬 전경 카메라.
+  camera.position.set(0, 9.5, 16);
+  camera.lookAt(0, 1.4, 0);
+  setupTitleScreen(game, ui);
+
   function frame() {
     animationId = window.requestAnimationFrame(frame);
     const delta = Math.min(clock.getDelta(), 0.04);
-    if (!game.paused) {
+    if (game.started && !game.paused) {
       updateGame(delta, game, renderState, ui);
     }
     updateAmbient(delta, renderState);
@@ -121,6 +127,11 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
   }
 
   frame();
+
+  if (typeof window !== 'undefined' && window.__ETHICS_TEST_HOOK__) {
+    window.__ethicsGame = game;
+    window.__ethicsUi = ui;
+  }
 
   return {
     marker: APP_MARKER,
@@ -198,6 +209,20 @@ function createShell() {
         </div>
         <div data-dialog-body></div>
       </section>
+
+      <section class="title-screen" data-title>
+        <div class="title-card">
+          <p class="title-eyebrow">AI 윤리 어드벤처 · 2부</p>
+          <h1 class="title-name">AI 윤리의 섬</h1>
+          <p class="title-desc">섬을 탐험하며 네 가지 윤리 조각을 모아 AI 코어를 깨우는 수호자가 되어 보세요.</p>
+          <div class="title-actions" data-title-actions></div>
+          <p class="title-controls">이동 WASD·방향키 · 대화/선택 E·Enter · 기록 J</p>
+        </div>
+      </section>
+
+      <section class="certificate" data-certificate hidden>
+        <div class="certificate-card" data-certificate-card></div>
+      </section>
     </main>
   `;
 }
@@ -221,6 +246,10 @@ function bindUi(root) {
     journalContent: root.querySelector('[data-journal-content]'),
     soundToggle: root.querySelector('[data-sound-toggle]'),
     flash: root.querySelector('[data-flash]'),
+    title: root.querySelector('[data-title]'),
+    titleActions: root.querySelector('[data-title-actions]'),
+    certificate: root.querySelector('[data-certificate]'),
+    certificateCard: root.querySelector('[data-certificate-card]'),
     touchButtons: [...root.querySelectorAll('[data-touch]')]
   };
 }
@@ -278,6 +307,7 @@ function createGameState(ui) {
     keys: new Set(),
     nearest: null,
     paused: false,
+    started: false,
     audio: null,
     renderState: null,
     coreWasUnlocked: canUnlockFinalCore(progress.collectedFragments),
@@ -1040,6 +1070,90 @@ function getInteractablePosition(game, type, id) {
   return found ? found.position.clone() : new THREE.Vector3(0, 1, 0);
 }
 
+function setupTitleScreen(game, ui) {
+  if (!ui.title) {
+    game.started = true;
+    return;
+  }
+  const summary = getProgressSummary(game.progress.collectedFragments);
+  const hasProgress = summary.collected > 0 || game.progress.visitedTopics.length > 0;
+
+  const startButton = document.createElement('button');
+  startButton.type = 'button';
+  startButton.className = 'title-start';
+  startButton.textContent = hasProgress ? '이어서 하기' : '모험 시작하기';
+  ui.titleActions.appendChild(startButton);
+
+  if (hasProgress) {
+    const freshButton = document.createElement('button');
+    freshButton.type = 'button';
+    freshButton.className = 'title-fresh';
+    freshButton.textContent = '처음부터';
+    freshButton.addEventListener('click', () => {
+      const confirmed = typeof window.confirm === 'function'
+        ? window.confirm('탐험 기록을 모두 지우고 처음부터 시작할까요?')
+        : true;
+      if (!confirmed) {
+        return;
+      }
+      clearStoredProgress();
+      game.progress = createInitialProgress();
+      game.coreWasUnlocked = false;
+      updateHud(game, ui);
+      dismissTitle(game, ui);
+    });
+    ui.titleActions.appendChild(freshButton);
+  }
+
+  startButton.addEventListener('click', () => dismissTitle(game, ui));
+}
+
+function dismissTitle(game, ui) {
+  game.audio?.resume();
+  game.audio?.playClick();
+  game.started = true;
+  game.paused = false;
+  if (ui.title) {
+    ui.title.classList.add('is-hidden');
+    window.setTimeout(() => {
+      ui.title.hidden = true;
+    }, 420);
+  }
+}
+
+// AI 코어를 완성하면 수료증(엔딩)을 띄운다.
+function showCertificate(game, ui) {
+  if (!ui.certificate) {
+    return;
+  }
+  const collected = ETHICS_TOPICS.filter((topic) =>
+    game.progress.collectedFragments.includes(topic.id)
+  );
+  const badges = collected
+    .map((topic) => `<li><span class="cert-badge" style="--topic-color:${topic.color}">🏅</span>${topic.titleKo}</li>`)
+    .join('');
+  ui.certificateCard.innerHTML = `
+    <p class="cert-eyebrow">AI 윤리의 섬</p>
+    <h2 class="cert-title">AI 윤리 수호자 수료증</h2>
+    <p class="cert-body">섬의 AI 코어를 깨우고 아래 윤리를 지키기로 약속했습니다.</p>
+    <ul class="cert-badges">${badges}</ul>
+    <p class="cert-pledge">“개인정보를 지키고, 편향을 살피고, 출처를 밝히고, 진짜인지 확인하겠습니다.”</p>
+    <div class="cert-actions">
+      <button type="button" class="cert-print" data-cert-print>인쇄 / 저장</button>
+      <button type="button" class="cert-close" data-cert-close>닫기</button>
+    </div>
+  `;
+  ui.certificate.hidden = false;
+  ui.certificateCard.querySelector('[data-cert-close]').addEventListener('click', () => {
+    ui.certificate.hidden = true;
+  });
+  ui.certificateCard.querySelector('[data-cert-print]').addEventListener('click', () => {
+    if (typeof window.print === 'function') {
+      window.print();
+    }
+  });
+}
+
 // 조각을 얻거나 코어가 각성할 때: 파티클·빛기둥·화면 반짝·효과음을 한 번에.
 function celebrate(game, worldPosition, colorHex, kind) {
   game.renderState?.burst?.spawn(worldPosition, colorHex);
@@ -1230,16 +1344,105 @@ function openShrineDialog(game, ui, shrineId) {
   const reflection = ui.dialogBody.querySelector('[data-shrine-reflection]');
   const practiceArea = ui.dialogBody.querySelector('[data-practice-area]');
 
+  const challenge = getClassifyChallenge(shrine.topicId);
+
   function showPracticeGate() {
-    if (extraQuestions.length === 0) {
+    const buttons = [];
+    if (extraQuestions.length > 0) {
+      buttons.push(`<button type="button" class="practice-start" data-practice-start>📝 연습 문제 더 풀기 (${extraQuestions.length}문제)</button>`);
+    }
+    if (challenge) {
+      buttons.push(`<button type="button" class="practice-start classify-start" data-classify-start>🧩 ${challenge.titleKo}</button>`);
+    }
+    if (buttons.length === 0) {
       return;
     }
-    practiceArea.innerHTML = `
-      <button type="button" class="practice-start" data-practice-start>연습 문제 더 풀기 (${extraQuestions.length}문제)</button>
-    `;
-    practiceArea
-      .querySelector('[data-practice-start]')
-      .addEventListener('click', () => renderPractice(0));
+    practiceArea.innerHTML = buttons.join('');
+    practiceArea.querySelector('[data-practice-start]')?.addEventListener('click', () => renderPractice(0));
+    practiceArea.querySelector('[data-classify-start]')?.addEventListener('click', () => renderClassify());
+  }
+
+  // 탭 기반 분류 미니게임: 카드를 골라 '안전/조심' 바구니에 담고 채점한다.
+  function renderClassify() {
+    const assignments = {};
+    let selectedCardId = null;
+
+    function draw(result) {
+      const unsorted = challenge.cards.filter((card) => !assignments[card.id]);
+      const cardChip = (card, inBucket) => {
+        const state = result
+          ? result.perCard.find((entry) => entry.cardId === card.id)?.correct
+            ? 'correct'
+            : 'wrong'
+          : '';
+        const selected = selectedCardId === card.id ? ' is-selected' : '';
+        return `<button type="button" class="clue-card${selected}" data-clue="${card.id}" data-state="${state}">${card.textKo}</button>`;
+      };
+      const bucketHtml = CLASSIFY_BUCKETS.map((bucket) => {
+        const inBucket = challenge.cards.filter((card) => assignments[card.id] === bucket.id);
+        return `
+          <div class="clue-bucket" data-bucket="${bucket.id}">
+            <p class="clue-bucket-title">${bucket.emoji} ${bucket.labelKo}</p>
+            <div class="clue-bucket-items">${inBucket.map((card) => cardChip(card, true)).join('')}</div>
+          </div>
+        `;
+      }).join('');
+      const allPlaced = challenge.cards.every((card) => assignments[card.id]);
+
+      practiceArea.innerHTML = `
+        <div class="classify-card">
+          <p class="practice-count">🧩 분류 도전</p>
+          <p class="prompt-line">${challenge.promptKo}</p>
+          <p class="classify-hint">카드를 누른 뒤 바구니를 누르면 담겨요.</p>
+          <div class="clue-tray" data-tray>${unsorted.map((card) => cardChip(card, false)).join('')}</div>
+          <div class="clue-buckets">${bucketHtml}</div>
+          <p class="feedback-line" data-classify-feedback>${
+            result ? `${result.correct}/${result.total} 맞았어요.${result.passed ? ' 완벽해요! 🎉' : ' 빨간 카드를 다시 옮겨 보세요.'}` : ''
+          }</p>
+          <div class="classify-actions">
+            <button type="button" class="classify-check" data-classify-check ${allPlaced ? '' : 'disabled'}>채점하기</button>
+            <button type="button" class="classify-back" data-classify-back>← 도전 메뉴</button>
+          </div>
+        </div>
+      `;
+
+      for (const btn of practiceArea.querySelectorAll('[data-clue]')) {
+        btn.addEventListener('click', () => {
+          selectedCardId = selectedCardId === btn.dataset.clue ? null : btn.dataset.clue;
+          game.audio?.playClick();
+          draw(null);
+        });
+      }
+      for (const bucket of practiceArea.querySelectorAll('[data-bucket]')) {
+        bucket.addEventListener('click', () => {
+          if (!selectedCardId) {
+            return;
+          }
+          assignments[selectedCardId] = bucket.dataset.bucket;
+          selectedCardId = null;
+          game.audio?.playClick();
+          draw(null);
+        });
+      }
+      practiceArea.querySelector('[data-classify-back]').addEventListener('click', () => showPracticeGate());
+      const checkBtn = practiceArea.querySelector('[data-classify-check]');
+      if (checkBtn && allPlaced) {
+        checkBtn.addEventListener('click', () => {
+          const scored = scoreClassify(shrine.topicId, assignments);
+          if (scored.passed) {
+            game.audio?.playCollect();
+            const topic = getTopicById(shrine.topicId);
+            const shrinePos = getInteractablePosition(game, 'shrine', shrineId);
+            celebrate(game, shrinePos.clone().setY(shrinePos.y + 1.2), topic?.color ?? '#ffd76a', 'collect');
+          } else {
+            game.audio?.playWrong();
+          }
+          draw(scored);
+        });
+      }
+    }
+
+    draw(null);
   }
 
   function renderPractice(index) {
@@ -1278,9 +1481,11 @@ function openShrineDialog(game, ui, shrineId) {
         updateHud(game, ui);
         const isLast = index + 1 >= extraQuestions.length;
         nav.innerHTML = isLast
-          ? '<p class="practice-done">연습 완료! 잘했어요. 다른 구역도 탐험해 보세요.</p>'
+          ? '<p class="practice-done">연습 완료! 잘했어요.</p><button type="button" class="classify-back" data-practice-back>← 도전 메뉴</button>'
           : '<button type="button" class="practice-next" data-practice-next>다음 문제 →</button>';
-        if (!isLast) {
+        if (isLast) {
+          nav.querySelector('[data-practice-back]').addEventListener('click', () => showPracticeGate());
+        } else {
           nav.querySelector('[data-practice-next]').addEventListener('click', () => renderPractice(index + 1));
         }
       });
@@ -1369,8 +1574,9 @@ function openCoreDialog(game, ui) {
         for (const sibling of ui.dialogBody.querySelectorAll('[data-core-choice]')) {
           sibling.disabled = true;
         }
-        // 코어 완성 세리머니.
+        // 코어 완성 세리머니 + 수료증 엔딩.
         celebrate(game, new THREE.Vector3(0, 1.6, 0), '#7cf0ff', 'core');
+        window.setTimeout(() => showCertificate(game, ui), 900);
       } else {
         game.audio?.playWrong();
       }
