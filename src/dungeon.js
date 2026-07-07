@@ -19,7 +19,7 @@ const ZONE_COLOR = {
 const SEED_COLOR = [0xff5a5a, 0x4f9dff, 0xffd23f, 0xa88bff];
 
 // 이모지/기호 스프라이트(캔버스 생성 — 파일 에셋 없음).
-function makeGlyphSprite(glyph, scale = 0.9) {
+export function makeGlyphSprite(glyph, scale = 0.9) {
   const canvas = document.createElement('canvas');
   canvas.width = 128;
   canvas.height = 128;
@@ -48,9 +48,10 @@ function buildShell(room, topicId, makeLabel) {
   const width = cols * cell;
   const depth = rows * cell;
 
+  // 그레이딩(노출<1·콘트라스트)이 어두운 실내를 짓누르므로 바닥은 자체 발광을 살짝 준다.
   const floor = new THREE.Mesh(
     new THREE.BoxGeometry(width, 0.4, depth),
-    new THREE.MeshStandardMaterial({ color: 0x2a2440, roughness: 0.95 })
+    new THREE.MeshStandardMaterial({ color: 0x453c68, roughness: 0.9, emissive: 0x1c1636, emissiveIntensity: 0.6 })
   );
   floor.position.y = -0.2;
   root.add(floor);
@@ -59,7 +60,8 @@ function buildShell(room, topicId, makeLabel) {
   gridHelper.position.y = 0.02;
   root.add(gridHelper);
 
-  const wallMat = new THREE.MeshStandardMaterial({ color: 0x1c1730, roughness: 1, emissive: 0x0d0a1a, emissiveIntensity: 0.4 });
+  // 벽 안쪽면이 화면 하단을 크게 차지하므로 완전 검정이 되지 않게 발광을 준다.
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0x38305c, roughness: 1, emissive: 0x1a1433, emissiveIntensity: 0.7 });
   const wallH = 2.2;
   const walls = [
     [width + 0.4, wallH, 0.4, 0, wallH / 2 - 0.2, -depth / 2],
@@ -99,11 +101,11 @@ function buildShell(room, topicId, makeLabel) {
   door.position.set(exit.x, 0.1, exit.z + cell * 0.5);
   root.add(door);
 
-  // 방 전용 조명(그림자 캐스터 0).
-  const hemi = new THREE.HemisphereLight(0x5a4d88, 0x14101f, 0.9);
+  // 방 전용 조명(그림자 캐스터 0) — 구석 소품(씨앗 통·거울)까지 읽히게 충분히.
+  const hemi = new THREE.HemisphereLight(0x8a7cc0, 0x2a2140, 2.0);
   root.add(hemi);
-  const key = new THREE.PointLight(0xbfa8ff, 1.1, 22);
-  key.position.set(0, 5, 3);
+  const key = new THREE.PointLight(0xcfbcff, 2.4, 34);
+  key.position.set(0, 5.5, 2);
   root.add(key);
   const warm = new THREE.PointLight(0xffcf7a, 0.7, 14);
   warm.position.set(ped.x, 3, ped.z);
@@ -195,7 +197,7 @@ function buildCarryProps(room, topicId, root, addLabel) {
     const group = new THREE.Group();
     const soil = new THREE.Mesh(
       new THREE.CylinderGeometry(0.46, 0.5, 0.16, 14),
-      new THREE.MeshStandardMaterial({ color: 0x5a4632, roughness: 1 })
+      new THREE.MeshStandardMaterial({ color: 0x8a6a48, roughness: 1, emissive: 0x2a1e12, emissiveIntensity: 0.5 })
     );
     soil.position.y = 0.08;
     // 심으면 나타나는 꽃(줄기+머리) — sync에서 색·표시 갱신.

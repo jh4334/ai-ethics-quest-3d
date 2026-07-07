@@ -30,7 +30,7 @@ import {
   rotateMirror,
   worldToCell
 } from './dungeonPuzzles.js';
-import { buildDungeonRoom, disposeDungeonRoom, syncDungeonVisuals } from './dungeon.js';
+import { buildDungeonRoom, disposeDungeonRoom, makeGlyphSprite, syncDungeonVisuals } from './dungeon.js';
 import {
   FINALE,
   buildNovaCertificate,
@@ -2789,8 +2789,8 @@ function enterDungeon(game, ui, topicId, shrineId) {
   const built = buildDungeonRoom(topicId, { makeLabel: createLabelSprite });
   rs.scene.add(built.root);
   rs.overworld.visible = false;
-  // 배경/포그 스왑: 밝은 섬 → 어두운 방.
-  rs.scene.fog = new THREE.Fog(0x161029, 8, 34);
+  // 배경/포그 스왑: 밝은 섬 → 어두운 방. 카메라가 ~16 거리라 안개는 방 너머에서만 끼게.
+  rs.scene.fog = new THREE.Fog(0x161029, 24, 60);
   rs.renderer.setClearColor(0x120d20, 1);
 
   game.mode = 'dungeon';
@@ -2861,6 +2861,7 @@ function exitDungeon(game, ui) {
     return;
   }
   const rs = game.renderState;
+  removeHeldSprite(game); // 머리 위 들고 있던 아이템 표시 정리
   disposeDungeonRoom(dg.built.root, rs.scene);
   rs.overworld.visible = true;
   rs.scene.fog = rs.overworldFog;
@@ -3016,21 +3017,49 @@ function dungeonPushAction(game, ui) {
   }
 }
 
-// 손에 든 것을 A 버튼 라벨로 보여준다(잡기 방 공통).
-function updateCarryLabel(game, ui) {
-  const dg = game.dungeon;
-  if (!ui.actionLabel) {
-    return;
-  }
-  if (dg.state.held === null || dg.state.held === undefined) {
-    ui.actionLabel.textContent = '잡기';
-    return;
+// 손에 든 것의 정보(이모지·이름) — 잡기 방 공통.
+function heldItemInfo(dg) {
+  const held = dg?.state?.held;
+  if (held === null || held === undefined) {
+    return null;
   }
   if (dg.room.dispensers) {
-    const d = dg.room.dispensers.find((x) => x.colorIdx === dg.state.held);
-    ui.actionLabel.textContent = d?.emoji ?? '🌱';
-  } else {
-    ui.actionLabel.textContent = '🏷️';
+    const d = dg.room.dispensers.find((x) => x.colorIdx === held);
+    return { emoji: d?.emoji ?? '🌱', labelKo: d?.labelKo ?? '씨앗' };
+  }
+  const p = dg.room.plates?.find((x) => x.id === held);
+  return { emoji: '🏷️', labelKo: p?.labelKo ?? '이름표' };
+}
+
+// 손에 든 것을 A 버튼 라벨 + 머리 위 이모지로 보여준다.
+function updateCarryLabel(game, ui) {
+  const dg = game.dungeon;
+  const info = heldItemInfo(dg);
+  if (ui.actionLabel) {
+    ui.actionLabel.textContent = info ? info.emoji : '잡기';
+  }
+  // 머리 위 표시: 든 것이 바뀔 때만 스프라이트를 재생성한다.
+  const key = info ? `${info.emoji}:${dg.state.held}` : '';
+  if (dg.heldKey === key) {
+    return;
+  }
+  dg.heldKey = key;
+  removeHeldSprite(game);
+  if (info) {
+    const sprite = makeGlyphSprite(info.emoji, 0.62);
+    sprite.position.set(0, 1.95, 0);
+    game.renderState.playerGroup.add(sprite);
+    dg.heldSprite = sprite;
+  }
+}
+
+function removeHeldSprite(game) {
+  const dg = game.dungeon;
+  if (dg?.heldSprite) {
+    game.renderState.playerGroup.remove(dg.heldSprite);
+    dg.heldSprite.material.map?.dispose?.();
+    dg.heldSprite.material.dispose?.();
+    dg.heldSprite = null;
   }
 }
 
@@ -3069,9 +3098,10 @@ function dungeonCarryAction(game, ui) {
   if (isRoomSolved(dg.topicId, dg.state)) {
     markDungeonSolved(game, ui);
   } else if (result.event === 'picked') {
+    const info = heldItemInfo(dg);
     ui.puzzleHint.textContent = dg.room.dispensers
-      ? '들었어요! 빈 밭 앞에서 A로 심어요'
-      : '들었어요! 맞는 작품 앞에서 A로 걸어요';
+      ? `${info?.emoji ?? ''} ${info?.labelKo ?? ''}을(를) 들었어요! 빈 밭 앞에서 A로 심어요`
+      : `🏷️ 「${info?.labelKo ?? ''}」 이름표를 들었어요! 맞는 작품 앞에서 A로 걸어요`;
   } else {
     const left = countRemaining(dg.topicId, dg.state);
     ui.puzzleHint.textContent = `아직 ${left}곳이 비어 있어요`;
@@ -3169,6 +3199,20 @@ function updateDungeon(delta, game, ui) {
   // 문 아치는 늘 은은하게 회전(나가는 곳 강조).
   if (dg.built.door) {
     dg.built.door.rotation.z += delta * 0.6;
+  }
+  // 방 앰비언트: 존 타일은 숨 쉬듯 깜빡이고, 얼굴 구슬은 둥실 떠 있는다.
+  const elapsed = clock.elapsedTime;
+  if (dg.built.zoneMeshes) {
+    dg.built.zoneMeshes.forEach((tile, i) => {
+      tile.material.opacity = 0.42 + Math.sin(elapsed * 2 + i * 1.4) * 0.12;
+    });
+  }
+  if (dg.built.orbMeshes) {
+    let i = 0;
+    for (const mesh of dg.built.orbMeshes.values()) {
+      mesh.orb.position.y = 0.8 + Math.sin(elapsed * 1.8 + i * 2.1) * 0.08;
+      i += 1;
+    }
   }
 }
 
