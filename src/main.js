@@ -9,6 +9,12 @@ import { createBurstSystem, createFloatingIcon, setIconEmoji } from './effects.j
 import { CLASSIFY_BUCKETS, getClassifyChallenge, scoreClassify } from './classify.js';
 import { createCompanion, createNoiseBoss, createNova, createNpcCharacter, createPlayerCharacter } from './characters.js';
 import {
+  createPuzzleState,
+  cyclePuzzleObject,
+  getShrinePuzzle,
+  isPuzzleSolved
+} from './shrinePuzzle.js';
+import {
   FINALE,
   buildNovaCertificate,
   getFinaleToolSteps,
@@ -145,8 +151,8 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
     // 대화창이 열려 있으면 내용과 겹치므로 숨긴다.
     const portraitPhone = IS_TOUCH && window.innerHeight > window.innerWidth && window.innerWidth < 560;
     const dialogOpen = ui.dialog && !ui.dialog.hidden;
-    const inCombat = Boolean(game.combat?.active);
-    ui.rotateHint.hidden = !(portraitPhone && game.started && !dialogOpen && !inCombat);
+    const inAction = Boolean(game.combat?.active || game.puzzle?.active);
+    ui.rotateHint.hidden = !(portraitPhone && game.started && !dialogOpen && !inAction);
   };
   const onResize = () => {
     resize(renderer, camera, root, renderState.composer);
@@ -263,6 +269,12 @@ function createShell() {
         <div class="boss-bar"><div class="boss-bar-fill" data-boss-fill></div></div>
       </div>
 
+      <div class="puzzle-hud" data-puzzle-hud hidden aria-live="polite">
+        <div class="puzzle-title" data-puzzle-title></div>
+        <div class="puzzle-goal" data-puzzle-goal></div>
+        <div class="puzzle-hint" data-puzzle-hint></div>
+      </div>
+
       <div class="touch-controls" aria-label="터치 조작">
         <div class="touch-dpad" aria-label="이동">
           <button type="button" data-touch="up" aria-label="위로 이동">▲</button>
@@ -314,6 +326,10 @@ function bindUi(root) {
     bossHud: root.querySelector('[data-boss-hud]'),
     bossFill: root.querySelector('[data-boss-fill]'),
     bossHint: root.querySelector('[data-boss-hint]'),
+    puzzleHud: root.querySelector('[data-puzzle-hud]'),
+    puzzleTitle: root.querySelector('[data-puzzle-title]'),
+    puzzleGoal: root.querySelector('[data-puzzle-goal]'),
+    puzzleHint: root.querySelector('[data-puzzle-hint]'),
     actionLabel: root.querySelector('[data-action-label]'),
     dialog: root.querySelector('[data-dialog]'),
     dialogKicker: root.querySelector('[data-dialog-kicker]'),
@@ -393,6 +409,7 @@ function createGameState(ui) {
     audio: null,
     renderState: null,
     combat: null,
+    puzzle: null,
     coreWasUnlocked: canUnlockFinalCore(progress.collectedFragments),
     ui
   };
@@ -1394,6 +1411,7 @@ function updateGame(delta, game, renderState, ui) {
   updateCompanion(delta, game, renderState);
   animateWorld(delta, renderState, game);
   updateCombat(delta, game, ui);
+  updatePuzzle(delta, game, ui);
   updateInteractionIcons(game, renderState);
   updateNearestInteractable(game, renderState.interactables, ui);
 }
@@ -1627,8 +1645,8 @@ function morphNoiseToNova(game) {
 }
 
 function updateNearestInteractable(game, interactables, ui) {
-  // 전투 중엔 상호작용 안내를 숨기고(공격에 집중), 보스 HUD가 안내를 대신한다.
-  if (game.combat?.active) {
+  // 전투·퍼즐 중엔 일반 상호작용 안내를 숨긴다(전용 HUD가 안내를 대신한다).
+  if (game.combat?.active || game.puzzle?.active) {
     game.nearest = null;
     ui.prompt.hidden = true;
     return;
@@ -1666,11 +1684,13 @@ function updateNearestInteractable(game, interactables, ui) {
   }
 }
 
-// 오른쪽 A 버튼/Space·Enter·E: 전투 중이면 '공격', 아니면 '확인·대화'.
+// 오른쪽 A 버튼/Space·Enter·E: 전투 중이면 '공격', 퍼즐 중이면 '돌 바꾸기', 아니면 '확인·대화'.
 function primaryAction(game, ui) {
   game.audio?.resume();
   if (game.combat?.active) {
     playerAttack(game, ui);
+  } else if (game.puzzle?.active) {
+    puzzleCycle(game, ui);
   } else {
     interact(game, ui);
   }
@@ -1695,7 +1715,12 @@ function interact(game, ui) {
   if (game.nearest.type === 'npc') {
     openNpcDialog(game, ui, game.nearest.topicId);
   } else if (game.nearest.type === 'shrine') {
-    openShrineDialog(game, ui, game.nearest.shrineId);
+    // 아직 못 깬 사당은 3D 조작 퍼즐로, 이미 깬 사당은 복습 대화로.
+    if (game.progress.completedShrines.includes(game.nearest.shrineId)) {
+      openShrineDialog(game, ui, game.nearest.shrineId);
+    } else {
+      startShrinePuzzle(game, ui, game.nearest.shrineId);
+    }
   } else if (game.nearest.type === 'gate') {
     openGateDialog(game, ui, game.nearest.topicId);
   } else if (
@@ -2014,6 +2039,192 @@ function openShrineDialog(game, ui, shrineId) {
   }
 
   openDialog(game, ui);
+}
+
+// ===== 사당 3D 조작 퍼즐: 돌에 다가가 A로 상태를 바꿔 목표 배치를 완성한다 =====
+const PUZZLE_REACH = 1.9;
+
+function makeStateSprite(text) {
+  const sprite = createLabelSprite(text, '#ffd76a');
+  sprite.scale.set(1.5, 0.62, 1);
+  return sprite;
+}
+
+function startShrinePuzzle(game, ui, shrineId) {
+  if (game.puzzle) {
+    return;
+  }
+  const shrine = getShrineById(shrineId);
+  const topicId = shrine.topicId;
+  const puzzle = getShrinePuzzle(topicId);
+  if (!puzzle) {
+    openShrineDialog(game, ui, shrineId); // 안전망: 퍼즐이 없으면 기존 방식.
+    return;
+  }
+  const states = createPuzzleState(topicId);
+  const basePos = getInteractablePosition(game, 'shrine', shrineId);
+  const scene = game.renderState.scene;
+  const n = puzzle.objects.length;
+  const pedestals = puzzle.objects.map((obj, i) => {
+    const group = new THREE.Group();
+    const px = basePos.x + (i - (n - 1) / 2) * 1.6;
+    const pz = basePos.z + 1.7; // 플레이어가 다가서는 쪽
+    group.position.set(px, 0, pz);
+    const stand = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.34, 0.42, 0.7, 12),
+      new THREE.MeshStandardMaterial({ color: 0xb9b0c8, roughness: 0.7 })
+    );
+    stand.position.y = 0.35;
+    stand.castShadow = true;
+    const orb = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(0.28, 0),
+      new THREE.MeshStandardMaterial({ color: obj.color, emissive: obj.color, emissiveIntensity: 0.4, roughness: 0.4, flatShading: true })
+    );
+    orb.position.y = 1.0;
+    const sprite = makeStateSprite(puzzle.objects[i].states[states[i]]);
+    sprite.position.y = 1.62;
+    const nameTag = createLabelSprite(obj.labelKo, obj.color);
+    nameTag.scale.set(1.7, 0.42, 1);
+    nameTag.position.y = 0.05;
+    group.add(stand, orb, sprite, nameTag);
+    scene.add(group);
+    return { group, orb, sprite, obj, position: group.position.clone() };
+  });
+
+  game.puzzle = { active: true, topicId, shrineId, states, pedestals, nearIndex: -1, solved: false };
+  ui.root.classList.add('is-combat'); // A 버튼을 강조(공격 버튼 스타일 재사용)
+  if (ui.actionLabel) {
+    ui.actionLabel.textContent = '🔁';
+  }
+  ui.puzzleHud.hidden = false;
+  ui.puzzleTitle.textContent = `🧩 ${puzzle.titleKo}`;
+  ui.puzzleGoal.textContent = puzzle.goalKo;
+  ui.prompt.hidden = true;
+  game.updateRotateHint?.();
+  refreshPuzzleEmblems(game);
+}
+
+function refreshPuzzleEmblems(game) {
+  const pz = game.puzzle;
+  if (!pz) {
+    return;
+  }
+  const puzzle = getShrinePuzzle(pz.topicId);
+  pz.pedestals.forEach((ped, i) => {
+    const text = puzzle.objects[i].states[pz.states[i]];
+    const old = ped.sprite;
+    const fresh = makeStateSprite(text);
+    fresh.position.copy(old.position);
+    ped.group.remove(old);
+    old.material.map?.dispose?.();
+    old.material.dispose?.();
+    ped.group.add(fresh);
+    ped.sprite = fresh;
+  });
+}
+
+function puzzleCycle(game, ui) {
+  const pz = game.puzzle;
+  if (!pz || !pz.active || pz.nearIndex < 0) {
+    game.audio?.playClick();
+    return;
+  }
+  const i = pz.nearIndex;
+  pz.states = cyclePuzzleObject(pz.topicId, pz.states, i);
+  const puzzle = getShrinePuzzle(pz.topicId);
+  // 해당 돌의 스프라이트만 갱신.
+  const ped = pz.pedestals[i];
+  const fresh = makeStateSprite(puzzle.objects[i].states[pz.states[i]]);
+  fresh.position.copy(ped.sprite.position);
+  ped.group.remove(ped.sprite);
+  ped.sprite.material.map?.dispose?.();
+  ped.sprite.material.dispose?.();
+  ped.group.add(fresh);
+  ped.sprite = fresh;
+  game.audio?.playClick();
+  if (isPuzzleSolved(pz.topicId, pz.states)) {
+    winShrinePuzzle(game, ui);
+  }
+}
+
+function updatePuzzle(delta, game, ui) {
+  const pz = game.puzzle;
+  if (!pz || !pz.active) {
+    return;
+  }
+  const elapsed = clock.elapsedTime;
+  // 가장 가까운 돌을 찾아 강조하고 안내를 갱신.
+  let nearIndex = -1;
+  let nearDist = PUZZLE_REACH;
+  pz.pedestals.forEach((ped, i) => {
+    const d = Math.hypot(game.player.position.x - ped.position.x, game.player.position.z - ped.position.z);
+    if (d < nearDist) {
+      nearDist = d;
+      nearIndex = i;
+    }
+    // 살짝 둥실 + 회전.
+    ped.orb.position.y = 1.0 + Math.sin(elapsed * 2 + i) * 0.06;
+    ped.orb.rotation.y += delta * 0.8;
+    const targeted = i === nearIndex;
+    ped.orb.material.emissiveIntensity = targeted ? 1.1 : 0.4;
+    ped.orb.scale.setScalar(targeted ? 1.18 : 1);
+  });
+  pz.nearIndex = nearIndex;
+  const puzzle = getShrinePuzzle(pz.topicId);
+  if (nearIndex >= 0) {
+    ui.puzzleHint.textContent = `가까운 돌: ${puzzle.objects[nearIndex].labelKo} — A로 바꾸기`;
+  } else {
+    ui.puzzleHint.textContent = '돌에 다가가 A로 바꿔요';
+  }
+}
+
+function winShrinePuzzle(game, ui) {
+  const pz = game.puzzle;
+  if (!pz || pz.solved) {
+    return;
+  }
+  pz.solved = true;
+  const shrine = getShrineById(pz.shrineId);
+  const correct = shrine.choices.find((c) => c.correct);
+  const outcome = applyShrineResult(game.progress, pz.shrineId, correct.id);
+  game.progress = outcome.progress;
+  persistProgress(game.progress);
+  const topic = getTopicById(pz.topicId);
+  celebrate(game, getInteractablePosition(game, 'shrine', pz.shrineId).clone().setY(1.4), topic?.color ?? '#ffd76a', 'collect');
+  const toolId = outcome.toolId;
+  endShrinePuzzle(game, ui);
+  updateHud(game, ui);
+  // 도구 획득 안내(간단 대화).
+  if (toolId) {
+    const tool = getToolById(toolId);
+    const quest = QUESTS[pz.topicId];
+    ui.dialogKicker.textContent = topic?.titleKo ?? '사당';
+    ui.dialogTitle.textContent = `${shrine.nameKo} 통과!`;
+    ui.dialogBody.innerHTML = `
+      <p class="prompt-line">${getShrinePuzzle(pz.topicId).lessonKo}</p>
+      <p class="reflection" data-tool="true">${tool.emoji} 「${tool.nameKo}」 획득! ${tool.powerKo} 이제 「${quest.gateLabelKo}」로 가서 사용하세요.</p>
+      <div class="finale-nav"><button type="button" class="finale-next" data-dialog-ok>좋아!</button></div>
+    `;
+    ui.dialogBody.querySelector('[data-dialog-ok]').addEventListener('click', () => closeDialog(game, ui));
+    openDialog(game, ui);
+  }
+}
+
+function endShrinePuzzle(game, ui) {
+  const pz = game.puzzle;
+  if (!pz) {
+    return;
+  }
+  for (const ped of pz.pedestals) {
+    game.renderState.scene.remove(ped.group);
+  }
+  game.puzzle = null;
+  ui.root.classList.remove('is-combat');
+  if (ui.actionLabel) {
+    ui.actionLabel.textContent = 'A';
+  }
+  ui.puzzleHud.hidden = true;
+  game.updateRotateHint?.();
 }
 
 function openCoreDialog(game, ui) {
