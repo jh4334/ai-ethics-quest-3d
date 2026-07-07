@@ -10,7 +10,7 @@ import {
   getNextObjective
 } from '../src/worldData.js';
 
-test('shrine trials award the ethics fragment and the zone promise tool, once each', () => {
+test('shrine trials award the promise tool (not the fragment — that comes from the main quest)', () => {
   const initial = createInitialProgress();
   const shrine = SHRINES[0];
   const correctChoice = shrine.choices.find((choice) => choice.correct);
@@ -18,13 +18,11 @@ test('shrine trials award the ethics fragment and the zone promise tool, once ea
   const first = applyShrineResult(initial, shrine.id, correctChoice.id);
   const second = applyShrineResult(first.progress, shrine.id, correctChoice.id);
 
-  assert.deepEqual(initial.collectedFragments, []);
   assert.deepEqual(initial.tools, []);
   assert.equal(first.result.correct, true);
   assert.equal(first.toolId, 'shield');
-  assert.deepEqual(first.progress.collectedFragments, [shrine.topicId]);
   assert.deepEqual(first.progress.tools, ['shield']);
-  assert.deepEqual(second.progress.collectedFragments, [shrine.topicId]);
+  assert.deepEqual(first.progress.collectedFragments, [], 'shrine gives the tool, not the fragment');
   assert.deepEqual(second.progress.tools, ['shield']);
   assert.deepEqual(second.progress.completedShrines, [shrine.id]);
 });

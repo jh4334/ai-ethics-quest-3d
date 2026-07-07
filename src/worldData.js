@@ -593,6 +593,7 @@ export function applyShrineResult(progress, shrineId, choiceId) {
     };
   }
 
+  // 사당(지혜의 시련)은 '약속 도구'를 준다. 조각은 도구로 메인 퀘스트를 풀어야 얻는다.
   const toolId = SHRINE_TOOL[shrineId] ?? null;
   return {
     result,
@@ -602,7 +603,6 @@ export function applyShrineResult(progress, shrineId, choiceId) {
       visitedTopics,
       choiceLog,
       completedShrines: [...new Set([...progress.completedShrines, shrineId])],
-      collectedFragments: [...new Set([...progress.collectedFragments, result.topicId])],
       tools: toolId ? [...new Set([...(progress.tools ?? []), toolId])] : (progress.tools ?? [])
     }
   };
