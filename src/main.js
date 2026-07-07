@@ -264,9 +264,10 @@ function createShell() {
       <div class="boss-hud" data-boss-hud hidden aria-live="polite">
         <div class="boss-hud-top">
           <span class="boss-name">⚡ 노이즈</span>
-          <span class="boss-hint" data-boss-hint>가까이 가서 공격!</span>
+          <span class="boss-weak" data-boss-weak></span>
         </div>
         <div class="boss-bar"><div class="boss-bar-fill" data-boss-fill></div></div>
+        <div class="boss-hint" data-boss-hint></div>
       </div>
 
       <div class="puzzle-hud" data-puzzle-hud hidden aria-live="polite">
@@ -283,6 +284,7 @@ function createShell() {
           <button type="button" data-touch="down" aria-label="아래로 이동">▼</button>
         </div>
         <div class="touch-actions">
+          <button type="button" data-touch="tool" class="touch-tool" aria-label="도구 바꾸기">🔄</button>
           <button type="button" data-touch="action" class="touch-a" data-action-label aria-label="확인·공격">A</button>
         </div>
       </div>
@@ -326,6 +328,7 @@ function bindUi(root) {
     bossHud: root.querySelector('[data-boss-hud]'),
     bossFill: root.querySelector('[data-boss-fill]'),
     bossHint: root.querySelector('[data-boss-hint]'),
+    bossWeak: root.querySelector('[data-boss-weak]'),
     puzzleHud: root.querySelector('[data-puzzle-hud]'),
     puzzleTitle: root.querySelector('[data-puzzle-title]'),
     puzzleGoal: root.querySelector('[data-puzzle-goal]'),
@@ -1183,6 +1186,19 @@ function bindInput(game, ui) {
       event.preventDefault();
       toggleJournal(game, ui);
     }
+    // 전투 중 도구 바꾸기: Q(순환) / 1~4(직접 선택).
+    if (game.combat?.active && (event.code === 'KeyQ' || event.code === 'Tab')) {
+      event.preventDefault();
+      cycleActiveTool(game, ui, 1);
+    }
+    if (game.combat?.active && /^Digit[1-4]$/.test(event.code)) {
+      event.preventDefault();
+      const idx = Number(event.code.slice(-1)) - 1;
+      const toolId = game.combat.tools[idx];
+      if (toolId) {
+        selectActiveTool(game, ui, toolId);
+      }
+    }
     if (event.code === 'Escape') {
       closeDialog(game, ui);
       closeJournal(game, ui);
@@ -1203,6 +1219,8 @@ function bindInput(game, ui) {
       event.preventDefault();
       if (action === 'action') {
         primaryAction(game, ui);
+      } else if (action === 'tool') {
+        cycleActiveTool(game, ui, 1);
       } else {
         game.keys.add(action);
       }
@@ -1242,6 +1260,13 @@ function bindHudActions(game, ui, renderState) {
     ui.soundToggle.setAttribute('aria-pressed', String(!muted));
     if (!muted) {
       game.audio?.playClick();
+    }
+  });
+  // 전투 중 도구 벨트를 탭하면 그 도구를 '든 도구'로 선택(약점 맞추기).
+  ui.toolBelt?.addEventListener('click', (event) => {
+    const slot = event.target.closest?.('[data-tool-slot]');
+    if (slot && game.combat?.active) {
+      selectActiveTool(game, ui, slot.dataset.toolSlot);
     }
   });
   renderState.coreCrystal = activeQuest.coreCrystal;
@@ -1585,6 +1610,10 @@ function animateNoiseBoss(delta, elapsed, boss) {
       cube.visible = Math.sin(elapsed * 18 + i * 1.7) > -0.7; // 깜빡깜빡
     });
     const blink = flash > 0 ? 1 : (Math.sin(elapsed * 2.5) > -0.9 ? 1 : 0.15);
+    // 전투 중엔 눈이 '약점 색'으로 물든다 — 그 색 도구로 때려야 한다는 신호.
+    if (boss.weakColorHex) {
+      data.eyes.forEach((eye) => { eye.material.emissive.set(boss.weakColorHex); eye.material.color.set(boss.weakColorHex); });
+    }
     data.eyes.forEach((eye) => { eye.scale.y = blink; });
   } else if (data.kind === 'nova') {
     group.position.y = boss.baseY + Math.sin(elapsed * 2) * 0.14;
@@ -2262,7 +2291,17 @@ function openCoreDialog(game, ui) {
 // ===== 최종장 액션 전투: 노이즈에게 다가가 A(공격)로 잡음을 걷어낸다 =====
 const BOSS_MAX_HP = 6;
 const ATTACK_RANGE = 3.7;
-const ATTACK_COOLDOWN = 0.28;
+const ATTACK_COOLDOWN = 0.3;
+const WEAK_ROTATE = 3.8; // 약점 색 자동 회전 주기(초)
+const FIRE_INTERVAL = 2.9; // 잡음 파도 발사 간격
+const WINDUP_TIME = 0.62; // 발사 예고(피할 시간)
+const PROJECTILE_SPEED = 6.2;
+const PROJECTILE_HIT = 0.95;
+const STUN_TIME = 0.75;
+
+function toolColorHex(toolId) {
+  return getTopicById(getToolById(toolId)?.topicId)?.color ?? '#ffd76a';
+}
 
 function startBossFight(game, ui) {
   if (game.combat) {
@@ -2274,13 +2313,28 @@ function startBossFight(game, ui) {
   }
   game.audio?.resume();
   game.audio?.playNoiseGroan();
+  // 보유한 약속의 도구들 — 이 중 하나가 매 순간 노이즈의 '약점'이 된다.
+  const tools = (game.progress.tools ?? []).slice();
+  if (tools.length === 0) {
+    tools.push('shield');
+  }
   game.combat = {
     active: true,
     hp: BOSS_MAX_HP,
     maxHp: BOSS_MAX_HP,
     cooldown: 0,
-    driftAngle: Math.PI * 0.25
+    driftAngle: Math.PI * 0.25,
+    tools,
+    activeTool: 0,
+    weakIndex: 0,
+    weakToolId: tools[0],
+    weakTimer: WEAK_ROTATE,
+    fireTimer: FIRE_INTERVAL,
+    windup: 0,
+    projectile: null,
+    stun: 0
   };
+  syncBossWeakColor(game);
   ui.root.classList.add('is-combat');
   ui.bossHud.hidden = false;
   ui.prompt.hidden = true;
@@ -2291,9 +2345,48 @@ function startBossFight(game, ui) {
   updateBossHud(game, ui);
 }
 
+function syncBossWeakColor(game) {
+  const c = game.combat;
+  const boss = game.renderState?.noiseBoss;
+  if (c && boss) {
+    boss.weakColorHex = toolColorHex(c.weakToolId);
+  }
+}
+
+function rotateWeakness(game) {
+  const c = game.combat;
+  c.weakIndex = (c.weakIndex + 1) % c.tools.length;
+  c.weakToolId = c.tools[c.weakIndex];
+  c.weakTimer = WEAK_ROTATE;
+  syncBossWeakColor(game);
+}
+
+function cycleActiveTool(game, ui, dir = 1) {
+  const c = game.combat;
+  if (!c || !c.active) {
+    return;
+  }
+  c.activeTool = (c.activeTool + dir + c.tools.length) % c.tools.length;
+  game.audio?.playClick();
+  updateBossHud(game, ui);
+}
+
+function selectActiveTool(game, ui, toolId) {
+  const c = game.combat;
+  if (!c || !c.active) {
+    return;
+  }
+  const idx = c.tools.indexOf(toolId);
+  if (idx >= 0) {
+    c.activeTool = idx;
+    game.audio?.playClick();
+    updateBossHud(game, ui);
+  }
+}
+
 function playerAttack(game, ui) {
   const c = game.combat;
-  if (!c || !c.active || c.cooldown > 0) {
+  if (!c || !c.active || c.cooldown > 0 || c.stun > 0) {
     return;
   }
   c.cooldown = ATTACK_COOLDOWN;
@@ -2306,23 +2399,71 @@ function playerAttack(game, ui) {
     game.player.position.z - (boss.baseZ ?? 0)
   );
   if (dist > ATTACK_RANGE) {
-    // 헛스윙 — 더 가까이 가야 한다.
     game.audio?.playClick();
+    ui.bossHint.textContent = '더 가까이 다가가요';
     return;
   }
-  // 명중: 보유한 약속의 도구 색으로 타격 이펙트 + 노이즈가 신음하며 오그라든다.
+  const activeToolId = c.tools[c.activeTool];
+  if (activeToolId !== c.weakToolId) {
+    // 약점 색과 다른 도구 — 튕겨 나간다(대미지 없음). 학습 포인트: 상황에 맞는 원칙 고르기.
+    game.audio?.playWrong();
+    boss.hitFlash = 0.12;
+    const weak = getToolById(c.weakToolId);
+    ui.bossHint.textContent = `튕겼다! 약점은 ${weak?.emoji ?? ''} — 그 도구로 바꿔서!`;
+    return;
+  }
+  // 약점 명중: 노이즈가 신음하며 오그라든다.
   c.hp = Math.max(0, c.hp - 1);
-  boss.hitFlash = 0.28;
-  const tools = game.progress.tools ?? [];
-  const toolId = tools.length ? tools[(c.maxHp - c.hp - 1) % tools.length] : null;
-  const color = getTopicById(getToolById(toolId)?.topicId)?.color ?? '#ffd76a';
-  celebrate(game, new THREE.Vector3(boss.baseX ?? 0, boss.baseY ?? 2.6, boss.baseZ ?? 0), color, 'collect');
+  boss.hitFlash = 0.3;
+  celebrate(game, new THREE.Vector3(boss.baseX ?? 0, boss.baseY ?? 2.6, boss.baseZ ?? 0), toolColorHex(c.weakToolId), 'collect');
+  game.audio?.playCorrect();
   game.audio?.playNoiseGroan();
   boss.targetScale = 0.4 + (c.hp / c.maxHp) * 0.95;
+  rotateWeakness(game); // 약점 색이 바뀐다 — 다시 맞는 도구로.
   updateBossHud(game, ui);
   if (c.hp <= 0) {
     winBossFight(game, ui);
   }
+}
+
+function fireNoiseWave(game) {
+  const c = game.combat;
+  const boss = game.renderState?.noiseBoss;
+  const scene = game.renderState?.scene;
+  if (!c || !boss || !scene) {
+    return;
+  }
+  const bx = boss.baseX ?? 0;
+  const bz = boss.baseZ ?? 0;
+  let dx = game.player.position.x - bx;
+  let dz = game.player.position.z - bz;
+  const len = Math.hypot(dx, dz) || 1;
+  dx /= len;
+  dz /= len;
+  const mesh = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(0.42, 0),
+    new THREE.MeshStandardMaterial({ color: 0x8a5eff, emissive: 0x6a3dd0, emissiveIntensity: 1.1, roughness: 0.5, flatShading: true })
+  );
+  mesh.position.set(bx, 1.2, bz);
+  scene.add(mesh);
+  c.projectile = { mesh, dx, dz, x: bx, z: bz, life: 2.4 };
+  game.audio?.playNoiseGroan();
+}
+
+function staggerPlayer(game, ui) {
+  const c = game.combat;
+  c.stun = STUN_TIME;
+  const boss = game.renderState?.noiseBoss;
+  // 노이즈 반대쪽으로 밀려난다.
+  let dx = game.player.position.x - (boss?.baseX ?? 0);
+  let dz = game.player.position.z - (boss?.baseZ ?? 0);
+  const len = Math.hypot(dx, dz) || 1;
+  game.player.position.x += (dx / len) * 1.3;
+  game.player.position.z += (dz / len) * 1.3;
+  game.player.position.copy(clampToIsland(game.player.position));
+  game.audio?.playWrong();
+  triggerFlash(ui, '#ff5f7e');
+  ui.bossHint.textContent = '잡음에 맞았다! 잠깐 정신 차리는 중…';
 }
 
 function updateCombat(delta, game, ui) {
@@ -2333,17 +2474,62 @@ function updateCombat(delta, game, ui) {
   if (c.cooldown > 0) {
     c.cooldown = Math.max(0, c.cooldown - delta);
   }
+  if (c.stun > 0) {
+    c.stun = Math.max(0, c.stun - delta);
+  }
   const boss = game.renderState?.noiseBoss;
   if (boss && boss.kind === 'noise') {
-    // 천천히 원을 그리며 떠돌아, 플레이어가 쫓아가 공격하게 만든다.
-    c.driftAngle += delta * 0.55;
+    c.driftAngle += delta * 0.5;
     boss.baseX = Math.cos(c.driftAngle) * 2.4;
     boss.baseZ = Math.sin(c.driftAngle) * 2.4;
-    const dist = Math.hypot(
-      game.player.position.x - boss.baseX,
-      game.player.position.z - boss.baseZ
-    );
-    ui.bossHint.textContent = dist > ATTACK_RANGE ? '노이즈에게 다가가요' : '지금! 공격 연타!';
+
+    // 약점 색 자동 회전(멈춰 있어도 도구를 바꾸게).
+    c.weakTimer -= delta;
+    if (c.weakTimer <= 0) {
+      rotateWeakness(game);
+      updateBossHud(game, ui);
+    }
+
+    // 잡음 파도: 예고(windup) 후 플레이어 쪽으로 발사 → 피해야 한다.
+    if (c.projectile) {
+      const pr = c.projectile;
+      pr.x += pr.dx * PROJECTILE_SPEED * delta;
+      pr.z += pr.dz * PROJECTILE_SPEED * delta;
+      pr.life -= delta;
+      pr.mesh.position.set(pr.x, 1.2, pr.z);
+      pr.mesh.rotation.x += delta * 6;
+      const hit = Math.hypot(game.player.position.x - pr.x, game.player.position.z - pr.z) < PROJECTILE_HIT;
+      if (hit && c.stun <= 0) {
+        staggerPlayer(game, ui);
+      }
+      if (hit || pr.life <= 0) {
+        game.renderState.scene.remove(pr.mesh);
+        c.projectile = null;
+        c.fireTimer = FIRE_INTERVAL;
+      }
+    } else if (c.windup > 0) {
+      c.windup -= delta;
+      boss.hitFlash = 0.18; // 예고: 몸이 번쩍인다
+      if (c.windup <= 0) {
+        fireNoiseWave(game);
+      }
+    } else {
+      c.fireTimer -= delta;
+      if (c.fireTimer <= 0) {
+        c.windup = WINDUP_TIME;
+        ui.bossHint.textContent = '노이즈가 잡음을 모은다 — 피해!';
+      }
+    }
+
+    if (c.stun <= 0 && !c.projectile && c.windup <= 0) {
+      const dist = Math.hypot(game.player.position.x - boss.baseX, game.player.position.z - boss.baseZ);
+      const weak = getToolById(c.weakToolId);
+      const active = getToolById(c.tools[c.activeTool]);
+      const matched = c.tools[c.activeTool] === c.weakToolId;
+      ui.bossHint.textContent = dist > ATTACK_RANGE
+        ? `약점 ${weak?.emoji ?? ''} — 다가가서 공격!`
+        : (matched ? `약점 ${weak?.emoji ?? ''} 일치! 공격!` : `${active?.emoji ?? ''} 튕김 — 약점은 ${weak?.emoji ?? ''}, 도구를 바꿔요`);
+    }
   }
 }
 
@@ -2353,6 +2539,18 @@ function updateBossHud(game, ui) {
     return;
   }
   ui.bossFill.style.width = `${Math.round((c.hp / c.maxHp) * 100)}%`;
+  if (ui.bossWeak) {
+    const weak = getToolById(c.weakToolId);
+    const active = getToolById(c.tools[c.activeTool]);
+    ui.bossWeak.innerHTML = `약점 <b style="color:${toolColorHex(c.weakToolId)}">${weak?.emoji ?? ''}</b> · 든 도구 ${active?.emoji ?? ''}`;
+  }
+  // 도구 벨트에서 현재 든 도구를 강조.
+  if (ui.toolBelt) {
+    const activeId = c.tools[c.activeTool];
+    ui.toolBelt.querySelectorAll('[data-tool-slot]').forEach((slot) => {
+      slot.dataset.active = String(slot.dataset.toolSlot === activeId);
+    });
+  }
 }
 
 function winBossFight(game, ui) {
@@ -2361,9 +2559,15 @@ function winBossFight(game, ui) {
     return;
   }
   c.active = false;
+  if (c.projectile?.mesh) {
+    game.renderState.scene.remove(c.projectile.mesh);
+  }
   game.combat = null;
   ui.root.classList.remove('is-combat');
   ui.bossHud.hidden = true;
+  if (ui.toolBelt) {
+    ui.toolBelt.querySelectorAll('[data-tool-slot]').forEach((slot) => { slot.dataset.active = 'false'; });
+  }
   if (ui.actionLabel) {
     ui.actionLabel.textContent = 'A';
   }
@@ -2597,7 +2801,7 @@ function updateHud(game, ui) {
     ui.toolBelt.innerHTML = PROMISE_TOOLS.map((tool) => {
       const have = owned.has(tool.id);
       const title = have ? `${tool.nameKo} — ${tool.powerKo}` : `${tool.nameKo} (사당에서 획득)`;
-      return `<span class="tool-slot" data-have="${have}" title="${title}">${have ? tool.emoji : '·'}</span>`;
+      return `<button type="button" class="tool-slot" data-tool-slot="${tool.id}" data-have="${have}" ${have ? '' : 'disabled'} title="${title}">${have ? tool.emoji : '·'}</button>`;
     }).join('');
   }
   renderJournal(game, ui);
