@@ -221,3 +221,70 @@ export function createNpcCharacter(topicId) {
   const builder = NPC_BUILDERS[topicId] ?? createTurtle;
   return builder();
 }
+
+// 노이즈 — 잘못 배운 아기 AI. 커다란 지지직 정전기 뭉치(회색+보라 글리치), 노란 눈 두 개만 껌뻑.
+// 무섭기보다 '고장난' 느낌. 최종장에서 도구를 쓸 때마다 작아지고, 마지막엔 노바로 바뀐다.
+export function createNoiseBoss() {
+  const g = new THREE.Group();
+
+  // 울퉁불퉁한 안개 몸통(저폴리 + 플랫셰이딩으로 지지직 실루엣).
+  const body = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(1, 1),
+    new THREE.MeshStandardMaterial({ color: 0x6b6478, emissive: 0x3a2d55, emissiveIntensity: 0.5, roughness: 0.9, flatShading: true })
+  );
+  g.add(body);
+
+  // 몸을 둘러싸고 지지직 도는 글리치 픽셀들(회색·보라).
+  const pixels = new THREE.Group();
+  const pixelMat = [
+    new THREE.MeshStandardMaterial({ color: 0x9a90b4, emissive: 0x5a4d7a, emissiveIntensity: 0.7, roughness: 0.8 }),
+    new THREE.MeshStandardMaterial({ color: 0x7a72a0, emissive: 0x7a3dcf, emissiveIntensity: 0.6, roughness: 0.8 })
+  ];
+  const pixelList = [];
+  for (let i = 0; i < 14; i += 1) {
+    const s = 0.14 + (i % 3) * 0.06;
+    const cube = new THREE.Mesh(new THREE.BoxGeometry(s, s, s), pixelMat[i % 2]);
+    const a = (i / 14) * Math.PI * 2;
+    const r = 1.15 + (i % 4) * 0.12;
+    cube.position.set(Math.cos(a) * r, Math.sin(a * 1.3) * 0.8, Math.sin(a) * r);
+    cube.userData.seed = i;
+    pixels.add(cube);
+    pixelList.push(cube);
+  }
+  g.add(pixels);
+
+  // 노란 눈 두 개.
+  const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffe14a, emissive: 0xffca1a, emissiveIntensity: 1.8, roughness: 0.3 });
+  const eyes = [];
+  for (const x of [-0.32, 0.32]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.16, 14, 12), eyeMat);
+    eye.position.set(x, 0.15, 0.86);
+    g.add(eye);
+    eyes.push(eye);
+  }
+
+  const light = new THREE.PointLight(0x9a6dff, 0.9, 8);
+  light.position.set(0, 0.6, 0);
+  g.add(light);
+
+  g.userData = { body, pixels: pixelList, eyes, light, kind: 'noise' };
+  return g;
+}
+
+// 노바 — 네 개의 약속을 소화하고 다시 태어난 작고 둥근 별빛 AI.
+export function createNova() {
+  const g = new THREE.Group();
+  const starMat = new THREE.MeshStandardMaterial({ color: 0xeafcff, emissive: 0x7cf0ff, emissiveIntensity: 1.8, roughness: 0.25 });
+  const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.36, 1), starMat);
+  g.add(core);
+  // 반짝이는 십자 빛살.
+  for (const [x, y] of [[0.42, 0], [-0.42, 0], [0, 0.42], [0, -0.42]]) {
+    const ray = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), starMat);
+    ray.position.set(x, y, 0);
+    g.add(ray);
+  }
+  const light = new THREE.PointLight(0x7cf0ff, 1.4, 7);
+  g.add(light);
+  g.userData = { core, light, kind: 'nova' };
+  return g;
+}

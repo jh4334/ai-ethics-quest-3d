@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCompanion, createNpcCharacter, createPlayerCharacter } from '../src/characters.js';
+import { createCompanion, createNoiseBoss, createNova, createNpcCharacter, createPlayerCharacter } from '../src/characters.js';
 import { ETHICS_TOPICS } from '../src/worldData.js';
 
 // THREE의 지오메트리·그룹 생성은 WebGL 컨텍스트 없이도 동작하므로 구조를 검증한다.
@@ -31,4 +31,17 @@ test('unknown topic falls back to a valid group without throwing', () => {
   const npc = createNpcCharacter('not-a-topic');
   assert.equal(npc.type, 'Group');
   assert.ok(npc.children.length > 0);
+});
+
+test('finale boss and nova builders return animatable groups with the expected handles', () => {
+  const noise = createNoiseBoss();
+  assert.equal(noise.type, 'Group');
+  assert.equal(noise.userData.kind, 'noise');
+  assert.ok(noise.userData.eyes.length === 2, 'noise has two eyes');
+  assert.ok(noise.userData.pixels.length >= 8, 'noise has glitch pixels to animate');
+
+  const nova = createNova();
+  assert.equal(nova.type, 'Group');
+  assert.equal(nova.userData.kind, 'nova');
+  assert.ok(nova.userData.core, 'nova exposes its core for animation');
 });

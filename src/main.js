@@ -7,7 +7,7 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { createAudioEngine } from './audio.js';
 import { createBurstSystem, createFloatingIcon, setIconEmoji } from './effects.js';
 import { CLASSIFY_BUCKETS, getClassifyChallenge, scoreClassify } from './classify.js';
-import { createCompanion, createNpcCharacter, createPlayerCharacter } from './characters.js';
+import { createCompanion, createNoiseBoss, createNova, createNpcCharacter, createPlayerCharacter } from './characters.js';
 import {
   FINALE,
   buildNovaCertificate,
@@ -130,6 +130,10 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
   resize(renderer, camera, root, renderState.composer);
   updateHud(game, ui);
   updateCoreVisual(game, renderState);
+  // 이미 노바를 되살린 세이브라면, 코어 위에 노바가 떠 있는 채로 시작한다.
+  if (game.progress.aiCoreCompleted) {
+    morphNoiseToNova(game);
+  }
 
   let animationId = 0;
   const updateRotateHint = () => {
@@ -417,6 +421,8 @@ function updateAmbient(delta, renderState) {
   if (renderState.burst) {
     renderState.burst.update(delta);
   }
+  // 노이즈/노바는 대화창(일시정지) 중에도 살아 움직여야 하므로 여기서 갱신한다.
+  animateNoiseBoss(delta, elapsed, renderState.noiseBoss);
 }
 
 function createWorld(renderState) {
@@ -1424,6 +1430,77 @@ function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates }, g
   }
 }
 
+// 최종장 3D 연출: 노이즈는 지지직 떨고 글리치 픽셀이 돈다. 도구를 쓸 때마다 목표 크기로 오그라든다.
+function animateNoiseBoss(delta, elapsed, boss) {
+  if (!boss || !boss.group) {
+    return;
+  }
+  const { group, data } = boss;
+  // 목표 크기로 부드럽게 수렴.
+  const s = group.scale.x + (boss.targetScale - group.scale.x) * Math.min(1, delta * 4);
+  group.scale.setScalar(s);
+  if (data.kind === 'noise') {
+    // 몸통 지지직 떨림 + 글리치 픽셀 회전.
+    group.position.x = boss.baseX + Math.sin(elapsed * 22) * 0.03 * s;
+    data.body.rotation.y += delta * 0.6;
+    data.body.rotation.x = Math.sin(elapsed * 3) * 0.1;
+    data.pixels.forEach((cube, i) => {
+      const a = elapsed * (0.6 + (i % 3) * 0.3) + i;
+      const r = 1.15 + (i % 4) * 0.12;
+      cube.position.set(Math.cos(a) * r, Math.sin(a * 1.3) * 0.8, Math.sin(a) * r);
+      cube.rotation.x += delta * 3;
+      cube.visible = Math.sin(elapsed * 18 + i * 1.7) > -0.7; // 깜빡깜빡
+    });
+    const blink = Math.sin(elapsed * 2.5) > -0.9 ? 1 : 0.15;
+    data.eyes.forEach((eye) => { eye.scale.y = blink; });
+  } else if (data.kind === 'nova') {
+    group.position.y = boss.baseY + Math.sin(elapsed * 2) * 0.14;
+    data.core.rotation.y += delta * 0.9;
+    group.rotation.z = Math.sin(elapsed * 1.5) * 0.15;
+  }
+}
+
+// 노이즈 보스를 코어 위에 등장시킨다(최종장 시작).
+function spawnNoiseBoss(game) {
+  const rs = game.renderState;
+  if (!rs || rs.noiseBoss) {
+    return;
+  }
+  const group = createNoiseBoss();
+  const baseX = 0;
+  const baseY = 4.3; // 코어 위로 높이 떠올라 대화창 위쪽에 또렷이 보이게(보스전 프레이밍).
+  group.position.set(baseX, baseY, 0);
+  group.scale.setScalar(0.05);
+  rs.scene.add(group);
+  rs.noiseBoss = { group, data: group.userData, targetScale: 1.5, baseX, baseY, kind: 'noise' };
+}
+
+// 도구를 한 번 쓸 때마다 노이즈가 작아진다.
+function shrinkNoiseBoss(game, remainingSteps, totalSteps) {
+  const boss = game.renderState?.noiseBoss;
+  if (!boss || boss.kind !== 'noise') {
+    return;
+  }
+  const t = totalSteps > 0 ? remainingSteps / totalSteps : 0;
+  boss.targetScale = 0.4 + t * 0.95; // 마지막엔 0.4까지 오그라든다
+}
+
+// 노이즈 → 노바 재탄생: 안개 뭉치를 치우고 별빛을 띄운다.
+function morphNoiseToNova(game) {
+  const rs = game.renderState;
+  if (!rs) {
+    return;
+  }
+  if (rs.noiseBoss?.group) {
+    rs.scene.remove(rs.noiseBoss.group);
+  }
+  const group = createNova();
+  const baseY = 3.6;
+  group.position.set(0, baseY, 0);
+  rs.scene.add(group);
+  rs.noiseBoss = { group, data: group.userData, targetScale: 1, baseX: 0, baseY, kind: 'nova' };
+}
+
 function updateNearestInteractable(game, interactables, ui) {
   const coreDistance = Math.hypot(game.player.position.x, game.player.position.z);
   let nearest = coreDistance <= CORE_RADIUS
@@ -1826,12 +1903,16 @@ function openCoreDialog(game, ui) {
 // 최종장 진행: 도입 → 4도구 돌봄 시퀀스 → 지운다/가르친다 선택 → (지우기는 부드럽게 되돌림)
 // → 가르치면 행적이 곧 가르침이 되어 노바로 재탄생 → 증명서.
 function runFinale(game, ui) {
+  // 최종장은 시네마틱 모드: 대화창을 하단에 도킹해 위쪽에 노이즈 보스를 보여준다.
+  ui.root.classList.add('is-cinematic');
   const steps = getFinaleToolSteps(game.progress);
   const lines = (arr) => arr.map((text) => `<p class="finale-line">${text}</p>`).join('');
   const nav = (label, attr) =>
     `<div class="finale-nav"><button type="button" class="finale-next" ${attr}>${label}</button></div>`;
 
   function renderIntro() {
+    // 코어 위에 거대한 노이즈가 등장한다.
+    spawnNoiseBoss(game);
     ui.dialogBody.innerHTML = `
       <div class="finale-scene" data-noise="big">${lines(FINALE.introKo)}</div>
       ${nav('마주 선다 →', 'data-finale="tools:0"')}
@@ -1842,6 +1923,8 @@ function runFinale(game, ui) {
   function renderToolStep(index) {
     const step = steps[index];
     const isLast = index + 1 >= steps.length;
+    // 도구를 쓸 때마다 노이즈가 눈에 띄게 오그라든다.
+    shrinkNoiseBoss(game, steps.length - 1 - index, steps.length);
     ui.dialogBody.innerHTML = `
       <div class="finale-scene" data-noise="shrink">
         <p class="finale-count">약속의 도구 ${index + 1}/${steps.length}</p>
@@ -1851,7 +1934,8 @@ function runFinale(game, ui) {
       </div>
       ${nav(isLast ? '노이즈 앞에 서다 →' : '다음 도구 →', `data-finale="${isLast ? 'choice' : `tools:${index + 1}`}"`)}
     `;
-    game.audio?.playCollect();
+    const topicColor = getTopicById(getToolById(step.toolId)?.topicId)?.color ?? '#7cf0ff';
+    celebrate(game, new THREE.Vector3(0, 4.3, 0), topicColor, 'collect');
     bindNav();
   }
 
@@ -1911,12 +1995,14 @@ function runFinale(game, ui) {
   }
 
   function renderRebirth() {
+    // 안개 뭉치가 사라지고 별빛 노바가 떠오른다.
+    morphNoiseToNova(game);
     ui.dialogBody.innerHTML = `
       <div class="finale-scene" data-noise="nova">${lines(FINALE.rebirthKo)}</div>
       ${nav('섬으로 돌아간다 →', 'data-finale="done"')}
     `;
     // 노바 재탄생 세리머니.
-    celebrate(game, new THREE.Vector3(0, 1.6, 0), '#7cf0ff', 'core');
+    celebrate(game, new THREE.Vector3(0, 3.6, 0), '#7cf0ff', 'core');
     bindNav();
   }
 
@@ -1926,6 +2012,8 @@ function runFinale(game, ui) {
     game.progress = outcome.progress;
     persistProgress(game.progress);
     updateHud(game, ui);
+    // 최종장 대화창을 닫고 그 위에 증명서를 띄운다(닫으면 섬으로 복귀).
+    closeDialog(game, ui);
     showCertificate(game, ui);
   }
 
@@ -1965,8 +2053,15 @@ function closeDialog(game, ui) {
   ui.dialog.hidden = true;
   game.paused = false;
   ui.root.classList.remove('is-dialog-open');
+  ui.root.classList.remove('is-cinematic');
   ui.root.querySelector('[data-game-canvas]')?.focus?.();
   game.updateRotateHint?.();
+  // 최종장을 끝맺지 않고 닫았다면 등장한 노이즈를 치운다(노바·완료 상태는 유지).
+  const boss = game.renderState?.noiseBoss;
+  if (boss && boss.kind === 'noise' && !game.progress.aiCoreCompleted) {
+    game.renderState.scene.remove(boss.group);
+    game.renderState.noiseBoss = null;
+  }
 }
 
 function toggleJournal(game, ui) {
