@@ -9,6 +9,7 @@ import { createBurstSystem, createFloatingIcon, setIconEmoji } from './effects.j
 import { CLASSIFY_BUCKETS, getClassifyChallenge, scoreClassify } from './classify.js';
 import { createCompanion, createNoiseBoss, createNova, createNpcCharacter, createPlayerCharacter } from './characters.js';
 import {
+  countMisplaced,
   createPuzzleState,
   cyclePuzzleObject,
   getShrinePuzzle,
@@ -2178,7 +2179,48 @@ function startShrinePuzzle(game, ui, shrineId) {
     return { group, orb, sprite, obj, position: group.position.clone() };
   });
 
-  game.puzzle = { active: true, topicId, shrineId, states, pedestals, nearIndex: -1, solved: false };
+  // 확인의 종 — 돌을 다 맞춘 뒤 A로 울려야 판정된다(연타로 저절로 풀리지 않게).
+  const bellGroup = new THREE.Group();
+  const bellX = basePos.x + ((n - 1) / 2 + 1.35) * 1.6;
+  const bellZ = basePos.z + 1.7;
+  bellGroup.position.set(bellX, 0, bellZ);
+  const bellStand = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.3, 0.4, 0.7, 12),
+    new THREE.MeshStandardMaterial({ color: 0xb9b0c8, roughness: 0.7 })
+  );
+  bellStand.position.y = 0.35;
+  bellStand.castShadow = true;
+  const bellBody = new THREE.Mesh(
+    new THREE.ConeGeometry(0.34, 0.5, 14, 1, true),
+    new THREE.MeshStandardMaterial({ color: 0xffd76a, emissive: 0xffb032, emissiveIntensity: 0.5, roughness: 0.35, metalness: 0.35, side: THREE.DoubleSide })
+  );
+  bellBody.position.y = 1.05;
+  const bellTop = new THREE.Mesh(
+    new THREE.SphereGeometry(0.09, 12, 10),
+    new THREE.MeshStandardMaterial({ color: 0xffe9a8, emissive: 0xffcf5a, emissiveIntensity: 0.7, roughness: 0.3 })
+  );
+  bellTop.position.y = 1.34;
+  const bellTag = createLabelSprite('확인의 종 🔔', '#ffd76a');
+  bellTag.scale.set(1.9, 0.44, 1);
+  bellTag.position.y = 0.05;
+  bellGroup.add(bellStand, bellBody, bellTop, bellTag);
+  scene.add(bellGroup);
+
+  game.puzzle = {
+    active: true,
+    topicId,
+    shrineId,
+    states,
+    pedestals,
+    nearIndex: -1,
+    solved: false,
+    bellGroup,
+    bellBody,
+    bellPosition: bellGroup.position.clone(),
+    nearBell: false,
+    commitCooldown: 0,
+    failedCommits: 0
+  };
   ui.root.classList.add('is-combat'); // A 버튼을 강조(공격 버튼 스타일 재사용)
   if (ui.actionLabel) {
     ui.actionLabel.textContent = '🔁';
@@ -2212,14 +2254,22 @@ function refreshPuzzleEmblems(game) {
 
 function puzzleCycle(game, ui) {
   const pz = game.puzzle;
-  if (!pz || !pz.active || pz.nearIndex < 0) {
+  if (!pz || !pz.active) {
+    return;
+  }
+  // 종 근처에서 A → 답 확인(커밋). 돌 근처에서 A → 그 돌만 순환.
+  if (pz.nearBell) {
+    puzzleCommit(game, ui);
+    return;
+  }
+  if (pz.nearIndex < 0) {
     game.audio?.playClick();
     return;
   }
   const i = pz.nearIndex;
   pz.states = cyclePuzzleObject(pz.topicId, pz.states, i);
   const puzzle = getShrinePuzzle(pz.topicId);
-  // 해당 돌의 스프라이트만 갱신.
+  // 해당 돌의 스프라이트만 갱신. (자동 정답 판정은 하지 않는다 — 종을 울려야 확인.)
   const ped = pz.pedestals[i];
   const fresh = makeStateSprite(puzzle.objects[i].states[pz.states[i]]);
   fresh.position.copy(ped.sprite.position);
@@ -2229,15 +2279,49 @@ function puzzleCycle(game, ui) {
   ped.group.add(fresh);
   ped.sprite = fresh;
   game.audio?.playClick();
-  if (isPuzzleSolved(pz.topicId, pz.states)) {
-    winShrinePuzzle(game, ui);
+}
+
+// 확인의 종을 울려 답을 판정한다. 정답 → 통과, 오답 → 정답 비공개 피드백 + 시도 기록.
+function puzzleCommit(game, ui) {
+  const pz = game.puzzle;
+  if (!pz || !pz.active || pz.commitCooldown > 0) {
+    return;
   }
+  pz.commitCooldown = 1.2; // 연타 스팸 방지
+  if (pz.bellBody) {
+    pz.bellBody.rotation.z = 0.5; // 딸랑 흔들림(updatePuzzle에서 복귀)
+  }
+  if (isPuzzleSolved(pz.topicId, pz.states)) {
+    game.audio?.playCorrect();
+    winShrinePuzzle(game, ui);
+    return;
+  }
+  // 오답: 검증된 상태 전이를 재사용해 '실패 시도'를 기록(리포트 진실화).
+  const shrine = getShrineById(pz.shrineId);
+  const wrong = shrine.choices.find((c) => !c.correct);
+  if (wrong) {
+    game.progress = applyShrineResult(game.progress, pz.shrineId, wrong.id).progress;
+    persistProgress(game.progress);
+  }
+  pz.failedCommits += 1;
+  game.audio?.playWrong();
+  addShake(game, 0.12);
+  const puzzle = getShrinePuzzle(pz.topicId);
+  const left = countMisplaced(pz.topicId, pz.states);
+  // 정답은 알려주지 않는다: 1회차는 목표 재제시, 2회차부터 남은 개수만.
+  ui.puzzleHint.textContent = pz.failedCommits < 2
+    ? `아직이에요 — ${puzzle.goalKo}`
+    : `돌 ${left}개가 아직 어긋나 있어요. 다시 살펴봐요`;
+  updateHud(game, ui);
 }
 
 function updatePuzzle(delta, game, ui) {
   const pz = game.puzzle;
   if (!pz || !pz.active) {
     return;
+  }
+  if (pz.commitCooldown > 0) {
+    pz.commitCooldown = Math.max(0, pz.commitCooldown - delta);
   }
   const elapsed = clock.elapsedTime;
   // 가장 가까운 돌을 찾아 강조하고 안내를 갱신.
@@ -2252,16 +2336,35 @@ function updatePuzzle(delta, game, ui) {
     // 살짝 둥실 + 회전.
     ped.orb.position.y = 1.0 + Math.sin(elapsed * 2 + i) * 0.06;
     ped.orb.rotation.y += delta * 0.8;
+  });
+  // 종과의 거리 — 종이 더 가까우면 종을 조준.
+  const bellDist = pz.bellPosition
+    ? Math.hypot(game.player.position.x - pz.bellPosition.x, game.player.position.z - pz.bellPosition.z)
+    : Infinity;
+  pz.nearBell = bellDist < PUZZLE_REACH && bellDist <= nearDist;
+  if (pz.nearBell) {
+    nearIndex = -1;
+  }
+  pz.nearIndex = nearIndex;
+  // 조준 강조.
+  pz.pedestals.forEach((ped, i) => {
     const targeted = i === nearIndex;
     ped.orb.material.emissiveIntensity = targeted ? 1.1 : 0.4;
     ped.orb.scale.setScalar(targeted ? 1.18 : 1);
   });
-  pz.nearIndex = nearIndex;
+  if (pz.bellBody) {
+    pz.bellBody.rotation.z *= 1 - Math.min(1, delta * 6); // 딸랑 후 복귀
+    pz.bellBody.material.emissiveIntensity = pz.nearBell ? 1.0 : 0.5;
+  }
   const puzzle = getShrinePuzzle(pz.topicId);
-  if (nearIndex >= 0) {
-    ui.puzzleHint.textContent = `가까운 돌: ${puzzle.objects[nearIndex].labelKo} — A로 바꾸기`;
-  } else {
-    ui.puzzleHint.textContent = '돌에 다가가 A로 바꿔요';
+  if (pz.commitCooldown <= 0) {
+    if (pz.nearBell) {
+      ui.puzzleHint.textContent = '🔔 확인의 종 — A로 울려 답을 확인해요';
+    } else if (nearIndex >= 0) {
+      ui.puzzleHint.textContent = `가까운 돌: ${puzzle.objects[nearIndex].labelKo} — A로 바꾸기`;
+    } else {
+      ui.puzzleHint.textContent = '돌을 맞춘 뒤 종으로 가서 확인해요';
+    }
   }
 }
 
@@ -2304,6 +2407,9 @@ function endShrinePuzzle(game, ui) {
   }
   for (const ped of pz.pedestals) {
     game.renderState.scene.remove(ped.group);
+  }
+  if (pz.bellGroup) {
+    game.renderState.scene.remove(pz.bellGroup);
   }
   game.puzzle = null;
   ui.root.classList.remove('is-combat');

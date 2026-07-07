@@ -92,3 +92,18 @@ export function isPuzzleSolved(topicId, states) {
   }
   return puzzle.solved(states, puzzle.objects);
 }
+
+// 아직 어긋난 돌 개수(정답을 알려주지 않는 힌트용). 0이면 해결.
+// - 개별 정답형(privacy/copyright/deepfake): 정답과 다른 돌 수.
+// - 관계형(bias, 모두 서로 달라야 함): 서로 다르게 만들려면 바꿔야 하는 최소 돌 수.
+export function countMisplaced(topicId, states) {
+  const puzzle = SHRINE_PUZZLES[topicId];
+  if (!puzzle) {
+    return Array.isArray(states) ? states.length : 0;
+  }
+  const perObject = puzzle.objects.every((o) => o.correct !== null && o.correct !== undefined);
+  if (perObject) {
+    return puzzle.objects.reduce((n, o, i) => n + (states[i] !== o.correct ? 1 : 0), 0);
+  }
+  return states.length - new Set(states).size;
+}
