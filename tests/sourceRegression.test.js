@@ -29,6 +29,20 @@ test('touch controls expose all movement directions including down', () => {
   assert.match(cssSource, /grid-template-rows:\s*repeat\(3, 48px\)/);
 });
 
+test('boss fight has depth: weak-point tool matching, weakness rotation, and dodgeable waves', () => {
+  // 약점 색과 다른 도구는 튕겨 대미지가 없어야 한다.
+  assert.match(mainSource, /activeToolId !== c\.weakToolId/);
+  assert.match(mainSource, /function rotateWeakness/);
+  // 잡음 파도 발사 + 회피 실패 시 스턴.
+  assert.match(mainSource, /function fireNoiseWave/);
+  assert.match(mainSource, /function staggerPlayer/);
+  assert.match(mainSource, /c\.stun = STUN_TIME/);
+  // 도구 전환(키보드/터치/벨트 탭).
+  assert.match(mainSource, /function cycleActiveTool/);
+  assert.match(mainSource, /function selectActiveTool/);
+  assert.match(mainSource, /data-touch="tool"/);
+});
+
 test('controls are split: movement d-pad on the left, action/attack button on the right', () => {
   // 이동은 왼쪽 d-pad, 확인·공격은 오른쪽 A 버튼(젤다식 액션 배치).
   const controls = cssSource.match(/\.touch-controls \{[\s\S]*?\}/)?.[0] ?? '';

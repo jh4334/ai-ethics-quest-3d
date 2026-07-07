@@ -1305,6 +1305,47 @@ button:disabled {
   transform: translateY(-2px);
 }
 
+/* 전투 중 '든 도구'로 선택된 슬롯 강조 */
+.tool-slot[data-active="true"] {
+  outline: 3px solid #ff5f7e;
+  outline-offset: 1px;
+  transform: translateY(-3px) scale(1.06);
+}
+
+/* 전투 HUD: 약점 색 표시 */
+.boss-weak {
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.boss-weak b {
+  font-size: 1.05rem;
+}
+
+/* 도구 바꾸기(🔄) 버튼 — 전투 중에만 보인다 */
+.touch-tool {
+  display: none;
+  width: 60px;
+  height: 60px;
+  margin-right: 10px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  align-self: center;
+  background: radial-gradient(circle at 40% 36%, #eafbf2, #bfe6d4 70%, #94cbb4);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 6px 16px rgba(40, 90, 70, 0.28);
+}
+
+.is-combat .touch-tool {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.touch-tool:active {
+  transform: translateY(2px) scale(0.95);
+}
+
 .reflection[data-tool="true"] {
   border-left-color: var(--gold);
   background: rgba(255, 244, 214, 0.92);
