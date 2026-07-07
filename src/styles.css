@@ -1357,6 +1357,41 @@ button:disabled {
   font-size: 1.05rem;
 }
 
+/* 노이즈의 '잘못된 기억' 말풍선 — 이 상황엔 어떤 약속이 필요한지 읽고 판단 */
+.boss-memory {
+  margin: 4px 0 7px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(90, 60, 150, 0.32);
+  border: 1px solid rgba(180, 140, 255, 0.4);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.35;
+  color: #fff;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.boss-memory:empty {
+  display: none;
+}
+
+.boss-memory.pop {
+  animation: memoryPop 420ms ease-out;
+}
+
+@keyframes memoryPop {
+  0% { transform: scale(0.94); opacity: 0.4; }
+  40% { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boss-memory.pop { animation-duration: 1ms; }
+}
+
 /* 도구 바꾸기(🔄) 버튼 — 전투 중에만 보인다 */
 .touch-tool {
   display: none;
