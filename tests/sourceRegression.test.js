@@ -11,10 +11,15 @@ test('keyboard interaction does not swallow native button activation keys', () =
   assert.match(mainSource, /!isFormControl && \(event\.code === 'KeyE'/);
 });
 
-test('final core disables every choice after the correct completion answer', () => {
-  assert.match(mainSource, /outcome\.result\?\.correct/);
-  assert.match(mainSource, /querySelectorAll\('\[data-core-choice\]'\)/);
-  assert.match(mainSource, /sibling\.disabled = true/);
+test('final core runs the Noise->Nova finale and is terminal once completed', () => {
+  // 최종장: 지운다/가르친다 선택을 거쳐 노바로 재탄생 → 증명서.
+  assert.match(mainSource, /data-finale-choice/);
+  assert.match(mainSource, /renderTeach|renderErase/);
+  // 가르치면 검증된 완료 전이를 재사용해 코어를 완료하고 증명서를 띄운다.
+  assert.match(mainSource, /completeFinalCore\(game\.progress, 'balanced-promise'\)/);
+  assert.match(mainSource, /showCertificate\(game, ui\)/);
+  // 이미 완료했다면 선택을 다시 묻지 않고 후일담을 보여준다.
+  assert.match(mainSource, /if \(game\.progress\.aiCoreCompleted\)/);
 });
 
 test('touch controls expose all movement directions including down', () => {

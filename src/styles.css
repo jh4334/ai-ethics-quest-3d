@@ -946,33 +946,154 @@ button:disabled {
 
 .cert-badges {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 8px;
   list-style: none;
   padding: 0;
   margin: 0 0 16px;
+  text-align: left;
 }
 
 .cert-badges li {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   padding: 9px 11px;
   border-radius: 10px;
   font-weight: 700;
   background: rgba(255, 255, 255, 0.8);
   border: 1px solid var(--line);
+  border-left: 4px solid color-mix(in srgb, var(--topic-color) 70%, white);
 }
 
 .cert-badge {
   filter: drop-shadow(0 0 6px color-mix(in srgb, var(--topic-color) 60%, transparent));
 }
 
+.cert-deed {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.4;
+}
+
+.cert-deed em {
+  font-style: normal;
+  font-weight: 600;
+  color: #4a5a56;
+}
+
+.cert-recovered {
+  margin: 0 0 14px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(47, 143, 127, 0.12);
+  font-weight: 700;
+  color: #21705f;
+  line-height: 1.5;
+}
+
 .cert-pledge {
-  margin: 0 0 18px;
+  margin: 0 0 8px;
   font-style: italic;
   color: #4a5a56;
   line-height: 1.55;
+}
+
+.cert-signature {
+  margin: 0 0 18px;
+  font-weight: 800;
+  color: #7a5a12;
+}
+
+/* ===== 최종장(노이즈의 뱃속) 연출 ===== */
+.finale-scene {
+  padding: 4px 0 2px;
+}
+
+.finale-line {
+  margin: 0 0 8px;
+  line-height: 1.6;
+}
+
+.finale-result {
+  font-weight: 800;
+  color: #21705f;
+}
+
+.finale-count {
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--accent, #2f8f7f);
+}
+
+.finale-tool {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.finale-emoji {
+  font-size: 1.25rem;
+  filter: drop-shadow(0 0 8px rgba(124, 240, 255, 0.5));
+}
+
+.finale-teach {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+  display: grid;
+  gap: 8px;
+}
+
+.finale-teach-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.6);
+  border-left: 4px solid color-mix(in srgb, var(--topic-color) 70%, white);
+}
+
+.finale-teach-topic {
+  font-weight: 800;
+  color: color-mix(in srgb, var(--topic-color) 60%, #204038);
+}
+
+.finale-teach-deed {
+  line-height: 1.45;
+}
+
+.finale-teach-deed em {
+  font-style: normal;
+  font-weight: 700;
+  color: #a06a12;
+}
+
+.finale-teach-lesson {
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
+.finale-nav {
+  margin-top: 12px;
+}
+
+.finale-next {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-weight: 800;
+  cursor: pointer;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 22%, white), color-mix(in srgb, var(--accent) 40%, white));
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, white);
+}
+
+.finale-next:hover {
+  filter: brightness(1.04);
 }
 
 .cert-actions {

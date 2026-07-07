@@ -9,6 +9,12 @@ import { createBurstSystem, createFloatingIcon, setIconEmoji } from './effects.j
 import { CLASSIFY_BUCKETS, getClassifyChallenge, scoreClassify } from './classify.js';
 import { createCompanion, createNpcCharacter, createPlayerCharacter } from './characters.js';
 import {
+  FINALE,
+  buildNovaCertificate,
+  getFinaleToolSteps,
+  getTeachingLines
+} from './finale.js';
+import {
   QUESTS,
   applyGateChoice,
   applyIntroTalk,
@@ -130,8 +136,10 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
       return;
     }
     // 세로로 잡은 폰에서만 가로 권장 안내를 띄운다(태블릿·데스크톱 제외).
+    // 대화창이 열려 있으면 내용과 겹치므로 숨긴다.
     const portraitPhone = IS_TOUCH && window.innerHeight > window.innerWidth && window.innerWidth < 560;
-    ui.rotateHint.hidden = !(portraitPhone && game.started);
+    const dialogOpen = ui.dialog && !ui.dialog.hidden;
+    ui.rotateHint.hidden = !(portraitPhone && game.started && !dialogOpen);
   };
   const onResize = () => {
     resize(renderer, camera, root, renderState.composer);
@@ -1206,18 +1214,27 @@ function showCertificate(game, ui) {
   if (!ui.certificate) {
     return;
   }
-  const collected = ETHICS_TOPICS.filter((topic) =>
-    game.progress.collectedFragments.includes(topic.id)
-  );
-  const badges = collected
-    .map((topic) => `<li><span class="cert-badge" style="--topic-color:${topic.color}">🏅</span>${topic.titleKo}</li>`)
+  const cert = buildNovaCertificate(game.progress);
+  const badges = cert.deeds
+    .map(
+      (deed) => `
+      <li style="--topic-color:${deed.color}">
+        <span class="cert-badge" style="--topic-color:${deed.color}">🏅</span>
+        <span class="cert-deed">
+          <strong>${deed.titleKo}</strong>
+          ${deed.deedKo ? `<em>“${deed.deedKo}”${deed.recovered ? ' — 실수 뒤 바로잡음' : ''}</em>` : ''}
+        </span>
+      </li>`
+    )
     .join('');
   ui.certificateCard.innerHTML = `
-    <p class="cert-eyebrow">AI 윤리의 섬</p>
-    <h2 class="cert-title">AI 윤리 수호자 수료증</h2>
-    <p class="cert-body">섬의 AI 코어를 깨우고 아래 윤리를 지키기로 약속했습니다.</p>
+    <p class="cert-eyebrow">${cert.eyebrowKo}</p>
+    <h2 class="cert-title">${cert.titleKo}</h2>
+    <p class="cert-body">${cert.bodyKo}</p>
     <ul class="cert-badges">${badges}</ul>
-    <p class="cert-pledge">“개인정보를 지키고, 편향을 살피고, 출처를 밝히고, 진짜인지 확인하겠습니다.”</p>
+    ${cert.recoveredNoteKo ? `<p class="cert-recovered">${cert.recoveredNoteKo}</p>` : ''}
+    <p class="cert-pledge">${cert.pledgeKo}</p>
+    <p class="cert-signature">${cert.novaLineKo}</p>
     <div class="cert-actions">
       <button type="button" class="cert-print" data-cert-print>인쇄 / 저장</button>
       <button type="button" class="cert-close" data-cert-close>닫기</button>
@@ -1731,52 +1748,163 @@ function openShrineDialog(game, ui, shrineId) {
 
 function openCoreDialog(game, ui) {
   const unlocked = canUnlockFinalCore(game.progress.collectedFragments);
-  ui.dialogKicker.textContent = unlocked ? '최종 미션' : '중앙 코어';
-  ui.dialogTitle.textContent = FINAL_CORE_MISSION.nameKo;
+  ui.dialogKicker.textContent = unlocked ? FINALE.titleKo : '중앙 코어';
+  ui.dialogTitle.textContent = unlocked ? '노이즈와 마주 서다' : FINAL_CORE_MISSION.nameKo;
 
   if (!unlocked) {
     const summary = getProgressSummary(game.progress.collectedFragments);
     ui.dialogBody.innerHTML = `
-      <p>AI 코어는 아직 조용합니다.</p>
-      <p>${FINAL_CORE_MISSION.unlockRequirement}개 이상의 윤리 조각이 필요해요. 현재 ${summary.collected}개를 모았습니다.</p>
+      <p>코어의 틈에서 지지직 안개가 새어 나온다. 아직 내려갈 수 없다.</p>
+      <p>윤리 조각이 ${FINAL_CORE_MISSION.unlockRequirement}개 이상 필요해요. 지금은 ${summary.collected}개를 모았습니다.</p>
     `;
     openDialog(game, ui);
     return;
   }
 
-  const choices = FINAL_CORE_MISSION.choices
-    .map((choice) => `<button type="button" class="choice-button" data-core-choice="${choice.id}">${choice.textKo}</button>`)
-    .join('');
+  // 이미 노바를 되살렸다면: 짧은 후일담 + 증명서 다시 보기.
+  if (game.progress.aiCoreCompleted) {
+    ui.dialogBody.innerHTML = `
+      <p class="prompt-line">노바가 섬 위를 반짝이며 돈다. "또 놀러 왔구나. 좋은 것들아!"</p>
+      <div class="finale-nav">
+        <button type="button" class="finale-next" data-cert-again>증명서 다시 보기</button>
+      </div>
+    `;
+    ui.dialogBody.querySelector('[data-cert-again]').addEventListener('click', () => showCertificate(game, ui));
+    openDialog(game, ui);
+    return;
+  }
 
-  ui.dialogBody.innerHTML = `
-    <p class="prompt-line">${FINAL_CORE_MISSION.promptKo}</p>
-    <div class="choice-list">${choices}</div>
-    <p class="feedback-line" data-feedback>${game.progress.aiCoreCompleted ? FINAL_CORE_MISSION.completionKo : ''}</p>
-  `;
+  runFinale(game, ui);
+  openDialog(game, ui);
+}
 
-  const feedback = ui.dialogBody.querySelector('[data-feedback]');
-  for (const button of ui.dialogBody.querySelectorAll('[data-core-choice]')) {
-    button.disabled = game.progress.aiCoreCompleted;
-    button.addEventListener('click', () => {
-      const outcome = completeFinalCore(game.progress, button.dataset.coreChoice);
-      game.progress = outcome.progress;
-      persistProgress(game.progress);
-      feedback.textContent = outcome.messageKo;
-      feedback.dataset.correct = String(outcome.result?.correct ?? false);
-      if (outcome.result?.correct) {
-        for (const sibling of ui.dialogBody.querySelectorAll('[data-core-choice]')) {
-          sibling.disabled = true;
+// 최종장 진행: 도입 → 4도구 돌봄 시퀀스 → 지운다/가르친다 선택 → (지우기는 부드럽게 되돌림)
+// → 가르치면 행적이 곧 가르침이 되어 노바로 재탄생 → 증명서.
+function runFinale(game, ui) {
+  const steps = getFinaleToolSteps(game.progress);
+  const lines = (arr) => arr.map((text) => `<p class="finale-line">${text}</p>`).join('');
+  const nav = (label, attr) =>
+    `<div class="finale-nav"><button type="button" class="finale-next" ${attr}>${label}</button></div>`;
+
+  function renderIntro() {
+    ui.dialogBody.innerHTML = `
+      <div class="finale-scene" data-noise="big">${lines(FINALE.introKo)}</div>
+      ${nav('마주 선다 →', 'data-finale="tools:0"')}
+    `;
+    bindNav();
+  }
+
+  function renderToolStep(index) {
+    const step = steps[index];
+    const isLast = index + 1 >= steps.length;
+    ui.dialogBody.innerHTML = `
+      <div class="finale-scene" data-noise="shrink">
+        <p class="finale-count">약속의 도구 ${index + 1}/${steps.length}</p>
+        <p class="finale-tool"><span class="finale-emoji">${step.emoji}</span> ${step.nameKo}</p>
+        <p class="finale-line">${step.actionKo}</p>
+        <p class="finale-line finale-result">${step.resultKo}</p>
+      </div>
+      ${nav(isLast ? '노이즈 앞에 서다 →' : '다음 도구 →', `data-finale="${isLast ? 'choice' : `tools:${index + 1}`}"`)}
+    `;
+    game.audio?.playCollect();
+    bindNav();
+  }
+
+  function renderChoice() {
+    const buttons = FINALE.choices
+      .map((c) => `<button type="button" class="choice-button" data-finale-choice="${c.id}">${c.textKo}</button>`)
+      .join('');
+    ui.dialogBody.innerHTML = `
+      <div class="finale-scene" data-noise="small">
+        <p class="prompt-line">${FINALE.choicePromptKo}</p>
+      </div>
+      <div class="choice-list">${buttons}</div>
+    `;
+    for (const button of ui.dialogBody.querySelectorAll('[data-finale-choice]')) {
+      button.addEventListener('click', () => {
+        game.audio?.playClick();
+        if (button.dataset.finaleChoice === 'teach') {
+          renderTeach();
+        } else {
+          renderErase();
         }
-        // 코어 완성 세리머니 + 수료증 엔딩.
-        celebrate(game, new THREE.Vector3(0, 1.6, 0), '#7cf0ff', 'core');
-        window.setTimeout(() => showCertificate(game, ui), 900);
-      } else {
-        game.audio?.playWrong();
+      });
+    }
+  }
+
+  // [지운다] — 실패가 아니라 배움. 코어가 말리고 다시 묻는다.
+  function renderErase() {
+    game.audio?.playWrong();
+    ui.dialogBody.innerHTML = `
+      <div class="finale-scene" data-noise="small">${lines(FINALE.eraseKo)}</div>
+      ${nav('다시 생각한다 →', 'data-finale="choice"')}
+    `;
+    bindNav();
+  }
+
+  // [가르친다] — 네가 섬에서 실제로 한 행동이 그대로 가르침이 된다.
+  function renderTeach() {
+    const teachings = getTeachingLines(game.progress);
+    const items = teachings
+      .map(
+        (t) => `
+        <li class="finale-teach-item" style="--topic-color:${t.color}">
+          <span class="finale-teach-topic">「${t.titleKo}」의 약속</span>
+          <span class="finale-teach-deed">너는 「${t.deedKo}」${t.recovered ? ' <em>(실수했지만 돌아가 바로잡았지)</em>' : ''}.</span>
+          <span class="finale-teach-lesson">${t.promiseKo}</span>
+        </li>`
+      )
+      .join('');
+    ui.dialogBody.innerHTML = `
+      <div class="finale-scene" data-noise="teach">
+        <p class="finale-line">${FINALE.teachIntroKo}</p>
+        <ul class="finale-teach">${items}</ul>
+      </div>
+      ${nav('약속을 다 들려준다 →', 'data-finale="rebirth"')}
+    `;
+    bindNav();
+  }
+
+  function renderRebirth() {
+    ui.dialogBody.innerHTML = `
+      <div class="finale-scene" data-noise="nova">${lines(FINALE.rebirthKo)}</div>
+      ${nav('섬으로 돌아간다 →', 'data-finale="done"')}
+    `;
+    // 노바 재탄생 세리머니.
+    celebrate(game, new THREE.Vector3(0, 1.6, 0), '#7cf0ff', 'core');
+    bindNav();
+  }
+
+  function finish() {
+    // 검증된 상태 전이를 재사용해 코어 완료 플래그를 세운다.
+    const outcome = completeFinalCore(game.progress, 'balanced-promise');
+    game.progress = outcome.progress;
+    persistProgress(game.progress);
+    updateHud(game, ui);
+    showCertificate(game, ui);
+  }
+
+  function bindNav() {
+    const button = ui.dialogBody.querySelector('[data-finale]');
+    if (!button) {
+      return;
+    }
+    button.addEventListener('click', () => {
+      game.audio?.playClick();
+      const target = button.dataset.finale;
+      if (target === 'choice') {
+        renderChoice();
+      } else if (target === 'rebirth') {
+        renderRebirth();
+      } else if (target === 'done') {
+        finish();
+      } else if (target.startsWith('tools:')) {
+        renderToolStep(Number(target.slice('tools:'.length)));
       }
-      updateHud(game, ui);
     });
   }
-  openDialog(game, ui);
+
+  renderIntro();
 }
 
 function openDialog(game, ui) {
@@ -1785,6 +1913,7 @@ function openDialog(game, ui) {
   ui.prompt.hidden = true;
   // 모바일에서 대화창 뒤로 방향 버튼이 비치지 않도록 숨긴다(대화 중엔 이동 불가).
   ui.root.classList.add('is-dialog-open');
+  game.updateRotateHint?.();
 }
 
 function closeDialog(game, ui) {
@@ -1792,6 +1921,7 @@ function closeDialog(game, ui) {
   game.paused = false;
   ui.root.classList.remove('is-dialog-open');
   ui.root.querySelector('[data-game-canvas]')?.focus?.();
+  game.updateRotateHint?.();
 }
 
 function toggleJournal(game, ui) {
