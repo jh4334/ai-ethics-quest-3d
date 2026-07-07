@@ -19,15 +19,18 @@ import {
 import { pickMemory } from './bossMemories.js';
 import {
   cellToWorld,
+  computeBeamPath,
   countRemaining,
   createRoomState,
   getDungeonRoom,
   hasDungeonRoom,
   isRoomSolved,
+  pickOrPlace,
   pushCrate,
+  rotateMirror,
   worldToCell
 } from './dungeonPuzzles.js';
-import { buildDungeonRoom, disposeDungeonRoom } from './dungeon.js';
+import { buildDungeonRoom, disposeDungeonRoom, syncDungeonVisuals } from './dungeon.js';
 import {
   FINALE,
   buildNovaCertificate,
@@ -2789,6 +2792,13 @@ function enterDungeon(game, ui, topicId, shrineId) {
   // 남쪽 입구 안쪽에서 시작(문 바로 위가 아니라 한 칸 안 — 입장 즉시 퇴장 방지).
   const spawnCell = [room.entry[0], Math.max(0, room.entry[1] - 1)];
   const spawn = cellToWorld(topicId, spawnCell);
+  // A로 상호작용할 대상들(mechanic별) — 근접 판정용 월드 좌표를 미리 계산.
+  const targets = [];
+  for (const list of [room.dispensers, room.beds, room.exhibits, room.plates, room.mirrors]) {
+    for (const t of list ?? []) {
+      targets.push({ id: t.id, world: cellToWorld(topicId, t.cell) });
+    }
+  }
   game.dungeon = {
     active: true,
     topicId,
@@ -2796,6 +2806,7 @@ function enterDungeon(game, ui, topicId, shrineId) {
     room,
     state: createRoomState(topicId),
     built,
+    targets,
     bounds: built.bounds,
     exitWorld: cellToWorld(topicId, room.entry),
     pedestalWorld: cellToWorld(topicId, room.pedestal),
@@ -2814,15 +2825,25 @@ function enterDungeon(game, ui, topicId, shrineId) {
 
   triggerFlash(ui, '#ffffff');
   game.audio?.playClick();
-  ui.root.classList.add('is-combat'); // A 버튼 강조(밀기)
+  ui.root.classList.add('is-combat'); // A 버튼 강조
+  const ACTION_LABEL = { push: '밀기', carry: '잡기', beam: '돌리기' };
+  const FIRST_HINT = {
+    push: '상자 앞에 서서 A로 밀어요 · 남쪽 빛 문으로 나가요',
+    carry: '물건 앞에서 A로 집고, 놓을 곳에서 다시 A · 남쪽 빛 문으로 나가요',
+    beam: '거울 앞에서 A로 돌려 빛의 길을 바꿔요 · 남쪽 빛 문으로 나가요'
+  };
   if (ui.actionLabel) {
-    ui.actionLabel.textContent = '밀기';
+    ui.actionLabel.textContent = ACTION_LABEL[room.mechanic] ?? 'A';
   }
   ui.prompt.hidden = true;
   ui.puzzleHud.hidden = false;
   ui.puzzleTitle.textContent = `🧩 ${room.titleKo}`;
   ui.puzzleGoal.textContent = room.goalKo;
-  ui.puzzleHint.textContent = '상자 앞에 서서 A로 밀어요 · 남쪽 빛 문으로 나가요';
+  ui.puzzleHint.textContent = FIRST_HINT[room.mechanic] ?? '';
+  // 초기 상태를 비주얼에 반영(빔 방은 초기 광선 경로 포함).
+  syncDungeonVisuals(topicId, built, game.dungeon.state, {
+    beam: room.mechanic === 'beam' ? computeBeamPath(topicId, game.dungeon.state) : undefined
+  });
   game.updateRotateHint?.();
 }
 
@@ -2873,15 +2894,38 @@ function crateIdAtCell(dg, cell) {
   return null;
 }
 
-function syncCrateMeshes(dg) {
-  for (const crate of dg.room.crates) {
-    const mesh = dg.built.crateMeshes.get(crate.id);
-    if (!mesh) {
-      continue;
+// 현재 상태(+빔 경로)를 3D에 반영.
+function syncDungeon(dg) {
+  syncDungeonVisuals(dg.topicId, dg.built, dg.state, {
+    beam: dg.room.mechanic === 'beam' ? computeBeamPath(dg.topicId, dg.state) : undefined
+  });
+}
+
+// 플레이어에서 가장 가까운 상호작용 대상(씨앗 통·밭·전시대·이름표·거울) id.
+function nearestDungeonTarget(game, range = 1.25) {
+  const dg = game.dungeon;
+  let best = null;
+  let bestDist = range;
+  for (const t of dg.targets) {
+    const d = Math.hypot(game.player.position.x - t.world.x, game.player.position.z - t.world.z);
+    if (d < bestDist) {
+      best = t;
+      bestDist = d;
     }
-    const world = cellToWorld(dg.topicId, dg.state.crates[crate.id]);
-    mesh.group.position.set(world.x, 0, world.z);
   }
+  return best?.id ?? null;
+}
+
+// 클리어 공통 처리(모든 mechanic).
+function markDungeonSolved(game, ui) {
+  const dg = game.dungeon;
+  if (dg.solved) {
+    return;
+  }
+  dg.solved = true;
+  game.audio?.playCorrect();
+  celebrate(game, new THREE.Vector3(dg.pedestalWorld.x, 1.3, dg.pedestalWorld.z), '#ffd76a', 'collect');
+  ui.puzzleHint.textContent = '✨ 풀렸어요! 북쪽 제단으로 가서 A로 약속의 도구를 받아요';
 }
 
 function dungeonAction(game, ui) {
@@ -2908,10 +2952,33 @@ function dungeonAction(game, ui) {
       awardDungeonItem(game, ui);
       return;
     }
-    // 이미 풀린 뒤에는 상자를 더 밀 수 없다(정답을 흐트러뜨려 리포트가 오염되는 것 방지).
+    // 이미 풀린 뒤에는 퍼즐을 더 조작할 수 없다(정답을 흐트러뜨려 리포트가 오염되는 것 방지).
     game.audio?.playClick();
     return;
   }
+  dg.actionCooldown = DUNGEON_PUSH_COOLDOWN;
+  if (dg.room.mechanic === 'push') {
+    dungeonPushAction(game, ui);
+  } else if (dg.room.mechanic === 'carry') {
+    dungeonCarryAction(game, ui);
+  } else if (dg.room.mechanic === 'beam') {
+    dungeonBeamAction(game, ui);
+  }
+}
+
+// 실패 이벤트 공통 처리: 기록 + 지지직 + 팝업 + 힌트.
+function dungeonRefuse(game, ui, popupKo, hintKo) {
+  const dg = game.dungeon;
+  dg.failedPlacements += 1;
+  recordDungeonMisplace(game);
+  game.audio?.playWrong();
+  addShake(game, 0.12);
+  flashCombatPopup(ui, popupKo, 'bounce');
+  ui.puzzleHint.textContent = hintKo;
+}
+
+function dungeonPushAction(game, ui) {
+  const dg = game.dungeon;
   // 바라보는 방향의 인접 칸 상자를 한 칸 민다.
   const dir = facingGridDir(game.player.direction);
   const playerCell = worldToCell(dg.topicId, game.player.position.x, game.player.position.z);
@@ -2922,15 +2989,8 @@ function dungeonAction(game, ui) {
     return;
   }
   const result = pushCrate(dg.topicId, dg.state, crateId, dir);
-  dg.actionCooldown = DUNGEON_PUSH_COOLDOWN;
   if (result.event === 'wrong-zone') {
-    // 틀린 존 거부: 지지직 + 실패 시도 기록(리포트 진실화).
-    dg.failedPlacements += 1;
-    recordDungeonMisplace(game);
-    game.audio?.playWrong();
-    addShake(game, 0.12);
-    flashCombatPopup(ui, '거기엔 안 돼요!', 'bounce');
-    ui.puzzleHint.textContent = '내 것만 공개 게시판에, 친구 것은 잠금 금고에!';
+    dungeonRefuse(game, ui, '거기엔 안 돼요!', '내 것만 공개 게시판에, 친구 것은 잠금 금고에!');
     return;
   }
   if (!result.moved) {
@@ -2938,21 +2998,104 @@ function dungeonAction(game, ui) {
     return;
   }
   dg.state = result.state;
-  syncCrateMeshes(dg);
+  syncDungeon(dg);
+  game.audio?.[result.event === 'placed' ? 'playCorrect' : 'playClick']?.();
+  if (isRoomSolved(dg.topicId, dg.state)) {
+    markDungeonSolved(game, ui);
+  } else {
+    const left = countRemaining(dg.topicId, dg.state);
+    ui.puzzleHint.textContent = `상자 ${left}개가 아직 제자리가 아니에요`;
+  }
+}
+
+// 손에 든 것을 A 버튼 라벨로 보여준다(잡기 방 공통).
+function updateCarryLabel(game, ui) {
+  const dg = game.dungeon;
+  if (!ui.actionLabel) {
+    return;
+  }
+  if (dg.state.held === null || dg.state.held === undefined) {
+    ui.actionLabel.textContent = '잡기';
+    return;
+  }
+  if (dg.room.dispensers) {
+    const d = dg.room.dispensers.find((x) => x.colorIdx === dg.state.held);
+    ui.actionLabel.textContent = d?.emoji ?? '🌱';
+  } else {
+    ui.actionLabel.textContent = '🏷️';
+  }
+}
+
+function dungeonCarryAction(game, ui) {
+  const dg = game.dungeon;
+  const targetId = nearestDungeonTarget(game);
+  if (!targetId) {
+    game.audio?.playClick();
+    return;
+  }
+  const result = pickOrPlace(dg.topicId, dg.state, targetId);
+  if (result.event === 'duplicate') {
+    dungeonRefuse(game, ui, '같은 색이 이미 있어요!', '꽃밭엔 서로 다른 색을 심어야 해요 — 다양할수록 좋아요');
+    return;
+  }
+  if (result.event === 'fake') {
+    dungeonRefuse(game, ui, '가짜 이름표예요!', '진짜 만든 이의 이름만 작품에 걸 수 있어요');
+    return;
+  }
+  if (result.event === 'wrong-owner') {
+    dungeonRefuse(game, ui, '만든 이가 달라요!', '이 작품을 만든 사람이 누구인지 다시 살펴봐요');
+    return;
+  }
+  if (!result.event) {
+    game.audio?.playClick();
+    return;
+  }
+  dg.state = result.state;
+  syncDungeon(dg);
+  updateCarryLabel(game, ui);
   if (result.event === 'placed') {
     game.audio?.playCorrect();
   } else {
     game.audio?.playClick();
   }
-  if (!dg.solved && isRoomSolved(dg.topicId, dg.state)) {
-    dg.solved = true;
-    game.audio?.playCorrect();
-    celebrate(game, dg.pedestalWorld && new THREE.Vector3(dg.pedestalWorld.x, 1.3, dg.pedestalWorld.z), '#ffd76a', 'collect');
-    ui.puzzleHint.textContent = '✨ 풀렸어요! 북쪽 제단으로 가서 A로 약속의 도구를 받아요';
-  } else if (!dg.solved) {
+  if (isRoomSolved(dg.topicId, dg.state)) {
+    markDungeonSolved(game, ui);
+  } else if (result.event === 'picked') {
+    ui.puzzleHint.textContent = dg.room.dispensers
+      ? '들었어요! 빈 밭 앞에서 A로 심어요'
+      : '들었어요! 맞는 작품 앞에서 A로 걸어요';
+  } else {
     const left = countRemaining(dg.topicId, dg.state);
-    ui.puzzleHint.textContent = `상자 ${left}개가 아직 제자리가 아니에요`;
+    ui.puzzleHint.textContent = `아직 ${left}곳이 비어 있어요`;
   }
+}
+
+function dungeonBeamAction(game, ui) {
+  const dg = game.dungeon;
+  const targetId = nearestDungeonTarget(game);
+  if (!targetId) {
+    game.audio?.playClick();
+    return;
+  }
+  const result = rotateMirror(dg.topicId, dg.state, targetId);
+  if (result.event !== 'rotated') {
+    game.audio?.playClick();
+    return;
+  }
+  dg.state = result.state;
+  game.audio?.playClick();
+  const beam = computeBeamPath(dg.topicId, dg.state);
+  syncDungeonVisuals(dg.topicId, dg.built, dg.state, { beam });
+  if (beam.hit?.kind === 'orb' && beam.hit.real) {
+    markDungeonSolved(game, ui);
+    return;
+  }
+  if (beam.hit?.kind === 'orb' && !beam.hit.real) {
+    const orb = dg.room.orbs.find((o) => o.id === beam.hit.orbId);
+    dungeonRefuse(game, ui, '가짜가 빛났어요!', `${orb?.hintKo ?? ''} 진짜 얼굴을 찾아 거울을 더 돌려봐요`);
+    return;
+  }
+  ui.puzzleHint.textContent = '빛이 벽에 닿았어요 — 거울을 돌려 길을 만들어요';
 }
 
 // 틀린 존 시도를 기존 '실패 선택' 전이로 기록해 학습 리포트의 first-try/retry 신호를 살린다.
