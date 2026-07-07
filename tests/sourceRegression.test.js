@@ -5,11 +5,13 @@ import { readFileSync } from 'node:fs';
 const mainSource = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 const cssSource = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
 const charactersSource = readFileSync(new URL('../src/characters.js', import.meta.url), 'utf8');
+const dungeonSource = readFileSync(new URL('../src/dungeon.js', import.meta.url), 'utf8');
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 
 test('keyboard interaction does not swallow native button activation keys', () => {
   assert.match(mainSource, /isFormControl/);
-  assert.match(mainSource, /!isFormControl && \(event\.code === 'KeyE'/);
+  // 폼 컨트롤 예외는 유지하되, 눌린 채 반복되는 키(event.repeat)는 확인/공격을 재발동하지 않는다.
+  assert.match(mainSource, /!isFormControl && !event\.repeat && \(event\.code === 'KeyE'/);
 });
 
 test('final core runs the Noise->Nova finale and is terminal once completed', () => {
@@ -101,6 +103,22 @@ test('color-grading/vignette pass runs after bloom and before the OutputPass', (
   assert.match(setup, /renderState\.gradePass = grade/);
   // 셰이더는 정적 uniform만 — 시간·랜덤 없음(결정성).
   assert.match(setup, /vignetteStrength/);
+});
+
+test('entering a shrine loads a separate dungeon map (overworld hidden), not just an overlay', () => {
+  // 사당 진입은 별도 맵 로드 — 오버월드 그룹을 통째로 숨기고 던전 룸을 씬에 추가한다.
+  assert.match(mainSource, /renderState\.overworld = world/);
+  assert.match(mainSource, /function enterDungeon/);
+  assert.match(mainSource, /function exitDungeon/);
+  assert.match(mainSource, /rs\.overworld\.visible = false/);
+  assert.match(mainSource, /buildDungeonRoom\(topicId/);
+  // 진입 라우터는 던전이 있으면 별도 맵으로, 없으면 오버레이 퍼즐로 폴백.
+  assert.match(mainSource, /function enterShrineChallenge/);
+  assert.match(mainSource, /hasDungeonRoom\(topicId\)/);
+  // 던전 안에서는 던전 로직만 돌린다(오버월드 애니메이션 스킵).
+  assert.match(mainSource, /game\.mode === 'dungeon'/);
+  // 던전 표현 계층은 게임 로직처럼 결정적이어야 한다.
+  assert.doesNotMatch(dungeonSource, /Math\.random/);
 });
 
 test('package engine range matches the locked Vite runtime floor', () => {

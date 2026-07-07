@@ -18,6 +18,17 @@ import {
 } from './shrinePuzzle.js';
 import { pickMemory } from './bossMemories.js';
 import {
+  cellToWorld,
+  countRemaining,
+  createRoomState,
+  getDungeonRoom,
+  hasDungeonRoom,
+  isRoomSolved,
+  pushCrate,
+  worldToCell
+} from './dungeonPuzzles.js';
+import { buildDungeonRoom, disposeDungeonRoom } from './dungeon.js';
+import {
   FINALE,
   buildNovaCertificate,
   getFinaleToolSteps,
@@ -427,6 +438,8 @@ function createGameState(ui) {
     renderState: null,
     combat: null,
     puzzle: null,
+    dungeon: null,
+    mode: 'overworld',
     finaleResolving: false,
     hitStop: 0,
     shake: 0,
@@ -514,12 +527,18 @@ function createWorld(renderState) {
   const { scene, interactables, shrineCrystals, animated } = renderState;
   // 색을 살리기 위해 안개는 아주 옅게, 먼 배경만 살짝 감싸도록.
   scene.fog = new THREE.Fog(0x9fd9f5, 34, 88);
+  renderState.overworldFog = scene.fog;
 
-  createSky(scene, animated);
+  // 사당 던전 진입 시 오버월드 전체를 한 번에 숨기려고 Group으로 감싼다.
+  const world = new THREE.Group();
+  scene.add(world);
+  renderState.overworld = world;
+
+  createSky(world, animated);
 
   // 밝은 하늘빛 + 따뜻한 반사광의 반구광으로 색을 쨍하게 띄운다.
   const hemiLight = new THREE.HemisphereLight(0xdff3ff, 0x6f8f66, 2.1);
-  scene.add(hemiLight);
+  world.add(hemiLight);
 
   const sun = new THREE.DirectionalLight(0xfff0d0, 2.7);
   sun.position.set(-13, 20, 9);
@@ -530,14 +549,14 @@ function createWorld(renderState) {
   sun.shadow.camera.top = 20;
   sun.shadow.camera.bottom = -20;
   sun.shadow.bias = -0.0004;
-  scene.add(sun);
+  world.add(sun);
 
   // 반대쪽에서 들어오는 청록 림 라이트로 판타지 느낌의 입체감을 준다.
   const rim = new THREE.DirectionalLight(0x5ad2ff, 0.7);
   rim.position.set(11, 7, -12);
-  scene.add(rim);
+  world.add(rim);
 
-  createStylizedWater(scene, animated);
+  createStylizedWater(world, animated);
 
   const island = new THREE.Mesh(
     new THREE.CylinderGeometry(13, 11.2, 0.92, 96),
@@ -546,7 +565,7 @@ function createWorld(renderState) {
   island.position.y = -0.18;
   island.receiveShadow = true;
   island.castShadow = true;
-  scene.add(island);
+  world.add(island);
 
   const beach = new THREE.Mesh(
     new THREE.TorusGeometry(12.15, 0.34, 12, 128),
@@ -554,23 +573,23 @@ function createWorld(renderState) {
   );
   beach.rotation.x = Math.PI / 2;
   beach.position.y = 0.08;
-  scene.add(beach);
+  world.add(beach);
 
-  createGrassField(scene);
+  createGrassField(world);
 
-  createCenterCore(scene, animated);
+  createCenterCore(world, animated);
 
   renderState.gates = renderState.gates ?? new Map();
   renderState.zoneAuras = renderState.zoneAuras ?? new Map();
   for (const zone of WORLD_ZONES) {
     const zonePosition = new THREE.Vector3(...zone.position);
-    createPath(scene, zonePosition);
-    const landmark = createZone(scene, zone, zonePosition);
-    createNpc(scene, zone, zonePosition, interactables);
-    const shrineCrystal = createShrine(scene, zone, zonePosition, interactables);
+    createPath(world, zonePosition);
+    const landmark = createZone(world, zone, zonePosition);
+    createNpc(world, zone, zonePosition, interactables);
+    const shrineCrystal = createShrine(world, zone, zonePosition, interactables);
     shrineCrystals.set(zone.shrineId, shrineCrystal);
-    createGate(scene, zone, interactables, renderState.gates);
-    createZoneAura(scene, zone, zonePosition, renderState.zoneAuras, landmark);
+    createGate(world, zone, interactables, renderState.gates);
+    createZoneAura(world, zone, zonePosition, renderState.zoneAuras, landmark);
   }
 
   for (let i = 0; i < 28; i += 1) {
@@ -581,7 +600,7 @@ function createWorld(renderState) {
     if (Math.abs(x) < 2.6 || Math.abs(z) < 2.6) {
       continue;
     }
-    createSmallTree(scene, new THREE.Vector3(x, 0, z), i % 3, animated);
+    createSmallTree(world, new THREE.Vector3(x, 0, z), i % 3, animated);
   }
 }
 
@@ -736,7 +755,9 @@ function createGrassField(scene) {
 const ICON_FOR_TYPE = { shrine: ['❗', '#eba52c'], npc: ['💬', null], gate: ['⚠️', '#8a5eff'] };
 
 function createInteractionIcons(renderState) {
-  const { scene, interactables, icons } = renderState;
+  const { interactables, icons } = renderState;
+  // 유도 아이콘도 오버월드 그룹에 담아, 던전 진입 시 함께 숨겨지도록 한다.
+  const container = renderState.overworld ?? renderState.scene;
   interactables.forEach((item, index) => {
     const spec = ICON_FOR_TYPE[item.type];
     if (!spec) {
@@ -747,7 +768,7 @@ function createInteractionIcons(renderState) {
     const sprite = createFloatingIcon(emoji, ring ?? topic.color);
     const baseY = item.type === 'shrine' ? item.position.y + 2.5 : item.position.y + 2.2;
     sprite.position.set(item.position.x, baseY, item.position.z);
-    scene.add(sprite);
+    container.add(sprite);
     icons.push({ sprite, item, baseY, phase: index * 1.3 });
   });
 }
@@ -1475,7 +1496,8 @@ function bindInput(game, ui) {
       game.keys.add(keyMap.get(event.code));
       event.preventDefault();
     }
-    if (!isFormControl && (event.code === 'KeyE' || event.code === 'Enter' || event.code === 'Space')) {
+    if (!isFormControl && !event.repeat && (event.code === 'KeyE' || event.code === 'Enter' || event.code === 'Space')) {
+      // event.repeat 무시: 키를 누른 채로 있어도 확인/공격이 연속 발동하지 않게(던전 즉시 퇴장 방지).
       event.preventDefault();
       primaryAction(game, ui);
     }
@@ -1734,6 +1756,11 @@ function updateGame(delta, game, renderState, ui) {
   }
   updateCamera(renderState.camera, game.player.position, game.shake);
   updateCompanion(delta, game, renderState);
+  // 던전 안에서는 오버월드 애니메이션/상호작용을 멈추고 방 로직만 돌린다(저사양 이득).
+  if (game.mode === 'dungeon') {
+    updateDungeon(delta, game, ui);
+    return;
+  }
   animateWorld(delta, renderState, game);
   updateCombat(delta, game, ui);
   updatePuzzle(delta, game, ui);
@@ -1771,7 +1798,11 @@ function updatePlayer(delta, game, playerGroup) {
     move.normalize();
     game.player.direction.copy(move);
     game.player.position.addScaledVector(move, game.player.speed * delta);
-    game.player.position.copy(clampToIsland(game.player.position));
+    game.player.position.copy(
+      game.mode === 'dungeon'
+        ? clampToRoom(game.player.position, game.dungeon?.bounds)
+        : clampToIsland(game.player.position)
+    );
     playerGroup.rotation.y = Math.atan2(move.x, move.z);
     // 걸을 때 통통 튀는 느낌 + 살짝 기우뚱.
     game.player.bob += delta * 12;
@@ -1794,6 +1825,18 @@ function clampToIsland(position) {
 
   const scale = ISLAND_RADIUS / flatLength;
   return new THREE.Vector3(position.x * scale, position.y, position.z * scale);
+}
+
+// 던전 방 AABB 클램프(벽을 뚫지 않도록).
+function clampToRoom(position, bounds) {
+  if (!bounds) {
+    return position;
+  }
+  return new THREE.Vector3(
+    Math.max(bounds.minX, Math.min(bounds.maxX, position.x)),
+    position.y,
+    Math.max(bounds.minZ, Math.min(bounds.maxZ, position.z))
+  );
 }
 
 function updateCamera(camera, target, shake = 0) {
@@ -2041,7 +2084,9 @@ function updateNearestInteractable(game, interactables, ui) {
 // 오른쪽 A 버튼/Space·Enter·E: 전투 중이면 '공격', 퍼즐 중이면 '돌 바꾸기', 아니면 '확인·대화'.
 function primaryAction(game, ui) {
   game.audio?.resume();
-  if (game.combat?.active) {
+  if (game.dungeon?.active) {
+    dungeonAction(game, ui);
+  } else if (game.combat?.active) {
     playerAttack(game, ui);
   } else if (game.puzzle?.active) {
     puzzleCycle(game, ui);
@@ -2069,11 +2114,11 @@ function interact(game, ui) {
   if (game.nearest.type === 'npc') {
     openNpcDialog(game, ui, game.nearest.topicId);
   } else if (game.nearest.type === 'shrine') {
-    // 아직 못 깬 사당은 3D 조작 퍼즐로, 이미 깬 사당은 복습 대화로.
+    // 아직 못 깬 사당은 전용 던전(별도 맵)으로 진입, 이미 깬 사당은 복습 대화로.
     if (game.progress.completedShrines.includes(game.nearest.shrineId)) {
       openShrineDialog(game, ui, game.nearest.shrineId);
     } else {
-      startShrinePuzzle(game, ui, game.nearest.shrineId);
+      enterShrineChallenge(game, ui, game.nearest.shrineId, game.nearest.topicId);
     }
   } else if (game.nearest.type === 'gate') {
     openGateDialog(game, ui, game.nearest.topicId);
@@ -2690,6 +2735,285 @@ function endShrinePuzzle(game, ui) {
   }
   ui.puzzleHud.hidden = true;
   game.updateRotateHint?.();
+}
+
+// ===== 사당 던전: 문으로 들어가면 별도 퍼즐 맵이 로드되는 젤다식 방 =====
+const DUNGEON_EXIT_RANGE = 0.8; // 셀 크기(1.2)보다 작아야 입장 스폰(한 칸 안)에서 즉시 퇴장되지 않는다
+const DUNGEON_PEDESTAL_RANGE = 1.6;
+const DUNGEON_PUSH_COOLDOWN = 0.2;
+
+// 사당 진입 라우터: 전용 던전 방이 있으면 별도 맵으로, 없으면 기존 오버레이 퍼즐로 폴백.
+function enterShrineChallenge(game, ui, shrineId, topicId) {
+  if (hasDungeonRoom(topicId)) {
+    try {
+      enterDungeon(game, ui, topicId, shrineId);
+      return;
+    } catch (error) {
+      // 던전 로드 실패 시 조용히 오버레이 퍼즐로 되돌아간다(안전망).
+      if (game.dungeon) {
+        exitDungeon(game, ui);
+      }
+    }
+  }
+  startShrinePuzzle(game, ui, shrineId);
+}
+
+// 카메라를 목표 추종 위치로 즉시 스냅(섬→방 활공 방지).
+function snapCamera(camera, target) {
+  camera.position.set(target.x * 0.6, target.y + 7.9, target.z + 12.6);
+  camera.lookAt(target.x * 0.4, target.y + 1.35, target.z - 1.2);
+}
+
+function enterDungeon(game, ui, topicId, shrineId) {
+  if (game.dungeon) {
+    return;
+  }
+  const room = getDungeonRoom(topicId);
+  const rs = game.renderState;
+  const built = buildDungeonRoom(topicId, { makeLabel: createLabelSprite });
+  rs.scene.add(built.root);
+  rs.overworld.visible = false;
+  // 배경/포그 스왑: 밝은 섬 → 어두운 방.
+  rs.scene.fog = new THREE.Fog(0x161029, 8, 34);
+  rs.renderer.setClearColor(0x120d20, 1);
+
+  game.mode = 'dungeon';
+  game.keys.clear();
+  game.nearest = null;
+
+  // 남쪽 입구 안쪽에서 시작(문 바로 위가 아니라 한 칸 안 — 입장 즉시 퇴장 방지).
+  const spawnCell = [room.entry[0], Math.max(0, room.entry[1] - 1)];
+  const spawn = cellToWorld(topicId, spawnCell);
+  game.dungeon = {
+    active: true,
+    topicId,
+    shrineId,
+    room,
+    state: createRoomState(topicId),
+    built,
+    bounds: built.bounds,
+    exitWorld: cellToWorld(topicId, room.entry),
+    pedestalWorld: cellToWorld(topicId, room.pedestal),
+    returnPosition: game.player.position.clone(),
+    solved: false,
+    awarded: false,
+    actionCooldown: 0,
+    failedPlacements: 0,
+    glowT: 0
+  };
+  game.player.position.set(spawn.x, 0.55, spawn.z);
+  game.player.direction.set(0, 0, -1); // 방 안쪽(북)을 바라봄
+  rs.playerGroup.position.copy(game.player.position);
+  rs.companion.position.copy(game.player.position).add(new THREE.Vector3(0.8, 1.2, 0));
+  snapCamera(rs.camera, game.player.position);
+
+  triggerFlash(ui, '#ffffff');
+  game.audio?.playClick();
+  ui.root.classList.add('is-combat'); // A 버튼 강조(밀기)
+  if (ui.actionLabel) {
+    ui.actionLabel.textContent = '밀기';
+  }
+  ui.prompt.hidden = true;
+  ui.puzzleHud.hidden = false;
+  ui.puzzleTitle.textContent = `🧩 ${room.titleKo}`;
+  ui.puzzleGoal.textContent = room.goalKo;
+  ui.puzzleHint.textContent = '상자 앞에 서서 A로 밀어요 · 남쪽 빛 문으로 나가요';
+  game.updateRotateHint?.();
+}
+
+function exitDungeon(game, ui) {
+  const dg = game.dungeon;
+  if (!dg) {
+    return;
+  }
+  const rs = game.renderState;
+  disposeDungeonRoom(dg.built.root, rs.scene);
+  rs.overworld.visible = true;
+  rs.scene.fog = rs.overworldFog;
+  rs.renderer.setClearColor(0x8fd3ef, 1);
+
+  game.mode = 'overworld';
+  game.dungeon = null;
+  game.keys.clear();
+
+  const back = dg.returnPosition;
+  game.player.position.copy(back);
+  game.player.direction.set(0, 0, 1);
+  rs.playerGroup.position.copy(back);
+  rs.companion.position.copy(back).add(new THREE.Vector3(0.8, 1.2, 0));
+  snapCamera(rs.camera, back);
+
+  ui.root.classList.remove('is-combat');
+  if (ui.actionLabel) {
+    ui.actionLabel.textContent = 'A';
+  }
+  ui.puzzleHud.hidden = true;
+  game.updateRotateHint?.();
+}
+
+// 플레이어가 바라보는 방향 → 그리드 한 칸 방향([dCol, dRow]).
+function facingGridDir(direction) {
+  return Math.abs(direction.x) >= Math.abs(direction.z)
+    ? [direction.x >= 0 ? 1 : -1, 0]
+    : [0, direction.z >= 0 ? 1 : -1];
+}
+
+function crateIdAtCell(dg, cell) {
+  for (const crate of dg.room.crates) {
+    const [c, r] = dg.state.crates[crate.id];
+    if (c === cell[0] && r === cell[1]) {
+      return crate.id;
+    }
+  }
+  return null;
+}
+
+function syncCrateMeshes(dg) {
+  for (const crate of dg.room.crates) {
+    const mesh = dg.built.crateMeshes.get(crate.id);
+    if (!mesh) {
+      continue;
+    }
+    const world = cellToWorld(dg.topicId, dg.state.crates[crate.id]);
+    mesh.group.position.set(world.x, 0, world.z);
+  }
+}
+
+function dungeonAction(game, ui) {
+  const dg = game.dungeon;
+  if (!dg || !dg.active || dg.actionCooldown > 0) {
+    return;
+  }
+  // 남쪽 빛 문 근처면 나간다(미클리어 퇴장 허용 — 상태는 버림).
+  const distExit = Math.hypot(
+    game.player.position.x - dg.exitWorld.x,
+    game.player.position.z - dg.exitWorld.z
+  );
+  if (distExit < DUNGEON_EXIT_RANGE) {
+    exitDungeon(game, ui);
+    return;
+  }
+  // 클리어 후 북쪽 제단 근처면 아이템 획득.
+  if (dg.solved) {
+    const distPed = Math.hypot(
+      game.player.position.x - dg.pedestalWorld.x,
+      game.player.position.z - dg.pedestalWorld.z
+    );
+    if (distPed < DUNGEON_PEDESTAL_RANGE) {
+      awardDungeonItem(game, ui);
+      return;
+    }
+    // 이미 풀린 뒤에는 상자를 더 밀 수 없다(정답을 흐트러뜨려 리포트가 오염되는 것 방지).
+    game.audio?.playClick();
+    return;
+  }
+  // 바라보는 방향의 인접 칸 상자를 한 칸 민다.
+  const dir = facingGridDir(game.player.direction);
+  const playerCell = worldToCell(dg.topicId, game.player.position.x, game.player.position.z);
+  const targetCell = [playerCell[0] + dir[0], playerCell[1] + dir[1]];
+  const crateId = crateIdAtCell(dg, targetCell);
+  if (!crateId) {
+    game.audio?.playClick();
+    return;
+  }
+  const result = pushCrate(dg.topicId, dg.state, crateId, dir);
+  dg.actionCooldown = DUNGEON_PUSH_COOLDOWN;
+  if (result.event === 'wrong-zone') {
+    // 틀린 존 거부: 지지직 + 실패 시도 기록(리포트 진실화).
+    dg.failedPlacements += 1;
+    recordDungeonMisplace(game);
+    game.audio?.playWrong();
+    addShake(game, 0.12);
+    flashCombatPopup(ui, '거기엔 안 돼요!', 'bounce');
+    ui.puzzleHint.textContent = '내 것만 공개 게시판에, 친구 것은 잠금 금고에!';
+    return;
+  }
+  if (!result.moved) {
+    game.audio?.playClick();
+    return;
+  }
+  dg.state = result.state;
+  syncCrateMeshes(dg);
+  if (result.event === 'placed') {
+    game.audio?.playCorrect();
+  } else {
+    game.audio?.playClick();
+  }
+  if (!dg.solved && isRoomSolved(dg.topicId, dg.state)) {
+    dg.solved = true;
+    game.audio?.playCorrect();
+    celebrate(game, dg.pedestalWorld && new THREE.Vector3(dg.pedestalWorld.x, 1.3, dg.pedestalWorld.z), '#ffd76a', 'collect');
+    ui.puzzleHint.textContent = '✨ 풀렸어요! 북쪽 제단으로 가서 A로 약속의 도구를 받아요';
+  } else if (!dg.solved) {
+    const left = countRemaining(dg.topicId, dg.state);
+    ui.puzzleHint.textContent = `상자 ${left}개가 아직 제자리가 아니에요`;
+  }
+}
+
+// 틀린 존 시도를 기존 '실패 선택' 전이로 기록해 학습 리포트의 first-try/retry 신호를 살린다.
+function recordDungeonMisplace(game) {
+  const dg = game.dungeon;
+  const shrine = getShrineById(dg.shrineId);
+  const wrong = shrine.choices.find((c) => !c.correct);
+  if (wrong) {
+    game.progress = applyShrineResult(game.progress, dg.shrineId, wrong.id).progress;
+    persistProgress(game.progress);
+  }
+}
+
+function awardDungeonItem(game, ui) {
+  const dg = game.dungeon;
+  if (!dg || dg.awarded) {
+    return;
+  }
+  dg.awarded = true;
+  const shrine = getShrineById(dg.shrineId);
+  const correct = shrine.choices.find((c) => c.correct);
+  const outcome = applyShrineResult(game.progress, dg.shrineId, correct.id);
+  game.progress = outcome.progress;
+  persistProgress(game.progress);
+  const toolId = outcome.toolId;
+  const topic = getTopicById(dg.topicId);
+  celebrate(game, new THREE.Vector3(dg.pedestalWorld.x, 1.5, dg.pedestalWorld.z), topic?.color ?? '#ffd76a', 'collect');
+  exitDungeon(game, ui);
+  updateHud(game, ui);
+  // 대화창 대신 큼직한 획득 팝업(전투 팝업 재사용 — 다음 프레임에 덮이지 않음).
+  if (toolId) {
+    const tool = getToolById(toolId);
+    flashCombatPopup(ui, `${tool.emoji} 「${tool.nameKo}」 획득!`, 'match');
+  }
+}
+
+function updateDungeon(delta, game, ui) {
+  const dg = game.dungeon;
+  if (!dg || !dg.active) {
+    return;
+  }
+  if (dg.actionCooldown > 0) {
+    dg.actionCooldown = Math.max(0, dg.actionCooldown - delta);
+  }
+  // 도트는 방 안에서도 어깨 옆에 둥실.
+  const rs = game.renderState;
+  if (rs.companion) {
+    const target = new THREE.Vector3(
+      game.player.position.x - game.player.direction.x * 0.6,
+      game.player.position.y + 1.25,
+      game.player.position.z - game.player.direction.z * 0.6
+    );
+    rs.companion.position.lerp(target, Math.min(1, delta * 4.5));
+    rs.companion.rotation.y += delta * 1.4;
+  }
+  // 클리어되면 제단 보석이 커지며 맥동(획득 유도).
+  if (dg.solved && dg.built.pedGlow) {
+    dg.glowT += delta;
+    const pulse = 1 + Math.sin(dg.glowT * 5) * 0.18;
+    dg.built.pedGlow.scale.setScalar(pulse);
+    dg.built.pedGlow.material.emissiveIntensity = 1.4 + Math.sin(dg.glowT * 5) * 0.5;
+  }
+  // 문 아치는 늘 은은하게 회전(나가는 곳 강조).
+  if (dg.built.door) {
+    dg.built.door.rotation.z += delta * 0.6;
+  }
 }
 
 function openCoreDialog(game, ui) {
