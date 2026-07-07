@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  PROLOGUE,
   QUESTS,
   STORY_TOPIC_ORDER,
   applyGateChoice,
@@ -13,7 +14,7 @@ import {
   getStoryVisualFlags,
   normalizeStoryState
 } from '../src/story.js';
-import { createInitialProgress } from '../src/worldData.js';
+import { createInitialProgress, normalizeProgress } from '../src/worldData.js';
 
 function fresh() {
   return { ...createInitialProgress(), story: createStoryState() };
@@ -103,6 +104,16 @@ test('objective walks the zones in order through talk, tool, and gate stages', (
   assert.match(getStoryObjective(progress), /사당에서 도구/);
   progress = { ...progress, tools: ['shield'] };
   assert.match(getStoryObjective(progress), /도구를 사용/);
+});
+
+test('prologue is well-formed and progress tracks whether it has been seen', () => {
+  assert.ok(PROLOGUE.beats.length >= 2, 'prologue needs at least a couple of beats');
+  assert.ok(PROLOGUE.beats.every((b) => Array.isArray(b.linesKo) && b.linesKo.length >= 1));
+  assert.ok(PROLOGUE.closingKo);
+  // 첫 진행 상태는 프롤로그 미시청, 정규화는 불리언만 허용.
+  assert.equal(createInitialProgress().prologueSeen, false);
+  assert.equal(normalizeProgress({ prologueSeen: 'yes' }).prologueSeen, false);
+  assert.equal(normalizeProgress({ prologueSeen: true }).prologueSeen, true);
 });
 
 test('normalizeStoryState repairs garbage and rejects bad fields', () => {

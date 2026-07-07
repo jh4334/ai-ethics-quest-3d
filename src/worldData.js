@@ -454,6 +454,7 @@ export function createInitialProgress() {
     choiceLog: [],
     tools: [],
     story: createStoryState(),
+    prologueSeen: false,
     aiCoreCompleted: false
   };
 }
@@ -496,6 +497,7 @@ export function normalizeProgress(candidate) {
     choiceLog: logArray(candidate.choiceLog),
     tools: [...new Set(stringArray(candidate.tools).filter((id) => toolIdSet.has(id)))],
     story: normalizeStoryState(candidate.story),
+    prologueSeen: candidate.prologueSeen === true,
     aiCoreCompleted: candidate.aiCoreCompleted === true
   };
 }

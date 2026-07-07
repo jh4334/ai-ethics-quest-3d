@@ -15,6 +15,7 @@ import {
   getTeachingLines
 } from './finale.js';
 import {
+  PROLOGUE,
   QUESTS,
   applyGateChoice,
   applyIntroTalk,
@@ -1205,8 +1206,52 @@ function dismissTitle(game, ui) {
     ui.title.classList.add('is-hidden');
     window.setTimeout(() => {
       ui.title.hidden = true;
+      // 첫 플레이라면 프롤로그로 이야기를 열어 준다.
+      if (!game.progress.prologueSeen) {
+        openPrologue(game, ui);
+      }
     }, 420);
   }
+}
+
+// 프롤로그 시퀀스: 해변 각성 → 도트 마중 → 노이즈 위기 → 첫 목표. 한 번 보면 다시 안 나온다.
+function openPrologue(game, ui) {
+  ui.dialogKicker.textContent = PROLOGUE.titleKo;
+  ui.dialogTitle.textContent = '낯선 섬의 해변';
+
+  const render = (index) => {
+    const beat = PROLOGUE.beats[index];
+    const isLast = index + 1 >= PROLOGUE.beats.length;
+    const speaker = beat.speakerKo
+      ? `<p class="finale-tool">${beat.speakerKo === '도트' ? '✨ ' : ''}${beat.speakerKo}</p>`
+      : '';
+    const lines = beat.linesKo.map((text) => `<p class="finale-line">${text}</p>`).join('');
+    ui.dialogBody.innerHTML = `
+      <div class="finale-scene" data-noise="big">
+        <p class="finale-count">프롤로그 ${index + 1}/${PROLOGUE.beats.length}</p>
+        ${speaker}
+        ${lines}
+      </div>
+      <div class="finale-nav">
+        <button type="button" class="finale-next" data-prologue-next>
+          ${isLast ? `${PROLOGUE.closingKo} →` : '다음 →'}
+        </button>
+      </div>
+    `;
+    ui.dialogBody.querySelector('[data-prologue-next]').addEventListener('click', () => {
+      game.audio?.playClick();
+      if (isLast) {
+        game.progress = { ...game.progress, prologueSeen: true };
+        persistProgress(game.progress);
+        closeDialog(game, ui);
+      } else {
+        render(index + 1);
+      }
+    });
+  };
+
+  render(0);
+  openDialog(game, ui);
 }
 
 // AI 코어를 완성하면 수료증(엔딩)을 띄운다.
