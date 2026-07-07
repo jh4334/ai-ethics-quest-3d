@@ -65,6 +65,34 @@ test('learning report flags unsolved topics with wrong attempts for review', () 
   assert.ok(topic.reviewQuestionKo);
 });
 
+test('report surfaces the gate ethical choice: clean solve vs recovered-from-mistake', () => {
+  const progress = {
+    ...createInitialProgress(),
+    completedShrines: ['privacy-shrine', 'bias-shrine'],
+    story: {
+      privacy: { talkedIntro: true, solved: true, badTries: 0, deeds: ['사진 주인에게 먼저 물어보고 허락받은 것만 지켰다'] },
+      bias: { talkedIntro: true, solved: true, badTries: 1, deeds: ['같은 색만 심었다가, 빠진 색을 찾아 바로잡았다'] },
+      copyright: { talkedIntro: true, solved: false, badTries: 0, deeds: [] },
+      deepfake: { talkedIntro: false, solved: false, badTries: 0, deeds: [] }
+    }
+  };
+  const report = getLearningReport(progress);
+  const byId = Object.fromEntries(report.topics.map((t) => [t.topicId, t]));
+
+  assert.equal(byId.privacy.gateSolved, true);
+  assert.equal(byId.privacy.gateRecovered, false);
+  assert.equal(byId.privacy.gateStatusKo, '현명하게 해결');
+
+  assert.equal(byId.bias.gateRecovered, true);
+  assert.equal(byId.bias.gateStatusKo, '실수 후 바로잡음');
+  assert.ok(byId.bias.gateDeedKo.includes('바로잡'));
+  // 관문에서 실수한 주제는 회고 질문으로 연결된다.
+  assert.ok(byId.bias.reviewQuestionKo);
+
+  assert.equal(report.gateSolvedCount, 2);
+  assert.equal(report.gateRecoveredCount, 1);
+});
+
 test('final core attempts land in the choice log and report', () => {
   const readyProgress = {
     ...createInitialProgress(),
