@@ -14,6 +14,7 @@ import {
   getShrinePuzzle,
   isPuzzleSolved
 } from './shrinePuzzle.js';
+import { pickMemory } from './bossMemories.js';
 import {
   FINALE,
   buildNovaCertificate,
@@ -272,6 +273,7 @@ function createShell() {
           <span class="boss-name">⚡ 노이즈</span>
           <span class="boss-weak" data-boss-weak></span>
         </div>
+        <div class="boss-memory" data-boss-memory></div>
         <div class="boss-bar"><div class="boss-bar-fill" data-boss-fill></div></div>
         <div class="boss-hint" data-boss-hint></div>
       </div>
@@ -337,6 +339,7 @@ function bindUi(root) {
     bossFill: root.querySelector('[data-boss-fill]'),
     bossHint: root.querySelector('[data-boss-hint]'),
     bossWeak: root.querySelector('[data-boss-weak]'),
+    bossMemory: root.querySelector('[data-boss-memory]'),
     combatPopup: root.querySelector('[data-combat-popup]'),
     puzzleHud: root.querySelector('[data-puzzle-hud]'),
     puzzleTitle: root.querySelector('[data-puzzle-title]'),
@@ -2340,7 +2343,7 @@ function openCoreDialog(game, ui) {
 const BOSS_MAX_HP = 6;
 const ATTACK_RANGE = 3.7;
 const ATTACK_COOLDOWN = 0.3;
-const WEAK_ROTATE = 3.8; // 약점 색 자동 회전 주기(초)
+const WEAK_ROTATE = 6.0; // 상황(약점) 자동 회전 주기(초) — 읽고 판단할 시간
 const FIRE_INTERVAL = 2.9; // 잡음 파도 발사 간격
 const WINDUP_TIME = 0.62; // 발사 예고(피할 시간)
 const PROJECTILE_SPEED = 6.2;
@@ -2377,6 +2380,11 @@ function startBossFight(game, ui) {
     weakIndex: 0,
     weakToolId: tools[0],
     weakTimer: WEAK_ROTATE,
+    memCounter: 0,
+    weakMemory: pickMemory(tools[0], 0),
+    bounceStreak: 0, // 같은 약점에서 연속으로 틀린 횟수(2회면 이모지 힌트 공개)
+    revealed: false, // 약점 도구 이모지를 보여줄지(처음엔 상황만 읽고 판단)
+    hintHold: 0, // 이유/튕김 안내를 잠깐 붙잡아 두는 타이머
     fireTimer: FIRE_INTERVAL,
     windup: 0,
     projectile: null,
@@ -2401,12 +2409,23 @@ function syncBossWeakColor(game) {
   }
 }
 
-function rotateWeakness(game) {
+function rotateWeakness(game, ui) {
   const c = game.combat;
   c.weakIndex = (c.weakIndex + 1) % c.tools.length;
   c.weakToolId = c.tools[c.weakIndex];
   c.weakTimer = WEAK_ROTATE;
+  c.memCounter += 1;
+  c.weakMemory = pickMemory(c.weakToolId, c.memCounter);
+  c.bounceStreak = 0;
+  c.revealed = false;
   syncBossWeakColor(game);
+  // 새 상황 말풍선을 팝 애니메이션으로 띄운다.
+  if (ui?.bossMemory) {
+    ui.bossMemory.textContent = c.weakMemory.textKo;
+    ui.bossMemory.classList.remove('pop');
+    void ui.bossMemory.offsetWidth;
+    ui.bossMemory.classList.add('pop');
+  }
 }
 
 function cycleActiveTool(game, ui, dir = 1) {
@@ -2453,26 +2472,37 @@ function playerAttack(game, ui) {
   }
   const activeToolId = c.tools[c.activeTool];
   if (activeToolId !== c.weakToolId) {
-    // 약점 색과 다른 도구 — 튕겨 나간다(대미지 없음). 학습 포인트: 상황에 맞는 원칙 고르기.
+    // 상황에 안 맞는 도구 — 튕겨 나간다(대미지 없음). 정답은 안 주고, 상황을 다시 읽게 한다.
     game.audio?.playWrong();
     boss.hitFlash = 0.12;
     addShake(game, 0.1);
     flashCombatPopup(ui, '튕김!', 'bounce');
+    c.bounceStreak += 1;
+    if (c.bounceStreak >= 2) {
+      c.revealed = true; // 두 번 연속 틀리면 도구 힌트 공개(좌절 방지)
+    }
     const weak = getToolById(c.weakToolId);
-    ui.bossHint.textContent = `튕겼다! 약점은 ${weak?.emoji ?? ''} — 그 도구로 바꿔서!`;
+    ui.bossHint.textContent = c.revealed
+      ? `이 상황엔 ${weak?.emoji ?? ''} ${weak?.nameKo ?? ''} — 그 도구로 바꿔요`
+      : `튕김! "${c.weakMemory.textKo}" — 어떤 약속이 필요할까?`;
+    c.hintHold = 1.8;
+    updateBossHud(game, ui);
     return;
   }
-  // 약점 명중: 노이즈가 신음하며 오그라든다.
+  // 상황에 맞는 약속으로 명중: 노이즈가 신음하며 오그라든다.
   c.hp = Math.max(0, c.hp - 1);
   boss.hitFlash = 0.3;
   addShake(game, 0.3);
   game.hitStop = 0.06; // 히트스톱 — 타격 순간 멈칫
-  flashCombatPopup(ui, `${getToolById(c.weakToolId)?.emoji ?? ''} 일치!`, 'hit');
+  const weakTool = getToolById(c.weakToolId);
+  flashCombatPopup(ui, `${weakTool?.emoji ?? ''} 약속이 통했다!`, 'hit');
+  ui.bossHint.textContent = c.weakMemory.hintKo; // 왜 이 도구였는지 한 줄
+  c.hintHold = 1.6;
   celebrate(game, new THREE.Vector3(boss.baseX ?? 0, boss.baseY ?? 2.6, boss.baseZ ?? 0), toolColorHex(c.weakToolId), 'collect');
   game.audio?.playCorrect();
   game.audio?.playNoiseGroan();
   boss.targetScale = 0.4 + (c.hp / c.maxHp) * 0.95;
-  rotateWeakness(game); // 약점 색이 바뀐다 — 다시 맞는 도구로.
+  rotateWeakness(game, ui); // 노이즈가 다른 잘못된 기억을 토해낸다 — 새 상황.
   updateBossHud(game, ui);
   if (c.hp <= 0) {
     winBossFight(game, ui);
@@ -2532,16 +2562,19 @@ function updateCombat(delta, game, ui) {
   if (c.stun > 0) {
     c.stun = Math.max(0, c.stun - delta);
   }
+  if (c.hintHold > 0) {
+    c.hintHold = Math.max(0, c.hintHold - delta);
+  }
   const boss = game.renderState?.noiseBoss;
   if (boss && boss.kind === 'noise') {
     c.driftAngle += delta * 0.5;
     boss.baseX = Math.cos(c.driftAngle) * 2.4;
     boss.baseZ = Math.sin(c.driftAngle) * 2.4;
 
-    // 약점 색 자동 회전(멈춰 있어도 도구를 바꾸게).
+    // 상황(약점) 자동 회전 — 노이즈가 다른 잘못된 기억을 토해낸다.
     c.weakTimer -= delta;
     if (c.weakTimer <= 0) {
-      rotateWeakness(game);
+      rotateWeakness(game, ui);
       updateBossHud(game, ui);
     }
 
@@ -2576,14 +2609,17 @@ function updateCombat(delta, game, ui) {
       }
     }
 
-    if (c.stun <= 0 && !c.projectile && c.windup <= 0) {
+    // 방금 뜬 이유/튕김 안내(hintHold)는 잠깐 유지하고, 그 외엔 상황 기반 기본 안내.
+    if (c.stun <= 0 && !c.projectile && c.windup <= 0 && c.hintHold <= 0) {
       const dist = Math.hypot(game.player.position.x - boss.baseX, game.player.position.z - boss.baseZ);
-      const weak = getToolById(c.weakToolId);
-      const active = getToolById(c.tools[c.activeTool]);
-      const matched = c.tools[c.activeTool] === c.weakToolId;
-      ui.bossHint.textContent = dist > ATTACK_RANGE
-        ? `약점 ${weak?.emoji ?? ''} — 다가가서 공격!`
-        : (matched ? `약점 ${weak?.emoji ?? ''} 일치! 공격!` : `${active?.emoji ?? ''} 튕김 — 약점은 ${weak?.emoji ?? ''}, 도구를 바꿔요`);
+      if (dist > ATTACK_RANGE) {
+        ui.bossHint.textContent = '노이즈에게 다가가요';
+      } else if (c.revealed) {
+        const weak = getToolById(c.weakToolId);
+        ui.bossHint.textContent = `${weak?.emoji ?? ''} ${weak?.nameKo ?? ''}(으)로 바꿔서 공격!`;
+      } else {
+        ui.bossHint.textContent = '이 상황엔 어떤 약속이 필요할까? 도구를 골라 공격!';
+      }
     }
   }
 }
@@ -2597,7 +2633,12 @@ function updateBossHud(game, ui) {
   if (ui.bossWeak) {
     const weak = getToolById(c.weakToolId);
     const active = getToolById(c.tools[c.activeTool]);
-    ui.bossWeak.innerHTML = `약점 <b style="color:${toolColorHex(c.weakToolId)}">${weak?.emoji ?? ''}</b> · 든 도구 ${active?.emoji ?? ''}`;
+    // 정답 도구는 처음엔 숨기고 색만 힌트로 준다. 명중하거나 2연속 튕기면 공개.
+    const weakMark = c.revealed ? (weak?.emoji ?? '?') : '?';
+    ui.bossWeak.innerHTML = `약점 <b style="color:${toolColorHex(c.weakToolId)}">${weakMark}</b> · 든 도구 ${active?.emoji ?? ''}`;
+  }
+  if (ui.bossMemory && c.weakMemory) {
+    ui.bossMemory.textContent = c.weakMemory.textKo;
   }
   // 도구 벨트에서 현재 든 도구를 강조.
   if (ui.toolBelt) {
