@@ -32,9 +32,11 @@ test('visibility restore keeps the game paused while a dialog is open', () => {
   assert.match(mainSource, /game\.paused = document\.hidden \|\| !ui\.dialog\.hidden/);
 });
 
-test('mobile status strip sits above the three-row touch control cluster', () => {
+test('mobile progress panel is a slim top bar (not overlapping the touch d-pad)', () => {
   const mobileStatusRule = cssSource.match(/@media \(pointer: coarse\), \(max-width: 760px\) \{[\s\S]*?\.status-strip \{[\s\S]*?\}/)?.[0] ?? '';
-  assert.match(mobileStatusRule, /bottom:\s*176px/);
+  // 하단 d-pad와 겹치지 않도록 상단에 배치하고 가로 슬림 바로 만든다.
+  assert.match(mobileStatusRule, /top:\s*64px/);
+  assert.match(mobileStatusRule, /flex-direction:\s*row/);
 });
 
 test('mobile interaction prompt is positioned beside rather than under touch controls', () => {

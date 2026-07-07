@@ -125,10 +125,22 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
   updateCoreVisual(game, renderState);
 
   let animationId = 0;
-  const onResize = () => resize(renderer, camera, root, renderState.composer);
+  const updateRotateHint = () => {
+    if (!ui.rotateHint) {
+      return;
+    }
+    // 세로로 잡은 폰에서만 가로 권장 안내를 띄운다(태블릿·데스크톱 제외).
+    const portraitPhone = IS_TOUCH && window.innerHeight > window.innerWidth && window.innerWidth < 560;
+    ui.rotateHint.hidden = !(portraitPhone && game.started);
+  };
+  const onResize = () => {
+    resize(renderer, camera, root, renderState.composer);
+    updateRotateHint();
+  };
   const onVisibilityChange = () => {
     game.paused = document.hidden || !ui.dialog.hidden;
   };
+  game.updateRotateHint = updateRotateHint;
 
   window.addEventListener('resize', onResize);
   document.addEventListener('visibilitychange', onVisibilityChange);
@@ -190,12 +202,15 @@ function createShell() {
       </section>
 
       <section class="status-strip" aria-label="진행 상황">
-        <strong data-fragment-count>조각 0/4</strong>
-        <span data-core-status>AI 코어 잠김</span>
+        <div class="status-head">
+          <strong data-fragment-count>조각 0/4</strong>
+          <span data-core-status>AI 코어 잠김</span>
+        </div>
         <div class="fragment-row" data-fragment-row></div>
+        <div class="tool-belt" data-tool-belt aria-label="약속 도구"></div>
       </section>
 
-      <section class="tool-belt" data-tool-belt aria-label="약속 도구"></section>
+      <div class="rotate-hint" data-rotate-hint hidden>📱↻ 가로로 돌리면 더 잘 보여요</div>
 
       <button class="journal-toggle" type="button" data-journal-toggle aria-expanded="false">
         기록
@@ -283,6 +298,7 @@ function bindUi(root) {
     flash: root.querySelector('[data-flash]'),
     title: root.querySelector('[data-title]'),
     titleActions: root.querySelector('[data-title-actions]'),
+    rotateHint: root.querySelector('[data-rotate-hint]'),
     certificate: root.querySelector('[data-certificate]'),
     certificateCard: root.querySelector('[data-certificate-card]'),
     touchButtons: [...root.querySelectorAll('[data-touch]')]
@@ -1176,6 +1192,7 @@ function dismissTitle(game, ui) {
   game.audio?.playClick();
   game.started = true;
   game.paused = false;
+  game.updateRotateHint?.();
   if (ui.title) {
     ui.title.classList.add('is-hidden');
     window.setTimeout(() => {
@@ -1369,8 +1386,13 @@ function updateNearestInteractable(game, interactables, ui) {
     ui.prompt.hidden = false;
     ui.prompt.textContent = `${ACTION_LABEL}${nearest.labelKo}`;
   } else if (ui.dialog.hidden) {
-    ui.prompt.hidden = false;
-    ui.prompt.textContent = MOVE_HINT;
+    // 터치 기기: 가까운 대상이 없으면 안내를 숨겨 화면을 비운다(d-pad로 충분).
+    if (IS_TOUCH) {
+      ui.prompt.hidden = true;
+    } else {
+      ui.prompt.hidden = false;
+      ui.prompt.textContent = MOVE_HINT;
+    }
   }
 }
 
