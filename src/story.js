@@ -48,7 +48,7 @@ export const QUESTS = {
     toolId: 'shield',
     questTitleKo: '흩어진 사진들',
     npcNameKo: '비밀지기 담',
-    gatePosition: [-6.0, -3.4],
+    gatePosition: [-8.4, -4.8],
     gateLabelKo: '잡음 덩굴',
     introKo: [
       '큰일이야, 수호자. 노이즈의 잡음 덩굴이 내 등껍질 금고를 뒤져 마을 사진들을 흩뿌렸어.',
@@ -88,7 +88,7 @@ export const QUESTS = {
     toolId: 'mirror',
     questTitleKo: '한 가지 색 숲',
     npcNameKo: '외알안경 모리',
-    gatePosition: [6.2, -3.6],
+    gatePosition: [8.7, -5.0],
     gateLabelKo: '색이 빠진 꽃밭',
     introKo: [
       '이상하군. 내 계산으론 숲의 꽃이 전부 빨강이어야 하는데… 노이즈가 빨간 책만 남기고 다 먹어 버렸어.',
@@ -128,7 +128,7 @@ export const QUESTS = {
     toolId: 'bell',
     questTitleKo: '이름 없는 조각상',
     npcNameKo: '조각가 무로',
-    gatePosition: [-6.0, 4.0],
+    gatePosition: [-8.4, 5.6],
     gateLabelKo: '이름 잃은 조각상',
     introKo: [
       '노이즈가 유적 조각상들의 명판을 먹어 치웠어. 이름을 잃은 조각상이 회색으로 굳어 가고 있지.',
@@ -168,7 +168,7 @@ export const QUESTS = {
     toolId: 'compass',
     questTitleKo: '아홉 번째 꼬리',
     npcNameKo: '메아리 에코',
-    gatePosition: [6.0, 3.8],
+    gatePosition: [8.4, 5.3],
     gateLabelKo: '가짜 목소리들',
     introKo: [
       '…미안. 요즘 노이즈가 내 꼬리 목소리를 훔쳐 가짜 심부름을 퍼뜨려. “장로다, 창고 열쇠를 두고 가거라…”',
