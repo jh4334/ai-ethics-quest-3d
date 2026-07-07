@@ -1911,8 +1911,12 @@ function runFinale(game, ui) {
     `<div class="finale-nav"><button type="button" class="finale-next" ${attr}>${label}</button></div>`;
 
   function renderIntro() {
-    // 코어 위에 거대한 노이즈가 등장한다.
+    // 코어 위에 거대한 노이즈가 등장한다. 도트는 후드 속으로 쏙 숨는다(대사와 연동).
     spawnNoiseBoss(game);
+    if (game.renderState?.companion) {
+      game.renderState.companion.visible = false;
+    }
+    game.audio?.playNoiseGroan();
     ui.dialogBody.innerHTML = `
       <div class="finale-scene" data-noise="big">${lines(FINALE.introKo)}</div>
       ${nav('마주 선다 →', 'data-finale="tools:0"')}
@@ -1936,6 +1940,7 @@ function runFinale(game, ui) {
     `;
     const topicColor = getTopicById(getToolById(step.toolId)?.topicId)?.color ?? '#7cf0ff';
     celebrate(game, new THREE.Vector3(0, 4.3, 0), topicColor, 'collect');
+    game.audio?.playNoiseGroan(); // 노이즈가 도구에 밀려 신음하며 작아진다.
     bindNav();
   }
 
@@ -1995,14 +2000,18 @@ function runFinale(game, ui) {
   }
 
   function renderRebirth() {
-    // 안개 뭉치가 사라지고 별빛 노바가 떠오른다.
+    // 안개 뭉치가 사라지고 별빛 노바가 떠오른다. 도트가 다시 나와 노바의 첫 친구가 된다.
     morphNoiseToNova(game);
+    if (game.renderState?.companion) {
+      game.renderState.companion.visible = true;
+    }
     ui.dialogBody.innerHTML = `
       <div class="finale-scene" data-noise="nova">${lines(FINALE.rebirthKo)}</div>
       ${nav('섬으로 돌아간다 →', 'data-finale="done"')}
     `;
-    // 노바 재탄생 세리머니.
+    // 노바 재탄생 세리머니 + 맑은 종소리.
     celebrate(game, new THREE.Vector3(0, 3.6, 0), '#7cf0ff', 'core');
+    game.audio?.playNovaChime();
     bindNav();
   }
 
@@ -2056,11 +2065,14 @@ function closeDialog(game, ui) {
   ui.root.classList.remove('is-cinematic');
   ui.root.querySelector('[data-game-canvas]')?.focus?.();
   game.updateRotateHint?.();
-  // 최종장을 끝맺지 않고 닫았다면 등장한 노이즈를 치운다(노바·완료 상태는 유지).
+  // 최종장을 끝맺지 않고 닫았다면 등장한 노이즈를 치우고 도트를 되돌린다(노바·완료 상태는 유지).
   const boss = game.renderState?.noiseBoss;
   if (boss && boss.kind === 'noise' && !game.progress.aiCoreCompleted) {
     game.renderState.scene.remove(boss.group);
     game.renderState.noiseBoss = null;
+    if (game.renderState.companion) {
+      game.renderState.companion.visible = true;
+    }
   }
 }
 
