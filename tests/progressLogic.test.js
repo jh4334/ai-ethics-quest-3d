@@ -10,7 +10,7 @@ import {
   getNextObjective
 } from '../src/worldData.js';
 
-test('shrine answers award each ethics fragment once without mutating progress', () => {
+test('wisdom shrines record completion once but never award fragments (story quests do)', () => {
   const initial = createInitialProgress();
   const shrine = SHRINES[0];
   const correctChoice = shrine.choices.find((choice) => choice.correct);
@@ -20,8 +20,8 @@ test('shrine answers award each ethics fragment once without mutating progress',
 
   assert.deepEqual(initial.collectedFragments, []);
   assert.equal(first.result.correct, true);
-  assert.deepEqual(first.progress.collectedFragments, [shrine.topicId]);
-  assert.deepEqual(second.progress.collectedFragments, [shrine.topicId]);
+  assert.deepEqual(first.progress.collectedFragments, []);
+  assert.deepEqual(second.progress.collectedFragments, []);
   assert.deepEqual(second.progress.completedShrines, [shrine.id]);
 });
 

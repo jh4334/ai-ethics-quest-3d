@@ -1,3 +1,5 @@
+import { createStoryState, normalizeStoryState } from './story.js';
+
 export const ETHICS_TOPICS = [
   {
     id: 'privacy',
@@ -402,7 +404,19 @@ export function createInitialProgress() {
     completedShrines: [],
     collectedFragments: [],
     choiceLog: [],
+    story: createStoryState(),
     aiCoreCompleted: false
+  };
+}
+
+// 스토리 퀘스트 완수 보상으로 조각을 준다(중복 없이).
+export function awardFragment(progress, topicId) {
+  if (!topicIdSet.has(topicId)) {
+    throw new RangeError(`Unknown ethics topic: ${topicId}`);
+  }
+  return {
+    ...progress,
+    collectedFragments: [...new Set([...progress.collectedFragments, topicId])]
   };
 }
 
@@ -429,6 +443,7 @@ export function normalizeProgress(candidate) {
     completedShrines: stringArray(candidate.completedShrines).filter((id) => Boolean(getShrineById(id))),
     collectedFragments: uniqueValidTopicIds(stringArray(candidate.collectedFragments)),
     choiceLog: logArray(candidate.choiceLog),
+    story: normalizeStoryState(candidate.story),
     aiCoreCompleted: candidate.aiCoreCompleted === true
   };
 }
@@ -506,6 +521,7 @@ export function recordPracticeChoice(progress, shrineId, questionId, choiceId) {
   };
 }
 
+// 사당은 이제 '지혜 도전'(연습·평가)이다. 조각은 스토리 퀘스트가 준다.
 export function applyShrineResult(progress, shrineId, choiceId) {
   const result = evaluateShrineChoice(shrineId, choiceId);
   const visitedTopics = [...new Set([...progress.visitedTopics, result.topicId])];
@@ -531,8 +547,7 @@ export function applyShrineResult(progress, shrineId, choiceId) {
       ...progress,
       visitedTopics,
       choiceLog,
-      completedShrines: [...new Set([...progress.completedShrines, shrineId])],
-      collectedFragments: [...new Set([...progress.collectedFragments, result.topicId])]
+      completedShrines: [...new Set([...progress.completedShrines, shrineId])]
     }
   };
 }
@@ -591,7 +606,8 @@ export function getLearningReport(progress) {
 
   const topics = ETHICS_TOPICS.map((topic) => {
     const attempts = log.filter((entry) => entry.kind === 'shrine' && entry.topicId === topic.id);
-    const solved = progress.collectedFragments.includes(topic.id);
+    const zone = getZoneByTopicId(topic.id);
+    const solved = zone ? progress.completedShrines.includes(zone.shrineId) : false;
     const visited = progress.visitedTopics.includes(topic.id);
 
     let status = 'not-started';
