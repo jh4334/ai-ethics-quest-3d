@@ -1310,19 +1310,24 @@ button:disabled {
 /* 인쇄/저장: 증명서 카드만 깨끗하게 출력한다(캔버스·HUD·버튼 제외).
    교실에서 수료증을 뽑아 나눠주는 핵심 시나리오를 위해. */
 @media print {
-  body * {
+  /* 증명서가 열려 있을 때만 나머지를 숨긴다 — 닫혀 있으면 일지·리포트를 인쇄할 수 있다. */
+  body:has(.certificate:not([hidden])) * {
     visibility: hidden !important;
   }
-  .certificate,
-  .certificate * {
+  body:has(.certificate:not([hidden])) .certificate,
+  body:has(.certificate:not([hidden])) .certificate * {
     visibility: visible !important;
   }
-  .certificate {
+  .certificate:not([hidden]) {
     position: absolute;
     inset: 0;
-    display: block !important;
+    display: block;
     background: #fff;
     padding: 0;
+  }
+  /* 아직 증명서를 안 딴 상태에서 낡은 증명서가 인쇄되지 않도록. */
+  .certificate[hidden] {
+    display: none !important;
   }
   .certificate-card {
     box-shadow: none;

@@ -683,7 +683,8 @@ export function getLearningReport(progress) {
     const gateBadTries = Number.isFinite(gate.badTries) && gate.badTries > 0 ? gate.badTries : 0;
     const gateSolved = gate.solved === true;
     const gateRecovered = gateSolved && gateBadTries > 0;
-    const gateDeedKo = Array.isArray(gate.deeds) && gate.deeds.length > 0 ? gate.deeds[0] : null;
+    // 해결 전에는 deed를 노출하지 않는다("바로잡았다" 문구가 회복 전에 뜨는 것 방지).
+    const gateDeedKo = gateSolved && Array.isArray(gate.deeds) && gate.deeds.length > 0 ? gate.deeds[0] : null;
     // 관문 결과를 사람이 읽는 한 줄로.
     let gateStatusKo = '아직';
     if (gateRecovered) {

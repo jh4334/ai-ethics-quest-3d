@@ -34,9 +34,10 @@ test('defeated boss does not become a full-HP re-fight, and certificate prints c
   assert.match(mainSource, /game\.finaleResolving = true/);
   assert.match(mainSource, /!game\.progress\.aiCoreCompleted && !game\.finaleResolving/);
   assert.match(mainSource, /if \(game\.finaleResolving\)/);
-  // 증명서만 인쇄되도록 @media print 격리.
+  // 증명서만 인쇄되도록 @media print 격리(단, 증명서가 열려 있을 때만 — 일지도 인쇄 가능).
   assert.match(cssSource, /@media print/);
-  assert.match(cssSource, /\.certificate,\s*\n?\s*\.certificate \*/);
+  assert.match(cssSource, /body:has\(\.certificate:not\(\[hidden\]\)\)/);
+  assert.match(cssSource, /\.certificate\[hidden\] \{\s*\n?\s*display: none !important/);
 });
 
 test('boss fight has depth: weak-point tool matching, weakness rotation, and dodgeable waves', () => {
