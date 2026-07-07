@@ -16,6 +16,8 @@ test('audio engine is safe to use without an AudioContext (headless/SSR)', () =>
     audio.playWrong();
     audio.playCollect();
     audio.playCoreAwaken();
+    audio.playNoiseGroan();
+    audio.playNovaChime();
   });
 });
 
