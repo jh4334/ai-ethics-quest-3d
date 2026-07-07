@@ -1289,6 +1289,17 @@ button:disabled {
   filter: brightness(1.04);
 }
 
+/* 프롤로그 건너뛰기 — 눈에 띄되 주 버튼보다 조용하게. */
+.finale-skip {
+  width: 100%;
+  min-height: 38px;
+  margin-top: 6px;
+  border-radius: 8px;
+  font-weight: 700;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.7);
+}
+
 .cert-actions {
   display: flex;
   gap: 10px;
