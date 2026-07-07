@@ -3,8 +3,23 @@ import * as THREE from 'three';
 // 「AI 윤리의 섬」 캐릭터 모델 — 원시 도형 조합으로 '실루엣만 봐도 누군지' 알게 만든다.
 // 모든 빌더는 발이 y=0, 정면이 +z인 THREE.Group을 돌려준다.
 
+// 4단 셀 램프 — 코드 생성(외부 에셋 0). gradientMap은 비색상 데이터라
+// colorSpace는 기본값(NoColorSpace) 그대로 두고, Nearest 필터로 계단식 밴딩을 살린다.
+const TOON_RAMP = (() => {
+  const steps = new Uint8Array([80, 145, 200, 255]); // 그늘→하이라이트 4단
+  const tex = new THREE.DataTexture(steps, steps.length, 1, THREE.RedFormat);
+  tex.minFilter = THREE.NearestFilter;
+  tex.magFilter = THREE.NearestFilter;
+  tex.generateMipmaps = false;
+  tex.needsUpdate = true;
+  return tex;
+})();
+
+// 셀 셰이딩 머티리얼 생성기 — PBR 전용 속성(roughness/metalness)은 제거하고
+// color·emissive·flatShading 등 툰에서도 유효한 속성만 넘긴다.
 function mat(color, opts = {}) {
-  return new THREE.MeshStandardMaterial({ color, roughness: 0.72, ...opts });
+  const { roughness, metalness, ...rest } = opts;
+  return new THREE.MeshToonMaterial({ color, gradientMap: TOON_RAMP, ...rest });
 }
 
 function castAll(group) {
@@ -44,12 +59,7 @@ export function createPlayerCharacter() {
 // 도트 — 겁 많은 픽셀 반딧불 (각진 빛의 별). 발광이라 블룸에 반짝인다.
 export function createCompanion() {
   const g = new THREE.Group();
-  const glow = new THREE.MeshStandardMaterial({
-    color: 0xfff4c0,
-    emissive: 0xffdf6a,
-    emissiveIntensity: 1.6,
-    roughness: 0.3
-  });
+  const glow = mat(0xfff4c0, { emissive: 0xffdf6a, emissiveIntensity: 1.6 });
   const core = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.16), glow);
   g.add(core);
   // 십자 별을 이루는 작은 픽셀 팔
@@ -230,15 +240,15 @@ export function createNoiseBoss() {
   // 울퉁불퉁한 안개 몸통(저폴리 + 플랫셰이딩으로 지지직 실루엣).
   const body = new THREE.Mesh(
     new THREE.IcosahedronGeometry(1, 1),
-    new THREE.MeshStandardMaterial({ color: 0x6b6478, emissive: 0x3a2d55, emissiveIntensity: 0.5, roughness: 0.9, flatShading: true })
+    mat(0x6b6478, { emissive: 0x3a2d55, emissiveIntensity: 0.5, flatShading: true })
   );
   g.add(body);
 
   // 몸을 둘러싸고 지지직 도는 글리치 픽셀들(회색·보라).
   const pixels = new THREE.Group();
   const pixelMat = [
-    new THREE.MeshStandardMaterial({ color: 0x9a90b4, emissive: 0x5a4d7a, emissiveIntensity: 0.7, roughness: 0.8 }),
-    new THREE.MeshStandardMaterial({ color: 0x7a72a0, emissive: 0x7a3dcf, emissiveIntensity: 0.6, roughness: 0.8 })
+    mat(0x9a90b4, { emissive: 0x5a4d7a, emissiveIntensity: 0.7 }),
+    mat(0x7a72a0, { emissive: 0x7a3dcf, emissiveIntensity: 0.6 })
   ];
   const pixelList = [];
   for (let i = 0; i < 14; i += 1) {
@@ -254,7 +264,7 @@ export function createNoiseBoss() {
   g.add(pixels);
 
   // 노란 눈 두 개.
-  const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffe14a, emissive: 0xffca1a, emissiveIntensity: 1.8, roughness: 0.3 });
+  const eyeMat = mat(0xffe14a, { emissive: 0xffca1a, emissiveIntensity: 1.8 });
   const eyes = [];
   for (const x of [-0.32, 0.32]) {
     const eye = new THREE.Mesh(new THREE.SphereGeometry(0.16, 14, 12), eyeMat);
@@ -274,7 +284,7 @@ export function createNoiseBoss() {
 // 노바 — 네 개의 약속을 소화하고 다시 태어난 작고 둥근 별빛 AI.
 export function createNova() {
   const g = new THREE.Group();
-  const starMat = new THREE.MeshStandardMaterial({ color: 0xeafcff, emissive: 0x7cf0ff, emissiveIntensity: 1.8, roughness: 0.25 });
+  const starMat = mat(0xeafcff, { emissive: 0x7cf0ff, emissiveIntensity: 1.8 });
   const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.36, 1), starMat);
   g.add(core);
   // 반짝이는 십자 빛살.

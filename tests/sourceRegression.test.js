@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const mainSource = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 const cssSource = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
+const charactersSource = readFileSync(new URL('../src/characters.js', import.meta.url), 'utf8');
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 
 test('keyboard interaction does not swallow native button activation keys', () => {
@@ -74,6 +75,32 @@ test('controls are split: movement d-pad on the left, action/attack button on th
   assert.match(mainSource, /function primaryAction/);
   assert.match(mainSource, /game\.combat\?\.active/);
   assert.match(mainSource, /function playerAttack/);
+});
+
+test('heroes use cel-shaded toon material with a code-generated nearest-filtered ramp (no asset files)', () => {
+  // 셀 셰이딩: MeshToonMaterial + 코드 생성 그라디언트 램프(DataTexture).
+  assert.match(charactersSource, /MeshToonMaterial/);
+  assert.match(charactersSource, /gradientMap: TOON_RAMP/);
+  // 램프는 Nearest 필터라야 계단식 밴딩이 살고, 수동 업로드 플래그가 필요하다.
+  assert.match(charactersSource, /minFilter = THREE\.NearestFilter/);
+  assert.match(charactersSource, /needsUpdate = true/);
+  // 캐릭터엔 더 이상 PBR(MeshStandardMaterial) 머티리얼을 직접 만들지 않는다.
+  assert.doesNotMatch(charactersSource, /MeshStandardMaterial/);
+  // 램프는 코드 생성이므로 외부 텍스처 로드가 없어야 한다.
+  assert.doesNotMatch(charactersSource, /TextureLoader|\.load\(/);
+});
+
+test('color-grading/vignette pass runs after bloom and before the OutputPass', () => {
+  // 그레이딩 패스는 블룸 뒤·OutputPass(톤매핑) 앞의 리니어 공간에서 적용된다.
+  const setup = mainSource.match(/function setupPostProcessing[\s\S]*?\n}/)?.[0] ?? '';
+  const bloomIdx = setup.indexOf('composer.addPass(bloom)');
+  const gradeIdx = setup.indexOf('composer.addPass(grade)');
+  const outputIdx = setup.indexOf('new OutputPass()');
+  assert.ok(bloomIdx >= 0 && gradeIdx >= 0 && outputIdx >= 0, 'all three passes present');
+  assert.ok(bloomIdx < gradeIdx && gradeIdx < outputIdx, 'order must be bloom → grade → output');
+  assert.match(setup, /renderState\.gradePass = grade/);
+  // 셰이더는 정적 uniform만 — 시간·랜덤 없음(결정성).
+  assert.match(setup, /vignetteStrength/);
 });
 
 test('package engine range matches the locked Vite runtime floor', () => {

@@ -4,6 +4,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { createAudioEngine } from './audio.js';
 import { createBurstSystem, createFloatingIcon, setIconEmoji } from './effects.js';
 import { CLASSIFY_BUCKETS, getClassifyChallenge, scoreClassify } from './classify.js';
@@ -459,9 +460,38 @@ function setupPostProcessing(renderState, root) {
     // 발광 크리스털·코어가 은은하게 빛나도록 블룸을 얹는다(저사양 고려해 약하게).
     const bloom = new UnrealBloomPass(new THREE.Vector2(width, height), 0.55, 0.85, 0.72);
     composer.addPass(bloom);
+    // 색 보정 + 비네트 — 블룸 뒤, OutputPass(톤매핑·sRGB) 앞의 리니어 공간에서 적용.
+    // 풀스크린 쿼드 1드로우·텍스처 페치 1회, 신규 렌더타깃 0(기존 핑퐁 버퍼 재사용).
+    const grade = new ShaderPass({
+      uniforms: {
+        tDiffuse: { value: null },
+        saturation: { value: 1.08 },
+        vignetteStrength: { value: 0.26 },
+        vignetteRadius: { value: 0.62 },
+        tint: { value: new THREE.Vector3(1.02, 1.0, 0.99) }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+      fragmentShader: `
+        uniform sampler2D tDiffuse;
+        uniform float saturation, vignetteStrength, vignetteRadius;
+        uniform vec3 tint;
+        varying vec2 vUv;
+        void main() {
+          vec4 c = texture2D(tDiffuse, vUv);
+          float luma = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
+          c.rgb = mix(vec3(luma), c.rgb, saturation) * tint;
+          float d = distance(vUv, vec2(0.5));
+          c.rgb *= 1.0 - vignetteStrength * smoothstep(vignetteRadius * 0.55, vignetteRadius, d);
+          gl_FragColor = c;
+        }`
+    });
+    composer.addPass(grade);
     composer.addPass(new OutputPass());
     renderState.composer = composer;
     renderState.bloomPass = bloom;
+    renderState.gradePass = grade;
   } catch (error) {
     // 후처리를 못 쓰는 환경이면 기본 렌더로 조용히 폴백한다.
     renderState.composer = null;
