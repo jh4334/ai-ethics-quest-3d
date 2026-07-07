@@ -58,8 +58,8 @@ const IS_TOUCH = typeof window !== 'undefined'
 const TOPIC_NAMES_KO = { privacy: '개인정보 마을', bias: '편향의 숲', copyright: '저작권 유적', deepfake: '딥페이크 동굴' };
 
 const MOVE_HINT = IS_TOUCH
-  ? '방향 버튼으로 이동 · 👆 버튼으로 대화·선택'
-  : 'WASD/방향키 이동 · E 대화/사당 · J 기록';
+  ? '왼쪽 방향 버튼 이동 · 오른쪽 A로 확인·공격'
+  : 'WASD/방향키 이동 · E·Space 확인/공격 · J 기록';
 const ACTION_LABEL = IS_TOUCH ? '' : 'E: ';
 const PLAYER_START = new THREE.Vector3(0, 0.55, 8.5);
 const ISLAND_RADIUS = 12.1;
@@ -105,7 +105,8 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
     icons: [],
     burst: null,
     companion: null,
-    gates: new Map()
+    gates: new Map(),
+    zoneAuras: new Map()
   };
 
   configureRenderer(renderer);
@@ -144,7 +145,8 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
     // 대화창이 열려 있으면 내용과 겹치므로 숨긴다.
     const portraitPhone = IS_TOUCH && window.innerHeight > window.innerWidth && window.innerWidth < 560;
     const dialogOpen = ui.dialog && !ui.dialog.hidden;
-    ui.rotateHint.hidden = !(portraitPhone && game.started && !dialogOpen);
+    const inCombat = Boolean(game.combat?.active);
+    ui.rotateHint.hidden = !(portraitPhone && game.started && !dialogOpen && !inCombat);
   };
   const onResize = () => {
     resize(renderer, camera, root, renderState.composer);
@@ -253,12 +255,24 @@ function createShell() {
 
       <div class="interaction-prompt" data-prompt hidden></div>
 
-      <div class="touch-controls" aria-label="터치 이동">
-        <button type="button" data-touch="up" aria-label="위로 이동">▲</button>
-        <button type="button" data-touch="left" aria-label="왼쪽 이동">◀</button>
-        <button type="button" data-touch="action" aria-label="대화·선택">👆</button>
-        <button type="button" data-touch="right" aria-label="오른쪽 이동">▶</button>
-        <button type="button" data-touch="down" aria-label="아래로 이동">▼</button>
+      <div class="boss-hud" data-boss-hud hidden aria-live="polite">
+        <div class="boss-hud-top">
+          <span class="boss-name">⚡ 노이즈</span>
+          <span class="boss-hint" data-boss-hint>가까이 가서 공격!</span>
+        </div>
+        <div class="boss-bar"><div class="boss-bar-fill" data-boss-fill></div></div>
+      </div>
+
+      <div class="touch-controls" aria-label="터치 조작">
+        <div class="touch-dpad" aria-label="이동">
+          <button type="button" data-touch="up" aria-label="위로 이동">▲</button>
+          <button type="button" data-touch="left" aria-label="왼쪽 이동">◀</button>
+          <button type="button" data-touch="right" aria-label="오른쪽 이동">▶</button>
+          <button type="button" data-touch="down" aria-label="아래로 이동">▼</button>
+        </div>
+        <div class="touch-actions">
+          <button type="button" data-touch="action" class="touch-a" data-action-label aria-label="확인·공격">A</button>
+        </div>
       </div>
 
       <section class="dialog-panel" data-dialog hidden aria-live="polite">
@@ -278,7 +292,7 @@ function createShell() {
           <h1 class="title-name">AI 윤리의 섬</h1>
           <p class="title-desc">섬을 탐험하며 네 가지 윤리 조각을 모아 AI 코어를 깨우는 수호자가 되어 보세요.</p>
           <div class="title-actions" data-title-actions></div>
-          <p class="title-controls">${IS_TOUCH ? '방향 버튼으로 이동 · 👆 버튼으로 대화·선택' : '이동 WASD·방향키 · 대화/선택 E·Enter · 기록 J'}</p>
+          <p class="title-controls">${IS_TOUCH ? '왼쪽 방향 버튼으로 이동 · 오른쪽 A 버튼으로 확인·공격' : '이동 WASD·방향키 · 확인/공격 E·Space·Enter · 기록 J'}</p>
         </div>
       </section>
 
@@ -297,6 +311,10 @@ function bindUi(root) {
     coreStatus: root.querySelector('[data-core-status]'),
     fragmentRow: root.querySelector('[data-fragment-row]'),
     prompt: root.querySelector('[data-prompt]'),
+    bossHud: root.querySelector('[data-boss-hud]'),
+    bossFill: root.querySelector('[data-boss-fill]'),
+    bossHint: root.querySelector('[data-boss-hint]'),
+    actionLabel: root.querySelector('[data-action-label]'),
     dialog: root.querySelector('[data-dialog]'),
     dialogKicker: root.querySelector('[data-dialog-kicker]'),
     dialogTitle: root.querySelector('[data-dialog-title]'),
@@ -374,6 +392,7 @@ function createGameState(ui) {
     started: false,
     audio: null,
     renderState: null,
+    combat: null,
     coreWasUnlocked: canUnlockFinalCore(progress.collectedFragments),
     ui
   };
@@ -476,6 +495,7 @@ function createWorld(renderState) {
   createCenterCore(scene, animated);
 
   renderState.gates = renderState.gates ?? new Map();
+  renderState.zoneAuras = renderState.zoneAuras ?? new Map();
   for (const zone of WORLD_ZONES) {
     const zonePosition = new THREE.Vector3(...zone.position);
     createPath(scene, zonePosition);
@@ -484,6 +504,7 @@ function createWorld(renderState) {
     const shrineCrystal = createShrine(scene, zone, zonePosition, interactables);
     shrineCrystals.set(zone.shrineId, shrineCrystal);
     createGate(scene, zone, interactables, renderState.gates);
+    createZoneAura(scene, zone, zonePosition, renderState.zoneAuras);
   }
 
   for (let i = 0; i < 28; i += 1) {
@@ -993,6 +1014,60 @@ function createGate(scene, zone, interactables, gates) {
   });
 }
 
+// 구역의 세계 상태 연출: 아직 못 풀었으면 지지직 노이즈 안개가 덮고,
+// 조각을 얻어 해결하면 안개가 걷히고 그 구역 색의 꽃이 피어난다(세계가 낫는다).
+function createZoneAura(scene, zone, position, zoneAuras) {
+  const topic = getTopicById(zone.topicId);
+  const color = new THREE.Color(topic.color);
+  const group = new THREE.Group();
+  group.position.set(position.x, 0, position.z);
+
+  // 노이즈 안개 — 회색·보라 반투명 원반 + 떠도는 글리치 픽셀들.
+  const haze = new THREE.Group();
+  const hazeDisc = new THREE.Mesh(
+    new THREE.CircleGeometry(3.1, 40),
+    new THREE.MeshBasicMaterial({ color: 0x6a5f82, transparent: true, opacity: 0.36, side: THREE.DoubleSide, depthWrite: false })
+  );
+  hazeDisc.rotation.x = -Math.PI / 2;
+  hazeDisc.position.y = 1.6;
+  haze.add(hazeDisc);
+  const pixelMat = new THREE.MeshStandardMaterial({ color: 0x8a7fb0, emissive: 0x5a3d9a, emissiveIntensity: 0.6, roughness: 0.8 });
+  const pixels = [];
+  for (let i = 0; i < 8; i += 1) {
+    const s = 0.14 + (i % 3) * 0.05;
+    const cube = new THREE.Mesh(new THREE.BoxGeometry(s, s, s), pixelMat);
+    pixels.push(cube);
+    haze.add(cube);
+  }
+  group.add(haze);
+
+  // 치유의 꽃 — 해결 전엔 숨어 있다가(scale 0) 해결되면 피어난다.
+  const bloom = new THREE.Group();
+  bloom.scale.setScalar(0.001);
+  for (let i = 0; i < 7; i += 1) {
+    const a = (i / 7) * Math.PI * 2 + i;
+    const r = 1.7 + (i % 3) * 0.5;
+    const stem = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.03, 0.04, 0.5, 6),
+      new THREE.MeshStandardMaterial({ color: 0x4f935a, roughness: 0.9 })
+    );
+    const petals = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(0.16, 0),
+      new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.5, roughness: 0.5, flatShading: true })
+    );
+    petals.position.y = 0.32;
+    const flower = new THREE.Group();
+    flower.add(stem, petals);
+    flower.position.set(Math.cos(a) * r, 0.25, Math.sin(a) * r);
+    flower.userData.seed = i;
+    bloom.add(flower);
+  }
+  group.add(bloom);
+
+  scene.add(group);
+  zoneAuras.set(zone.topicId, { haze, hazeDisc, pixels, bloom });
+}
+
 function createSmallTree(scene, position, variant) {
   const trunk = new THREE.Mesh(
     new THREE.CylinderGeometry(0.12, 0.16, 0.75, 8),
@@ -1085,7 +1160,7 @@ function bindInput(game, ui) {
     }
     if (!isFormControl && (event.code === 'KeyE' || event.code === 'Enter' || event.code === 'Space')) {
       event.preventDefault();
-      interact(game, ui);
+      primaryAction(game, ui);
     }
     if (event.code === 'KeyJ') {
       event.preventDefault();
@@ -1110,7 +1185,7 @@ function bindInput(game, ui) {
     const down = (event) => {
       event.preventDefault();
       if (action === 'action') {
-        interact(game, ui);
+        primaryAction(game, ui);
       } else {
         game.keys.add(action);
       }
@@ -1318,6 +1393,7 @@ function updateGame(delta, game, renderState, ui) {
   updateCamera(renderState.camera, game.player.position);
   updateCompanion(delta, game, renderState);
   animateWorld(delta, renderState, game);
+  updateCombat(delta, game, ui);
   updateInteractionIcons(game, renderState);
   updateNearestInteractable(game, renderState.interactables, ui);
 }
@@ -1384,7 +1460,7 @@ function updateCamera(camera, target) {
   camera.lookAt(target.x * 0.4, target.y + 1.35, target.z - 1.2);
 }
 
-function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates }, game) {
+function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates, zoneAuras }, game) {
   const elapsed = clock.elapsedTime;
   for (const [shrineId, crystal] of shrineCrystals.entries()) {
     crystal.rotation.y += delta * 1.6;
@@ -1416,6 +1492,36 @@ function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates }, g
     }
   }
 
+  // 구역 세계 상태: 미해결이면 노이즈 안개가 떠돌고, 해결되면 안개가 걷히고 꽃이 핀다.
+  if (zoneAuras) {
+    const flags = getStoryVisualFlags(game.progress);
+    for (const [topicId, aura] of zoneAuras.entries()) {
+      const solved = flags.has(`${topicId}:solved`);
+      // 안개 페이드: 해결되면 서서히 사라진다.
+      const targetOpacity = solved ? 0 : 0.36;
+      aura.hazeDisc.material.opacity += (targetOpacity - aura.hazeDisc.material.opacity) * Math.min(1, delta * 2.5);
+      aura.haze.visible = aura.hazeDisc.material.opacity > 0.02;
+      if (aura.haze.visible) {
+        aura.pixels.forEach((cube, i) => {
+          const a = elapsed * (0.5 + (i % 3) * 0.25) + i * 1.7;
+          const r = 1.4 + (i % 4) * 0.35;
+          cube.position.set(Math.cos(a) * r, 1.2 + Math.sin(elapsed * 3 + i) * 0.5, Math.sin(a) * r);
+          cube.rotation.x += delta * 2;
+          cube.visible = Math.sin(elapsed * 14 + i * 1.9) > -0.6; // 지지직 깜빡임
+        });
+      }
+      // 꽃 개화: 해결되면 부드럽게 피어나 산들바람에 흔들린다.
+      const targetBloom = solved ? 1 : 0.001;
+      const s = aura.bloom.scale.x + (targetBloom - aura.bloom.scale.x) * Math.min(1, delta * 2.5);
+      aura.bloom.scale.setScalar(s);
+      if (s > 0.05) {
+        aura.bloom.children.forEach((flower, i) => {
+          flower.rotation.z = Math.sin(elapsed * 1.6 + (flower.userData.seed ?? i)) * 0.18;
+        });
+      }
+    }
+  }
+
   if (coreCrystal) {
     const unlocked = canUnlockFinalCore(game.progress.collectedFragments);
     coreCrystal.rotation.y += delta * (unlocked ? 1.2 : 0.45);
@@ -1440,10 +1546,19 @@ function animateNoiseBoss(delta, elapsed, boss) {
   const s = group.scale.x + (boss.targetScale - group.scale.x) * Math.min(1, delta * 4);
   group.scale.setScalar(s);
   if (data.kind === 'noise') {
-    // 몸통 지지직 떨림 + 글리치 픽셀 회전.
-    group.position.x = boss.baseX + Math.sin(elapsed * 22) * 0.03 * s;
+    // 피격 반짝임: 맞으면 잠깐 크게 떨고 눈이 번쩍인다.
+    const flash = boss.hitFlash > 0 ? boss.hitFlash : 0;
+    if (boss.hitFlash > 0) {
+      boss.hitFlash = Math.max(0, boss.hitFlash - delta);
+    }
+    const shake = flash > 0 ? flash * 0.5 : 0;
+    // 베이스 위치(전투 중엔 XZ로 떠돌음) + 지지직 떨림.
+    group.position.x = (boss.baseX ?? 0) + Math.sin(elapsed * 22) * (0.04 + shake) * s;
+    group.position.z = (boss.baseZ ?? 0) + Math.cos(elapsed * 19) * (0.04 + shake) * s;
+    group.position.y = (boss.baseY ?? 4.3) + Math.sin(elapsed * 4) * 0.12;
     data.body.rotation.y += delta * 0.6;
     data.body.rotation.x = Math.sin(elapsed * 3) * 0.1;
+    data.body.material.emissiveIntensity = 0.5 + flash * 2.2;
     data.pixels.forEach((cube, i) => {
       const a = elapsed * (0.6 + (i % 3) * 0.3) + i;
       const r = 1.15 + (i % 4) * 0.12;
@@ -1451,7 +1566,7 @@ function animateNoiseBoss(delta, elapsed, boss) {
       cube.rotation.x += delta * 3;
       cube.visible = Math.sin(elapsed * 18 + i * 1.7) > -0.7; // 깜빡깜빡
     });
-    const blink = Math.sin(elapsed * 2.5) > -0.9 ? 1 : 0.15;
+    const blink = flash > 0 ? 1 : (Math.sin(elapsed * 2.5) > -0.9 ? 1 : 0.15);
     data.eyes.forEach((eye) => { eye.scale.y = blink; });
   } else if (data.kind === 'nova') {
     group.position.y = boss.baseY + Math.sin(elapsed * 2) * 0.14;
@@ -1460,19 +1575,29 @@ function animateNoiseBoss(delta, elapsed, boss) {
   }
 }
 
-// 노이즈 보스를 코어 위에 등장시킨다(최종장 시작).
-function spawnNoiseBoss(game) {
+// 노이즈 보스를 코어 위에 등장시킨다. combat=true면 손이 닿는 높이로 낮게 띄운다(직접 타격).
+function spawnNoiseBoss(game, { combat = false } = {}) {
   const rs = game.renderState;
   if (!rs || rs.noiseBoss) {
     return;
   }
   const group = createNoiseBoss();
   const baseX = 0;
-  const baseY = 4.3; // 코어 위로 높이 떠올라 대화창 위쪽에 또렷이 보이게(보스전 프레이밍).
-  group.position.set(baseX, baseY, 0);
+  const baseZ = 0;
+  const baseY = combat ? 2.6 : 4.3; // 전투는 낮게(타격), 대화 연출은 높게(프레이밍).
+  group.position.set(baseX, baseY, baseZ);
   group.scale.setScalar(0.05);
   rs.scene.add(group);
-  rs.noiseBoss = { group, data: group.userData, targetScale: 1.5, baseX, baseY, kind: 'noise' };
+  rs.noiseBoss = {
+    group,
+    data: group.userData,
+    targetScale: combat ? 1.3 : 1.5,
+    baseX,
+    baseZ,
+    baseY,
+    hitFlash: 0,
+    kind: 'noise'
+  };
 }
 
 // 도구를 한 번 쓸 때마다 노이즈가 작아진다.
@@ -1502,6 +1627,12 @@ function morphNoiseToNova(game) {
 }
 
 function updateNearestInteractable(game, interactables, ui) {
+  // 전투 중엔 상호작용 안내를 숨기고(공격에 집중), 보스 HUD가 안내를 대신한다.
+  if (game.combat?.active) {
+    game.nearest = null;
+    ui.prompt.hidden = true;
+    return;
+  }
   const coreDistance = Math.hypot(game.player.position.x, game.player.position.z);
   let nearest = coreDistance <= CORE_RADIUS
     ? {
@@ -1535,6 +1666,16 @@ function updateNearestInteractable(game, interactables, ui) {
   }
 }
 
+// 오른쪽 A 버튼/Space·Enter·E: 전투 중이면 '공격', 아니면 '확인·대화'.
+function primaryAction(game, ui) {
+  game.audio?.resume();
+  if (game.combat?.active) {
+    playerAttack(game, ui);
+  } else {
+    interact(game, ui);
+  }
+}
+
 function interact(game, ui) {
   // 첫 상호작용에서 오디오를 깨운다(자동재생 정책 대응).
   game.audio?.resume();
@@ -1557,6 +1698,13 @@ function interact(game, ui) {
     openShrineDialog(game, ui, game.nearest.shrineId);
   } else if (game.nearest.type === 'gate') {
     openGateDialog(game, ui, game.nearest.topicId);
+  } else if (
+    canUnlockFinalCore(game.progress.collectedFragments)
+    && !game.progress.aiCoreCompleted
+    && !game.combat
+  ) {
+    // 조각을 모으고 코어에 닿으면: 대화가 아니라 실제 노이즈와의 액션 전투로 진입.
+    startBossFight(game, ui);
   } else {
     openCoreDialog(game, ui);
   }
@@ -1896,14 +2044,138 @@ function openCoreDialog(game, ui) {
     return;
   }
 
-  runFinale(game, ui);
-  openDialog(game, ui);
+  // 조각을 다 모았고 아직 안 깬 상태로 코어에 닿으면 실제 전투로 진입(대화 아님).
+  startBossFight(game, ui);
 }
 
-// 최종장 진행: 도입 → 4도구 돌봄 시퀀스 → 지운다/가르친다 선택 → (지우기는 부드럽게 되돌림)
+// ===== 최종장 액션 전투: 노이즈에게 다가가 A(공격)로 잡음을 걷어낸다 =====
+const BOSS_MAX_HP = 6;
+const ATTACK_RANGE = 3.7;
+const ATTACK_COOLDOWN = 0.28;
+
+function startBossFight(game, ui) {
+  if (game.combat) {
+    return;
+  }
+  spawnNoiseBoss(game, { combat: true });
+  if (game.renderState?.companion) {
+    game.renderState.companion.visible = false; // 도트는 후드로 숨는다
+  }
+  game.audio?.resume();
+  game.audio?.playNoiseGroan();
+  game.combat = {
+    active: true,
+    hp: BOSS_MAX_HP,
+    maxHp: BOSS_MAX_HP,
+    cooldown: 0,
+    driftAngle: Math.PI * 0.25
+  };
+  ui.root.classList.add('is-combat');
+  ui.bossHud.hidden = false;
+  ui.prompt.hidden = true;
+  if (ui.actionLabel) {
+    ui.actionLabel.textContent = '⚔';
+  }
+  game.updateRotateHint?.();
+  updateBossHud(game, ui);
+}
+
+function playerAttack(game, ui) {
+  const c = game.combat;
+  if (!c || !c.active || c.cooldown > 0) {
+    return;
+  }
+  c.cooldown = ATTACK_COOLDOWN;
+  const boss = game.renderState?.noiseBoss;
+  if (!boss || boss.kind !== 'noise') {
+    return;
+  }
+  const dist = Math.hypot(
+    game.player.position.x - (boss.baseX ?? 0),
+    game.player.position.z - (boss.baseZ ?? 0)
+  );
+  if (dist > ATTACK_RANGE) {
+    // 헛스윙 — 더 가까이 가야 한다.
+    game.audio?.playClick();
+    return;
+  }
+  // 명중: 보유한 약속의 도구 색으로 타격 이펙트 + 노이즈가 신음하며 오그라든다.
+  c.hp = Math.max(0, c.hp - 1);
+  boss.hitFlash = 0.28;
+  const tools = game.progress.tools ?? [];
+  const toolId = tools.length ? tools[(c.maxHp - c.hp - 1) % tools.length] : null;
+  const color = getTopicById(getToolById(toolId)?.topicId)?.color ?? '#ffd76a';
+  celebrate(game, new THREE.Vector3(boss.baseX ?? 0, boss.baseY ?? 2.6, boss.baseZ ?? 0), color, 'collect');
+  game.audio?.playNoiseGroan();
+  boss.targetScale = 0.4 + (c.hp / c.maxHp) * 0.95;
+  updateBossHud(game, ui);
+  if (c.hp <= 0) {
+    winBossFight(game, ui);
+  }
+}
+
+function updateCombat(delta, game, ui) {
+  const c = game.combat;
+  if (!c || !c.active) {
+    return;
+  }
+  if (c.cooldown > 0) {
+    c.cooldown = Math.max(0, c.cooldown - delta);
+  }
+  const boss = game.renderState?.noiseBoss;
+  if (boss && boss.kind === 'noise') {
+    // 천천히 원을 그리며 떠돌아, 플레이어가 쫓아가 공격하게 만든다.
+    c.driftAngle += delta * 0.55;
+    boss.baseX = Math.cos(c.driftAngle) * 2.4;
+    boss.baseZ = Math.sin(c.driftAngle) * 2.4;
+    const dist = Math.hypot(
+      game.player.position.x - boss.baseX,
+      game.player.position.z - boss.baseZ
+    );
+    ui.bossHint.textContent = dist > ATTACK_RANGE ? '노이즈에게 다가가요' : '지금! 공격 연타!';
+  }
+}
+
+function updateBossHud(game, ui) {
+  const c = game.combat;
+  if (!c || !ui.bossFill) {
+    return;
+  }
+  ui.bossFill.style.width = `${Math.round((c.hp / c.maxHp) * 100)}%`;
+}
+
+function winBossFight(game, ui) {
+  const c = game.combat;
+  if (!c) {
+    return;
+  }
+  c.active = false;
+  game.combat = null;
+  ui.root.classList.remove('is-combat');
+  ui.bossHud.hidden = true;
+  if (ui.actionLabel) {
+    ui.actionLabel.textContent = 'A';
+  }
+  const boss = game.renderState?.noiseBoss;
+  if (boss) {
+    boss.baseX = 0;
+    boss.baseZ = 0;
+    boss.targetScale = 0.42; // 지쳐 작게 웅크린다
+  }
+  game.audio?.playCorrect();
+  // 잡음을 다 걷어낸 뒤: 지울지 가르칠지 고르는 윤리적 선택으로 마무리(가르침→노바→증명서).
+  window.setTimeout(() => {
+    runFinale(game, ui, { fromCombat: true });
+    openDialog(game, ui);
+  }, 750);
+}
+
+// 최종장 마무리 대화: 전투 뒤엔 곧장 [지운다/가르친다] 선택부터 시작한다.
 // → 가르치면 행적이 곧 가르침이 되어 노바로 재탄생 → 증명서.
-function runFinale(game, ui) {
+function runFinale(game, ui, opts = {}) {
   // 최종장은 시네마틱 모드: 대화창을 하단에 도킹해 위쪽에 노이즈 보스를 보여준다.
+  ui.dialogKicker.textContent = FINALE.titleKo;
+  ui.dialogTitle.textContent = '노이즈와 마주 서다';
   ui.root.classList.add('is-cinematic');
   const steps = getFinaleToolSteps(game.progress);
   const lines = (arr) => arr.map((text) => `<p class="finale-line">${text}</p>`).join('');
@@ -2046,7 +2318,12 @@ function runFinale(game, ui) {
     });
   }
 
-  renderIntro();
+  // 전투를 거쳐 왔으면 노이즈는 이미 등장·제압됐으니 바로 [지운다/가르친다] 선택부터.
+  if (opts.fromCombat) {
+    renderChoice();
+  } else {
+    renderIntro();
+  }
 }
 
 function openDialog(game, ui) {

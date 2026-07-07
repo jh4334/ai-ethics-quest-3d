@@ -23,10 +23,21 @@ test('final core runs the Noise->Nova finale and is terminal once completed', ()
 });
 
 test('touch controls expose all movement directions including down', () => {
-  const downRule = cssSource.match(/\.touch-controls \[data-touch="down"\] \{[\s\S]*?\}/)?.[0] ?? '';
+  const downRule = cssSource.match(/\.touch-dpad \[data-touch="down"\] \{[\s\S]*?\}/)?.[0] ?? '';
   assert.match(downRule, /grid-row:\s*3/);
   assert.doesNotMatch(downRule, /display:\s*none/);
-  assert.match(cssSource, /grid-template-rows:\s*repeat\(3, 44px\)/);
+  assert.match(cssSource, /grid-template-rows:\s*repeat\(3, 48px\)/);
+});
+
+test('controls are split: movement d-pad on the left, action/attack button on the right', () => {
+  // 이동은 왼쪽 d-pad, 확인·공격은 오른쪽 A 버튼(젤다식 액션 배치).
+  const controls = cssSource.match(/\.touch-controls \{[\s\S]*?\}/)?.[0] ?? '';
+  assert.match(controls, /justify-content:\s*space-between/);
+  assert.match(cssSource, /\.touch-a \{/);
+  // 전투 중 공격을 '확인'과 분리해 처리한다.
+  assert.match(mainSource, /function primaryAction/);
+  assert.match(mainSource, /game\.combat\?\.active/);
+  assert.match(mainSource, /function playerAttack/);
 });
 
 test('package engine range matches the locked Vite runtime floor', () => {
