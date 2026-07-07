@@ -675,6 +675,41 @@ button:disabled {
   }
 }
 
+/* 전투 팝업 텍스트 — 타격/피격 순간 크게 떴다 사라진다(주스) */
+.combat-popup {
+  position: absolute;
+  z-index: 5;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.28), 0 0 18px rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+  opacity: 0;
+}
+
+.combat-popup[data-kind="hit"] { color: #fff2b0; }
+.combat-popup[data-kind="bounce"] { color: #cfd6d2; font-size: 1.7rem; }
+.combat-popup[data-kind="stagger"] { color: #ff8a9e; }
+.combat-popup[data-kind="win"] { color: #9af0ff; font-size: 2.6rem; }
+
+.combat-popup.pop {
+  animation: combatPop 620ms ease-out;
+}
+
+@keyframes combatPop {
+  0% { opacity: 0; transform: translate(-50%, -35%) scale(0.6); }
+  22% { opacity: 1; transform: translate(-50%, -50%) scale(1.18); }
+  55% { opacity: 1; transform: translate(-50%, -54%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -78%) scale(0.98); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .combat-popup.pop { animation-duration: 1ms; }
+}
+
 /* 사당 퍼즐 안내 — 상단 중앙 */
 .puzzle-hud {
   position: absolute;

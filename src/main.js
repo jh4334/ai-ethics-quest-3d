@@ -179,11 +179,17 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
 
   function frame() {
     animationId = window.requestAnimationFrame(frame);
-    const delta = Math.min(clock.getDelta(), 0.04);
+    const raw = Math.min(clock.getDelta(), 0.04);
+    // 히트스톱: 타격 순간 게임 시간을 잠깐 거의 멈춰 손맛을 준다(시각 효과는 계속).
+    let delta = raw;
+    if (game.hitStop > 0) {
+      game.hitStop = Math.max(0, game.hitStop - raw);
+      delta = raw * 0.06;
+    }
     if (game.started && !game.paused) {
       updateGame(delta, game, renderState, ui);
     }
-    updateAmbient(delta, renderState);
+    updateAmbient(raw, renderState);
     if (renderState.composer) {
       renderState.composer.render();
     } else {
@@ -270,6 +276,8 @@ function createShell() {
         <div class="boss-hint" data-boss-hint></div>
       </div>
 
+      <div class="combat-popup" data-combat-popup aria-hidden="true"></div>
+
       <div class="puzzle-hud" data-puzzle-hud hidden aria-live="polite">
         <div class="puzzle-title" data-puzzle-title></div>
         <div class="puzzle-goal" data-puzzle-goal></div>
@@ -329,6 +337,7 @@ function bindUi(root) {
     bossFill: root.querySelector('[data-boss-fill]'),
     bossHint: root.querySelector('[data-boss-hint]'),
     bossWeak: root.querySelector('[data-boss-weak]'),
+    combatPopup: root.querySelector('[data-combat-popup]'),
     puzzleHud: root.querySelector('[data-puzzle-hud]'),
     puzzleTitle: root.querySelector('[data-puzzle-title]'),
     puzzleGoal: root.querySelector('[data-puzzle-goal]'),
@@ -413,6 +422,8 @@ function createGameState(ui) {
     renderState: null,
     combat: null,
     puzzle: null,
+    hitStop: 0,
+    shake: 0,
     coreWasUnlocked: canUnlockFinalCore(progress.collectedFragments),
     ui
   };
@@ -535,7 +546,7 @@ function createWorld(renderState) {
     if (Math.abs(x) < 2.6 || Math.abs(z) < 2.6) {
       continue;
     }
-    createSmallTree(scene, new THREE.Vector3(x, 0, z), i % 3);
+    createSmallTree(scene, new THREE.Vector3(x, 0, z), i % 3, animated);
   }
 }
 
@@ -1088,7 +1099,7 @@ function createZoneAura(scene, zone, position, zoneAuras) {
   zoneAuras.set(zone.topicId, { haze, hazeDisc, pixels, bloom });
 }
 
-function createSmallTree(scene, position, variant) {
+function createSmallTree(scene, position, variant, animated) {
   const trunk = new THREE.Mesh(
     new THREE.CylinderGeometry(0.12, 0.16, 0.75, 8),
     new THREE.MeshStandardMaterial({ color: 0x7a5333, roughness: 0.9 })
@@ -1099,9 +1110,20 @@ function createSmallTree(scene, position, variant) {
   );
   trunk.position.set(position.x, 0.43, position.z);
   leaves.position.set(position.x, 1.22, position.z);
+  leaves.rotation.order = 'ZXY';
   trunk.castShadow = true;
   leaves.castShadow = true;
   scene.add(trunk, leaves);
+  // 산들바람에 잎이 살랑거린다(생기 있는 섬).
+  if (animated) {
+    const phase = position.x * 0.7 + position.z * 0.5;
+    animated.push({
+      update: (elapsed) => {
+        leaves.rotation.z = Math.sin(elapsed * 1.3 + phase) * 0.06;
+        leaves.rotation.x = Math.cos(elapsed * 1.1 + phase) * 0.045;
+      }
+    });
+  }
 }
 
 function createPlayer({ playerGroup }) {
@@ -1432,7 +1454,10 @@ function celebrate(game, worldPosition, colorHex, kind) {
 
 function updateGame(delta, game, renderState, ui) {
   updatePlayer(delta, game, renderState.playerGroup);
-  updateCamera(renderState.camera, game.player.position);
+  if (game.shake > 0) {
+    game.shake = Math.max(0, game.shake - delta * 3.2);
+  }
+  updateCamera(renderState.camera, game.player.position, game.shake);
   updateCompanion(delta, game, renderState);
   animateWorld(delta, renderState, game);
   updateCombat(delta, game, ui);
@@ -1496,11 +1521,34 @@ function clampToIsland(position) {
   return new THREE.Vector3(position.x * scale, position.y, position.z * scale);
 }
 
-function updateCamera(camera, target) {
+function updateCamera(camera, target, shake = 0) {
   // 살짝 낮고 뒤로 물러난 각도 — 하늘·바다 지평선이 배경으로 드러난다.
   const desired = new THREE.Vector3(target.x * 0.6, target.y + 7.9, target.z + 12.6);
   camera.position.lerp(desired, 0.08);
+  // 화면 흔들림(타격·피격 순간): 카메라를 잠깐 떨어 손맛을 준다.
+  if (shake > 0) {
+    const s = shake * 0.5;
+    const t = clock.elapsedTime * 90;
+    camera.position.x += Math.sin(t) * s;
+    camera.position.y += Math.cos(t * 1.3) * s;
+  }
   camera.lookAt(target.x * 0.4, target.y + 1.35, target.z - 1.2);
+}
+
+function addShake(game, magnitude) {
+  game.shake = Math.min(0.6, Math.max(game.shake, magnitude));
+}
+
+// 전투 팝업 텍스트("일치!", "튕김!", "회피 실패!") — 잠깐 크게 떴다 사라진다.
+function flashCombatPopup(ui, text, kind) {
+  if (!ui.combatPopup) {
+    return;
+  }
+  ui.combatPopup.textContent = text;
+  ui.combatPopup.dataset.kind = kind || '';
+  ui.combatPopup.classList.remove('pop');
+  void ui.combatPopup.offsetWidth; // 리플로우로 애니메이션 재시작
+  ui.combatPopup.classList.add('pop');
 }
 
 function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates, zoneAuras }, game) {
@@ -2408,6 +2456,8 @@ function playerAttack(game, ui) {
     // 약점 색과 다른 도구 — 튕겨 나간다(대미지 없음). 학습 포인트: 상황에 맞는 원칙 고르기.
     game.audio?.playWrong();
     boss.hitFlash = 0.12;
+    addShake(game, 0.1);
+    flashCombatPopup(ui, '튕김!', 'bounce');
     const weak = getToolById(c.weakToolId);
     ui.bossHint.textContent = `튕겼다! 약점은 ${weak?.emoji ?? ''} — 그 도구로 바꿔서!`;
     return;
@@ -2415,6 +2465,9 @@ function playerAttack(game, ui) {
   // 약점 명중: 노이즈가 신음하며 오그라든다.
   c.hp = Math.max(0, c.hp - 1);
   boss.hitFlash = 0.3;
+  addShake(game, 0.3);
+  game.hitStop = 0.06; // 히트스톱 — 타격 순간 멈칫
+  flashCombatPopup(ui, `${getToolById(c.weakToolId)?.emoji ?? ''} 일치!`, 'hit');
   celebrate(game, new THREE.Vector3(boss.baseX ?? 0, boss.baseY ?? 2.6, boss.baseZ ?? 0), toolColorHex(c.weakToolId), 'collect');
   game.audio?.playCorrect();
   game.audio?.playNoiseGroan();
@@ -2463,6 +2516,8 @@ function staggerPlayer(game, ui) {
   game.player.position.copy(clampToIsland(game.player.position));
   game.audio?.playWrong();
   triggerFlash(ui, '#ff5f7e');
+  addShake(game, 0.5);
+  flashCombatPopup(ui, '회피 실패!', 'stagger');
   ui.bossHint.textContent = '잡음에 맞았다! 잠깐 정신 차리는 중…';
 }
 
@@ -2578,6 +2633,9 @@ function winBossFight(game, ui) {
     boss.targetScale = 0.42; // 지쳐 작게 웅크린다
   }
   game.audio?.playCorrect();
+  addShake(game, 0.55);
+  game.hitStop = 0.09;
+  flashCombatPopup(ui, '제압!', 'win');
   // 잡음을 다 걷어낸 뒤: 지울지 가르칠지 고르는 윤리적 선택으로 마무리(가르침→노바→증명서).
   window.setTimeout(() => {
     runFinale(game, ui, { fromCombat: true });
