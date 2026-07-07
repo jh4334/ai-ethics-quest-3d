@@ -7,6 +7,18 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { createAudioEngine } from './audio.js';
 import { createBurstSystem, createFloatingIcon, setIconEmoji } from './effects.js';
 import { CLASSIFY_BUCKETS, getClassifyChallenge, scoreClassify } from './classify.js';
+import { createCompanion, createNpcCharacter, createPlayerCharacter } from './characters.js';
+import {
+  QUESTS,
+  applyGateChoice,
+  applyIntroTalk,
+  getGateDialog,
+  getGateStatus,
+  getNpcDialog,
+  getStoryDeeds,
+  getStoryObjective,
+  getStoryVisualFlags
+} from './story.js';
 import {
   ETHICS_TOPICS,
   FINAL_CORE_MISSION,
@@ -16,9 +28,11 @@ import {
   canUnlockFinalCore,
   completeFinalCore,
   createInitialProgress,
+  PROMISE_TOOLS,
+  awardFragment,
+  getToolById,
   getExtraShrineQuestions,
   getLearningReport,
-  getNextObjective,
   getProgressSummary,
   getShrineById,
   getTopicById,
@@ -34,6 +48,8 @@ const STORAGE_KEY = 'ai-ethics-quest-3d/progress/v1';
 const IS_TOUCH = typeof window !== 'undefined'
   && typeof window.matchMedia === 'function'
   && window.matchMedia('(pointer: coarse)').matches;
+const TOPIC_NAMES_KO = { privacy: '개인정보 마을', bias: '편향의 숲', copyright: '저작권 유적', deepfake: '딥페이크 동굴' };
+
 const MOVE_HINT = IS_TOUCH
   ? '방향 버튼으로 이동 · 👆 버튼으로 대화·선택'
   : 'WASD/방향키 이동 · E 대화/사당 · J 기록';
@@ -80,7 +96,9 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
     composer: null,
     animated: [],
     icons: [],
-    burst: null
+    burst: null,
+    companion: null,
+    gates: new Map()
   };
 
   configureRenderer(renderer);
@@ -90,6 +108,11 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
   setupPostProcessing(renderState, root);
   renderState.burst = createBurstSystem(scene);
   createInteractionIcons(renderState);
+
+  // 동행 요정 도트 — 항상 플레이어 어깨 옆에 둥둥.
+  renderState.companion = createCompanion();
+  renderState.companion.position.copy(PLAYER_START).add(new THREE.Vector3(0.8, 1.2, 0));
+  scene.add(renderState.companion);
 
   game.audio = createAudioEngine();
   game.renderState = renderState;
@@ -172,6 +195,8 @@ function createShell() {
         <div class="fragment-row" data-fragment-row></div>
       </section>
 
+      <section class="tool-belt" data-tool-belt aria-label="약속 도구"></section>
+
       <button class="journal-toggle" type="button" data-journal-toggle aria-expanded="false">
         기록
       </button>
@@ -253,6 +278,7 @@ function bindUi(root) {
     journalToggle: root.querySelector('[data-journal-toggle]'),
     journalClose: root.querySelector('[data-close-journal]'),
     journalContent: root.querySelector('[data-journal-content]'),
+    toolBelt: root.querySelector('[data-tool-belt]'),
     soundToggle: root.querySelector('[data-sound-toggle]'),
     flash: root.querySelector('[data-flash]'),
     title: root.querySelector('[data-title]'),
@@ -418,6 +444,7 @@ function createWorld(renderState) {
 
   createCenterCore(scene, animated);
 
+  renderState.gates = renderState.gates ?? new Map();
   for (const zone of WORLD_ZONES) {
     const zonePosition = new THREE.Vector3(...zone.position);
     createPath(scene, zonePosition);
@@ -425,6 +452,7 @@ function createWorld(renderState) {
     createNpc(scene, zone, zonePosition, interactables);
     const shrineCrystal = createShrine(scene, zone, zonePosition, interactables);
     shrineCrystals.set(zone.shrineId, shrineCrystal);
+    createGate(scene, zone, interactables, renderState.gates);
   }
 
   for (let i = 0; i < 28; i += 1) {
@@ -587,16 +615,19 @@ function createGrassField(scene) {
   scene.add(grass);
 }
 
+const ICON_FOR_TYPE = { shrine: ['❗', '#eba52c'], npc: ['💬', null], gate: ['⚠️', '#8a5eff'] };
+
 function createInteractionIcons(renderState) {
   const { scene, interactables, icons } = renderState;
   interactables.forEach((item, index) => {
-    if (item.type !== 'npc' && item.type !== 'shrine') {
+    const spec = ICON_FOR_TYPE[item.type];
+    if (!spec) {
       return;
     }
     const topic = getTopicById(item.topicId);
-    const isShrine = item.type === 'shrine';
-    const sprite = createFloatingIcon(isShrine ? '❗' : '💬', isShrine ? '#eba52c' : topic.color);
-    const baseY = isShrine ? item.position.y + 2.5 : item.position.y + 2.15;
+    const [emoji, ring] = spec;
+    const sprite = createFloatingIcon(emoji, ring ?? topic.color);
+    const baseY = item.type === 'shrine' ? item.position.y + 2.5 : item.position.y + 2.2;
     sprite.position.set(item.position.x, baseY, item.position.z);
     scene.add(sprite);
     icons.push({ sprite, item, baseY, phase: index * 1.3 });
@@ -616,11 +647,27 @@ function updateInteractionIcons(game, renderState) {
         icon.done = true;
       }
       icon.sprite.material.opacity = done ? 0.42 : 1;
-      const bump = icon.item.shrineId === game.nearest?.shrineId ? 1.18 : 1;
-      icon.sprite.scale.setScalar(0.9 * bump);
+      icon.sprite.scale.setScalar(0.9 * (icon.item.shrineId === game.nearest?.shrineId ? 1.18 : 1));
+    } else if (icon.item.type === 'gate') {
+      const status = getGateStatus(game.progress, icon.item.topicId);
+      // 관문: 대화 전엔 흐릿, 도구 있으면 밝게 '지금 여기!', 해결되면 사라짐.
+      if (status === 'solved') {
+        icon.sprite.visible = false;
+      } else if (status === 'ready' && !icon.ready) {
+        setIconEmoji(icon.sprite, '❗', '#8a5eff');
+        icon.ready = true;
+      }
+      icon.sprite.material.opacity = status === 'need-intro' ? 0.28 : status === 'ready' ? 1 : 0.55;
+      const near = icon.item.topicId === game.nearest?.topicId && game.nearest?.type === 'gate';
+      icon.sprite.scale.setScalar(0.9 * (near ? 1.2 : 1));
     } else {
       const visited = game.progress.visitedTopics.includes(icon.item.topicId);
-      icon.sprite.material.opacity = visited ? 0.32 : 1;
+      const solved = getGateStatus(game.progress, icon.item.topicId) === 'solved';
+      if (solved && !icon.done) {
+        setIconEmoji(icon.sprite, '✅', '#2fae74');
+        icon.done = true;
+      }
+      icon.sprite.material.opacity = solved ? 0.4 : visited ? 0.5 : 1;
       const bump = icon.item.zoneId === game.nearest?.zoneId && game.nearest?.type === 'npc' ? 1.18 : 1;
       icon.sprite.scale.setScalar(0.9 * bump);
     }
@@ -818,23 +865,10 @@ function createDeepfakeCave(scene, position) {
 }
 
 function createNpc(scene, zone, zonePosition, interactables) {
-  const topic = getTopicById(zone.topicId);
-  const npc = new THREE.Group();
-  const body = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.28, 0.36, 0.72, 16),
-    new THREE.MeshStandardMaterial({ color: topic.color, roughness: 0.6 })
-  );
-  const head = new THREE.Mesh(
-    new THREE.SphereGeometry(0.25, 16, 12),
-    new THREE.MeshStandardMaterial({ color: 0xffd6ae, roughness: 0.7 })
-  );
-  body.position.y = 0.5;
-  head.position.y = 1.02;
-  npc.add(body, head);
+  const npc = createNpcCharacter(zone.topicId);
   npc.position.set(zonePosition.x - 1.25, 0, zonePosition.z + 1.05);
-  npc.traverse((child) => {
-    child.castShadow = true;
-  });
+  // 플레이어(섬 안쪽)를 바라보도록 회전.
+  npc.rotation.y = Math.atan2(-npc.position.x, -npc.position.z);
   scene.add(npc);
 
   interactables.push({
@@ -890,6 +924,44 @@ function createShrine(scene, zone, zonePosition, interactables) {
   return crystal;
 }
 
+// 노이즈 관문 — 도구로 해결해야 하는 지지직 사건 덩어리.
+function createGate(scene, zone, interactables, gates) {
+  const quest = QUESTS[zone.topicId];
+  const [gx, gz] = quest.gatePosition;
+  const group = new THREE.Group();
+  // 회색·보라 글리치 덩어리
+  const glitchMat = new THREE.MeshStandardMaterial({
+    color: 0x4a3f5c,
+    emissive: 0x6a4fb0,
+    emissiveIntensity: 0.4,
+    roughness: 0.9,
+    flatShading: true
+  });
+  for (let i = 0; i < 5; i += 1) {
+    const chunk = new THREE.Mesh(new THREE.DodecahedronGeometry(0.34 + (i % 3) * 0.12, 0), glitchMat);
+    const a = (i / 5) * Math.PI * 2;
+    chunk.position.set(Math.cos(a) * 0.5, 0.5 + (i % 2) * 0.35, Math.sin(a) * 0.5);
+    chunk.castShadow = true;
+    group.add(chunk);
+  }
+  const core = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(0.5, 0),
+    new THREE.MeshStandardMaterial({ color: 0x2a2436, emissive: 0x8a5eff, emissiveIntensity: 0.7, flatShading: true })
+  );
+  core.position.y = 0.7;
+  group.add(core);
+  group.position.set(gx, 0, gz);
+  scene.add(group);
+
+  gates.set(zone.topicId, group);
+  interactables.push({
+    type: 'gate',
+    topicId: zone.topicId,
+    position: new THREE.Vector3(gx, 0, gz),
+    labelKo: `${quest.gateLabelKo} 살펴보기`
+  });
+}
+
 function createSmallTree(scene, position, variant) {
   const trunk = new THREE.Mesh(
     new THREE.CylinderGeometry(0.12, 0.16, 0.75, 8),
@@ -907,26 +979,8 @@ function createSmallTree(scene, position, variant) {
 }
 
 function createPlayer({ playerGroup }) {
-  const cloak = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.32, 0.42, 0.75, 18),
-    new THREE.MeshStandardMaterial({ color: 0x2f6f8f, roughness: 0.58 })
-  );
-  const head = new THREE.Mesh(
-    new THREE.SphereGeometry(0.25, 18, 14),
-    new THREE.MeshStandardMaterial({ color: 0xffd2a0, roughness: 0.7 })
-  );
-  const scarf = new THREE.Mesh(
-    new THREE.BoxGeometry(0.72, 0.08, 0.16),
-    new THREE.MeshStandardMaterial({ color: 0xe0bb4b, roughness: 0.5 })
-  );
-  cloak.position.y = 0.42;
-  head.position.y = 0.94;
-  scarf.position.set(0, 0.72, 0.18);
-  playerGroup.add(cloak, head, scarf);
+  playerGroup.add(createPlayerCharacter());
   playerGroup.position.copy(PLAYER_START);
-  playerGroup.traverse((child) => {
-    child.castShadow = true;
-  });
 }
 
 function createLabelSprite(text, color) {
@@ -1177,9 +1231,27 @@ function celebrate(game, worldPosition, colorHex, kind) {
 function updateGame(delta, game, renderState, ui) {
   updatePlayer(delta, game, renderState.playerGroup);
   updateCamera(renderState.camera, game.player.position);
+  updateCompanion(delta, game, renderState);
   animateWorld(delta, renderState, game);
   updateInteractionIcons(game, renderState);
   updateNearestInteractable(game, renderState.interactables, ui);
+}
+
+function updateCompanion(delta, game, renderState) {
+  const dot = renderState.companion;
+  if (!dot) {
+    return;
+  }
+  const elapsed = clock.elapsedTime;
+  // 플레이어 뒤쪽 살짝 위에서 둥실둥실 따라온다.
+  const dir = game.player.direction;
+  const target = new THREE.Vector3(
+    game.player.position.x - dir.x * 0.6 + Math.sin(elapsed * 1.3) * 0.25,
+    game.player.position.y + 1.25 + Math.sin(elapsed * 2.6) * 0.12,
+    game.player.position.z - dir.z * 0.6 + Math.cos(elapsed * 1.3) * 0.25
+  );
+  dot.position.lerp(target, Math.min(1, delta * 4.5));
+  dot.rotation.y += delta * 1.4;
 }
 
 function updatePlayer(delta, game, playerGroup) {
@@ -1227,7 +1299,7 @@ function updateCamera(camera, target) {
   camera.lookAt(target.x * 0.4, target.y + 1.35, target.z - 1.2);
 }
 
-function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow }, game) {
+function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates }, game) {
   const elapsed = clock.elapsedTime;
   for (const [shrineId, crystal] of shrineCrystals.entries()) {
     crystal.rotation.y += delta * 1.6;
@@ -1235,6 +1307,28 @@ function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow }, game) {
     const completed = game.progress.completedShrines.includes(shrineId);
     crystal.position.y = 0.82 + Math.sin(elapsed * 2.2 + shrine.topicId.length) * 0.08;
     crystal.material.emissiveIntensity = completed ? 0.72 : 0.24;
+  }
+
+  // 노이즈 관문: 지지직 흔들리다가, 해결되면 오그라들어 사라진다(세계가 낫는다).
+  if (gates) {
+    const flags = getStoryVisualFlags(game.progress);
+    for (const [topicId, group] of gates.entries()) {
+      const solved = flags.has(`${topicId}:solved`);
+      if (solved) {
+        if (group.visible) {
+          group.scale.multiplyScalar(1 - Math.min(1, delta * 3));
+          if (group.scale.x < 0.05) {
+            group.visible = false;
+          }
+        }
+        continue;
+      }
+      group.rotation.y += delta * 0.8;
+      group.children.forEach((chunk, i) => {
+        chunk.position.y += Math.sin(elapsed * 6 + i) * delta * 0.3;
+        chunk.rotation.x += delta * (1 + i * 0.2);
+      });
+    }
   }
 
   if (coreCrystal) {
@@ -1300,30 +1394,98 @@ function interact(game, ui) {
     openNpcDialog(game, ui, game.nearest.topicId);
   } else if (game.nearest.type === 'shrine') {
     openShrineDialog(game, ui, game.nearest.shrineId);
+  } else if (game.nearest.type === 'gate') {
+    openGateDialog(game, ui, game.nearest.topicId);
   } else {
     openCoreDialog(game, ui);
   }
 }
 
+function speechHtml(linesKo) {
+  return linesKo.map((line) => `<p class="speech-line">${line}</p>`).join('');
+}
+
 function openNpcDialog(game, ui, topicId) {
-  const topic = getTopicById(topicId);
   const zone = WORLD_ZONES.find((item) => item.topicId === topicId);
+  // 대화 내용은 '지금' 상태로 정하고(첫 대화면 소개), 그 뒤에 관문을 연다.
+  const dialog = getNpcDialog(game.progress, topicId);
   game.progress = recordLearningVisit(game.progress, topicId);
+  game.progress = applyIntroTalk(game.progress, topicId);
   persistProgress(game.progress);
   updateHud(game, ui);
 
   ui.dialogKicker.textContent = zone.nameKo;
   ui.dialogTitle.textContent = zone.npc.nameKo;
   ui.dialogBody.innerHTML = `
-    <p class="prompt-line">${zone.npc.prompt}</p>
-    <p>${zone.npc.lesson}</p>
-    <dl class="topic-rule">
-      <dt>${topic.titleKo} 약속</dt>
-      <dd>${topic.safeRule}</dd>
-    </dl>
-    ${topic.realCaseKo ? `<p class="real-case"><strong>실제로 있었던 일</strong> ${topic.realCaseKo}</p>` : ''}
-    <p class="reflection">${zone.npc.reflection}</p>
+    ${speechHtml(dialog.linesKo)}
+    <p class="quest-hint">${getStoryObjective(game.progress)}</p>
   `;
+  openDialog(game, ui);
+}
+
+function openGateDialog(game, ui, topicId) {
+  const quest = QUESTS[topicId];
+  ui.dialogKicker.textContent = quest.gateLabelKo;
+  ui.dialogTitle.textContent = quest.questTitleKo;
+
+  function render() {
+    const dialog = getGateDialog(game.progress, topicId);
+    if (dialog.kind !== 'choice') {
+      ui.dialogBody.innerHTML = speechHtml(dialog.linesKo);
+      if (dialog.kind === 'need-tool') {
+        const tool = getToolById(dialog.toolId);
+        ui.dialogBody.innerHTML += `<p class="quest-hint">${tool.emoji} 「${tool.nameKo}」이(가) 필요해요 — 사당의 시련을 통과하세요.</p>`;
+      }
+      return;
+    }
+    const tool = getToolById(quest.toolId);
+    const options = dialog.options
+      .map((o) => `<button type="button" class="choice-button" data-gate-choice="${o.id}">${o.textKo}</button>`)
+      .join('');
+    ui.dialogBody.innerHTML = `
+      <p class="gate-tool">${tool.emoji} 「${tool.nameKo}」 사용</p>
+      <p>${dialog.introKo}</p>
+      <p class="prompt-line">${dialog.promptKo}</p>
+      <div class="choice-list">${options}</div>
+      <p class="feedback-line" data-gate-feedback></p>
+    `;
+    const feedback = ui.dialogBody.querySelector('[data-gate-feedback]');
+    for (const button of ui.dialogBody.querySelectorAll('[data-gate-choice]')) {
+      button.addEventListener('click', () => {
+        const before = canUnlockFinalCore(game.progress.collectedFragments);
+        const outcome = applyGateChoice(game.progress, topicId, button.dataset.gateChoice);
+        game.progress = outcome.progress;
+        if (outcome.awardFragment) {
+          game.progress = awardFragment(game.progress, topicId);
+        }
+        persistProgress(game.progress);
+        feedback.dataset.correct = String(outcome.wise);
+        if (outcome.wise) {
+          feedback.textContent = outcome.feedbackKo;
+          for (const sibling of ui.dialogBody.querySelectorAll('[data-gate-choice]')) {
+            sibling.disabled = true;
+          }
+          // 조각 획득 연출 + 코어 각성 체크.
+          const topic = getTopicById(topicId);
+          celebrate(game, new THREE.Vector3(quest.gatePosition[0], 1.4, quest.gatePosition[1]), topic?.color ?? '#7cf0ff', 'collect');
+          window.setTimeout(() => {
+            ui.dialogBody.innerHTML += `<div class="gate-resolve">${speechHtml(outcome.resolveKo)}<p class="quest-hint">${getStoryObjective(game.progress)}</p></div>`;
+          }, 500);
+          if (!before && canUnlockFinalCore(game.progress.collectedFragments)) {
+            window.setTimeout(() => celebrate(game, new THREE.Vector3(0, 1.6, 0), '#7cf0ff', 'core'), 900);
+          }
+        } else {
+          game.audio?.playWrong();
+          feedback.textContent = `${outcome.feedbackKo}`;
+          // 회복: 잠시 뒤 다시 선택하게 한다.
+          window.setTimeout(() => render(), 1400);
+        }
+        updateHud(game, ui);
+      });
+    }
+  }
+
+  render();
   openDialog(game, ui);
 }
 
@@ -1504,7 +1666,7 @@ function openShrineDialog(game, ui, shrineId) {
   for (const button of ui.dialogBody.querySelectorAll('[data-choice]')) {
     button.disabled = completed;
     button.addEventListener('click', () => {
-      const wasUnlocked = canUnlockFinalCore(game.progress.collectedFragments);
+      const firstClear = !game.progress.completedShrines.includes(shrineId);
       const outcome = applyShrineResult(game.progress, shrineId, button.dataset.choice);
       game.progress = outcome.progress;
       persistProgress(game.progress);
@@ -1519,16 +1681,16 @@ function openShrineDialog(game, ui, shrineId) {
         sibling.disabled = outcome.result.correct;
       }
       if (outcome.result.correct) {
-        // 조각 획득 연출: 사당 위치에서 파티클·빛기둥·효과음.
+        // 사당 통과 = 약속 도구 획득. 조각은 이 도구로 관문을 풀어야 얻는다.
         const topic = getTopicById(outcome.result.topicId);
         const shrinePos = getInteractablePosition(game, 'shrine', shrineId);
         celebrate(game, shrinePos.clone().setY(shrinePos.y + 1.2), topic?.color ?? '#ffd76a', 'collect');
-        // 코어가 막 열렸다면 각성 세리머니를 이어서.
-        if (!wasUnlocked && canUnlockFinalCore(game.progress.collectedFragments)) {
-          window.setTimeout(() => {
-            celebrate(game, new THREE.Vector3(0, 1.6, 0), '#7cf0ff', 'core');
-            game.coreWasUnlocked = true;
-          }, 650);
+        if (firstClear && outcome.toolId) {
+          const tool = getToolById(outcome.toolId);
+          const quest = QUESTS[outcome.result.topicId];
+          reflection.hidden = false;
+          reflection.dataset.tool = 'true';
+          reflection.textContent = `${tool.emoji} 「${tool.nameKo}」 획득! ${tool.powerKo} 이제 「${quest.gateLabelKo}」로 가서 사용하세요.`;
         }
         showPracticeGate();
       } else {
@@ -1627,7 +1789,7 @@ function closeJournal(game, ui) {
 
 function updateHud(game, ui) {
   const summary = getProgressSummary(game.progress.collectedFragments);
-  ui.objective.textContent = getNextObjective(game.progress);
+  ui.objective.textContent = getStoryObjective(game.progress);
   ui.fragmentCount.textContent = `조각 ${summary.collected}/${summary.total}`;
   ui.coreStatus.textContent = game.progress.aiCoreCompleted
     ? 'AI 코어 완료'
@@ -1638,14 +1800,29 @@ function updateHud(game, ui) {
     const collected = summary.collectedTopicIds.includes(topic.id);
     return `<span class="fragment-dot" style="--topic-color:${topic.color}" data-collected="${collected}" title="${topic.fragmentKo}">${topic.titleKo}</span>`;
   }).join('');
+  if (ui.toolBelt) {
+    const owned = new Set(game.progress.tools ?? []);
+    ui.toolBelt.innerHTML = PROMISE_TOOLS.map((tool) => {
+      const have = owned.has(tool.id);
+      const title = have ? `${tool.nameKo} — ${tool.powerKo}` : `${tool.nameKo} (사당에서 획득)`;
+      return `<span class="tool-slot" data-have="${have}" title="${title}">${have ? tool.emoji : '·'}</span>`;
+    }).join('');
+  }
   renderJournal(game, ui);
 }
 
 function renderJournal(game, ui) {
   const summary = getProgressSummary(game.progress.collectedFragments);
   const report = getLearningReport(game.progress);
+  const deeds = getStoryDeeds(game.progress);
   ui.journalContent.innerHTML = `
-    <p class="controls-note">이동: WASD/방향키 · 상호작용: E/Enter · 기록: J</p>
+    <p class="controls-note">${MOVE_HINT}</p>
+    ${deeds.length > 0
+      ? `<section class="learning-report">
+           <h3>📖 나의 이야기 — 섬이 기억하는 나의 행동</h3>
+           <ul class="deed-list">${deeds.map((d) => `<li>${d.deedKo}</li>`).join('')}</ul>
+         </section>`
+      : ''}
     <ul class="topic-list">
       ${ETHICS_TOPICS.map((topic) => {
         const visited = game.progress.visitedTopics.includes(topic.id);
