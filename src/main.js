@@ -535,12 +535,12 @@ function createWorld(renderState) {
   for (const zone of WORLD_ZONES) {
     const zonePosition = new THREE.Vector3(...zone.position);
     createPath(scene, zonePosition);
-    createZone(scene, zone, zonePosition);
+    const landmark = createZone(scene, zone, zonePosition);
     createNpc(scene, zone, zonePosition, interactables);
     const shrineCrystal = createShrine(scene, zone, zonePosition, interactables);
     shrineCrystals.set(zone.shrineId, shrineCrystal);
     createGate(scene, zone, interactables, renderState.gates);
-    createZoneAura(scene, zone, zonePosition, renderState.zoneAuras);
+    createZoneAura(scene, zone, zonePosition, renderState.zoneAuras, landmark);
   }
 
   for (let i = 0; i < 28; i += 1) {
@@ -826,6 +826,7 @@ function createPath(scene, target) {
 function createZone(scene, zone, position) {
   const topic = getTopicById(zone.topicId);
   const color = new THREE.Color(topic.color);
+  let landmark = {};
   const disc = new THREE.Mesh(
     new THREE.CircleGeometry(2.85, 42),
     new THREE.MeshStandardMaterial({
@@ -865,12 +866,13 @@ function createZone(scene, zone, position) {
   if (zone.topicId === 'privacy') {
     createPrivacyVillage(scene, position);
   } else if (zone.topicId === 'bias') {
-    createFairnessForest(scene, position);
+    landmark = createFairnessForest(scene, position);
   } else if (zone.topicId === 'copyright') {
     createCopyrightRuins(scene, position);
   } else {
-    createDeepfakeCave(scene, position);
+    landmark = createDeepfakeCave(scene, position);
   }
+  return landmark;
 }
 
 function createPrivacyVillage(scene, position) {
@@ -902,15 +904,20 @@ function createPrivacyVillage(scene, position) {
 }
 
 function createFairnessForest(scene, position) {
+  const leafMeshes = [];
   for (let i = 0; i < 6; i += 1) {
     const angle = (i / 6) * Math.PI * 2;
     const radius = i % 2 === 0 ? 1.5 : 2.2;
-    createSmallTree(
+    const leaves = createSmallTree(
       scene,
       new THREE.Vector3(position.x + Math.cos(angle) * radius, 0, position.z + Math.sin(angle) * radius),
       i
     );
+    // 편향 치유 때 색이 돌아오도록 원래 색을 기억해 둔다.
+    leaves.userData.naturalColor = leaves.material.color.clone();
+    leafMeshes.push(leaves);
   }
+  return { leafMeshes };
 }
 
 function createCopyrightRuins(scene, position) {
@@ -950,6 +957,7 @@ function createDeepfakeCave(scene, position) {
   opening.position.set(position.x, 0.72, position.z - 1.86);
   opening.rotation.x = 0;
   scene.add(opening);
+  return { opening };
 }
 
 function createNpc(scene, zone, zonePosition, interactables) {
@@ -1052,56 +1060,287 @@ function createGate(scene, zone, interactables, gates) {
 
 // 구역의 세계 상태 연출: 아직 못 풀었으면 지지직 노이즈 안개가 덮고,
 // 조각을 얻어 해결하면 안개가 걷히고 그 구역 색의 꽃이 피어난다(세계가 낫는다).
-function createZoneAura(scene, zone, position, zoneAuras) {
-  const topic = getTopicById(zone.topicId);
-  const color = new THREE.Color(topic.color);
-  const group = new THREE.Group();
-  group.position.set(position.x, 0, position.z);
-
-  // 노이즈 안개 — 회색·보라 반투명 원반 + 떠도는 글리치 픽셀들.
-  const haze = new THREE.Group();
-  const hazeDisc = new THREE.Mesh(
+// 모든 구역이 공유하는 노이즈 안개(회색+보라 원반 + 글리치 큐브 5개).
+function buildSharedHaze(group) {
+  const hazeGroup = new THREE.Group();
+  const disc = new THREE.Mesh(
     new THREE.CircleGeometry(3.1, 40),
     new THREE.MeshBasicMaterial({ color: 0x6a5f82, transparent: true, opacity: 0.36, side: THREE.DoubleSide, depthWrite: false })
   );
-  hazeDisc.rotation.x = -Math.PI / 2;
-  hazeDisc.position.y = 1.6;
-  haze.add(hazeDisc);
+  disc.rotation.x = -Math.PI / 2;
+  disc.position.y = 1.6;
+  hazeGroup.add(disc);
   const pixelMat = new THREE.MeshStandardMaterial({ color: 0x8a7fb0, emissive: 0x5a3d9a, emissiveIntensity: 0.6, roughness: 0.8 });
   const pixels = [];
-  for (let i = 0; i < 8; i += 1) {
+  for (let i = 0; i < 5; i += 1) {
     const s = 0.14 + (i % 3) * 0.05;
     const cube = new THREE.Mesh(new THREE.BoxGeometry(s, s, s), pixelMat);
     pixels.push(cube);
-    haze.add(cube);
+    hazeGroup.add(cube);
   }
-  group.add(haze);
+  group.add(hazeGroup);
+  return { group: hazeGroup, disc, pixels };
+}
 
-  // 치유의 꽃 — 해결 전엔 숨어 있다가(scale 0) 해결되면 피어난다.
-  const bloom = new THREE.Group();
-  bloom.scale.setScalar(0.001);
+// privacy — 몰래 찍힌 사진이 잡음 덩굴 사이를 소용돌이치다, 해결되면 집으로 정착.
+function buildPrivacyAura(group, topic) {
+  const corruption = new THREE.Group();
+  const vineMat = new THREE.MeshStandardMaterial({ color: 0x4a3a63, emissive: 0x5a3d9a, emissiveIntensity: 0.5, roughness: 0.8 });
+  const housePts = [[-1.5, -0.7], [1.3, -0.5], [-0.2, 1.2]];
+  const vines = [];
+  housePts.forEach(([hx, hz], i) => {
+    const vine = new THREE.Mesh(new THREE.TorusGeometry(0.9, 0.05, 6, 12, Math.PI * 0.9), vineMat);
+    vine.position.set(hx, 0.4, hz);
+    vine.rotation.x = Math.PI / 2;
+    vines.push(vine);
+    corruption.add(vine);
+  });
+  group.add(corruption);
+  // 사진 6장 — 항상 존재, 궤도↔정착을 ease로 보간.
+  const photoMat = new THREE.MeshBasicMaterial({ color: 0xf6efe2, side: THREE.DoubleSide });
+  const photos = [];
+  const settle = [];
+  housePts.forEach(([hx, hz]) => {
+    settle.push(new THREE.Vector3(hx - 0.25, 0.98, hz + 0.5));
+    settle.push(new THREE.Vector3(hx + 0.25, 0.72, hz + 0.5));
+  });
+  for (let i = 0; i < 6; i += 1) {
+    const q = new THREE.Mesh(new THREE.PlaneGeometry(0.32, 0.24), photoMat);
+    q.position.set(Math.cos(i * 1.3) * 1.6, 0.9, Math.sin(i * 1.3) * 1.6);
+    group.add(q);
+    photos.push(q);
+  }
+  const heal = new THREE.Group();
+  const rc = new THREE.Color(topic.color);
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(2.2, 0.06, 8, 40),
+    new THREE.MeshStandardMaterial({ color: rc, emissive: rc, emissiveIntensity: 0.6, roughness: 0.4 })
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.16;
+  heal.add(ring);
+  heal.scale.setScalar(0.001);
+  group.add(heal);
+  const orbit = new THREE.Vector3();
+  return {
+    corruption,
+    heal,
+    animate: (elapsed, delta, ease) => {
+      vines.forEach((v, i) => { v.rotation.z = i + Math.sin(elapsed * 2 + i) * 0.3; });
+      photos.forEach((q, i) => {
+        const a = elapsed * (0.5 + (i % 3) * 0.2) + i * 1.3;
+        const r = 1.6 + (i % 3) * 0.3;
+        orbit.set(Math.cos(a) * r, 0.9 + Math.sin(elapsed * 1.5 + i) * 0.4, Math.sin(a) * r);
+        q.position.lerpVectors(orbit, settle[i], ease);
+        q.rotation.y = a * (1 - ease);
+        q.rotation.z = (1 - ease) * Math.sin(elapsed + i) * 0.5;
+      });
+      ring.rotation.z += delta * 0.4;
+      ring.material.emissiveIntensity = 0.4 + Math.sin(elapsed * 2) * 0.2;
+    }
+  };
+}
+
+// bias — 숲이 빨강 단색 + 빨간 책만, 해결되면 색이 돌아오고 다색 꽃이 핀다.
+function buildBiasAura(group, topic, landmark) {
+  const corruption = new THREE.Group();
+  const bookMat = new THREE.MeshStandardMaterial({ color: 0xb03535, emissive: 0x5a1010, emissiveIntensity: 0.3, roughness: 0.8 });
+  for (let i = 0; i < 5; i += 1) {
+    const a = (i / 5) * Math.PI * 2 + 1;
+    const b = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.05, 0.16), bookMat);
+    b.position.set(Math.cos(a) * 1.4, 0.06, Math.sin(a) * 1.4);
+    b.rotation.y = a;
+    b.rotation.z = 0.2;
+    corruption.add(b);
+  }
+  group.add(corruption);
+  const heal = new THREE.Group();
+  const palette = [0xf2c14e, 0x8a5eb8, 0xf5f2ff, 0xe08aa8, 0x3f8f75, 0xc98a32, 0x6f7fd3];
+  const flowers = [];
   for (let i = 0; i < 7; i += 1) {
     const a = (i / 7) * Math.PI * 2 + i;
     const r = 1.7 + (i % 3) * 0.5;
-    const stem = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.03, 0.04, 0.5, 6),
-      new THREE.MeshStandardMaterial({ color: 0x4f935a, roughness: 0.9 })
-    );
-    const petals = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(0.16, 0),
-      new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.5, roughness: 0.5, flatShading: true })
-    );
+    const c = new THREE.Color(palette[i % palette.length]);
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.5, 6), new THREE.MeshStandardMaterial({ color: 0x4f935a, roughness: 0.9 }));
+    const petals = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16, 0), new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 0.5, roughness: 0.5, flatShading: true }));
     petals.position.y = 0.32;
-    const flower = new THREE.Group();
-    flower.add(stem, petals);
-    flower.position.set(Math.cos(a) * r, 0.25, Math.sin(a) * r);
-    flower.userData.seed = i;
-    bloom.add(flower);
+    const f = new THREE.Group();
+    f.add(stem, petals);
+    f.position.set(Math.cos(a) * r, 0.25, Math.sin(a) * r);
+    f.userData.seed = i;
+    heal.add(f);
+    flowers.push(f);
   }
-  group.add(bloom);
+  heal.scale.setScalar(0.001);
+  group.add(heal);
+  const leafMeshes = landmark?.leafMeshes ?? [];
+  const redC = new THREE.Color(0xb03535);
+  return {
+    corruption,
+    heal,
+    animate: (elapsed, delta, ease) => {
+      leafMeshes.forEach((leaf) => {
+        const nat = leaf.userData.naturalColor;
+        if (nat) {
+          leaf.material.color.lerpColors(redC, nat, ease);
+        }
+      });
+      flowers.forEach((f, i) => { f.rotation.z = Math.sin(elapsed * 1.6 + (f.userData.seed ?? i)) * 0.18; });
+    }
+  };
+}
 
+// copyright — 이름 잃은 회색 조각상 + 떠는 가짜 복제상, 해결되면 색·금빛 명판이 돌아온다.
+function buildCopyrightAura(group, topic) {
+  const corruption = new THREE.Group();
+  const fakeMat = new THREE.MeshStandardMaterial({ color: 0x9a8fb0, transparent: true, opacity: 0.35, roughness: 0.9 });
+  const fakes = [];
+  [[-1.9, 0.3], [1.9, 0.3]].forEach(([fx, fz]) => {
+    const s = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.3, 0.3, 10), fakeMat);
+    base.position.y = 0.15;
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.5, 0.22), fakeMat);
+    body.position.y = 0.55;
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 10), fakeMat);
+    head.position.y = 0.92;
+    s.add(base, body, head);
+    s.position.set(fx, 0, fz);
+    s.userData.baseX = fx;
+    corruption.add(s);
+    fakes.push(s);
+  });
+  group.add(corruption);
+  const statueMats = [];
+  const plateMats = [];
+  [-1.2, 0, 1.2].forEach((sx) => {
+    const mk = (geo) => new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0x8f8f94, roughness: 0.85 }));
+    const base = mk(new THREE.CylinderGeometry(0.26, 0.32, 0.3, 12));
+    base.position.set(sx, 0.15, -0.4);
+    const body = mk(new THREE.BoxGeometry(0.32, 0.52, 0.24));
+    body.position.set(sx, 0.56, -0.4);
+    const head = mk(new THREE.SphereGeometry(0.15, 14, 12));
+    head.position.set(sx, 0.95, -0.4);
+    const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.14), new THREE.MeshStandardMaterial({ color: 0x3a3a40, emissive: 0x000000, roughness: 0.7, side: THREE.DoubleSide }));
+    plate.position.set(sx, 0.34, -0.26);
+    group.add(base, body, head, plate);
+    statueMats.push(base.material, body.material, head.material);
+    plateMats.push(plate.material);
+  });
+  const heal = new THREE.Group();
+  const tag = createLabelSprite('원작: 조각가 무로', '#f2c14e');
+  tag.scale.set(2, 0.46, 1);
+  tag.position.set(0, 1.5, -0.4);
+  heal.add(tag);
+  heal.scale.setScalar(0.001);
+  group.add(heal);
+  const greyC = new THREE.Color(0x8f8f94);
+  const warmC = new THREE.Color(0xd9b98a);
+  const emptyC = new THREE.Color(0x3a3a40);
+  const goldC = new THREE.Color(0xf2c14e);
+  const plateE0 = new THREE.Color(0x000000);
+  const plateE1 = new THREE.Color(0x7a5a12);
+  return {
+    corruption,
+    heal,
+    animate: (elapsed, delta, ease) => {
+      fakes.forEach((s, k) => { s.position.x = s.userData.baseX + Math.sin(elapsed * 7 + k) * 0.05; });
+      statueMats.forEach((m) => { m.color.lerpColors(greyC, warmC, ease); });
+      plateMats.forEach((m) => {
+        m.color.lerpColors(emptyC, goldC, ease);
+        m.emissive.lerpColors(plateE0, plateE1, ease);
+      });
+    }
+  };
+}
+
+// deepfake — 세 곳에서 똑같이 울리는 가짜 목소리, 해결되면 가짜는 사라지고 진짜 하나만 따뜻하게.
+function buildDeepfakeAura(group, topic, landmark) {
+  const corruption = new THREE.Group();
+  const positions = [[-1.2, -1.2], [0, -1.6], [1.2, -1.2]];
+  const voices = [];
+  positions.forEach(([vx, vz], idx) => {
+    const isReal = idx === 1;
+    const orb = new THREE.Mesh(
+      new THREE.SphereGeometry(0.09, 12, 10),
+      new THREE.MeshStandardMaterial({ color: 0x8a5eb8, emissive: 0x8a5eb8, emissiveIntensity: 0.8, roughness: 0.5 })
+    );
+    orb.position.set(vx, 0.8, vz);
+    const rings = [];
+    for (let k = 0; k < 2; k += 1) {
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(0.14, 0.2, 24),
+        new THREE.MeshBasicMaterial({ color: isReal ? 0xffc46b : 0x8a5eb8, transparent: true, side: THREE.DoubleSide, depthWrite: false })
+      );
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(vx, 0.5, vz);
+      rings.push(ring);
+      (isReal ? group : corruption).add(ring);
+    }
+    (isReal ? group : corruption).add(orb);
+    voices.push({ orb, rings, isReal });
+  });
+  group.add(corruption);
+  const heal = new THREE.Group();
+  const glow = new THREE.Mesh(
+    new THREE.SphereGeometry(0.4, 14, 12),
+    new THREE.MeshStandardMaterial({ color: 0xffe9c0, emissive: 0xffc46b, emissiveIntensity: 1, roughness: 0.3 })
+  );
+  glow.position.set(0, 0.9, -1.6);
+  heal.add(glow);
+  heal.scale.setScalar(0.001);
+  group.add(heal);
+  const opening = landmark?.opening;
+  const darkC = new THREE.Color(0x1c1826);
+  const caveWarmC = new THREE.Color(0x8a5a2e);
+  const fakeC = new THREE.Color(0x8a5eb8);
+  const realC = new THREE.Color(0xffc46b);
+  return {
+    corruption,
+    heal,
+    animate: (elapsed, delta, ease) => {
+      voices.forEach((v, idx) => {
+        v.rings.forEach((ring, k) => {
+          const phase = (elapsed * 0.7 + idx / 3 + k * 0.5) % 1;
+          ring.scale.setScalar(0.3 + phase * 1.3);
+          ring.material.opacity = (0.5 * (1 - phase)) * (v.isReal ? ease : 1 - ease * 0.9);
+        });
+        if (v.isReal) {
+          v.orb.material.color.lerpColors(fakeC, realC, ease);
+          v.orb.material.emissive.lerpColors(fakeC, realC, ease);
+        }
+      });
+      if (opening) {
+        opening.material.color.lerpColors(darkC, caveWarmC, ease);
+      }
+    }
+  };
+}
+
+const ZONE_AURA_BUILDERS = {
+  privacy: buildPrivacyAura,
+  bias: buildBiasAura,
+  copyright: buildCopyrightAura,
+  deepfake: buildDeepfakeAura
+};
+
+// 구역 세계 상태: 미해결이면 구역별 오염 연출, 해결되면 구역별 치유 연출로 전환된다.
+function createZoneAura(scene, zone, position, zoneAuras, landmark) {
+  const topic = getTopicById(zone.topicId);
+  const group = new THREE.Group();
+  group.position.set(position.x, 0, position.z);
+  const haze = buildSharedHaze(group);
+  const build = ZONE_AURA_BUILDERS[zone.topicId] ?? buildBiasAura;
+  const parts = build(group, topic, landmark ?? {});
   scene.add(group);
-  zoneAuras.set(zone.topicId, { haze, hazeDisc, pixels, bloom });
+  zoneAuras.set(zone.topicId, {
+    haze: haze.group,
+    hazeDisc: haze.disc,
+    pixels: haze.pixels,
+    corruption: parts.corruption,
+    heal: parts.heal,
+    animate: parts.animate,
+    t: 0
+  });
 }
 
 function createSmallTree(scene, position, variant, animated) {
@@ -1129,6 +1368,7 @@ function createSmallTree(scene, position, variant, animated) {
       }
     });
   }
+  return leaves;
 }
 
 function createPlayer({ playerGroup }) {
@@ -1588,14 +1828,16 @@ function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates, zon
     }
   }
 
-  // 구역 세계 상태: 미해결이면 노이즈 안개가 떠돌고, 해결되면 안개가 걷히고 꽃이 핀다.
+  // 구역 세계 상태: 미해결이면 구역별 오염, 해결되면 구역별 치유로 부드럽게 전환.
   if (zoneAuras) {
     const flags = getStoryVisualFlags(game.progress);
     for (const [topicId, aura] of zoneAuras.entries()) {
       const solved = flags.has(`${topicId}:solved`);
-      // 안개 페이드: 해결되면 서서히 사라진다.
-      const targetOpacity = solved ? 0 : 0.36;
-      aura.hazeDisc.material.opacity += (targetOpacity - aura.hazeDisc.material.opacity) * Math.min(1, delta * 2.5);
+      aura.t += ((solved ? 1 : 0) - aura.t) * Math.min(1, delta * 2.5);
+      const t = aura.t;
+      const ease = t * t * (3 - 2 * t); // smoothstep
+      // 공유 노이즈 안개는 걷힌다.
+      aura.hazeDisc.material.opacity = 0.36 * (1 - ease);
       aura.haze.visible = aura.hazeDisc.material.opacity > 0.02;
       if (aura.haze.visible) {
         aura.pixels.forEach((cube, i) => {
@@ -1606,15 +1848,15 @@ function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates, zon
           cube.visible = Math.sin(elapsed * 14 + i * 1.9) > -0.6; // 지지직 깜빡임
         });
       }
-      // 꽃 개화: 해결되면 부드럽게 피어나 산들바람에 흔들린다.
-      const targetBloom = solved ? 1 : 0.001;
-      const s = aura.bloom.scale.x + (targetBloom - aura.bloom.scale.x) * Math.min(1, delta * 2.5);
-      aura.bloom.scale.setScalar(s);
-      if (s > 0.05) {
-        aura.bloom.children.forEach((flower, i) => {
-          flower.rotation.z = Math.sin(elapsed * 1.6 + (flower.userData.seed ?? i)) * 0.18;
-        });
+      if (aura.corruption) {
+        aura.corruption.visible = ease < 0.98;
+        aura.corruption.scale.setScalar(Math.max(0.001, 1 - ease));
       }
+      if (aura.heal) {
+        aura.heal.scale.setScalar(Math.max(0.001, ease));
+        aura.heal.visible = ease > 0.02;
+      }
+      aura.animate?.(elapsed, delta, ease);
     }
   }
 

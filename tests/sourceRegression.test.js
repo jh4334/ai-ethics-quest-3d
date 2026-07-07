@@ -40,6 +40,17 @@ test('defeated boss does not become a full-HP re-fight, and certificate prints c
   assert.match(cssSource, /\.certificate\[hidden\] \{\s*\n?\s*display: none !important/);
 });
 
+test('each zone has its own procedural corruption/heal (not one generic haze) and stays deterministic', () => {
+  assert.match(mainSource, /ZONE_AURA_BUILDERS/);
+  for (const name of ['buildPrivacyAura', 'buildBiasAura', 'buildCopyrightAura', 'buildDeepfakeAura']) {
+    assert.match(mainSource, new RegExp(name));
+  }
+  // 전환은 구역별 t/ease로 오염↔치유를 보간한다.
+  assert.match(mainSource, /aura\.animate\?\.\(elapsed, delta, ease\)/);
+  // 결정성: 게임 로직(main.js)에는 Math.random을 쓰지 않는다(교실 재현성).
+  assert.doesNotMatch(mainSource, /Math\.random/);
+});
+
 test('boss fight has depth: weak-point tool matching, weakness rotation, and dodgeable waves', () => {
   // 약점 색과 다른 도구는 튕겨 대미지가 없어야 한다.
   assert.match(mainSource, /activeToolId !== c\.weakToolId/);
