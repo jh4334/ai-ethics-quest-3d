@@ -2944,10 +2944,16 @@ function renderJournal(game, ui) {
     </ul>
     <section class="learning-report" data-learning-report>
       <h3>학습 리포트</h3>
-      <p>사당 해결 ${report.solvedCount}/4 · 첫 도전 성공 ${report.firstTryCount}개 · 연습 문제 ${report.practiceCorrectCount}/${report.practiceCount} 정답 · AI 코어 ${report.core.completed ? '완료' : '미완료'}</p>
+      <p>사당(퍼즐) 통과 ${report.solvedCount}/4 · 관문 윤리 선택 — 현명하게 ${report.gateSolvedCount}개, 실수 후 회복 ${report.gateRecoveredCount}개 · AI 코어 ${report.core.completed ? '완료' : '미완료'}</p>
       <ul class="report-list">
         ${report.topics
-          .map((topic) => `<li><strong>${topic.titleKo}</strong> ${topic.statusKo}${topic.attempts > 0 ? ` (${topic.attempts}회 도전)` : ''}</li>`)
+          .map((topic) => {
+            const gate = topic.gateSolved || topic.gateBadTries > 0
+              ? ` · 관문: <b${topic.gateRecovered ? ' style="color:#a06a12"' : ''}>${topic.gateStatusKo}</b>`
+              : '';
+            const deed = topic.gateDeedKo ? `<br><span class="report-deed">“${topic.gateDeedKo}”</span>` : '';
+            return `<li><strong>${topic.titleKo}</strong> ${topic.gateSolved ? '조각 획득' : (topic.solved ? '사당 통과' : topic.statusKo)}${gate}${deed}</li>`;
+          })
           .join('')}
       </ul>
       ${report.reviewTopics.length > 0

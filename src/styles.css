@@ -333,6 +333,11 @@ button:disabled {
   line-height: 1.46;
 }
 
+.report-deed {
+  font-style: italic;
+  color: #4a5a56;
+}
+
 .report-review-heading {
   margin: 0 0 4px;
   font-size: 0.82rem;

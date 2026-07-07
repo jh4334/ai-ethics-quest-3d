@@ -661,6 +661,7 @@ const TOPIC_STATUS_LABELS = {
 
 export function getLearningReport(progress) {
   const log = progress.choiceLog ?? [];
+  const story = progress.story ?? {};
 
   const topics = ETHICS_TOPICS.map((topic) => {
     const attempts = log.filter((entry) => entry.kind === 'shrine' && entry.topicId === topic.id);
@@ -677,6 +678,22 @@ export function getLearningReport(progress) {
       status = 'visited';
     }
 
+    // 관문의 윤리적 선택(가장 의미 있는 신호): 현명하게 해결했는지, 실수 후 바로잡았는지.
+    const gate = story[topic.id] ?? {};
+    const gateBadTries = Number.isFinite(gate.badTries) && gate.badTries > 0 ? gate.badTries : 0;
+    const gateSolved = gate.solved === true;
+    const gateRecovered = gateSolved && gateBadTries > 0;
+    const gateDeedKo = Array.isArray(gate.deeds) && gate.deeds.length > 0 ? gate.deeds[0] : null;
+    // 관문 결과를 사람이 읽는 한 줄로.
+    let gateStatusKo = '아직';
+    if (gateRecovered) {
+      gateStatusKo = '실수 후 바로잡음';
+    } else if (gateSolved) {
+      gateStatusKo = '현명하게 해결';
+    } else if (gateBadTries > 0) {
+      gateStatusKo = '고민 중(실수 경험)';
+    }
+
     return {
       topicId: topic.id,
       titleKo: topic.titleKo,
@@ -684,8 +701,15 @@ export function getLearningReport(progress) {
       solved,
       status,
       statusKo: TOPIC_STATUS_LABELS[status],
-      // 오답 경험이 있는 주제는 수업 회고 질문으로 연결한다.
-      reviewQuestionKo: status === 'retry' || status === 'struggling' ? topic.classroomQuestion : null
+      // 관문(윤리 선택) 신호
+      gateSolved,
+      gateBadTries,
+      gateRecovered,
+      gateDeedKo,
+      gateStatusKo,
+      // 오답 경험이 있는 주제는 수업 회고 질문으로 연결한다(사당 오답 또는 관문 실수).
+      reviewQuestionKo:
+        status === 'retry' || status === 'struggling' || gateBadTries > 0 ? topic.classroomQuestion : null
     };
   });
 
@@ -698,6 +722,9 @@ export function getLearningReport(progress) {
     totalChoices: log.length,
     firstTryCount: topics.filter((topic) => topic.status === 'first-try').length,
     solvedCount: topics.filter((topic) => topic.solved).length,
+    // 관문(윤리 선택) 집계 — 교사가 실제 판단·회복을 볼 수 있게.
+    gateSolvedCount: topics.filter((topic) => topic.gateSolved).length,
+    gateRecoveredCount: topics.filter((topic) => topic.gateRecovered).length,
     practiceCount: practiceEntries.length,
     practiceCorrectCount: practiceEntries.filter((entry) => entry.correct).length,
     core: {
