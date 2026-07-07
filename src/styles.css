@@ -569,31 +569,85 @@ button:disabled {
 }
 
 @media (pointer: coarse), (max-width: 760px) {
-  /* 상단 한 줄: [목표 칩] ... [소리][기록] 가 겹치지 않게 폭을 나눈다 */
+  /* 상단 한 줄: [목표 칩(목표만)] ... [소리][기록] */
   .objective-chip {
     top: 10px;
     left: 10px;
     width: calc(100vw - 148px);
-    padding: 9px 11px;
+    padding: 8px 11px;
   }
 
+  /* 정적인 제목·부제는 숨기고, 지금 할 일(목표)만 보여준다 */
+  .objective-chip .eyebrow,
   .objective-chip h1 {
-    font-size: 0.98rem;
+    display: none;
   }
 
   .objective-chip p:last-child {
+    margin: 0;
     font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--ink);
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     overflow: hidden;
   }
 
+  /* 진행 상태를 상단 슬림 바 하나로: 조각 수 · 점 4개 · 도구 4칸 */
   .status-strip {
-    top: auto;
+    top: 64px;
+    left: 10px;
     right: 10px;
-    bottom: 176px;
-    min-width: min(240px, calc(100vw - 20px));
+    bottom: auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+  }
+
+  .status-head {
+    flex: 0 0 auto;
+  }
+
+  .status-strip [data-core-status] {
+    display: none;
+  }
+
+  .status-strip strong {
+    font-size: 0.82rem;
+  }
+
+  .fragment-row {
+    display: flex;
+    gap: 5px;
+  }
+
+  /* 모바일에선 조각을 작은 색 점으로 (라벨 글자는 상자 밖으로 밀어 감춘다:
+     모바일 글꼴 자동 확대가 font-size:0을 무시하므로 text-indent로 확실히 숨김) */
+  .fragment-dot {
+    width: 15px;
+    height: 15px;
+    padding: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    text-indent: -9999px;
+  }
+
+  .tool-belt {
+    margin: 0 0 0 auto;
+    padding: 0;
+    border-top: none;
+    gap: 5px;
+  }
+
+  .tool-slot {
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    font-size: 0.92rem;
   }
 
   .journal-toggle {
@@ -608,7 +662,7 @@ button:disabled {
   }
 
   .journal-panel {
-    top: 58px;
+    top: 108px;
     right: 10px;
     width: calc(100vw - 20px);
   }
@@ -637,14 +691,14 @@ button:disabled {
   }
 }
 
-/* 가로로 짧은 폰: 세로 공간이 부족하니 목표 칩을 더 납작하게 */
+/* 가로로 짧은 폰: 세로 공간이 부족하니 목표를 한 줄로 */
 @media (pointer: coarse) and (max-height: 480px) {
   .objective-chip {
-    width: min(60vw, 420px);
+    width: min(66vw, 460px);
   }
 
   .objective-chip p:last-child {
-    display: none;
+    -webkit-line-clamp: 1;
   }
 
   .interaction-prompt {
@@ -939,32 +993,30 @@ button:disabled {
   display: none;
 }
 
-/* ===== 약속 도구 인벤토리 ===== */
-.tool-belt {
-  position: absolute;
-  z-index: 2;
-  top: 190px;
-  right: 16px;
+/* ===== 약속 도구 인벤토리 (상태 패널 안에 통합) ===== */
+.status-head {
   display: flex;
-  gap: 7px;
-  padding: 8px 10px;
-  border-radius: 14px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 42%),
-    var(--panel);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  box-shadow: 0 10px 28px rgba(20, 60, 80, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(10px);
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tool-belt {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+  padding-top: 7px;
+  border-top: 1px solid var(--line);
 }
 
 .tool-slot {
-  width: 38px;
-  height: 38px;
+  flex: 1;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
-  font-size: 1.15rem;
+  border-radius: 9px;
+  font-size: 1.05rem;
   background: rgba(235, 239, 238, 0.85);
   border: 1px solid rgba(20, 34, 32, 0.12);
   color: #b7bfbb;
@@ -986,18 +1038,27 @@ button:disabled {
   color: #7a5a12;
 }
 
-@media (pointer: coarse), (max-width: 760px) {
-  .tool-belt {
-    top: auto;
-    bottom: 240px;
-    right: 10px;
-    padding: 6px 8px;
-  }
-  .tool-slot {
-    width: 34px;
-    height: 34px;
-    font-size: 1rem;
-  }
+/* 세로 폰 안내: 가로 권장 */
+.rotate-hint {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  bottom: 200px;
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(20, 40, 55, 0.82);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: rotate-hint-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes rotate-hint-pulse {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; }
 }
 
 /* ===== 스토리 대화 / 노이즈 관문 ===== */
