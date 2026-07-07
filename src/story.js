@@ -5,37 +5,22 @@
 
 export const STORY_TOPIC_ORDER = ['privacy', 'bias', 'copyright', 'deepfake'];
 
-// 프롤로그 — 「떠내려온 아이」. 타이틀 다음, 자유 탐험 전에 한 번만 보여준다.
-// 누가·어디서·왜(노이즈)·무엇을 할지(네 개의 약속)를 자연스럽게 깔아 준다.
+// 프롤로그 — 「떠내려온 아이」. 두 비트로 짧게: 파트 2는 대화가 아니라 액션이 본체다.
+// (누가·왜(노이즈)·무엇을(네 개의 약속) — 핵심만 깔고 바로 조작으로 넘어간다.)
 export const PROLOGUE = {
   titleKo: '프롤로그 · 떠내려온 아이',
   beats: [
     {
       speakerKo: '',
       linesKo: [
-        '파도 소리에 눈을 뜬다. 낯선 섬의 해변, 젖은 모래 위에 네가 떠내려와 있다.',
-        '하늘은 맑고 쨍한데, 저 멀리 섬 곳곳에서 지지직— 회색빛 안개가 피어오른다.'
+        '파도 소리에 눈을 뜬다. 낯선 섬의 해변 — 저 멀리 곳곳에서 지지직, 회색 안개가 피어오른다.'
       ]
     },
     {
       speakerKo: '도트',
       linesKo: [
-        '"앗, 깨어났다! 다행이다아—"',
-        '"코어님이 너를 불렀어! 어… 부른 거 맞지? 아무튼 큰일 났어!"'
-      ]
-    },
-    {
-      speakerKo: '도트',
-      linesKo: [
-        '"섬의 기억이 몽땅 뒤죽박죽이야. 사진이 흩어지고, 숲이 한 가지 색이 되고, 조각상 이름이 지워지고…"',
-        '"전부 노이즈 때문이야. 아무도 안 가르쳐 줘서 아무 데이터나 주워 먹고 배탈이 난 아기 AI라고, 코어님이 그랬어."'
-      ]
-    },
-    {
-      speakerKo: '도트',
-      linesKo: [
-        '"흩어진 걸 되돌리려면 ‘네 개의 약속’이 필요하대. 약속은 사당에서 도구로 얻고, 노이즈가 막은 곳에서 직접 써야 해."',
-        '"우선 개인정보 마을로 가서 비밀지기 담을 만나 보자. 내가 같이 갈게 — 노이즈 소리 나면 네 후드에 숨을 거지만!"'
+        '"깨어났다! 노이즈라는 아기 AI가 섬의 기억을 엉망으로 만들었어."',
+        '"사당 네 곳의 시련을 깨고 ‘약속의 도구’ 네 개를 모아 줘 — 그거면 노이즈를 가르칠 수 있어!"'
       ]
     }
   ],
@@ -48,7 +33,7 @@ export const QUESTS = {
     toolId: 'shield',
     questTitleKo: '흩어진 사진들',
     npcNameKo: '비밀지기 담',
-    gatePosition: [-6.0, -3.4],
+    gatePosition: [-8.4, -4.8],
     gateLabelKo: '잡음 덩굴',
     introKo: [
       '큰일이야, 수호자. 노이즈의 잡음 덩굴이 내 등껍질 금고를 뒤져 마을 사진들을 흩뿌렸어.',
@@ -88,7 +73,7 @@ export const QUESTS = {
     toolId: 'mirror',
     questTitleKo: '한 가지 색 숲',
     npcNameKo: '외알안경 모리',
-    gatePosition: [6.2, -3.6],
+    gatePosition: [8.7, -5.0],
     gateLabelKo: '색이 빠진 꽃밭',
     introKo: [
       '이상하군. 내 계산으론 숲의 꽃이 전부 빨강이어야 하는데… 노이즈가 빨간 책만 남기고 다 먹어 버렸어.',
@@ -128,7 +113,7 @@ export const QUESTS = {
     toolId: 'bell',
     questTitleKo: '이름 없는 조각상',
     npcNameKo: '조각가 무로',
-    gatePosition: [-6.0, 4.0],
+    gatePosition: [-8.4, 5.6],
     gateLabelKo: '이름 잃은 조각상',
     introKo: [
       '노이즈가 유적 조각상들의 명판을 먹어 치웠어. 이름을 잃은 조각상이 회색으로 굳어 가고 있지.',
@@ -168,7 +153,7 @@ export const QUESTS = {
     toolId: 'compass',
     questTitleKo: '아홉 번째 꼬리',
     npcNameKo: '메아리 에코',
-    gatePosition: [6.0, 3.8],
+    gatePosition: [8.4, 5.3],
     gateLabelKo: '가짜 목소리들',
     introKo: [
       '…미안. 요즘 노이즈가 내 꼬리 목소리를 훔쳐 가짜 심부름을 퍼뜨려. “장로다, 창고 열쇠를 두고 가거라…”',

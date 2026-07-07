@@ -121,6 +121,27 @@ test('entering a shrine loads a separate dungeon map (overworld hidden), not jus
   assert.doesNotMatch(dungeonSource, /Math\.random/);
 });
 
+test('boss is a 4-phase fight keyed by the four shrine items', () => {
+  // 4아이템 = 4페이즈: 사당에서 모은 도구가 각 껍질의 열쇠.
+  assert.match(mainSource, /const PHASE_TOOLS = PROMISE_TOOLS\.map/);
+  assert.match(mainSource, /const BOSS_MAX_HP = PHASE_HITS \* PHASE_TOOLS\.length/);
+  // 도구 4개를 모두 모아야 전투 진입(입장 게이트, 남은 사당 안내).
+  assert.match(mainSource, /owned\.length < PHASE_TOOLS\.length/);
+  // 페이즈 격파 연출 + 페이즈별 파도 가속.
+  assert.match(mainSource, /function breakBossShell/);
+  assert.match(mainSource, /PHASE_FIRE\[c\.phase\]/);
+});
+
+test('prologue is short (2 beats) and skippable', () => {
+  const storySource = readFileSync(new URL('../src/story.js', import.meta.url), 'utf8');
+  const beats = storySource.match(/speakerKo:/g) ?? [];
+  // PROLOGUE의 비트 수가 다시 늘어나 첫인상이 텍스트박스가 되지 않게.
+  const prologueBlock = storySource.match(/export const PROLOGUE = \{[\s\S]*?\n\};/)?.[0] ?? '';
+  assert.equal((prologueBlock.match(/speakerKo:/g) ?? []).length, 2);
+  assert.match(mainSource, /data-prologue-skip/);
+  void beats;
+});
+
 test('package engine range matches the locked Vite runtime floor', () => {
   assert.equal(packageJson.engines.node, '^20.19.0 || >=22.12.0');
 });

@@ -19,15 +19,18 @@ import {
 import { pickMemory } from './bossMemories.js';
 import {
   cellToWorld,
+  computeBeamPath,
   countRemaining,
   createRoomState,
   getDungeonRoom,
   hasDungeonRoom,
   isRoomSolved,
+  pickOrPlace,
   pushCrate,
+  rotateMirror,
   worldToCell
 } from './dungeonPuzzles.js';
-import { buildDungeonRoom, disposeDungeonRoom } from './dungeon.js';
+import { buildDungeonRoom, disposeDungeonRoom, syncDungeonVisuals } from './dungeon.js';
 import {
   FINALE,
   buildNovaCertificate,
@@ -81,8 +84,8 @@ const MOVE_HINT = IS_TOUCH
   ? '왼쪽 방향 버튼 이동 · 오른쪽 A로 확인·공격'
   : 'WASD/방향키 이동 · E·Space 확인/공격 · J 기록';
 const ACTION_LABEL = IS_TOUCH ? '' : 'E: ';
-const PLAYER_START = new THREE.Vector3(0, 0.55, 8.5);
-const ISLAND_RADIUS = 12.1;
+const PLAYER_START = new THREE.Vector3(0, 0.55, 11.6);
+const ISLAND_RADIUS = 16.6;
 const INTERACTION_RADIUS = 2.25;
 const CORE_RADIUS = 2.8;
 const clock = new THREE.Clock();
@@ -426,7 +429,7 @@ function createGameState(ui) {
     player: {
       position: PLAYER_START.clone(),
       direction: new THREE.Vector3(0, 0, 1),
-      speed: 5.2,
+      speed: 6.1,
       bob: 0,
       moving: false
     },
@@ -454,9 +457,9 @@ function configureRenderer(renderer) {
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  // 밝고 쨍한 판타지 톤: ACES 필름 톤매핑 + 약간 높은 노출로 색을 살린다.
+  // 밝고 쨍한 판타지 톤: ACES 필름 톤매핑. 노출은 1 아래로 — 하이라이트가 하얗게 뜨지 않게.
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.04;
+  renderer.toneMappingExposure = 0.96;
 }
 
 function setupPostProcessing(renderState, root) {
@@ -470,31 +473,34 @@ function setupPostProcessing(renderState, root) {
     composer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
     composer.setSize(width, height);
     composer.addPass(new RenderPass(scene, camera));
-    // 발광 크리스털·코어가 은은하게 빛나도록 블룸을 얹는다(저사양 고려해 약하게).
-    const bloom = new UnrealBloomPass(new THREE.Vector2(width, height), 0.55, 0.85, 0.72);
+    // 발광 크리스털·코어만 빛나도록 블룸은 약하게·문턱은 높게(밝은 지형·글씨가 번지지 않게).
+    const bloom = new UnrealBloomPass(new THREE.Vector2(width, height), 0.35, 0.8, 0.85);
     composer.addPass(bloom);
     // 색 보정 + 비네트 — 블룸 뒤, OutputPass(톤매핑·sRGB) 앞의 리니어 공간에서 적용.
     // 풀스크린 쿼드 1드로우·텍스처 페치 1회, 신규 렌더타깃 0(기존 핑퐁 버퍼 재사용).
     const grade = new ShaderPass({
       uniforms: {
         tDiffuse: { value: null },
-        saturation: { value: 1.08 },
-        vignetteStrength: { value: 0.26 },
+        saturation: { value: 1.16 },
+        contrast: { value: 1.07 },
+        vignetteStrength: { value: 0.24 },
         vignetteRadius: { value: 0.62 },
-        tint: { value: new THREE.Vector3(1.02, 1.0, 0.99) }
+        tint: { value: new THREE.Vector3(1.01, 1.0, 0.985) }
       },
       vertexShader: `
         varying vec2 vUv;
         void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
       fragmentShader: `
         uniform sampler2D tDiffuse;
-        uniform float saturation, vignetteStrength, vignetteRadius;
+        uniform float saturation, contrast, vignetteStrength, vignetteRadius;
         uniform vec3 tint;
         varying vec2 vUv;
         void main() {
           vec4 c = texture2D(tDiffuse, vUv);
           float luma = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
           c.rgb = mix(vec3(luma), c.rgb, saturation) * tint;
+          // 살짝의 콘트라스트로 희멀건 씻김을 잡는다(리니어 공간, 중간 회색 0.18 기준).
+          c.rgb = (c.rgb - 0.18) * contrast + 0.18;
           float d = distance(vUv, vec2(0.5));
           c.rgb *= 1.0 - vignetteStrength * smoothstep(vignetteRadius * 0.55, vignetteRadius, d);
           gl_FragColor = c;
@@ -525,8 +531,8 @@ function updateAmbient(delta, renderState) {
 
 function createWorld(renderState) {
   const { scene, interactables, shrineCrystals, animated } = renderState;
-  // 색을 살리기 위해 안개는 아주 옅게, 먼 배경만 살짝 감싸도록.
-  scene.fog = new THREE.Fog(0x9fd9f5, 34, 88);
+  // 색을 살리기 위해 안개는 아주 옅게, 먼 배경만 살짝 감싸도록(넓어진 섬에 맞춰 더 멀리서 시작).
+  scene.fog = new THREE.Fog(0x9fd9f5, 46, 112);
   renderState.overworldFog = scene.fog;
 
   // 사당 던전 진입 시 오버월드 전체를 한 번에 숨기려고 Group으로 감싼다.
@@ -536,18 +542,18 @@ function createWorld(renderState) {
 
   createSky(world, animated);
 
-  // 밝은 하늘빛 + 따뜻한 반사광의 반구광으로 색을 쨍하게 띄운다.
-  const hemiLight = new THREE.HemisphereLight(0xdff3ff, 0x6f8f66, 2.1);
+  // 밝은 하늘빛 + 따뜻한 반사광의 반구광 — 과했던 광량을 낮춰 희멀건 씻김을 잡는다.
+  const hemiLight = new THREE.HemisphereLight(0xdff3ff, 0x6f8f66, 1.65);
   world.add(hemiLight);
 
-  const sun = new THREE.DirectionalLight(0xfff0d0, 2.7);
-  sun.position.set(-13, 20, 9);
+  const sun = new THREE.DirectionalLight(0xfff0d0, 2.3);
+  sun.position.set(-16, 24, 11);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
-  sun.shadow.camera.left = -20;
-  sun.shadow.camera.right = 20;
-  sun.shadow.camera.top = 20;
-  sun.shadow.camera.bottom = -20;
+  sun.shadow.camera.left = -26;
+  sun.shadow.camera.right = 26;
+  sun.shadow.camera.top = 26;
+  sun.shadow.camera.bottom = -26;
   sun.shadow.bias = -0.0004;
   world.add(sun);
 
@@ -559,7 +565,7 @@ function createWorld(renderState) {
   createStylizedWater(world, animated);
 
   const island = new THREE.Mesh(
-    new THREE.CylinderGeometry(13, 11.2, 0.92, 96),
+    new THREE.CylinderGeometry(17.6, 15.4, 0.92, 96),
     new THREE.MeshStandardMaterial({ color: 0x86c26a, roughness: 0.92 })
   );
   island.position.y = -0.18;
@@ -568,7 +574,7 @@ function createWorld(renderState) {
   world.add(island);
 
   const beach = new THREE.Mesh(
-    new THREE.TorusGeometry(12.15, 0.34, 12, 128),
+    new THREE.TorusGeometry(16.75, 0.42, 12, 128),
     new THREE.MeshStandardMaterial({ color: 0xf0dc98, roughness: 0.85 })
   );
   beach.rotation.x = Math.PI / 2;
@@ -592,12 +598,12 @@ function createWorld(renderState) {
     createZoneAura(world, zone, zonePosition, renderState.zoneAuras, landmark);
   }
 
-  for (let i = 0; i < 28; i += 1) {
-    const angle = (i / 28) * Math.PI * 2;
-    const radius = 9.5 + (i % 4) * 0.55;
+  for (let i = 0; i < 36; i += 1) {
+    const angle = (i / 36) * Math.PI * 2;
+    const radius = 13.2 + (i % 4) * 0.75;
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
-    if (Math.abs(x) < 2.6 || Math.abs(z) < 2.6) {
+    if (Math.abs(x) < 3.0 || Math.abs(z) < 3.0) {
       continue;
     }
     createSmallTree(world, new THREE.Vector3(x, 0, z), i % 3, animated);
@@ -714,7 +720,7 @@ function createGrassField(scene) {
   bladeGeometry.translate(0, 0.21, 0);
   const grassColors = [0x5fbf5a, 0x7ed36a, 0x54b07a];
   const flowerColors = [0xff7eb6, 0xffd23f, 0x9b7cff, 0xff9f43];
-  const count = 260;
+  const count = 340;
   const grass = new THREE.InstancedMesh(
     bladeGeometry,
     new THREE.MeshStandardMaterial({ vertexColors: false, color: 0xffffff, roughness: 0.9 }),
@@ -725,7 +731,7 @@ function createGrassField(scene) {
   let placed = 0;
   for (let i = 0; i < count * 2 && placed < count; i += 1) {
     const angle = (i * 2.399963) % (Math.PI * 2);
-    const radius = 2.4 + ((i * 0.618) % 1) * 8.8;
+    const radius = 2.6 + ((i * 0.618) % 1) * 12.4;
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
     // 중앙 코어와 길목은 비운다.
@@ -1432,15 +1438,15 @@ function createLabelSprite(text, color) {
   const context = canvas.getContext('2d');
   canvas.width = 512;
   canvas.height = 128;
-  context.fillStyle = 'rgba(18, 28, 35, 0.78)';
+  context.fillStyle = 'rgba(12, 20, 26, 0.92)';
   roundRect(context, 22, 22, 468, 84, 18);
   context.fill();
   context.strokeStyle = color;
   context.lineWidth = 8;
   roundRect(context, 22, 22, 468, 84, 18);
   context.stroke();
-  context.fillStyle = '#fffaf0';
-  context.font = '700 42px system-ui, -apple-system, BlinkMacSystemFont, sans-serif';
+  context.fillStyle = '#ffffff';
+  context.font = '800 48px system-ui, -apple-system, BlinkMacSystemFont, sans-serif';
   context.textAlign = 'center';
   context.textBaseline = 'middle';
   context.fillText(text, 256, 66);
@@ -1450,7 +1456,9 @@ function createLabelSprite(text, color) {
   const sprite = new THREE.Sprite(
     new THREE.SpriteMaterial({
       map: texture,
-      transparent: true
+      transparent: true,
+      // 멀리 있는 이름표가 안개에 씻겨 뿌옇게 되지 않도록.
+      fog: false
     })
   );
   sprite.scale.set(3.15, 0.78, 1);
@@ -1678,17 +1686,25 @@ function openPrologue(game, ui) {
         <button type="button" class="finale-next" data-prologue-next>
           ${isLast ? `${PROLOGUE.closingKo} →` : '다음 →'}
         </button>
+        ${isLast ? '' : '<button type="button" class="finale-skip" data-prologue-skip>건너뛰기</button>'}
       </div>
     `;
+    const finish = () => {
+      game.progress = { ...game.progress, prologueSeen: true };
+      persistProgress(game.progress);
+      closeDialog(game, ui);
+    };
     ui.dialogBody.querySelector('[data-prologue-next]').addEventListener('click', () => {
       game.audio?.playClick();
       if (isLast) {
-        game.progress = { ...game.progress, prologueSeen: true };
-        persistProgress(game.progress);
-        closeDialog(game, ui);
+        finish();
       } else {
         render(index + 1);
       }
+    });
+    ui.dialogBody.querySelector('[data-prologue-skip]')?.addEventListener('click', () => {
+      game.audio?.playClick();
+      finish();
     });
   };
 
@@ -1840,8 +1856,8 @@ function clampToRoom(position, bounds) {
 }
 
 function updateCamera(camera, target, shake = 0) {
-  // 살짝 낮고 뒤로 물러난 각도 — 하늘·바다 지평선이 배경으로 드러난다.
-  const desired = new THREE.Vector3(target.x * 0.6, target.y + 7.9, target.z + 12.6);
+  // 살짝 낮고 뒤로 물러난 각도 — 넓어진 섬이 한눈에 들어오도록 조금 더 물러난다.
+  const desired = new THREE.Vector3(target.x * 0.6, target.y + 8.7, target.z + 13.8);
   camera.position.lerp(desired, 0.08);
   // 화면 흔들림(타격·피격 순간): 카메라를 잠깐 떨어 손맛을 준다.
   if (shake > 0) {
@@ -2758,9 +2774,9 @@ function enterShrineChallenge(game, ui, shrineId, topicId) {
   startShrinePuzzle(game, ui, shrineId);
 }
 
-// 카메라를 목표 추종 위치로 즉시 스냅(섬→방 활공 방지).
+// 카메라를 목표 추종 위치로 즉시 스냅(섬→방 활공 방지). updateCamera의 상수와 반드시 일치.
 function snapCamera(camera, target) {
-  camera.position.set(target.x * 0.6, target.y + 7.9, target.z + 12.6);
+  camera.position.set(target.x * 0.6, target.y + 8.7, target.z + 13.8);
   camera.lookAt(target.x * 0.4, target.y + 1.35, target.z - 1.2);
 }
 
@@ -2784,6 +2800,13 @@ function enterDungeon(game, ui, topicId, shrineId) {
   // 남쪽 입구 안쪽에서 시작(문 바로 위가 아니라 한 칸 안 — 입장 즉시 퇴장 방지).
   const spawnCell = [room.entry[0], Math.max(0, room.entry[1] - 1)];
   const spawn = cellToWorld(topicId, spawnCell);
+  // A로 상호작용할 대상들(mechanic별) — 근접 판정용 월드 좌표를 미리 계산.
+  const targets = [];
+  for (const list of [room.dispensers, room.beds, room.exhibits, room.plates, room.mirrors]) {
+    for (const t of list ?? []) {
+      targets.push({ id: t.id, world: cellToWorld(topicId, t.cell) });
+    }
+  }
   game.dungeon = {
     active: true,
     topicId,
@@ -2791,6 +2814,7 @@ function enterDungeon(game, ui, topicId, shrineId) {
     room,
     state: createRoomState(topicId),
     built,
+    targets,
     bounds: built.bounds,
     exitWorld: cellToWorld(topicId, room.entry),
     pedestalWorld: cellToWorld(topicId, room.pedestal),
@@ -2809,15 +2833,25 @@ function enterDungeon(game, ui, topicId, shrineId) {
 
   triggerFlash(ui, '#ffffff');
   game.audio?.playClick();
-  ui.root.classList.add('is-combat'); // A 버튼 강조(밀기)
+  ui.root.classList.add('is-combat'); // A 버튼 강조
+  const ACTION_LABEL = { push: '밀기', carry: '잡기', beam: '돌리기' };
+  const FIRST_HINT = {
+    push: '상자 앞에 서서 A로 밀어요 · 남쪽 빛 문으로 나가요',
+    carry: '물건 앞에서 A로 집고, 놓을 곳에서 다시 A · 남쪽 빛 문으로 나가요',
+    beam: '거울 앞에서 A로 돌려 빛의 길을 바꿔요 · 남쪽 빛 문으로 나가요'
+  };
   if (ui.actionLabel) {
-    ui.actionLabel.textContent = '밀기';
+    ui.actionLabel.textContent = ACTION_LABEL[room.mechanic] ?? 'A';
   }
   ui.prompt.hidden = true;
   ui.puzzleHud.hidden = false;
   ui.puzzleTitle.textContent = `🧩 ${room.titleKo}`;
   ui.puzzleGoal.textContent = room.goalKo;
-  ui.puzzleHint.textContent = '상자 앞에 서서 A로 밀어요 · 남쪽 빛 문으로 나가요';
+  ui.puzzleHint.textContent = FIRST_HINT[room.mechanic] ?? '';
+  // 초기 상태를 비주얼에 반영(빔 방은 초기 광선 경로 포함).
+  syncDungeonVisuals(topicId, built, game.dungeon.state, {
+    beam: room.mechanic === 'beam' ? computeBeamPath(topicId, game.dungeon.state) : undefined
+  });
   game.updateRotateHint?.();
 }
 
@@ -2868,15 +2902,38 @@ function crateIdAtCell(dg, cell) {
   return null;
 }
 
-function syncCrateMeshes(dg) {
-  for (const crate of dg.room.crates) {
-    const mesh = dg.built.crateMeshes.get(crate.id);
-    if (!mesh) {
-      continue;
+// 현재 상태(+빔 경로)를 3D에 반영.
+function syncDungeon(dg) {
+  syncDungeonVisuals(dg.topicId, dg.built, dg.state, {
+    beam: dg.room.mechanic === 'beam' ? computeBeamPath(dg.topicId, dg.state) : undefined
+  });
+}
+
+// 플레이어에서 가장 가까운 상호작용 대상(씨앗 통·밭·전시대·이름표·거울) id.
+function nearestDungeonTarget(game, range = 1.25) {
+  const dg = game.dungeon;
+  let best = null;
+  let bestDist = range;
+  for (const t of dg.targets) {
+    const d = Math.hypot(game.player.position.x - t.world.x, game.player.position.z - t.world.z);
+    if (d < bestDist) {
+      best = t;
+      bestDist = d;
     }
-    const world = cellToWorld(dg.topicId, dg.state.crates[crate.id]);
-    mesh.group.position.set(world.x, 0, world.z);
   }
+  return best?.id ?? null;
+}
+
+// 클리어 공통 처리(모든 mechanic).
+function markDungeonSolved(game, ui) {
+  const dg = game.dungeon;
+  if (dg.solved) {
+    return;
+  }
+  dg.solved = true;
+  game.audio?.playCorrect();
+  celebrate(game, new THREE.Vector3(dg.pedestalWorld.x, 1.3, dg.pedestalWorld.z), '#ffd76a', 'collect');
+  ui.puzzleHint.textContent = '✨ 풀렸어요! 북쪽 제단으로 가서 A로 약속의 도구를 받아요';
 }
 
 function dungeonAction(game, ui) {
@@ -2903,10 +2960,33 @@ function dungeonAction(game, ui) {
       awardDungeonItem(game, ui);
       return;
     }
-    // 이미 풀린 뒤에는 상자를 더 밀 수 없다(정답을 흐트러뜨려 리포트가 오염되는 것 방지).
+    // 이미 풀린 뒤에는 퍼즐을 더 조작할 수 없다(정답을 흐트러뜨려 리포트가 오염되는 것 방지).
     game.audio?.playClick();
     return;
   }
+  dg.actionCooldown = DUNGEON_PUSH_COOLDOWN;
+  if (dg.room.mechanic === 'push') {
+    dungeonPushAction(game, ui);
+  } else if (dg.room.mechanic === 'carry') {
+    dungeonCarryAction(game, ui);
+  } else if (dg.room.mechanic === 'beam') {
+    dungeonBeamAction(game, ui);
+  }
+}
+
+// 실패 이벤트 공통 처리: 기록 + 지지직 + 팝업 + 힌트.
+function dungeonRefuse(game, ui, popupKo, hintKo) {
+  const dg = game.dungeon;
+  dg.failedPlacements += 1;
+  recordDungeonMisplace(game);
+  game.audio?.playWrong();
+  addShake(game, 0.12);
+  flashCombatPopup(ui, popupKo, 'bounce');
+  ui.puzzleHint.textContent = hintKo;
+}
+
+function dungeonPushAction(game, ui) {
+  const dg = game.dungeon;
   // 바라보는 방향의 인접 칸 상자를 한 칸 민다.
   const dir = facingGridDir(game.player.direction);
   const playerCell = worldToCell(dg.topicId, game.player.position.x, game.player.position.z);
@@ -2917,15 +2997,8 @@ function dungeonAction(game, ui) {
     return;
   }
   const result = pushCrate(dg.topicId, dg.state, crateId, dir);
-  dg.actionCooldown = DUNGEON_PUSH_COOLDOWN;
   if (result.event === 'wrong-zone') {
-    // 틀린 존 거부: 지지직 + 실패 시도 기록(리포트 진실화).
-    dg.failedPlacements += 1;
-    recordDungeonMisplace(game);
-    game.audio?.playWrong();
-    addShake(game, 0.12);
-    flashCombatPopup(ui, '거기엔 안 돼요!', 'bounce');
-    ui.puzzleHint.textContent = '내 것만 공개 게시판에, 친구 것은 잠금 금고에!';
+    dungeonRefuse(game, ui, '거기엔 안 돼요!', '내 것만 공개 게시판에, 친구 것은 잠금 금고에!');
     return;
   }
   if (!result.moved) {
@@ -2933,21 +3006,104 @@ function dungeonAction(game, ui) {
     return;
   }
   dg.state = result.state;
-  syncCrateMeshes(dg);
+  syncDungeon(dg);
+  game.audio?.[result.event === 'placed' ? 'playCorrect' : 'playClick']?.();
+  if (isRoomSolved(dg.topicId, dg.state)) {
+    markDungeonSolved(game, ui);
+  } else {
+    const left = countRemaining(dg.topicId, dg.state);
+    ui.puzzleHint.textContent = `상자 ${left}개가 아직 제자리가 아니에요`;
+  }
+}
+
+// 손에 든 것을 A 버튼 라벨로 보여준다(잡기 방 공통).
+function updateCarryLabel(game, ui) {
+  const dg = game.dungeon;
+  if (!ui.actionLabel) {
+    return;
+  }
+  if (dg.state.held === null || dg.state.held === undefined) {
+    ui.actionLabel.textContent = '잡기';
+    return;
+  }
+  if (dg.room.dispensers) {
+    const d = dg.room.dispensers.find((x) => x.colorIdx === dg.state.held);
+    ui.actionLabel.textContent = d?.emoji ?? '🌱';
+  } else {
+    ui.actionLabel.textContent = '🏷️';
+  }
+}
+
+function dungeonCarryAction(game, ui) {
+  const dg = game.dungeon;
+  const targetId = nearestDungeonTarget(game);
+  if (!targetId) {
+    game.audio?.playClick();
+    return;
+  }
+  const result = pickOrPlace(dg.topicId, dg.state, targetId);
+  if (result.event === 'duplicate') {
+    dungeonRefuse(game, ui, '같은 색이 이미 있어요!', '꽃밭엔 서로 다른 색을 심어야 해요 — 다양할수록 좋아요');
+    return;
+  }
+  if (result.event === 'fake') {
+    dungeonRefuse(game, ui, '가짜 이름표예요!', '진짜 만든 이의 이름만 작품에 걸 수 있어요');
+    return;
+  }
+  if (result.event === 'wrong-owner') {
+    dungeonRefuse(game, ui, '만든 이가 달라요!', '이 작품을 만든 사람이 누구인지 다시 살펴봐요');
+    return;
+  }
+  if (!result.event) {
+    game.audio?.playClick();
+    return;
+  }
+  dg.state = result.state;
+  syncDungeon(dg);
+  updateCarryLabel(game, ui);
   if (result.event === 'placed') {
     game.audio?.playCorrect();
   } else {
     game.audio?.playClick();
   }
-  if (!dg.solved && isRoomSolved(dg.topicId, dg.state)) {
-    dg.solved = true;
-    game.audio?.playCorrect();
-    celebrate(game, dg.pedestalWorld && new THREE.Vector3(dg.pedestalWorld.x, 1.3, dg.pedestalWorld.z), '#ffd76a', 'collect');
-    ui.puzzleHint.textContent = '✨ 풀렸어요! 북쪽 제단으로 가서 A로 약속의 도구를 받아요';
-  } else if (!dg.solved) {
+  if (isRoomSolved(dg.topicId, dg.state)) {
+    markDungeonSolved(game, ui);
+  } else if (result.event === 'picked') {
+    ui.puzzleHint.textContent = dg.room.dispensers
+      ? '들었어요! 빈 밭 앞에서 A로 심어요'
+      : '들었어요! 맞는 작품 앞에서 A로 걸어요';
+  } else {
     const left = countRemaining(dg.topicId, dg.state);
-    ui.puzzleHint.textContent = `상자 ${left}개가 아직 제자리가 아니에요`;
+    ui.puzzleHint.textContent = `아직 ${left}곳이 비어 있어요`;
   }
+}
+
+function dungeonBeamAction(game, ui) {
+  const dg = game.dungeon;
+  const targetId = nearestDungeonTarget(game);
+  if (!targetId) {
+    game.audio?.playClick();
+    return;
+  }
+  const result = rotateMirror(dg.topicId, dg.state, targetId);
+  if (result.event !== 'rotated') {
+    game.audio?.playClick();
+    return;
+  }
+  dg.state = result.state;
+  game.audio?.playClick();
+  const beam = computeBeamPath(dg.topicId, dg.state);
+  syncDungeonVisuals(dg.topicId, dg.built, dg.state, { beam });
+  if (beam.hit?.kind === 'orb' && beam.hit.real) {
+    markDungeonSolved(game, ui);
+    return;
+  }
+  if (beam.hit?.kind === 'orb' && !beam.hit.real) {
+    const orb = dg.room.orbs.find((o) => o.id === beam.hit.orbId);
+    dungeonRefuse(game, ui, '가짜가 빛났어요!', `${orb?.hintKo ?? ''} 진짜 얼굴을 찾아 거울을 더 돌려봐요`);
+    return;
+  }
+  ui.puzzleHint.textContent = '빛이 벽에 닿았어요 — 거울을 돌려 길을 만들어요';
 }
 
 // 틀린 존 시도를 기존 '실패 선택' 전이로 기록해 학습 리포트의 first-try/retry 신호를 살린다.
@@ -3049,11 +3205,13 @@ function openCoreDialog(game, ui) {
 }
 
 // ===== 최종장 액션 전투: 노이즈에게 다가가 A(공격)로 잡음을 걷어낸다 =====
-const BOSS_MAX_HP = 6;
+// 4페이즈 보스: 사당에서 모은 네 아이템이 각 페이즈의 열쇠다(페이즈당 2히트).
+const PHASE_HITS = 2;
+const PHASE_TOOLS = PROMISE_TOOLS.map((t) => t.id); // 개인정보→편향→저작권→딥페이크 순
+const PHASE_FIRE = [2.9, 2.55, 2.2, 1.9]; // 페이즈가 오를수록 잡음 파도가 빨라진다
+const BOSS_MAX_HP = PHASE_HITS * PHASE_TOOLS.length;
 const ATTACK_RANGE = 3.7;
 const ATTACK_COOLDOWN = 0.3;
-const WEAK_ROTATE = 6.0; // 상황(약점) 자동 회전 주기(초) — 읽고 판단할 시간
-const FIRE_INTERVAL = 2.9; // 잡음 파도 발사 간격
 const WINDUP_TIME = 0.62; // 발사 예고(피할 시간)
 const PROJECTILE_SPEED = 6.2;
 const PROJECTILE_HIT = 0.95;
@@ -3067,17 +3225,27 @@ function startBossFight(game, ui) {
   if (game.combat) {
     return;
   }
+  // 아이템 게이트: 네 사당의 약속 도구를 모두 모아야 노이즈를 가르칠 수 있다.
+  const owned = game.progress.tools ?? [];
+  if (owned.length < PHASE_TOOLS.length) {
+    const missing = PROMISE_TOOLS.filter((t) => !owned.includes(t.id));
+    ui.dialogKicker.textContent = '중앙 코어';
+    ui.dialogTitle.textContent = '네 가지 약속이 필요하다';
+    ui.dialogBody.innerHTML = `
+      <p class="prompt-line">노이즈의 껍질은 네 겹 — 사당에서 얻은 약속의 도구가 하나씩 필요해요.</p>
+      <p>남은 사당의 도구: ${missing.map((t) => `${t.emoji} ${t.nameKo}`).join(' · ')}</p>
+    `;
+    openDialog(game, ui);
+    return;
+  }
   spawnNoiseBoss(game, { combat: true });
   if (game.renderState?.companion) {
     game.renderState.companion.visible = false; // 도트는 후드로 숨는다
   }
   game.audio?.resume();
   game.audio?.playNoiseGroan();
-  // 보유한 약속의 도구들 — 이 중 하나가 매 순간 노이즈의 '약점'이 된다.
-  const tools = (game.progress.tools ?? []).slice();
-  if (tools.length === 0) {
-    tools.push('shield');
-  }
+  // 페이즈 1(개인정보)부터 — 각 페이즈는 그 주제의 아이템만 통한다.
+  const tools = owned.slice();
   game.combat = {
     active: true,
     hp: BOSS_MAX_HP,
@@ -3086,15 +3254,15 @@ function startBossFight(game, ui) {
     driftAngle: Math.PI * 0.25,
     tools,
     activeTool: 0,
-    weakIndex: 0,
-    weakToolId: tools[0],
-    weakTimer: WEAK_ROTATE,
+    phase: 0,
+    phaseHits: 0,
+    weakToolId: PHASE_TOOLS[0],
     memCounter: 0,
-    weakMemory: pickMemory(tools[0], 0),
+    weakMemory: pickMemory(PHASE_TOOLS[0], 0),
     bounceStreak: 0, // 같은 약점에서 연속으로 틀린 횟수(2회면 이모지 힌트 공개)
     revealed: false, // 약점 도구 이모지를 보여줄지(처음엔 상황만 읽고 판단)
     hintHold: 0, // 이유/튕김 안내를 잠깐 붙잡아 두는 타이머
-    fireTimer: FIRE_INTERVAL,
+    fireTimer: PHASE_FIRE[0],
     windup: 0,
     projectile: null,
     stun: 0
@@ -3118,23 +3286,41 @@ function syncBossWeakColor(game) {
   }
 }
 
+// 페이즈 전진 — 껍질이 깨지면 다음 주제(약속)의 껍질이 드러난다.
 function rotateWeakness(game, ui) {
   const c = game.combat;
-  c.weakIndex = (c.weakIndex + 1) % c.tools.length;
-  c.weakToolId = c.tools[c.weakIndex];
-  c.weakTimer = WEAK_ROTATE;
-  c.memCounter += 1;
-  c.weakMemory = pickMemory(c.weakToolId, c.memCounter);
+  c.phase = Math.min(c.phase + 1, PHASE_TOOLS.length - 1);
+  c.phaseHits = 0;
+  c.weakToolId = PHASE_TOOLS[c.phase];
+  c.memCounter = 0;
+  c.weakMemory = pickMemory(c.weakToolId, 0);
   c.bounceStreak = 0;
   c.revealed = false;
+  c.fireTimer = Math.min(c.fireTimer, PHASE_FIRE[c.phase]);
   syncBossWeakColor(game);
-  // 새 상황 말풍선을 팝 애니메이션으로 띄운다.
+  popBossMemory(ui, c);
+}
+
+// 새 상황 말풍선을 팝 애니메이션으로 띄운다.
+function popBossMemory(ui, c) {
   if (ui?.bossMemory) {
     ui.bossMemory.textContent = c.weakMemory.textKo;
     ui.bossMemory.classList.remove('pop');
     void ui.bossMemory.offsetWidth;
     ui.bossMemory.classList.add('pop');
   }
+}
+
+// 페이즈 격파 연출: 껍질 파편 + 다음 페이즈 개시.
+function breakBossShell(game, ui) {
+  const c = game.combat;
+  const boss = game.renderState?.noiseBoss;
+  const tool = getToolById(c.weakToolId);
+  flashCombatPopup(ui, `${tool?.emoji ?? ''} 껍질이 깨졌다! (${c.phase + 1}/${PHASE_TOOLS.length})`, 'win');
+  addShake(game, 0.45);
+  game.hitStop = 0.1;
+  celebrate(game, new THREE.Vector3(boss?.baseX ?? 0, boss?.baseY ?? 2.4, boss?.baseZ ?? 0), toolColorHex(c.weakToolId), 'collect');
+  rotateWeakness(game, ui);
 }
 
 function cycleActiveTool(game, ui, dir = 1) {
@@ -3200,6 +3386,7 @@ function playerAttack(game, ui) {
   }
   // 상황에 맞는 약속으로 명중: 노이즈가 신음하며 오그라든다.
   c.hp = Math.max(0, c.hp - 1);
+  c.phaseHits += 1;
   boss.hitFlash = 0.3;
   addShake(game, 0.3);
   game.hitStop = 0.06; // 히트스톱 — 타격 순간 멈칫
@@ -3211,11 +3398,20 @@ function playerAttack(game, ui) {
   game.audio?.playCorrect();
   game.audio?.playNoiseGroan();
   boss.targetScale = 0.4 + (c.hp / c.maxHp) * 0.95;
-  rotateWeakness(game, ui); // 노이즈가 다른 잘못된 기억을 토해낸다 — 새 상황.
-  updateBossHud(game, ui);
   if (c.hp <= 0) {
+    updateBossHud(game, ui);
     winBossFight(game, ui);
+    return;
   }
+  if (c.phaseHits >= PHASE_HITS) {
+    breakBossShell(game, ui); // 이 주제의 껍질 격파 → 다음 아이템의 페이즈
+  } else {
+    // 같은 주제의 다른 상황 — 아이템은 그대로, 판단만 새로.
+    c.memCounter += 1;
+    c.weakMemory = pickMemory(c.weakToolId, c.memCounter);
+    popBossMemory(ui, c);
+  }
+  updateBossHud(game, ui);
 }
 
 function fireNoiseWave(game) {
@@ -3280,13 +3476,6 @@ function updateCombat(delta, game, ui) {
     boss.baseX = Math.cos(c.driftAngle) * 2.4;
     boss.baseZ = Math.sin(c.driftAngle) * 2.4;
 
-    // 상황(약점) 자동 회전 — 노이즈가 다른 잘못된 기억을 토해낸다.
-    c.weakTimer -= delta;
-    if (c.weakTimer <= 0) {
-      rotateWeakness(game, ui);
-      updateBossHud(game, ui);
-    }
-
     // 잡음 파도: 예고(windup) 후 플레이어 쪽으로 발사 → 피해야 한다.
     if (c.projectile) {
       const pr = c.projectile;
@@ -3302,7 +3491,7 @@ function updateCombat(delta, game, ui) {
       if (hit || pr.life <= 0) {
         game.renderState.scene.remove(pr.mesh);
         c.projectile = null;
-        c.fireTimer = FIRE_INTERVAL;
+        c.fireTimer = PHASE_FIRE[c.phase]; // 페이즈가 오를수록 빨라진다
       }
     } else if (c.windup > 0) {
       c.windup -= delta;
@@ -3344,7 +3533,7 @@ function updateBossHud(game, ui) {
     const active = getToolById(c.tools[c.activeTool]);
     // 정답 도구는 처음엔 숨기고 색만 힌트로 준다. 명중하거나 2연속 튕기면 공개.
     const weakMark = c.revealed ? (weak?.emoji ?? '?') : '?';
-    ui.bossWeak.innerHTML = `약점 <b style="color:${toolColorHex(c.weakToolId)}">${weakMark}</b> · 든 도구 ${active?.emoji ?? ''}`;
+    ui.bossWeak.innerHTML = `껍질 ${c.phase + 1}/${PHASE_TOOLS.length} · 약점 <b style="color:${toolColorHex(c.weakToolId)}">${weakMark}</b> · 든 도구 ${active?.emoji ?? ''}`;
   }
   if (ui.bossMemory && c.weakMemory) {
     ui.bossMemory.textContent = c.weakMemory.textKo;

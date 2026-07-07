@@ -3,13 +3,16 @@ import assert from 'node:assert/strict';
 import {
   DUNGEON_ROOMS,
   cellToWorld,
+  computeBeamPath,
   countRemaining,
   createRoomState,
   getDungeonRoom,
   hasDungeonRoom,
   isRoomSolved,
+  pickOrPlace,
   pushCrate,
   roomBounds,
+  rotateMirror,
   worldToCell
 } from '../src/dungeonPuzzles.js';
 
@@ -95,4 +98,250 @@ test('room logic module uses no Math.random (classroom determinism)', async () =
   const { readFileSync } = await import('node:fs');
   const src = readFileSync(new URL('../src/dungeonPuzzles.js', import.meta.url), 'utf8');
   assert.doesNotMatch(src, /Math\.random/);
+});
+
+test('privacy room now declares its mechanic without changing behavior', () => {
+  assert.equal(DUNGEON_ROOMS.privacy.mechanic, 'push');
+  // 기존 상태 모양/판정 그대로.
+  const state = createRoomState('privacy');
+  assert.deepEqual(state, { crates: { p1: [3, 3], p2: [5, 3], p3: [4, 4] } });
+});
+
+// ── bias — 모두의 꽃밭 (carry) ───────────────────────────────
+
+test('bias room exists with 4 dispensers, 4 beds, wired to its shrine', () => {
+  assert.ok(hasDungeonRoom('bias'));
+  const room = getDungeonRoom('bias');
+  assert.equal(room.shrineId, 'bias-shrine');
+  assert.equal(room.mechanic, 'carry');
+  assert.equal(room.dispensers.length, 4);
+  assert.equal(room.beds.length, 4);
+  assert.deepEqual(room.dispensers.map((d) => d.colorIdx), [0, 1, 2, 3]);
+  assert.deepEqual(room.entry, [4, 6]);
+  assert.deepEqual(room.pedestal, [4, 0]);
+});
+
+test('bias fresh state starts empty and unsolved', () => {
+  const state = createRoomState('bias');
+  assert.deepEqual(state, { held: null, beds: [null, null, null, null] });
+  assert.equal(isRoomSolved('bias', state), false);
+  assert.equal(countRemaining('bias', state), 4);
+});
+
+test('bias happy path: pick 4 different colors, plant them, room solves', () => {
+  let state = createRoomState('bias');
+  const plan = [
+    ['red', 'bed1'],
+    ['blue', 'bed2'],
+    ['yellow', 'bed3'],
+    ['purple', 'bed4']
+  ];
+  for (const [dispId, bedId] of plan) {
+    const pick = pickOrPlace('bias', state, dispId);
+    assert.equal(pick.event, 'picked');
+    state = pick.state;
+    const place = pickOrPlace('bias', state, bedId);
+    assert.equal(place.event, 'placed');
+    state = place.state;
+    assert.equal(state.held, null);
+  }
+  assert.deepEqual(state.beds, [0, 1, 2, 3]);
+  assert.equal(isRoomSolved('bias', state), true);
+  assert.equal(countRemaining('bias', state), 0);
+});
+
+test('bias refuses a duplicate color (편향 방지) and allows picking a filled bed back', () => {
+  let state = createRoomState('bias');
+  state = pickOrPlace('bias', state, 'red').state;
+  state = pickOrPlace('bias', state, 'bed1').state; // bed1 = red
+  // 다시 빨강을 들고 다른 밭에 심으려 하면 거부.
+  state = pickOrPlace('bias', state, 'red').state;
+  const dup = pickOrPlace('bias', state, 'bed2');
+  assert.equal(dup.event, 'duplicate');
+  assert.deepEqual(dup.state.beds, [0, null, null, null]);
+  // 손이 빈 상태로 채워진 밭을 누르면 되집는다.
+  const empty = pickOrPlace('bias', createRoomState('bias'), 'bed1');
+  assert.equal(empty.event, null); // 빈 밭 + 빈 손 = 아무 일 없음
+  let s2 = createRoomState('bias');
+  s2 = pickOrPlace('bias', s2, 'blue').state;
+  s2 = pickOrPlace('bias', s2, 'bed3').state; // bed3 = blue
+  const back = pickOrPlace('bias', s2, 'bed3');
+  assert.equal(back.event, 'picked');
+  assert.equal(back.state.held, 1);
+  assert.equal(back.state.beds[2], null);
+});
+
+test('bias dispenser swaps held color; functions stay pure', () => {
+  const start = createRoomState('bias');
+  const r1 = pickOrPlace('bias', start, 'red');
+  assert.equal(r1.state.held, 0);
+  const r2 = pickOrPlace('bias', r1.state, 'purple');
+  assert.equal(r2.event, 'picked');
+  assert.equal(r2.state.held, 3);
+  // 원본 불변.
+  assert.deepEqual(start, { held: null, beds: [null, null, null, null] });
+});
+
+// ── copyright — 이름의 전당 (carry) ─────────────────────────
+
+test('copyright room exists with 3 exhibits and 5 plates (3 real + 2 fake)', () => {
+  assert.ok(hasDungeonRoom('copyright'));
+  const room = getDungeonRoom('copyright');
+  assert.equal(room.shrineId, 'copyright-shrine');
+  assert.equal(room.mechanic, 'carry');
+  assert.equal(room.exhibits.length, 3);
+  assert.equal(room.plates.length, 5);
+  assert.equal(room.plates.filter((p) => p.fake).length, 2);
+  // 각 작품의 정답 이름표가 실제로 진짜 이름표 목록에 있어야 한다.
+  for (const ex of room.exhibits) {
+    const plate = room.plates.find((p) => p.id === ex.correctPlateId);
+    assert.ok(plate && !plate.fake);
+  }
+});
+
+test('copyright fresh state starts unlabeled and unsolved', () => {
+  const state = createRoomState('copyright');
+  assert.deepEqual(state, { held: null, exhibits: { star: null, wave: null, forest: null } });
+  assert.equal(isRoomSolved('copyright', state), false);
+  assert.equal(countRemaining('copyright', state), 3);
+});
+
+test('copyright happy path: match each exhibit to its true creator, room solves', () => {
+  let state = createRoomState('copyright');
+  const plan = [
+    ['muro', 'star'],
+    ['echo', 'wave'],
+    ['mori', 'forest']
+  ];
+  for (const [plateId, exhibitId] of plan) {
+    const pick = pickOrPlace('copyright', state, plateId);
+    assert.equal(pick.event, 'picked');
+    state = pick.state;
+    const place = pickOrPlace('copyright', state, exhibitId);
+    assert.equal(place.event, 'placed');
+    state = place.state;
+    assert.equal(state.held, null);
+  }
+  assert.deepEqual(state.exhibits, { star: 'muro', wave: 'echo', forest: 'mori' });
+  assert.equal(isRoomSolved('copyright', state), true);
+  assert.equal(countRemaining('copyright', state), 0);
+});
+
+test('copyright refuses fake plates and wrong owners, allows return-to-shelf', () => {
+  let state = createRoomState('copyright');
+  // 가짜 이름표('아무나')는 걸리지 않는다.
+  state = pickOrPlace('copyright', state, 'anyone').state;
+  const fake = pickOrPlace('copyright', state, 'star');
+  assert.equal(fake.event, 'fake');
+  assert.equal(fake.state.exhibits.star, null);
+  // 다시 내려놓기.
+  const back = pickOrPlace('copyright', fake.state, 'anyone');
+  assert.equal(back.event, 'placed-back');
+  assert.equal(back.state.held, null);
+  // 진짜지만 주인이 아닌 이름표(무로=별 그림)를 파도 노래에 달면 거부.
+  let s2 = pickOrPlace('copyright', createRoomState('copyright'), 'muro').state;
+  const wrong = pickOrPlace('copyright', s2, 'wave');
+  assert.equal(wrong.event, 'wrong-owner');
+  assert.equal(wrong.state.exhibits.wave, null);
+});
+
+test('copyright locked exhibit ignores further input; swap keeps prior plate on shelf', () => {
+  let state = createRoomState('copyright');
+  state = pickOrPlace('copyright', state, 'muro').state;
+  state = pickOrPlace('copyright', state, 'star').state; // star locked with muro
+  // 잠긴 작품은 눌러도 아무 일 없음.
+  const locked = pickOrPlace('copyright', state, 'star');
+  assert.equal(locked.event, null);
+  // 이미 걸린 이름표는 선반에서 다시 집히지 않는다.
+  const relift = pickOrPlace('copyright', state, 'muro');
+  assert.equal(relift.event, null);
+  // 손에 든 채 다른 이름표를 누르면 교체(이전 것은 자동으로 선반에 남음).
+  let s2 = pickOrPlace('copyright', createRoomState('copyright'), 'echo').state;
+  const swap = pickOrPlace('copyright', s2, 'mori');
+  assert.equal(swap.event, 'picked');
+  assert.equal(swap.state.held, 'mori');
+});
+
+// ── deepfake — 진실의 동굴 (beam) ───────────────────────────
+
+test('deepfake room exists: source north, 2 mirrors, 3 orbs (exactly one real)', () => {
+  assert.ok(hasDungeonRoom('deepfake'));
+  const room = getDungeonRoom('deepfake');
+  assert.equal(room.shrineId, 'deepfake-shrine');
+  assert.equal(room.mechanic, 'beam');
+  assert.deepEqual(room.source.dir, [0, -1]);
+  assert.equal(room.mirrors.length, 2);
+  assert.equal(room.orbs.length, 3);
+  assert.equal(room.orbs.filter((o) => o.real).length, 1);
+});
+
+test('deepfake fresh state has both mirrors at 0 and is unsolved (beam hits wall)', () => {
+  const state = createRoomState('deepfake');
+  assert.deepEqual(state, { mirrors: { m1: 0, m2: 0 } });
+  const path = computeBeamPath('deepfake', state);
+  assert.equal(path.hit.kind, 'wall');
+  assert.equal(isRoomSolved('deepfake', state), false);
+  assert.equal(countRemaining('deepfake', state), 1);
+});
+
+test('deepfake exhaustive 4-combo check: initial wall, one real, at least one fake', () => {
+  const results = {};
+  for (const m1 of [0, 1]) {
+    for (const m2 of [0, 1]) {
+      const state = { mirrors: { m1, m2 } };
+      const { hit } = computeBeamPath('deepfake', state);
+      results[`${m1}${m2}`] = hit.kind === 'orb' ? (hit.real ? 'real' : 'fake') : hit.kind;
+    }
+  }
+  // 설계된 정확한 결과.
+  assert.deepEqual(results, { '00': 'wall', '01': 'real', '10': 'fake', '11': 'fake' });
+  // 초기(00)는 벽, 정답 콤보는 정확히 하나, 가짜를 맞히는 콤보도 존재.
+  assert.equal(results['00'], 'wall');
+  assert.equal(Object.values(results).filter((v) => v === 'real').length, 1);
+  assert.ok(Object.values(results).some((v) => v === 'fake'));
+});
+
+test('deepfake happy path: rotate m2 once to hit the real orb and solve', () => {
+  let state = createRoomState('deepfake');
+  const rot = rotateMirror('deepfake', state, 'm2');
+  assert.equal(rot.event, 'rotated');
+  state = rot.state;
+  assert.deepEqual(state.mirrors, { m1: 0, m2: 1 });
+  const path = computeBeamPath('deepfake', state);
+  assert.equal(path.hit.kind, 'orb');
+  assert.equal(path.hit.real, true);
+  assert.ok(getDungeonRoom('deepfake').orbs.find((o) => o.id === path.hit.orbId).real);
+  assert.equal(isRoomSolved('deepfake', state), true);
+  assert.equal(countRemaining('deepfake', state), 0);
+});
+
+test('deepfake rotateMirror toggles and is pure/deterministic; bad id is a no-op', () => {
+  const start = createRoomState('deepfake');
+  const a = rotateMirror('deepfake', start, 'm1');
+  const b = rotateMirror('deepfake', a.state, 'm1');
+  assert.equal(a.state.mirrors.m1, 1);
+  assert.equal(b.state.mirrors.m1, 0);
+  assert.deepEqual(start, { mirrors: { m1: 0, m2: 0 } }); // 원본 불변
+  const bad = rotateMirror('deepfake', start, 'nope');
+  assert.equal(bad.event, null);
+  // 같은 입력 → 같은 경로.
+  const p1 = computeBeamPath('deepfake', { mirrors: { m1: 0, m2: 1 } });
+  const p2 = computeBeamPath('deepfake', { mirrors: { m1: 0, m2: 1 } });
+  assert.deepEqual(p1, p2);
+});
+
+// ── shared generics work across new rooms ───────────────────
+
+test('cellToWorld/worldToCell/roomBounds work for every dungeon room', () => {
+  for (const topicId of Object.keys(DUNGEON_ROOMS)) {
+    const room = DUNGEON_ROOMS[topicId];
+    const b = roomBounds(topicId);
+    for (let c = 0; c < room.grid.cols; c += 1) {
+      for (let r = 0; r < room.grid.rows; r += 1) {
+        const w = cellToWorld(topicId, [c, r]);
+        assert.deepEqual(worldToCell(topicId, w.x, w.z), [c, r]);
+        assert.ok(w.x >= b.minX && w.x <= b.maxX && w.z >= b.minZ && w.z <= b.maxZ);
+      }
+    }
+  }
 });
