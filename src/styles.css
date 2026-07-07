@@ -675,6 +675,52 @@ button:disabled {
   }
 }
 
+/* 사당 퍼즐 안내 — 상단 중앙 */
+.puzzle-hud {
+  position: absolute;
+  z-index: 4;
+  top: 74px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(460px, calc(100vw - 40px));
+  padding: 9px 14px 11px;
+  border-radius: 14px;
+  background: rgba(24, 34, 30, 0.74);
+  border: 1px solid rgba(255, 216, 120, 0.4);
+  box-shadow: 0 10px 28px rgba(20, 40, 30, 0.4);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  text-align: center;
+}
+
+.puzzle-hud[hidden] {
+  display: none;
+}
+
+.puzzle-title {
+  font-weight: 900;
+  margin-bottom: 3px;
+}
+
+.puzzle-goal {
+  font-size: 0.86rem;
+  line-height: 1.4;
+  color: #eafbf2;
+}
+
+.puzzle-hint {
+  margin-top: 5px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #ffd9a8;
+}
+
+@media (pointer: coarse), (max-width: 760px) {
+  .puzzle-hud {
+    top: 116px;
+  }
+}
+
 @media (pointer: coarse), (max-width: 760px) {
   /* 상단 한 줄: [목표 칩(목표만)] ... [소리][기록] */
   .objective-chip {
