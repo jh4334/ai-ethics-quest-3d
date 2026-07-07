@@ -1,5 +1,53 @@
 import { createStoryState, normalizeStoryState } from './story.js';
 
+// 네 개의 약속 도구 — 사당 시련의 보상. 능력이 곧 윤리 개념이다.
+export const PROMISE_TOOLS = [
+  {
+    id: 'shield',
+    topicId: 'privacy',
+    nameKo: '약속의 방패',
+    emoji: '🛡️',
+    powerKo: "'허락받은 것'만 감싸는 결계를 쳐요.",
+    lessonKo: '동의 없이는 보호도 공유도 없어요.'
+  },
+  {
+    id: 'mirror',
+    topicId: 'bias',
+    nameKo: '모두의 거울',
+    emoji: '🪞',
+    powerKo: "화면에서 '빠진 것'을 비춰요.",
+    lessonKo: '결과에서 빠진 사람과 관점을 찾아봐요.'
+  },
+  {
+    id: 'bell',
+    topicId: 'copyright',
+    nameKo: '이름의 종',
+    emoji: '🔔',
+    powerKo: '진짜 만든 이의 이름표를 띄워요.',
+    lessonKo: '출처를 밝히면 진짜와 가짜가 갈려요.'
+  },
+  {
+    id: 'compass',
+    topicId: 'deepfake',
+    nameKo: '진실의 나침반',
+    emoji: '🧭',
+    powerKo: '똑같아 보이는 것 중 진짜를 가리켜요.',
+    lessonKo: '멈추고 확인하는 사람에게 진실이 보여요.'
+  }
+];
+
+// 어느 사당을 깨면 어떤 도구를 주는지 (shrineId → toolId).
+export const SHRINE_TOOL = {
+  'privacy-shrine': 'shield',
+  'bias-shrine': 'mirror',
+  'copyright-shrine': 'bell',
+  'deepfake-shrine': 'compass'
+};
+
+export function getToolById(toolId) {
+  return PROMISE_TOOLS.find((tool) => tool.id === toolId) ?? null;
+}
+
 export const ETHICS_TOPICS = [
   {
     id: 'privacy',
@@ -57,7 +105,7 @@ export const WORLD_ZONES = [
     position: [-7.5, 0, -5.2],
     npc: {
       id: 'privacy-keeper',
-      nameKo: '데이터 지킴이 민',
+      nameKo: '비밀지기 담',
       prompt: 'AI 추천 앱이 친구의 사진과 이름을 물어보면 어떻게 해야 할까요?',
       lesson: '개인정보는 나와 다른 사람을 알아볼 수 있게 하는 정보예요. AI에 넣기 전에 꼭 필요한지, 허락을 받았는지, 어디에 쓰이는지 확인해요.',
       reflection: '친구 사진을 AI에 넣기 전에 친구와 보호자에게 물어봐야 하는 까닭을 말해 보세요.'
@@ -73,7 +121,7 @@ export const WORLD_ZONES = [
     position: [7.6, 0, -5.1],
     npc: {
       id: 'fairness-ranger',
-      nameKo: '공정 탐험가 라온',
+      nameKo: '외알안경 모리',
       prompt: 'AI가 “운동을 잘하는 사람”을 한 모습으로만 그렸다면 무엇을 확인해야 할까요?',
       lesson: 'AI 결과는 학습한 자료의 영향을 받아요. 빠진 사람은 없는지, 다른 모습과 상황도 들어 있는지 비교하면 더 공정한 판단을 할 수 있어요.',
       reflection: '우리 반 모두가 공평하게 포함되도록 AI에게 질문을 바꾸어 보세요.'
@@ -89,7 +137,7 @@ export const WORLD_ZONES = [
     position: [-7.3, 0, 5.6],
     npc: {
       id: 'credit-archivist',
-      nameKo: '출처 기록가 소율',
+      nameKo: '조각가 무로',
       prompt: 'AI가 만든 그림을 발표 자료에 넣을 때 어떤 설명을 남기면 좋을까요?',
       lesson: 'AI 결과물을 사용할 때도 참고한 자료, 만든 도구, 내가 고친 부분을 밝히면 더 정직한 발표가 돼요. 사용 가능한 자료인지 확인하는 습관도 중요해요.',
       reflection: '발표 자료 맨 아래에 쓸 수 있는 출처 문장을 하나 만들어 보세요.'
@@ -105,7 +153,7 @@ export const WORLD_ZONES = [
     position: [7.1, 0, 5.7],
     npc: {
       id: 'truth-guide',
-      nameKo: '진실 안내자 해나',
+      nameKo: '메아리 에코',
       prompt: 'AI 목소리 영상이 친구에게 상처를 줄 수 있다면 공유하기 전에 무엇을 해야 할까요?',
       lesson: '딥페이크는 진짜처럼 보이거나 들리는 AI 합성 자료예요. 놀랍거나 화나는 내용일수록 멈추고 출처, 날짜, 다른 믿을 만한 자료를 확인해요.',
       reflection: '가짜일 수 있는 영상을 발견했을 때 우리 반 약속을 한 문장으로 써 보세요.'
@@ -404,10 +452,13 @@ export function createInitialProgress() {
     completedShrines: [],
     collectedFragments: [],
     choiceLog: [],
+    tools: [],
     story: createStoryState(),
     aiCoreCompleted: false
   };
 }
+
+const toolIdSet = new Set(PROMISE_TOOLS.map((tool) => tool.id));
 
 // 스토리 퀘스트 완수 보상으로 조각을 준다(중복 없이).
 export function awardFragment(progress, topicId) {
@@ -443,6 +494,7 @@ export function normalizeProgress(candidate) {
     completedShrines: stringArray(candidate.completedShrines).filter((id) => Boolean(getShrineById(id))),
     collectedFragments: uniqueValidTopicIds(stringArray(candidate.collectedFragments)),
     choiceLog: logArray(candidate.choiceLog),
+    tools: [...new Set(stringArray(candidate.tools).filter((id) => toolIdSet.has(id)))],
     story: normalizeStoryState(candidate.story),
     aiCoreCompleted: candidate.aiCoreCompleted === true
   };
@@ -521,7 +573,7 @@ export function recordPracticeChoice(progress, shrineId, questionId, choiceId) {
   };
 }
 
-// 사당은 이제 '지혜 도전'(연습·평가)이다. 조각은 스토리 퀘스트가 준다.
+// 사당(지혜의 시련)을 통과하면 조각과 함께 그 구역의 '약속 도구'를 얻는다.
 export function applyShrineResult(progress, shrineId, choiceId) {
   const result = evaluateShrineChoice(shrineId, choiceId);
   const visitedTopics = [...new Set([...progress.visitedTopics, result.topicId])];
@@ -541,13 +593,17 @@ export function applyShrineResult(progress, shrineId, choiceId) {
     };
   }
 
+  const toolId = SHRINE_TOOL[shrineId] ?? null;
   return {
     result,
+    toolId,
     progress: {
       ...progress,
       visitedTopics,
       choiceLog,
-      completedShrines: [...new Set([...progress.completedShrines, shrineId])]
+      completedShrines: [...new Set([...progress.completedShrines, shrineId])],
+      collectedFragments: [...new Set([...progress.collectedFragments, result.topicId])],
+      tools: toolId ? [...new Set([...(progress.tools ?? []), toolId])] : (progress.tools ?? [])
     }
   };
 }

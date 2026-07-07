@@ -7,15 +7,7 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { createAudioEngine } from './audio.js';
 import { createBurstSystem, createFloatingIcon, setIconEmoji } from './effects.js';
 import { CLASSIFY_BUCKETS, getClassifyChallenge, scoreClassify } from './classify.js';
-import {
-  applyStoryEvent,
-  getActivePickups,
-  getActivePoints,
-  getNpcStory,
-  getStoryDeeds,
-  getStoryObjective,
-  getStoryVisualFlags
-} from './story.js';
+import { createCompanion, createNpcCharacter, createPlayerCharacter } from './characters.js';
 import {
   ETHICS_TOPICS,
   FINAL_CORE_MISSION,
@@ -25,9 +17,11 @@ import {
   canUnlockFinalCore,
   completeFinalCore,
   createInitialProgress,
+  PROMISE_TOOLS,
+  getToolById,
   getExtraShrineQuestions,
   getLearningReport,
-  awardFragment,
+  getNextObjective,
   getProgressSummary,
   getShrineById,
   getTopicById,
@@ -91,7 +85,8 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
     composer: null,
     animated: [],
     icons: [],
-    burst: null
+    burst: null,
+    companion: null
   };
 
   configureRenderer(renderer);
@@ -101,6 +96,11 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
   setupPostProcessing(renderState, root);
   renderState.burst = createBurstSystem(scene);
   createInteractionIcons(renderState);
+
+  // 동행 요정 도트 — 항상 플레이어 어깨 옆에 둥둥.
+  renderState.companion = createCompanion();
+  renderState.companion.position.copy(PLAYER_START).add(new THREE.Vector3(0.8, 1.2, 0));
+  scene.add(renderState.companion);
 
   game.audio = createAudioEngine();
   game.renderState = renderState;
@@ -183,6 +183,8 @@ function createShell() {
         <div class="fragment-row" data-fragment-row></div>
       </section>
 
+      <section class="tool-belt" data-tool-belt aria-label="약속 도구"></section>
+
       <button class="journal-toggle" type="button" data-journal-toggle aria-expanded="false">
         기록
       </button>
@@ -264,6 +266,7 @@ function bindUi(root) {
     journalToggle: root.querySelector('[data-journal-toggle]'),
     journalClose: root.querySelector('[data-close-journal]'),
     journalContent: root.querySelector('[data-journal-content]'),
+    toolBelt: root.querySelector('[data-tool-belt]'),
     soundToggle: root.querySelector('[data-sound-toggle]'),
     flash: root.querySelector('[data-flash]'),
     title: root.querySelector('[data-title]'),
@@ -614,183 +617,6 @@ function createInteractionIcons(renderState) {
   });
 }
 
-// ---- 스토리 월드 동기화: 줍기 아이템·방문 지점·세계 흔적을 상태에 맞춰 그린다 ----
-
-function syncStoryWorld(game, renderState) {
-  const { scene } = renderState;
-  const story = game.progress.story;
-  renderState.dynamic = renderState.dynamic ?? new Map();
-
-  const desired = new Map();
-  for (const pickup of getActivePickups(story)) {
-    desired.set(`pickup:${pickup.topicId}:${pickup.id}`, {
-      type: 'pickup',
-      topicId: pickup.topicId,
-      id: pickup.id,
-      emoji: pickup.emoji,
-      labelKo: pickup.labelKo,
-      at: pickup.at
-    });
-  }
-  for (const point of getActivePoints(story)) {
-    desired.set(`point:${point.topicId}:${point.id}`, {
-      type: 'story-point',
-      topicId: point.topicId,
-      id: point.id,
-      emoji: point.emoji,
-      labelKo: point.labelKo,
-      at: point.at
-    });
-  }
-
-  // 사라져야 할 것 제거
-  for (const [key, entry] of renderState.dynamic.entries()) {
-    if (!desired.has(key)) {
-      scene.remove(entry.sprite);
-      renderState.dynamic.delete(key);
-    }
-  }
-  // 새로 생겨야 할 것 추가
-  for (const [key, item] of desired.entries()) {
-    if (renderState.dynamic.has(key)) {
-      continue;
-    }
-    const topic = getTopicById(item.topicId);
-    const sprite = createFloatingIcon(item.emoji, topic?.color ?? '#eba52c');
-    sprite.scale.set(1.05, 1.05, 1);
-    const position = new THREE.Vector3(item.at[0], 1.15, item.at[1]);
-    sprite.position.copy(position);
-    scene.add(sprite);
-    renderState.dynamic.set(key, {
-      ...item,
-      sprite,
-      position,
-      baseY: 1.15,
-      phase: Math.abs(item.at[0] * 7 + item.at[1] * 3)
-    });
-  }
-
-  applyStoryVisuals(game, renderState);
-}
-
-// 세계에 남는 흔적: 단색/알록달록 꽃밭, 조각상과 명판, 숨은 친구의 눈물, 잔잔해진 동굴.
-function applyStoryVisuals(game, renderState) {
-  const { scene } = renderState;
-  const flags = getStoryVisualFlags(game.progress);
-  renderState.storyMeshes = renderState.storyMeshes ?? {};
-  const meshes = renderState.storyMeshes;
-
-  // 편향: 꽃밭 (mono: 단색 / done: 알록달록)
-  const wantGarden = flags.has('bias:done') ? 'diverse' : flags.has('bias:mono') ? 'mono' : null;
-  if (meshes.gardenKind !== wantGarden) {
-    if (meshes.garden) {
-      scene.remove(meshes.garden);
-      meshes.garden = null;
-    }
-    if (wantGarden) {
-      const garden = new THREE.Group();
-      const colors = wantGarden === 'mono'
-        ? [0xe4573f, 0xe4573f, 0xe4573f, 0xe4573f, 0xe4573f, 0xe4573f]
-        : [0xe4573f, 0xf5c542, 0x9b6bd8, 0x4fb0e8, 0xf08bbb, 0x64c988];
-      colors.forEach((color, index) => {
-        const angle = (index / colors.length) * Math.PI * 2;
-        const stem = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.045, 0.045, 0.5, 6),
-          new THREE.MeshStandardMaterial({ color: 0x3f7f55 })
-        );
-        const bloom = new THREE.Mesh(
-          new THREE.SphereGeometry(0.19, 10, 8),
-          new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.35 })
-        );
-        const x = 7.6 + Math.cos(angle) * 1.1;
-        const z = -5.1 + Math.sin(angle) * 1.1 + 1.9;
-        stem.position.set(x, 0.28, z);
-        bloom.position.set(x, 0.6, z);
-        garden.add(stem, bloom);
-      });
-      scene.add(garden);
-      meshes.garden = garden;
-    }
-    meshes.gardenKind = wantGarden;
-  }
-
-  // 저작권: 광장의 조각상 (copied 미해결: 금 간 회색 / done: 금빛 명판)
-  const statueKind = flags.has('copyright:done') ? 'signed' : flags.has('copyright:copied') ? 'cracked' : null;
-  if (meshes.statueKind !== statueKind) {
-    if (meshes.statue) {
-      scene.remove(meshes.statue);
-      meshes.statue = null;
-    }
-    if (statueKind) {
-      const statue = new THREE.Group();
-      const base = new THREE.Mesh(
-        new THREE.BoxGeometry(0.9, 0.35, 0.9),
-        new THREE.MeshStandardMaterial({ color: 0x9d927b })
-      );
-      const figure = new THREE.Mesh(
-        new THREE.ConeGeometry(0.34, 1.05, 6),
-        new THREE.MeshStandardMaterial({
-          color: statueKind === 'signed' ? 0xd8cfae : 0x8e8e93,
-          roughness: statueKind === 'signed' ? 0.5 : 0.9
-        })
-      );
-      base.position.y = 0.18;
-      figure.position.y = 0.9;
-      statue.add(base, figure);
-      if (statueKind === 'signed') {
-        const plaque = new THREE.Mesh(
-          new THREE.BoxGeometry(0.55, 0.16, 0.06),
-          new THREE.MeshStandardMaterial({ color: 0xffd76a, emissive: 0xdf9b1f, emissiveIntensity: 0.6 })
-        );
-        plaque.position.set(0, 0.42, 0.48);
-        statue.add(plaque);
-      }
-      statue.position.set(-7.3 + 0.2, 0, 5.6 + 2.6);
-      scene.add(statue);
-      meshes.statue = statue;
-    }
-    meshes.statueKind = statueKind;
-  }
-
-  // 개인정보: 붙였다가 아직 회복 전이면 마을 집 위에 💧
-  const wantTear = flags.has('privacy:posted') && !flags.has('privacy:done');
-  if (Boolean(meshes.tear) !== wantTear) {
-    if (meshes.tear) {
-      scene.remove(meshes.tear);
-      meshes.tear = null;
-    } else {
-      const tear = createFloatingIcon('💧', '#4fb0e8');
-      tear.position.set(-7.5 + 1.3, 2.1, -5.2 - 0.5);
-      scene.add(tear);
-      meshes.tear = tear;
-    }
-  }
-
-  // 딥페이크: 이야기가 끝나면 동굴 입구가 따뜻한 빛으로
-  const wantCalm = flags.has('deepfake:done');
-  if (Boolean(meshes.calmLight) !== wantCalm) {
-    if (meshes.calmLight) {
-      scene.remove(meshes.calmLight);
-      meshes.calmLight = null;
-    } else {
-      const calm = new THREE.PointLight(0xffc978, 1.6, 7);
-      calm.position.set(7.1, 1.4, 5.7 - 1.4);
-      scene.add(calm);
-      meshes.calmLight = calm;
-    }
-  }
-}
-
-function updateDynamicSprites(renderState) {
-  if (!renderState.dynamic) {
-    return;
-  }
-  const elapsed = clock.elapsedTime;
-  for (const entry of renderState.dynamic.values()) {
-    entry.sprite.position.y = entry.baseY + Math.sin(elapsed * 2.4 + entry.phase) * 0.14;
-  }
-}
-
 function updateInteractionIcons(game, renderState) {
   const elapsed = clock.elapsedTime;
   for (const icon of renderState.icons) {
@@ -1006,23 +832,10 @@ function createDeepfakeCave(scene, position) {
 }
 
 function createNpc(scene, zone, zonePosition, interactables) {
-  const topic = getTopicById(zone.topicId);
-  const npc = new THREE.Group();
-  const body = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.28, 0.36, 0.72, 16),
-    new THREE.MeshStandardMaterial({ color: topic.color, roughness: 0.6 })
-  );
-  const head = new THREE.Mesh(
-    new THREE.SphereGeometry(0.25, 16, 12),
-    new THREE.MeshStandardMaterial({ color: 0xffd6ae, roughness: 0.7 })
-  );
-  body.position.y = 0.5;
-  head.position.y = 1.02;
-  npc.add(body, head);
+  const npc = createNpcCharacter(zone.topicId);
   npc.position.set(zonePosition.x - 1.25, 0, zonePosition.z + 1.05);
-  npc.traverse((child) => {
-    child.castShadow = true;
-  });
+  // 플레이어(섬 안쪽)를 바라보도록 회전.
+  npc.rotation.y = Math.atan2(-npc.position.x, -npc.position.z);
   scene.add(npc);
 
   interactables.push({
@@ -1095,26 +908,8 @@ function createSmallTree(scene, position, variant) {
 }
 
 function createPlayer({ playerGroup }) {
-  const cloak = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.32, 0.42, 0.75, 18),
-    new THREE.MeshStandardMaterial({ color: 0x2f6f8f, roughness: 0.58 })
-  );
-  const head = new THREE.Mesh(
-    new THREE.SphereGeometry(0.25, 18, 14),
-    new THREE.MeshStandardMaterial({ color: 0xffd2a0, roughness: 0.7 })
-  );
-  const scarf = new THREE.Mesh(
-    new THREE.BoxGeometry(0.72, 0.08, 0.16),
-    new THREE.MeshStandardMaterial({ color: 0xe0bb4b, roughness: 0.5 })
-  );
-  cloak.position.y = 0.42;
-  head.position.y = 0.94;
-  scarf.position.set(0, 0.72, 0.18);
-  playerGroup.add(cloak, head, scarf);
+  playerGroup.add(createPlayerCharacter());
   playerGroup.position.copy(PLAYER_START);
-  playerGroup.traverse((child) => {
-    child.castShadow = true;
-  });
 }
 
 function createLabelSprite(text, color) {
@@ -1365,9 +1160,27 @@ function celebrate(game, worldPosition, colorHex, kind) {
 function updateGame(delta, game, renderState, ui) {
   updatePlayer(delta, game, renderState.playerGroup);
   updateCamera(renderState.camera, game.player.position);
+  updateCompanion(delta, game, renderState);
   animateWorld(delta, renderState, game);
   updateInteractionIcons(game, renderState);
   updateNearestInteractable(game, renderState.interactables, ui);
+}
+
+function updateCompanion(delta, game, renderState) {
+  const dot = renderState.companion;
+  if (!dot) {
+    return;
+  }
+  const elapsed = clock.elapsedTime;
+  // 플레이어 뒤쪽 살짝 위에서 둥실둥실 따라온다.
+  const dir = game.player.direction;
+  const target = new THREE.Vector3(
+    game.player.position.x - dir.x * 0.6 + Math.sin(elapsed * 1.3) * 0.25,
+    game.player.position.y + 1.25 + Math.sin(elapsed * 2.6) * 0.12,
+    game.player.position.z - dir.z * 0.6 + Math.cos(elapsed * 1.3) * 0.25
+  );
+  dot.position.lerp(target, Math.min(1, delta * 4.5));
+  dot.rotation.y += delta * 1.4;
 }
 
 function updatePlayer(delta, game, playerGroup) {
@@ -1693,6 +1506,7 @@ function openShrineDialog(game, ui, shrineId) {
     button.disabled = completed;
     button.addEventListener('click', () => {
       const wasUnlocked = canUnlockFinalCore(game.progress.collectedFragments);
+      const firstClear = !game.progress.completedShrines.includes(shrineId);
       const outcome = applyShrineResult(game.progress, shrineId, button.dataset.choice);
       game.progress = outcome.progress;
       persistProgress(game.progress);
@@ -1711,6 +1525,13 @@ function openShrineDialog(game, ui, shrineId) {
         const topic = getTopicById(outcome.result.topicId);
         const shrinePos = getInteractablePosition(game, 'shrine', shrineId);
         celebrate(game, shrinePos.clone().setY(shrinePos.y + 1.2), topic?.color ?? '#ffd76a', 'collect');
+        // 처음 통과했다면 약속 도구 획득을 알린다.
+        if (firstClear && outcome.toolId) {
+          const tool = getToolById(outcome.toolId);
+          reflection.hidden = false;
+          reflection.dataset.tool = 'true';
+          reflection.textContent = `${tool.emoji} 「${tool.nameKo}」 획득! ${tool.powerKo} (${tool.lessonKo})`;
+        }
         // 코어가 막 열렸다면 각성 세리머니를 이어서.
         if (!wasUnlocked && canUnlockFinalCore(game.progress.collectedFragments)) {
           window.setTimeout(() => {
@@ -1815,7 +1636,7 @@ function closeJournal(game, ui) {
 
 function updateHud(game, ui) {
   const summary = getProgressSummary(game.progress.collectedFragments);
-  ui.objective.textContent = getStoryObjective(game.progress, TOPIC_NAMES_KO);
+  ui.objective.textContent = getNextObjective(game.progress);
   ui.fragmentCount.textContent = `조각 ${summary.collected}/${summary.total}`;
   ui.coreStatus.textContent = game.progress.aiCoreCompleted
     ? 'AI 코어 완료'
@@ -1826,6 +1647,14 @@ function updateHud(game, ui) {
     const collected = summary.collectedTopicIds.includes(topic.id);
     return `<span class="fragment-dot" style="--topic-color:${topic.color}" data-collected="${collected}" title="${topic.fragmentKo}">${topic.titleKo}</span>`;
   }).join('');
+  if (ui.toolBelt) {
+    const owned = new Set(game.progress.tools ?? []);
+    ui.toolBelt.innerHTML = PROMISE_TOOLS.map((tool) => {
+      const have = owned.has(tool.id);
+      const title = have ? `${tool.nameKo} — ${tool.powerKo}` : `${tool.nameKo} (사당에서 획득)`;
+      return `<span class="tool-slot" data-have="${have}" title="${title}">${have ? tool.emoji : '·'}</span>`;
+    }).join('');
+  }
   renderJournal(game, ui);
 }
 
