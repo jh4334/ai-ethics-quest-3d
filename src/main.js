@@ -425,6 +425,7 @@ function createGameState(ui) {
     renderState: null,
     combat: null,
     puzzle: null,
+    finaleResolving: false,
     hitStop: 0,
     shake: 0,
     coreWasUnlocked: canUnlockFinalCore(progress.collectedFragments),
@@ -1808,8 +1809,14 @@ function interact(game, ui) {
     && !game.progress.aiCoreCompleted
     && !game.combat
   ) {
-    // 조각을 모으고 코어에 닿으면: 대화가 아니라 실제 노이즈와의 액션 전투로 진입.
-    startBossFight(game, ui);
+    if (game.finaleResolving) {
+      // 이미 노이즈를 제압한 뒤 대화를 닫았던 경우: 재전투 대신 [지운다/가르친다] 선택부터 재개.
+      runFinale(game, ui, { fromCombat: true });
+      openDialog(game, ui);
+    } else {
+      // 조각을 모으고 코어에 닿으면: 대화가 아니라 실제 노이즈와의 액션 전투로 진입.
+      startBossFight(game, ui);
+    }
   } else {
     openCoreDialog(game, ui);
   }
@@ -2677,6 +2684,8 @@ function winBossFight(game, ui) {
   addShake(game, 0.55);
   game.hitStop = 0.09;
   flashCombatPopup(ui, '제압!', 'win');
+  // 제압됨: 이후 대화를 닫아도 재전투가 아니라 선택 재개가 되도록 표시.
+  game.finaleResolving = true;
   // 잡음을 다 걷어낸 뒤: 지울지 가르칠지 고르는 윤리적 선택으로 마무리(가르침→노바→증명서).
   window.setTimeout(() => {
     runFinale(game, ui, { fromCombat: true });
@@ -2805,6 +2814,7 @@ function runFinale(game, ui, opts = {}) {
     // 검증된 상태 전이를 재사용해 코어 완료 플래그를 세운다.
     const outcome = completeFinalCore(game.progress, 'balanced-promise');
     game.progress = outcome.progress;
+    game.finaleResolving = false; // 완료 — 더는 재개 상태가 아니다.
     persistProgress(game.progress);
     updateHud(game, ui);
     // 최종장 대화창을 닫고 그 위에 증명서를 띄운다(닫으면 섬으로 복귀).
@@ -2856,9 +2866,10 @@ function closeDialog(game, ui) {
   ui.root.classList.remove('is-cinematic');
   ui.root.querySelector('[data-game-canvas]')?.focus?.();
   game.updateRotateHint?.();
-  // 최종장을 끝맺지 않고 닫았다면 등장한 노이즈를 치우고 도트를 되돌린다(노바·완료 상태는 유지).
+  // 제압 후 선택을 진행 중이면(finaleResolving) 노이즈를 그대로 둔다 — 재접근 시 선택 재개.
+  // 그 외에 최종장을 끝맺지 않고 닫았다면 등장한 노이즈를 치우고 도트를 되돌린다.
   const boss = game.renderState?.noiseBoss;
-  if (boss && boss.kind === 'noise' && !game.progress.aiCoreCompleted) {
+  if (boss && boss.kind === 'noise' && !game.progress.aiCoreCompleted && !game.finaleResolving) {
     game.renderState.scene.remove(boss.group);
     game.renderState.noiseBoss = null;
     if (game.renderState.companion) {

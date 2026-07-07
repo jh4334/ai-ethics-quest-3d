@@ -1302,6 +1302,35 @@ button:disabled {
   display: none;
 }
 
+/* 인쇄/저장: 증명서 카드만 깨끗하게 출력한다(캔버스·HUD·버튼 제외).
+   교실에서 수료증을 뽑아 나눠주는 핵심 시나리오를 위해. */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  .certificate,
+  .certificate * {
+    visibility: visible !important;
+  }
+  .certificate {
+    position: absolute;
+    inset: 0;
+    display: block !important;
+    background: #fff;
+    padding: 0;
+  }
+  .certificate-card {
+    box-shadow: none;
+    border: 2px solid #d4b24a;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+  }
+  .cert-actions {
+    display: none !important;
+  }
+}
+
 /* ===== 약속 도구 인벤토리 (상태 패널 안에 통합) ===== */
 .status-head {
   display: flex;

@@ -29,6 +29,16 @@ test('touch controls expose all movement directions including down', () => {
   assert.match(cssSource, /grid-template-rows:\s*repeat\(3, 48px\)/);
 });
 
+test('defeated boss does not become a full-HP re-fight, and certificate prints cleanly', () => {
+  // 제압 후 대화를 닫아도 재전투가 아니라 선택 재개.
+  assert.match(mainSource, /game\.finaleResolving = true/);
+  assert.match(mainSource, /!game\.progress\.aiCoreCompleted && !game\.finaleResolving/);
+  assert.match(mainSource, /if \(game\.finaleResolving\)/);
+  // 증명서만 인쇄되도록 @media print 격리.
+  assert.match(cssSource, /@media print/);
+  assert.match(cssSource, /\.certificate,\s*\n?\s*\.certificate \*/);
+});
+
 test('boss fight has depth: weak-point tool matching, weakness rotation, and dodgeable waves', () => {
   // 약점 색과 다른 도구는 튕겨 대미지가 없어야 한다.
   assert.match(mainSource, /activeToolId !== c\.weakToolId/);
