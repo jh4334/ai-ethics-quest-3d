@@ -84,9 +84,10 @@ const MOVE_HINT = IS_TOUCH
   ? '왼쪽 방향 버튼 이동 · 오른쪽 A로 확인·공격'
   : 'WASD/방향키 이동 · E·Space 확인/공격 · J 기록';
 const ACTION_LABEL = IS_TOUCH ? '' : 'E: ';
-const PLAYER_START = new THREE.Vector3(0, 0.55, 11.6);
-const ISLAND_RADIUS = 16.6;
-const INTERACTION_RADIUS = 2.25;
+const PLAYER_START = new THREE.Vector3(0, 0.55, 15.6);
+const ISLAND_RADIUS = 23.8;
+const INTERACTION_RADIUS = 2.05;
+const MAX_RENDER_PIXEL_RATIO = 1.25;
 const CORE_RADIUS = 2.8;
 const clock = new THREE.Clock();
 
@@ -106,7 +107,7 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
 
   let renderer;
   try {
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
   } catch (error) {
     showRendererFallback(ui, error);
     return null;
@@ -452,11 +453,11 @@ function createGameState(ui) {
 }
 
 function configureRenderer(renderer) {
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_RENDER_PIXEL_RATIO));
   renderer.setClearColor(0x8fd3ef, 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   // 밝고 쨍한 판타지 톤: ACES 필름 톤매핑. 노출은 1 아래로 — 하이라이트가 하얗게 뜨지 않게.
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 0.96;
@@ -470,7 +471,7 @@ function setupPostProcessing(renderState, root) {
   let composer;
   try {
     composer = new EffectComposer(renderer);
-    composer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+    composer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_RENDER_PIXEL_RATIO));
     composer.setSize(width, height);
     composer.addPass(new RenderPass(scene, camera));
     // 발광 크리스털·코어만 빛나도록 블룸은 약하게·문턱은 높게(밝은 지형·글씨가 번지지 않게).
@@ -532,7 +533,7 @@ function updateAmbient(delta, renderState) {
 function createWorld(renderState) {
   const { scene, interactables, shrineCrystals, animated } = renderState;
   // 색을 살리기 위해 안개는 아주 옅게, 먼 배경만 살짝 감싸도록(넓어진 섬에 맞춰 더 멀리서 시작).
-  scene.fog = new THREE.Fog(0x9fd9f5, 46, 112);
+  scene.fog = new THREE.Fog(0x9fd9f5, 58, 132);
   renderState.overworldFog = scene.fog;
 
   // 사당 던전 진입 시 오버월드 전체를 한 번에 숨기려고 Group으로 감싼다.
@@ -549,11 +550,11 @@ function createWorld(renderState) {
   const sun = new THREE.DirectionalLight(0xfff0d0, 2.3);
   sun.position.set(-16, 24, 11);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
-  sun.shadow.camera.left = -26;
-  sun.shadow.camera.right = 26;
-  sun.shadow.camera.top = 26;
-  sun.shadow.camera.bottom = -26;
+  sun.shadow.mapSize.set(1024, 1024);
+  sun.shadow.camera.left = -34;
+  sun.shadow.camera.right = 34;
+  sun.shadow.camera.top = 34;
+  sun.shadow.camera.bottom = -34;
   sun.shadow.bias = -0.0004;
   world.add(sun);
 
@@ -565,7 +566,7 @@ function createWorld(renderState) {
   createStylizedWater(world, animated);
 
   const island = new THREE.Mesh(
-    new THREE.CylinderGeometry(17.6, 15.4, 0.92, 96),
+    new THREE.CylinderGeometry(25.2, 22.4, 0.92, 80),
     new THREE.MeshStandardMaterial({ color: 0x86c26a, roughness: 0.92 })
   );
   island.position.y = -0.18;
@@ -574,7 +575,7 @@ function createWorld(renderState) {
   world.add(island);
 
   const beach = new THREE.Mesh(
-    new THREE.TorusGeometry(16.75, 0.42, 12, 128),
+    new THREE.TorusGeometry(24.25, 0.42, 10, 96),
     new THREE.MeshStandardMaterial({ color: 0xf0dc98, roughness: 0.85 })
   );
   beach.rotation.x = Math.PI / 2;
@@ -600,7 +601,7 @@ function createWorld(renderState) {
 
   for (let i = 0; i < 36; i += 1) {
     const angle = (i / 36) * Math.PI * 2;
-    const radius = 13.2 + (i % 4) * 0.75;
+    const radius = 18.0 + (i % 4) * 1.15;
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
     if (Math.abs(x) < 3.0 || Math.abs(z) < 3.0) {
@@ -720,7 +721,7 @@ function createGrassField(scene) {
   bladeGeometry.translate(0, 0.21, 0);
   const grassColors = [0x5fbf5a, 0x7ed36a, 0x54b07a];
   const flowerColors = [0xff7eb6, 0xffd23f, 0x9b7cff, 0xff9f43];
-  const count = 340;
+  const count = 240;
   const grass = new THREE.InstancedMesh(
     bladeGeometry,
     new THREE.MeshStandardMaterial({ vertexColors: false, color: 0xffffff, roughness: 0.9 }),
@@ -731,7 +732,7 @@ function createGrassField(scene) {
   let placed = 0;
   for (let i = 0; i < count * 2 && placed < count; i += 1) {
     const angle = (i * 2.399963) % (Math.PI * 2);
-    const radius = 2.6 + ((i * 0.618) % 1) * 12.4;
+    const radius = 3.2 + ((i * 0.618) % 1) * 17.8;
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
     // 중앙 코어와 길목은 비운다.
@@ -1019,7 +1020,7 @@ function createDeepfakeCave(scene, position) {
 
 function createNpc(scene, zone, zonePosition, interactables) {
   const npc = createNpcCharacter(zone.topicId);
-  npc.position.set(zonePosition.x - 1.25, 0, zonePosition.z + 1.05);
+  npc.position.set(zonePosition.x - 2.65, 0, zonePosition.z + 2.15);
   // 플레이어(섬 안쪽)를 바라보도록 회전.
   npc.rotation.y = Math.atan2(-npc.position.x, -npc.position.z);
   scene.add(npc);
@@ -1058,7 +1059,7 @@ function createShrine(scene, zone, zonePosition, interactables) {
   arch.rotation.z = Math.PI;
   crystal.position.y = 0.82;
   shrine.add(base, arch, crystal);
-  shrine.position.set(zonePosition.x + 1.35, 0, zonePosition.z - 1.05);
+  shrine.position.set(zonePosition.x + 2.75, 0, zonePosition.z - 2.15);
   shrine.rotation.y = Math.atan2(-shrine.position.x, -shrine.position.z);
   shrine.traverse((child) => {
     child.castShadow = true;
@@ -1857,7 +1858,7 @@ function clampToRoom(position, bounds) {
 
 function updateCamera(camera, target, shake = 0) {
   // 살짝 낮고 뒤로 물러난 각도 — 넓어진 섬이 한눈에 들어오도록 조금 더 물러난다.
-  const desired = new THREE.Vector3(target.x * 0.6, target.y + 8.7, target.z + 13.8);
+  const desired = new THREE.Vector3(target.x * 0.52, target.y + 10.2, target.z + 17.2);
   camera.position.lerp(desired, 0.08);
   // 화면 흔들림(타격·피격 순간): 카메라를 잠깐 떨어 손맛을 준다.
   if (shake > 0) {
@@ -1866,7 +1867,7 @@ function updateCamera(camera, target, shake = 0) {
     camera.position.x += Math.sin(t) * s;
     camera.position.y += Math.cos(t * 1.3) * s;
   }
-  camera.lookAt(target.x * 0.4, target.y + 1.35, target.z - 1.2);
+  camera.lookAt(target.x * 0.36, target.y + 1.35, target.z - 1.8);
 }
 
 function addShake(game, magnitude) {
@@ -2776,8 +2777,8 @@ function enterShrineChallenge(game, ui, shrineId, topicId) {
 
 // 카메라를 목표 추종 위치로 즉시 스냅(섬→방 활공 방지). updateCamera의 상수와 반드시 일치.
 function snapCamera(camera, target) {
-  camera.position.set(target.x * 0.6, target.y + 8.7, target.z + 13.8);
-  camera.lookAt(target.x * 0.4, target.y + 1.35, target.z - 1.2);
+  camera.position.set(target.x * 0.52, target.y + 10.2, target.z + 17.2);
+  camera.lookAt(target.x * 0.36, target.y + 1.35, target.z - 1.8);
 }
 
 function enterDungeon(game, ui, topicId, shrineId) {

@@ -105,6 +105,14 @@ test('color-grading/vignette pass runs after bloom and before the OutputPass', (
   assert.match(setup, /vignetteStrength/);
 });
 
+test('overworld rendering has a low-spec performance budget after map expansion', () => {
+  assert.match(mainSource, /const MAX_RENDER_PIXEL_RATIO = 1\.25/);
+  assert.match(mainSource, /antialias: false/);
+  assert.match(mainSource, /renderer\.shadowMap\.type = THREE\.PCFShadowMap/);
+  assert.match(mainSource, /sun\.shadow\.mapSize\.set\(1024, 1024\)/);
+  assert.match(mainSource, /const count = 240/);
+});
+
 test('entering a shrine loads a separate dungeon map (overworld hidden), not just an overlay', () => {
   // 사당 진입은 별도 맵 로드 — 오버월드 그룹을 통째로 숨기고 던전 룸을 씬에 추가한다.
   assert.match(mainSource, /renderState\.overworld = world/);

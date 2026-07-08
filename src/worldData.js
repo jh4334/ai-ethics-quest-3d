@@ -102,7 +102,7 @@ export const WORLD_ZONES = [
     nameKo: '개인정보 마을',
     shortNameKo: '정보 마을',
     descriptionKo: '작은 집과 우체통이 모인 마을입니다. AI 도우미에게 어떤 정보를 알려도 되는지 배우는 곳입니다.',
-    position: [-10.5, 0, -7.3],
+    position: [-16.4, 0, -11.7],
     npc: {
       id: 'privacy-keeper',
       nameKo: '비밀지기 담',
@@ -118,7 +118,7 @@ export const WORLD_ZONES = [
     nameKo: '편향의 숲',
     shortNameKo: '공정 숲',
     descriptionKo: '서로 다른 나무가 자라는 숲입니다. AI가 한쪽 자료만 배우면 결과가 치우칠 수 있음을 살펴봅니다.',
-    position: [10.6, 0, -7.1],
+    position: [16.6, 0, -11.4],
     npc: {
       id: 'fairness-ranger',
       nameKo: '외알안경 모리',
@@ -134,7 +134,7 @@ export const WORLD_ZONES = [
     nameKo: '저작권 유적',
     shortNameKo: '창작 유적',
     descriptionKo: '책 조각과 무대가 놓인 유적입니다. AI 결과를 사용할 때 창작자와 출처를 존중하는 법을 배웁니다.',
-    position: [-10.2, 0, 7.8],
+    position: [-16.2, 0, 12.2],
     npc: {
       id: 'credit-archivist',
       nameKo: '조각가 무로',
@@ -150,7 +150,7 @@ export const WORLD_ZONES = [
     nameKo: '딥페이크 동굴',
     shortNameKo: '진실 동굴',
     descriptionKo: '빛과 그림자가 흔들리는 동굴입니다. AI로 만든 사진, 목소리, 영상의 진짜 여부를 확인하는 법을 익힙니다.',
-    position: [9.9, 0, 8.0],
+    position: [16.0, 0, 12.5],
     npc: {
       id: 'truth-guide',
       nameKo: '메아리 에코',

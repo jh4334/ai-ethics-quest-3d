@@ -21,6 +21,23 @@ test('open world has four zones with non-infringing Zelda-like exploration roles
   }
 });
 
+test('overworld zones are spread far enough to feel like exploration, not one puzzle board', () => {
+  for (const zone of WORLD_ZONES) {
+    const [x, , z] = zone.position;
+    const distanceFromCore = Math.hypot(x, z);
+    assert.ok(distanceFromCore >= 19, `${zone.id} should sit away from the core`);
+    assert.ok(distanceFromCore <= 22, `${zone.id} should remain inside the playable island`);
+  }
+
+  for (let i = 0; i < WORLD_ZONES.length; i += 1) {
+    for (let j = i + 1; j < WORLD_ZONES.length; j += 1) {
+      const [ax, , az] = WORLD_ZONES[i].position;
+      const [bx, , bz] = WORLD_ZONES[j].position;
+      assert.ok(Math.hypot(ax - bx, az - bz) >= 23, `${WORLD_ZONES[i].id} and ${WORLD_ZONES[j].id} are too close`);
+    }
+  }
+});
+
 test('shrines have correct answer choices and age-appropriate feedback', () => {
   assert.ok(SHRINES.length >= 3);
   for (const shrine of SHRINES) {

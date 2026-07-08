@@ -49,6 +49,12 @@ test('gate is locked until you talk to the NPC and hold the tool', () => {
   assert.equal(getGateDialog(progress, 'privacy').kind, 'choice');
 });
 
+test('objective and gate hints use natural Korean particles for NPC names', () => {
+  const progress = fresh();
+  assert.match(getStoryObjective(progress), /비밀지기 담과 이야기하세요/);
+  assert.match(getGateDialog(progress, 'privacy').linesKo[0], /비밀지기 담과 이야기해 보세요/);
+});
+
 test('wise gate choice solves the zone and signals a fragment award', () => {
   let progress = applyIntroTalk(fresh(), 'privacy');
   progress = { ...progress, tools: ['shield'] };
