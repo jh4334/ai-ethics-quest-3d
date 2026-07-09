@@ -73,7 +73,7 @@ export const QUESTS = {
     toolId: 'mirror',
     questTitleKo: '한 가지 색 숲',
     npcNameKo: '외알안경 모리',
-    gatePosition: [8.7, -5.0],
+    gatePosition: [6.8, -3.6], // NPC(부엉이)와 상호작용 반경이 겹치지 않게 길목 쪽으로 (간격 ≥3)
     gateLabelKo: '색이 빠진 꽃밭',
     introKo: [
       '이상하군. 내 계산으론 숲의 꽃이 전부 빨강이어야 하는데… 노이즈가 빨간 책만 남기고 다 먹어 버렸어.',
@@ -113,7 +113,7 @@ export const QUESTS = {
     toolId: 'bell',
     questTitleKo: '이름 없는 조각상',
     npcNameKo: '조각가 무로',
-    gatePosition: [-8.4, 5.6],
+    gatePosition: [-6.2, 3.8], // 사당(-8.85,6.75)과 상호작용 반경이 겹치지 않게 길목 쪽으로 (간격 ≥3)
     gateLabelKo: '이름 잃은 조각상',
     introKo: [
       '노이즈가 유적 조각상들의 명판을 먹어 치웠어. 이름을 잃은 조각상이 회색으로 굳어 가고 있지.',
