@@ -191,6 +191,21 @@ test('isle: 확장 섬 씬은 저사양·결정적이고 도착 서사는 visite
   assert.match(mainSource, /markStageVisited\(game\.progress, stageId\)/);
 });
 
+test('corridor: 회랑 도전은 순수 로직 + F 가드 라우팅 + 완료 전이', () => {
+  const corridorSource = readFileSync(new URL('../src/corridorLogic.js', import.meta.url), 'utf8');
+  // 순수 로직: THREE 무의존 + 랜덤 금지(결정적 발사 순서·타이밍).
+  assert.doesNotMatch(corridorSource, /from 'three'/);
+  assert.doesNotMatch(corridorSource, /Math\.random/);
+  // F키·터치 도구버튼이 회랑 가드로 이어진다.
+  assert.match(mainSource, /game\.isle\?\.challenge && !game\.isle\.challenge\.cleared/);
+  assert.match(mainSource, /function corridorGuard/);
+  assert.match(mainSource, /game\.dungeon\?\.active \|\| game\.isle\?\.challenge/);
+  // 클리어 → 정령 치유 + 스테이지 완료 기록(항로 지도 전이).
+  assert.match(mainSource, /function finishCorridor/);
+  assert.match(mainSource, /markStageCompleted\(game\.progress, isle\.stageId\)/);
+  assert.match(mainSource, /healSpiritVisuals\(isle\.built\)/);
+});
+
 test('stage frame: 순수 데이터 모듈 + 세이브 v2 + 항로 지도', () => {
   const stageSource = readFileSync(new URL('../src/stageData.js', import.meta.url), 'utf8');
   const worldSource = readFileSync(new URL('../src/worldData.js', import.meta.url), 'utf8');

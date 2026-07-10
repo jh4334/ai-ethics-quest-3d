@@ -119,6 +119,9 @@ try {
     await tp(s.x, s.z + 1.2);
     await p.waitForTimeout(1000);
     for (let i = 0; i < 4; i += 1) {
+      // 느린 프레임에서 stale nearest가 연 잔류 대화를 정리(부두 대화 재오픈 경합 방지).
+      await p.evaluate(() => { if (!window.__ethicsUi.dialog.hidden) window.__ethicsUi.dialogClose?.click(); });
+      await p.waitForTimeout(200);
       await A(600);
       if ((await st()).mode === 'dungeon') return true;
       await p.waitForTimeout(600);
@@ -318,6 +321,54 @@ try {
   }));
   check(spirit.dialog && spirit.text.includes('말'), '바닷새 정령 대화(말-화살 증상)');
   await closeDlg();
+
+  // ── 말-화살 회랑: 도전 시작 → 방패 가드 반사 → 3발사대 파괴 → 정령 치유·완료 ──
+  await tp(3.2, -5.0, 0, -1);
+  await p.waitForTimeout(1000);
+  await A(600);
+  const challengeOn = await p.evaluate(() => Boolean(window.__ethicsGame.isle?.challenge));
+  check(challengeOn, '회랑 도전 시작(발사대 가동)');
+  // 로직은 유닛이 전부 검증 — e2e는 마지막 발사대 하나를 실제 가드로 통합 검증한다(느린 헤드리스 프레임 대응 워프).
+  await p.evaluate(() => {
+    const ch = window.__ethicsGame.isle.challenge;
+    ch.broken.e1 = true;
+    ch.broken.e2 = true;
+    ch.arrow = null;
+    ch.fireTimer = 0.05;
+  });
+  await p.waitForTimeout(1600); // e3 발사 대기
+  await p.evaluate(() => {
+    const g = window.__ethicsGame;
+    const arrow = g.isle.challenge.arrow;
+    // 화살을 비행선상 플레이어 앞 1.0 지점으로 워프(가드 판정 거리 안).
+    arrow.x = g.player.position.x - arrow.dx * 1.0;
+    arrow.z = g.player.position.z - arrow.dz * 1.0;
+  });
+  await p.keyboard.press('f');
+  await p.waitForTimeout(1400);
+  const deflected = await p.evaluate(() => window.__ethicsGame.isle.challenge.arrow?.returning === true);
+  check(deflected, '방패 가드 반사(화살이 주인에게 돌아감)');
+  await p.evaluate(() => {
+    const arrow = window.__ethicsGame.isle.challenge.arrow;
+    arrow.x = 3.9; // e3 발사대 코앞으로 워프 — 다음 프레임에 파괴 판정
+    arrow.z = -7.5;
+  });
+  await p.waitForTimeout(1600);
+  const healed = await p.evaluate(() => {
+    const g = window.__ethicsGame;
+    return {
+      completed: g.progress.stages['whisper-cape']?.completed === true,
+      cleared: g.isle.challenge?.cleared === true,
+      wispsGone: g.isle.built.wisps.every((w) => !w.visible),
+      thanks: !window.__ethicsUi.dialog.hidden
+    };
+  });
+  check(
+    healed.completed && healed.cleared && healed.wispsGone && healed.thanks,
+    '회랑 클리어 → 정령 치유 + 스테이지 완료 기록 + 감사 대화'
+  );
+  await closeDlg();
+
   await tp(-3.4, 10.2, 0, 1);
   await p.waitForTimeout(1000);
   await A(800);
