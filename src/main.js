@@ -34,7 +34,7 @@ import {
 import { buildDungeonRoom, disposeDungeonRoom, makeGlyphSprite, syncDungeonVisuals } from './dungeon.js';
 import { getStageById, getStageStates, markStageCompleted, markStageVisited, nearestSeaIsland } from './stageData.js';
 import { SEA_APPROACH, SEA_RADIUS, SEA_SCALE, buildSeaScene, seaWorldPosition } from './sea.js';
-import { ISLE_RADIUS, buildWhisperCapeScene, healSpiritVisuals } from './isle.js';
+import { ISLE_RADIUS, ISLE_SCENES, healSpiritVisuals } from './isle.js';
 import { createCorridorState, stepCorridor } from './corridorLogic.js';
 import {
   FINALE,
@@ -3422,15 +3422,60 @@ function voyageAction(game, ui) {
     exitVoyage(game, ui);
     return;
   }
-  if (island.id === 'whisper-cape') {
+  if (ISLE_SCENES[island.id]) {
     game.audio?.playClick();
     enterIsle(game, ui, island.id);
   }
-  // 다른 열린 섬 상륙은 해당 섬 콘텐츠(M4+)와 함께 붙는다.
+  // 아직 씬이 없는 열린 섬은 없어야 정상 — built:true는 ISLE_SCENES 등록과 함께 뒤집는다.
 }
 
 // ── 확장 섬(스테이지) 상륙 ─────────────────────────────
 // 항해 → 섬 지형 씬. 던전·바다와 같은 수명주기(lazy build → dispose).
+// 섬별 연출 데이터(톤·문구·대화) — 지오메트리는 isle.js의 ISLE_SCENES가 담당.
+const ISLE_CONTENT = {
+  'whisper-cape': {
+    fog: [0x9aa7bd, 30, 80],
+    clearColor: 0x93a2b8,
+    flash: '#e8eef8',
+    goalKo: '병든 정령을 찾아가 이야기를 들어 보세요',
+    healedGoalKo: '정령이 건강해졌어요 — 곶이 고요합니다',
+    arrivalKo: [
+      '"여기가 속삭임 곶… 공기가 따가워. 저 검은 파편들은 말-화살 — 누군가 내뱉은 뾰족한 말이 아직도 땅에 박혀 있는 거야."',
+      '"절벽 쪽에서 앓는 소리가 들려. 이 곶의 정령이 아픈가 봐 — 가서 이야기를 들어 보자."'
+    ],
+    spiritNameKo: '🕊️ 바닷새 정령',
+    spiritSickKo: [
+      '"끼륵… 잘 와 주었어, 수호자. 미운 말들이 화살이 되어 깃털에 박혀 버렸어."',
+      '"한 번 내뱉은 말은 주워 담을 수 없어 — 그래서 이렇게 오래 아픈 거야."',
+      '"절벽의 「말-화살 회랑」에 잡음 발사대가 숨어 있어. 방패로 화살을 주인에게 되돌려 줘!"'
+    ],
+    spiritHealedKo: [
+      '"고마워, 수호자! 깃털이 다시 따뜻해졌어."',
+      '"기억해 줘 — 뾰족한 말은 방패로 막고, 나는 따뜻한 말만 남기기. 그거면 이 바다의 어떤 곶도 아프지 않아."'
+    ]
+  },
+  'echo-cave': {
+    fog: [0x2b3552, 26, 72],
+    clearColor: 0x232c46,
+    flash: '#bcd0ff',
+    goalKo: '물웅덩이에 갇힌 고래 정령을 찾아가세요',
+    healedGoalKo: '정령이 건강해졌어요 — 동굴이 고요합니다',
+    arrivalKo: [
+      '"여기가 메아리 동굴… 같은 소리가 벽에 부딪혀 끝없이 되돌아오고 있어."',
+      '"물웅덩이에 고래 정령이 갇혀 있나 봐 — 메아리에 둘러싸여 바깥 소리를 못 듣는 것 같아."'
+    ],
+    spiritNameKo: '🐋 고래 정령',
+    spiritSickKo: [
+      '"우우… 누구야? 방금 그 소리도… 내 노래의 메아리야?"',
+      '"소문의 벽이 같은 이야기만 자꾸 울려 줘서, 이제 뭐가 진짜 목소리인지 모르게 됐어."',
+      '"출처의 종… 그 맑은 울림이라면 가짜 메아리를 흩을 수 있을 거야."'
+    ],
+    spiritHealedKo: [
+      '"고마워, 수호자! 이제 진짜 목소리가 들려."',
+      '"같은 말만 자꾸 들려올 땐 꼭 물어봐 줘 — 이 이야기의 진짜 출처는 어디일까?"'
+    ]
+  }
+};
 
 function enterIsle(game, ui, stageId) {
   if (game.isle || !game.voyage) {
@@ -3445,11 +3490,12 @@ function enterIsle(game, ui, stageId) {
   game.player.speed = vg.walkSpeed;
 
   const healed = game.progress.stages?.[stageId]?.completed === true;
-  const built = buildWhisperCapeScene({ makeLabel: createLabelSprite, healed });
+  const content = ISLE_CONTENT[stageId];
+  const built = ISLE_SCENES[stageId]({ makeLabel: createLabelSprite, healed });
   rs.scene.add(built.root);
-  // 새벽 갯벌 톤 — 안개는 섬 너머 바다에만.
-  rs.scene.fog = new THREE.Fog(0x9aa7bd, 30, 80);
-  rs.renderer.setClearColor(0x93a2b8, 1);
+  // 섬 고유 톤 — 안개는 섬 너머 바다에만.
+  rs.scene.fog = new THREE.Fog(...content.fog);
+  rs.renderer.setClearColor(content.clearColor, 1);
 
   game.mode = 'isle';
   game.isle = { built, stageId, nearestSpot: null, challenge: null, guard: 0, guardCd: 0 };
@@ -3460,13 +3506,11 @@ function enterIsle(game, ui, stageId) {
   rs.companion.position.copy(game.player.position).add(new THREE.Vector3(0.8, 1.2, 0));
   snapCamera(rs.camera, game.player.position);
 
-  triggerFlash(ui, '#e8eef8');
+  triggerFlash(ui, content.flash);
   ui.prompt.hidden = true;
   ui.puzzleHud.hidden = false;
   ui.puzzleTitle.textContent = `${stage.emoji} ${stage.nameKo}`;
-  ui.puzzleGoal.textContent = healed
-    ? '정령이 건강해졌어요 — 곶이 고요합니다'
-    : '병든 정령을 찾아가 이야기를 들어 보세요';
+  ui.puzzleGoal.textContent = healed ? content.healedGoalKo : content.goalKo;
   ui.puzzleHint.textContent = '뗏목으로 돌아가면 다시 바다로';
   game.updateRotateHint?.();
 
@@ -3476,10 +3520,7 @@ function enterIsle(game, ui, stageId) {
     persistProgress(game.progress);
     ui.dialogKicker.textContent = `${stage.emoji} ${stage.nameKo}`;
     ui.dialogTitle.textContent = '✨ 도트';
-    ui.dialogBody.innerHTML = speechHtml([
-      '"여기가 속삭임 곶… 공기가 따가워. 저 검은 파편들은 말-화살 — 누군가 내뱉은 뾰족한 말이 아직도 땅에 박혀 있는 거야."',
-      '"절벽 쪽에서 앓는 소리가 들려. 이 곶의 정령이 아픈가 봐 — 가서 이야기를 들어 보자."'
-    ]);
+    ui.dialogBody.innerHTML = speechHtml(content.arrivalKo);
     openDialog(game, ui);
   }
 }
@@ -3506,12 +3547,14 @@ function updateIsle(delta, game, ui) {
   // 병든 정령의 숨: 몸이 느리게 부풀었다 꺼지고, 잡음 위스프가 주위를 돈다.
   const spirit = isle.built.spirit;
   spirit.scale.y = 1 + Math.sin(elapsed * 1.4) * 0.03;
-  isle.built.wisps.forEach((wisp, i) => {
+  isle.built.wisps?.forEach((wisp, i) => {
     const angle = elapsed * (0.8 + i * 0.25) + i * 2.1;
     wisp.position.set(Math.cos(angle) * 1.1, 1.5 + Math.sin(elapsed * 2 + i) * 0.25, Math.sin(angle) * 1.1);
   });
-  // 발사대 소용돌이 회전(부서지면 숨김).
-  isle.built.vortexes.forEach((vortex, emitterId) => {
+  // 씬 전용 유휴 애니메이션(메아리 링·결정 등).
+  isle.built.animate?.(delta, elapsed);
+  // 발사대 소용돌이 회전(부서지면 숨김) — 회랑이 있는 섬에만 존재.
+  isle.built.vortexes?.forEach((vortex, emitterId) => {
     if (isle.challenge?.broken[emitterId]) {
       vortex.visible = false;
       return;
@@ -3620,20 +3663,24 @@ function isleAction(game, ui) {
     }
     return;
   }
+  if (spot.id === 'rumor-wall') {
+    game.audio?.playClick();
+    ui.dialogKicker.textContent = '소문의 벽';
+    ui.dialogTitle.textContent = '✨ 도트';
+    ui.dialogBody.innerHTML = speechHtml([
+      '"돌들이 웅얼웅얼… 전부 같은 말만 되풀이하고 있어. 어디서 시작된 이야기인지는 아무도 모르는데!"',
+      '"출처의 종의 울림이라면 흩을 수 있을 것 같아 — 먼저 고래 정령의 이야기를 들어 보자."'
+    ]);
+    openDialog(game, ui);
+    return;
+  }
   if (spot.id === 'spirit') {
     game.audio?.playClick();
-    ui.dialogKicker.textContent = '속삭임 곶';
-    ui.dialogTitle.textContent = '🕊️ 바닷새 정령';
-    ui.dialogBody.innerHTML = completed
-      ? speechHtml([
-          '"고마워, 수호자! 깃털이 다시 따뜻해졌어."',
-          '"기억해 줘 — 뾰족한 말은 방패로 막고, 나는 따뜻한 말만 남기기. 그거면 이 바다의 어떤 곶도 아프지 않아."'
-        ])
-      : speechHtml([
-          '"끼륵… 잘 와 주었어, 수호자. 미운 말들이 화살이 되어 깃털에 박혀 버렸어."',
-          '"한 번 내뱉은 말은 주워 담을 수 없어 — 그래서 이렇게 오래 아픈 거야."',
-          '"절벽의 「말-화살 회랑」에 잡음 발사대가 숨어 있어. 방패로 화살을 주인에게 되돌려 줘!"'
-        ]);
+    const content = ISLE_CONTENT[game.isle.stageId];
+    const stage = getStageById(game.isle.stageId);
+    ui.dialogKicker.textContent = stage.nameKo;
+    ui.dialogTitle.textContent = content.spiritNameKo;
+    ui.dialogBody.innerHTML = speechHtml(completed ? content.spiritHealedKo : content.spiritSickKo);
     openDialog(game, ui);
   }
 }
@@ -3647,7 +3694,7 @@ function finishCorridor(game, ui) {
   updateHud(game, ui);
   game.audio?.playNovaChime();
   triggerFlash(ui, '#ffe9b0');
-  ui.puzzleGoal.textContent = '정령이 건강해졌어요 — 곶이 고요합니다';
+  ui.puzzleGoal.textContent = ISLE_CONTENT[isle.stageId].healedGoalKo;
   ui.puzzleHint.textContent = '뗏목으로 돌아가면 다시 바다로';
   ui.dialogKicker.textContent = '속삭임 곶';
   ui.dialogTitle.textContent = '🕊️ 바닷새 정령';

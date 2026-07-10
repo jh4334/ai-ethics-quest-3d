@@ -53,11 +53,12 @@ test('markStageCompleted: 순수 함수 — 원본 불변, 알 수 없는 섬은
   assert.equal(next.stages['whisper-cape'].completed, true);
   assert.deepEqual(progress.stages, {});
   assert.throws(() => markStageCompleted(progress, 'atlantis'), RangeError);
-  // 섬1 완료가 사슬에 반영되는지: 섬2가 '준비 중'으로 풀린다.
+  // 섬1 완료가 사슬에 반영되는지: 섬2(메아리 동굴, built:true)가 '진행 중'으로 풀린다.
   const chained = { ...next, aiCoreCompleted: true };
   const states = getStageStates(chained);
   assert.equal(states[1].state, 'completed');
-  assert.equal(states[2].state, 'coming');
+  assert.equal(states[2].state, 'current');
+  assert.equal(states[3].state, 'locked');
 });
 
 test('normalizeStages: 알 수 없는 섬·깨진 값은 버리고 completed/visited만 남긴다', () => {

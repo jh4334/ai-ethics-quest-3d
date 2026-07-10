@@ -36,7 +36,7 @@ export const STAGES = [
     verbKo: '🔔 울림 충격파 · 🪞 정체 드러내기',
     emoji: '🕳️',
     sea: [12, -14],
-    built: false,
+    built: true,
     requires: 'whisper-cape'
   },
   {
