@@ -214,6 +214,24 @@ test('corridor: 회랑 도전은 순수 로직 + F 가드 라우팅 + 완료 전
   assert.match(mainSource, /healSpiritVisuals\(isle\.built\)/);
 });
 
+test('rumor wall: 순수 로직 + 종 라우팅 + blind 강제 + 완료 전이', () => {
+  const rumorSource = readFileSync(new URL('../src/rumorLogic.js', import.meta.url), 'utf8');
+  const isleSrc = readFileSync(new URL('../src/isle.js', import.meta.url), 'utf8');
+  // 순수 로직 + 결정성(라운드 원본 고정 시퀀스).
+  assert.doesNotMatch(rumorSource, /from 'three'/);
+  assert.doesNotMatch(rumorSource, /Math\.random/);
+  assert.match(rumorSource, /rounds: \['s3', 's0', 's2'\]/);
+  // 돌 좌표는 로직이 단일 출처 — 표현 계층이 읽는다.
+  assert.match(isleSrc, /RUMOR\.stones\.forEach/);
+  // F = 섬별 동사 디스패치(메아리 동굴 = 종).
+  assert.match(mainSource, /rumorBell\(game, ui\)/);
+  assert.match(mainSource, /function rumorBell/);
+  // 울림 없이 고르면 평가하지 않는다(검증 습관) + 클리어 → 완료 기록.
+  assert.match(rumorSource, /return \['blind'\]/);
+  assert.match(mainSource, /function finishRumor/);
+  assert.match(mainSource, /isle\.built\.heal\(\)/);
+});
+
 test('stage frame: 순수 데이터 모듈 + 세이브 v2 + 항로 지도', () => {
   const stageSource = readFileSync(new URL('../src/stageData.js', import.meta.url), 'utf8');
   const worldSource = readFileSync(new URL('../src/worldData.js', import.meta.url), 'utf8');

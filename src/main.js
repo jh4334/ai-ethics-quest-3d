@@ -37,6 +37,15 @@ import { SEA_APPROACH, SEA_RADIUS, SEA_SCALE, buildSeaScene, seaWorldPosition } 
 import { ISLE_RADIUS, ISLE_SCENES, healSpiritVisuals } from './isle.js';
 import { createCorridorState, stepCorridor } from './corridorLogic.js';
 import {
+  RUMOR,
+  chooseRumorStone,
+  createRumorState,
+  isEchoStone,
+  nearestRumorStone,
+  ringRumorBell,
+  tickRumor
+} from './rumorLogic.js';
+import {
   FINALE,
   buildNovaCertificate,
   getFinaleToolSteps,
@@ -2266,9 +2275,13 @@ function updateNearestInteractable(game, interactables, ui) {
 // 전투: 방패=가드(반사) · 종=울림 충격파 · 거울=약점 공개. 던전: 방별 동사(당기기/공명/판별).
 function useToolVerb(game, ui) {
   game.audio?.resume();
-  // 회랑 도전 중엔 F = 방패 가드(화살 되돌리기).
+  // 섬 도전 중엔 F = 그 섬의 동사(속삭임 곶 = 방패 가드, 메아리 동굴 = 종 울림).
   if (game.isle?.challenge && !game.isle.challenge.cleared) {
-    corridorGuard(game, ui);
+    if (game.isle.stageId === 'echo-cave') {
+      rumorBell(game, ui);
+    } else {
+      corridorGuard(game, ui);
+    }
     return;
   }
   if (game.combat?.active) {
@@ -2302,6 +2315,25 @@ function useToolVerb(game, ui) {
 // 🛡️ 방패 가드: 짧은 가드 자세 — 그 사이 잡음 파도가 닿으면 스턴 대신 반사한다.
 const GUARD_TIME = 0.55;
 const GUARD_COOLDOWN = 1.4;
+
+// 소문의 벽의 종 울림 — 전투 충격파와 같은 쿨다운 리듬. 판별 창을 연다.
+function rumorBell(game, ui) {
+  const isle = game.isle;
+  if (!isle || isle.bellCd > 0 || !isle.challenge || isle.challenge.cleared) {
+    return;
+  }
+  isle.bellCd = BELL_COOLDOWN;
+  ringRumorBell(isle.challenge);
+  isle.ringT = 0.6;
+  const ring = isle.built.bellRing;
+  if (ring) {
+    ring.position.set(game.player.position.x, 0.35, game.player.position.z);
+    ring.scale.set(1, 1, 1);
+    ring.visible = true;
+  }
+  game.audio?.playCorrect();
+  flashCombatPopup(ui, '🔔 울림! 메아리 돌이 부르르 떤다', 'match');
+}
 
 // 회랑 도전의 방패 가드 — 전투 가드와 같은 리듬(짧은 자세 + 쿨다운).
 function corridorGuard(game, ui) {
@@ -3498,7 +3530,7 @@ function enterIsle(game, ui, stageId) {
   rs.renderer.setClearColor(content.clearColor, 1);
 
   game.mode = 'isle';
-  game.isle = { built, stageId, nearestSpot: null, challenge: null, guard: 0, guardCd: 0 };
+  game.isle = { built, stageId, nearestSpot: null, challenge: null, guard: 0, guardCd: 0, bellCd: 0, ringT: 0 };
   game.keys.clear();
   game.player.position.set(-3.4, 0.55, 9.4); // 뗏목 옆 물가
   game.player.direction.set(0, 0, -1);
@@ -3563,16 +3595,46 @@ function updateIsle(delta, game, ui) {
     vortex.rotation.x = Math.sin(elapsed * 1.6) * 0.4;
   });
 
-  // 방패 가드 타이머.
+  // 방패 가드·종 쿨다운 타이머.
   if (isle.guard > 0) {
     isle.guard = Math.max(0, isle.guard - delta);
   }
   if (isle.guardCd > 0) {
     isle.guardCd = Math.max(0, isle.guardCd - delta);
   }
+  if (isle.bellCd > 0) {
+    isle.bellCd = Math.max(0, isle.bellCd - delta);
+  }
 
-  // 회랑 도전 진행.
-  if (isle.challenge && !isle.challenge.cleared) {
+  // 소문의 벽 도전(메아리 동굴) — 판별 창 감쇠 + 돌·울림 링 연출.
+  if (isle.stageId === 'echo-cave' && isle.challenge && !isle.challenge.cleared) {
+    tickRumor(isle.challenge, delta);
+    const reveal = isle.challenge.revealT > 0;
+    isle.built.rumorStones.forEach((stone, stoneId) => {
+      const echo = isEchoStone(isle.challenge, stoneId);
+      if (reveal) {
+        // 메아리 돌은 부르르, 원본 돌은 금빛으로 굳건.
+        stone.rotation.z = echo ? Math.sin(elapsed * 22 + stone.position.z * 3) * 0.09 : 0;
+        stone.material.emissive.setHex(echo ? 0x2c2440 : 0x8a6c20);
+        stone.material.emissiveIntensity = echo ? 0.6 : 1.1;
+      } else {
+        stone.rotation.z = 0;
+        stone.material.emissive.setHex(0x2c2440);
+        stone.material.emissiveIntensity = 0.6;
+      }
+    });
+    if (isle.ringT > 0) {
+      isle.ringT = Math.max(0, isle.ringT - delta);
+      const t = 1 - isle.ringT / 0.6;
+      const ring = isle.built.bellRing;
+      ring.scale.set(1 + t * 10, 1 + t * 10, 1);
+      ring.material.opacity = 0.7 * (1 - t);
+      ring.visible = isle.ringT > 0;
+    }
+  }
+
+  // 회랑 도전 진행(속삭임 곶).
+  if (isle.stageId === 'whisper-cape' && isle.challenge && !isle.challenge.cleared) {
     const events = stepCorridor(
       isle.challenge,
       delta,
@@ -3634,8 +3696,34 @@ function updateIsle(delta, game, ui) {
 }
 
 function isleAction(game, ui) {
-  const spot = game.isle?.nearestSpot;
-  if (!spot || !ui.dialog.hidden) {
+  if (!game.isle || !ui.dialog.hidden) {
+    return;
+  }
+  // 소문의 벽 도전 중: 돌 앞에서 A = 그 돌을 원본으로 지목.
+  if (game.isle.stageId === 'echo-cave' && game.isle.challenge && !game.isle.challenge.cleared) {
+    const stone = nearestRumorStone(game.player.position.x, game.player.position.z);
+    if (stone) {
+      const events = chooseRumorStone(game.isle.challenge, stone.id);
+      for (const event of events) {
+        if (event === 'blind') {
+          game.audio?.playClick();
+          flashCombatPopup(ui, '먼저 🔔 종(F/도구버튼)을 울려 살펴봐요', 'miss');
+        } else if (event === 'wrong') {
+          game.audio?.playWrong();
+          flashCombatPopup(ui, '메아리였다! 소문이 다시 웅성인다', 'miss');
+        } else if (event === 'correct') {
+          game.audio?.playCorrect();
+          flashCombatPopup(ui, `📜 원본을 찾았다! (${game.isle.challenge.round}/${RUMOR.rounds.length})`, 'match');
+          ui.puzzleHint.textContent = '소문이 옮겨 갔다 — 다시 종을 울려 살펴봐요';
+        } else if (event === 'cleared') {
+          finishRumor(game, ui);
+        }
+      }
+      return;
+    }
+  }
+  const spot = game.isle.nearestSpot;
+  if (!spot) {
     return;
   }
   const completed = game.progress.stages?.[game.isle.stageId]?.completed === true;
@@ -3664,14 +3752,22 @@ function isleAction(game, ui) {
     return;
   }
   if (spot.id === 'rumor-wall') {
-    game.audio?.playClick();
-    ui.dialogKicker.textContent = '소문의 벽';
-    ui.dialogTitle.textContent = '✨ 도트';
-    ui.dialogBody.innerHTML = speechHtml([
-      '"돌들이 웅얼웅얼… 전부 같은 말만 되풀이하고 있어. 어디서 시작된 이야기인지는 아무도 모르는데!"',
-      '"출처의 종의 울림이라면 흩을 수 있을 것 같아 — 먼저 고래 정령의 이야기를 들어 보자."'
-    ]);
-    openDialog(game, ui);
+    if (completed || game.isle.challenge?.cleared) {
+      game.audio?.playClick();
+      ui.dialogKicker.textContent = '소문의 벽';
+      ui.dialogTitle.textContent = '✨ 도트';
+      ui.dialogBody.innerHTML = speechHtml(['"벽이 고요해. 이제 이 동굴엔 진짜 목소리만 남았어 — 네 덕분이야."']);
+      openDialog(game, ui);
+      return;
+    }
+    if (!game.isle.challenge) {
+      // 도전 시작 — 소문이 세 번 밀려온다.
+      game.audio?.playNoiseGroan();
+      game.isle.challenge = createRumorState();
+      flashCombatPopup(ui, '🗿 돌들이 같은 소문을 웅얼거린다!', 'miss');
+      ui.puzzleGoal.textContent = `소문의 원본 돌을 ${RUMOR.rounds.length}번 찾아내세요`;
+      ui.puzzleHint.textContent = '🔔 종(F/도구버튼)을 울리면 메아리 돌이 떨려요 — 굳건한 돌 앞에서 A';
+    }
     return;
   }
   if (spot.id === 'spirit') {
@@ -3683,6 +3779,27 @@ function isleAction(game, ui) {
     ui.dialogBody.innerHTML = speechHtml(completed ? content.spiritHealedKo : content.spiritSickKo);
     openDialog(game, ui);
   }
+}
+
+// 소문의 벽 클리어: 고래 치유 + 스테이지 완료 기록(항로 지도 전이) + 감사 인사.
+function finishRumor(game, ui) {
+  const isle = game.isle;
+  isle.built.heal();
+  game.progress = markStageCompleted(game.progress, isle.stageId);
+  persistProgress(game.progress);
+  updateHud(game, ui);
+  game.audio?.playNovaChime();
+  triggerFlash(ui, '#bfe8f4');
+  ui.puzzleGoal.textContent = ISLE_CONTENT[isle.stageId].healedGoalKo;
+  ui.puzzleHint.textContent = '뗏목으로 돌아가면 다시 바다로';
+  ui.dialogKicker.textContent = '메아리 동굴';
+  ui.dialogTitle.textContent = '🐋 고래 정령';
+  ui.dialogBody.innerHTML = speechHtml([
+    '"메아리가… 멎었어. 이제 내 노래가 또렷하게 들려!"',
+    '"고마워, 수호자. 같은 이야기가 백 번 들려와도 원본은 하나야 — 종을 울리듯 늘 출처를 물어봐 줘."',
+    '"바다 남쪽에서 모래시계 흐르는 소리가 들려… 다음 섬의 친구도 부탁할게."'
+  ]);
+  openDialog(game, ui);
 }
 
 // 회랑 클리어: 정령 치유 + 스테이지 완료 기록(항로 지도 전이) + 감사 인사.
