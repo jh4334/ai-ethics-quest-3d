@@ -197,6 +197,17 @@ test('tool verbs exist: shield guard reflects waves, compass pulls crates (items
   assert.match(mainSource, /firstCrateInLine\(dg\.topicId/);
 });
 
+test('all four verbs are wired: bell shockwave/resonance and mirror reveal/lens', () => {
+  // 전투: 종 = 파도·예고 광역 소거(쿨다운), 거울 = 이번 껍질 약점 공개.
+  assert.match(mainSource, /function bellShockwave/);
+  assert.match(mainSource, /c\.bellCd = BELL_COOLDOWN/);
+  assert.match(mainSource, /function mirrorReveal/);
+  // 던전: 잡기 방 종 공명(어긋난 자리 반짝), 빛 방 거울 렌즈(가짜만 흔들림).
+  assert.match(mainSource, /function bellResonate/);
+  assert.match(mainSource, /function mirrorTruthLens/);
+  assert.match(mainSource, /dg\.lensT > 0 && !orb\.real/);
+});
+
 test('package engine range matches the locked Vite runtime floor', () => {
   assert.equal(packageJson.engines.node, '^20.19.0 || >=22.12.0');
 });

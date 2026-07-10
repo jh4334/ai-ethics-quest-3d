@@ -2112,15 +2112,34 @@ function updateNearestInteractable(game, interactables, ui) {
 }
 
 // 도구의 '동사' 발동(F/던전 도구버튼) — 도구는 열쇠가 아니라 세계와 상호작용하는 수단이다.
-// M1-S1: 전투 중 방패 = 타이밍 가드(파도 반사), 밀기 던전 = 나침반 끌어당기기.
+// 전투: 방패=가드(반사) · 종=울림 충격파 · 거울=약점 공개. 던전: 방별 동사(당기기/공명/판별).
 function useToolVerb(game, ui) {
   game.audio?.resume();
   if (game.combat?.active) {
-    shieldGuard(game, ui);
+    const toolId = game.combat.tools[game.combat.activeTool];
+    if (toolId === 'shield') {
+      shieldGuard(game, ui);
+    } else if (toolId === 'bell') {
+      bellShockwave(game, ui);
+    } else if (toolId === 'mirror') {
+      mirrorReveal(game, ui);
+    } else {
+      game.combat.hintHold = 1.4;
+      ui.bossHint.textContent = '🧭 나침반은 길을 찾는 도구 — 전투에선 방패·종·거울을 써 봐요';
+      game.audio?.playClick();
+    }
     return;
   }
-  if (game.dungeon?.active && game.dungeon.room.mechanic === 'push') {
+  const dg = game.dungeon;
+  if (!dg?.active) {
+    return;
+  }
+  if (dg.room.mechanic === 'push') {
     compassPull(game, ui);
+  } else if (dg.room.mechanic === 'carry') {
+    bellResonate(game, ui);
+  } else if (dg.room.mechanic === 'beam') {
+    mirrorTruthLens(game, ui);
   }
 }
 
@@ -2144,6 +2163,90 @@ function shieldGuard(game, ui) {
   game.audio?.playClick();
   ui.bossHint.textContent = '🛡️ 가드! 파도를 받아친다';
   c.hintHold = 0.8;
+}
+
+// 🔔 종 충격파(전투): 날아오는 파도와 발사 예고를 한 번에 흩어버린다. 광역 대신 쿨다운이 길다.
+const BELL_COOLDOWN = 4.0;
+
+function bellShockwave(game, ui) {
+  const c = game.combat;
+  if (!c || !c.active || c.stun > 0 || c.bellCd > 0) {
+    return;
+  }
+  c.bellCd = BELL_COOLDOWN;
+  const cleared = Boolean(c.projectile) || c.windup > 0;
+  if (c.projectile?.mesh) {
+    game.renderState.scene.remove(c.projectile.mesh);
+    c.projectile = null;
+    c.fireTimer = PHASE_FIRE[c.phase];
+  }
+  if (c.windup > 0) {
+    c.windup = 0;
+    c.fireTimer = PHASE_FIRE[c.phase];
+  }
+  game.audio?.playCoreAwaken();
+  addShake(game, 0.3);
+  flashCombatPopup(ui, cleared ? '🔔 울림! 잡음이 흩어졌다' : '🔔 울림!', 'hit');
+  ui.bossHint.textContent = cleared ? '출처의 종이 잡음을 걷어냈다' : '지금은 걷어낼 잡음이 없어요 — 파도가 올 때 울려요';
+  c.hintHold = 1.6;
+}
+
+// 🪞 거울 공개(전투): 다른 관점으로 비춰 이번 껍질의 약점 도구를 드러낸다(페이즈당 1회).
+function mirrorReveal(game, ui) {
+  const c = game.combat;
+  if (!c || !c.active || c.stun > 0) {
+    return;
+  }
+  if (c.revealed) {
+    ui.bossHint.textContent = '이미 훤히 보여요 — 그 도구로 공격!';
+    c.hintHold = 1.2;
+    game.audio?.playClick();
+    return;
+  }
+  c.revealed = true;
+  game.audio?.playNovaChime();
+  const weak = getToolById(c.weakToolId);
+  flashCombatPopup(ui, `🪞 ${weak?.emoji ?? ''} 보인다!`, 'hit');
+  ui.bossHint.textContent = `거울이 비춘 약점: ${weak?.emoji ?? ''} ${weak?.nameKo ?? ''}`;
+  c.hintHold = 2.0;
+  updateBossHud(game, ui);
+}
+
+// 🔔 종 공명(잡기 던전): 아직 제자리가 아닌 곳(빈 밭·중복 밭·미완 전시대)이 잠깐 반짝인다.
+const RESONATE_TIME = 1.6;
+
+function bellResonate(game, ui) {
+  const dg = game.dungeon;
+  if (!dg || !dg.active || dg.solved) {
+    return;
+  }
+  if (!(game.progress.tools ?? []).includes('bell')) {
+    ui.puzzleHint.textContent = '🔔 출처의 종이 있으면 아직 어긋난 곳을 울려 볼 수 있어요';
+    return;
+  }
+  dg.resonateT = RESONATE_TIME;
+  game.audio?.playNovaChime();
+  const left = countRemaining(dg.topicId, dg.state);
+  flashCombatPopup(ui, '🔔 공명!', 'hit');
+  ui.puzzleHint.textContent = `종이 울린다 — 반짝이는 ${left}곳이 아직 어긋나 있어요`;
+}
+
+// 🪞 진실의 렌즈(빛 던전): 잠깐 동안 가짜 구슬이 흔들려 보인다(진짜는 미동도 없다).
+const LENS_TIME = 2.2;
+
+function mirrorTruthLens(game, ui) {
+  const dg = game.dungeon;
+  if (!dg || !dg.active || dg.solved) {
+    return;
+  }
+  if (!(game.progress.tools ?? []).includes('mirror')) {
+    ui.puzzleHint.textContent = '🪞 다양성의 거울이 있으면 가짜를 비춰 볼 수 있어요';
+    return;
+  }
+  dg.lensT = LENS_TIME;
+  game.audio?.playNovaChime();
+  flashCombatPopup(ui, '🪞 비춘다!', 'hit');
+  ui.puzzleHint.textContent = '흔들리는 건 가짜예요 — 미동도 없는 얼굴에 빛을 보내요';
 }
 
 // 🧭 나침반 당기기: 바라보는 방향 직선의 첫 상자를 내 쪽으로 한 칸 끌어온다.
@@ -2923,7 +3026,9 @@ function enterDungeon(game, ui, topicId, shrineId) {
     awarded: false,
     actionCooldown: 0,
     failedPlacements: 0,
-    glowT: 0
+    glowT: 0,
+    resonateT: 0, // 🔔 공명 연출 남은 시간
+    lensT: 0 // 🪞 진실의 렌즈 남은 시간
   };
   game.player.position.set(spawn.x, 0.55, spawn.z);
   game.player.direction.set(0, 0, -1); // 방 안쪽(북)을 바라봄
@@ -3324,6 +3429,42 @@ function updateDungeon(delta, game, ui) {
       i += 1;
     }
   }
+  // 🔔 공명: 아직 어긋난 자리(빈 밭·중복 밭·미완 전시대)가 커졌다 작아지며 반짝인다.
+  if (dg.resonateT > 0) {
+    dg.resonateT = Math.max(0, dg.resonateT - delta);
+  }
+  const pulse = dg.resonateT > 0 ? 1 + (Math.sin(elapsed * 10) * 0.5 + 0.5) * 0.22 : 1;
+  if (dg.built.bedMeshes) {
+    const beds = dg.state.beds ?? [];
+    beds.forEach((color, i) => {
+      const mesh = dg.built.bedMeshes.get(i);
+      if (!mesh) {
+        return;
+      }
+      const duplicated = color !== null && beds.filter((b) => b === color).length > 1;
+      mesh.group.scale.setScalar(color === null || duplicated ? pulse : 1);
+    });
+  }
+  if (dg.built.exhibitMeshes && dg.state.exhibits) {
+    for (const [exId, mesh] of dg.built.exhibitMeshes.entries()) {
+      mesh.group.scale.setScalar(dg.state.exhibits[exId] === null ? pulse : 1);
+    }
+  }
+  // 🪞 진실의 렌즈: 가짜 구슬만 좌우로 흔들린다(진짜는 미동도 없다).
+  if (dg.lensT > 0) {
+    dg.lensT = Math.max(0, dg.lensT - delta);
+  }
+  if (dg.built.orbMeshes && dg.room.orbs) {
+    dg.room.orbs.forEach((orb, i) => {
+      const mesh = dg.built.orbMeshes.get(orb.id);
+      if (!mesh) {
+        return;
+      }
+      const base = cellToWorld(dg.topicId, orb.cell);
+      const jitter = dg.lensT > 0 && !orb.real ? Math.sin(elapsed * 26 + i * 2.4) * 0.09 : 0;
+      mesh.group.position.x = base.x + jitter;
+    });
+  }
 }
 
 function openCoreDialog(game, ui) {
@@ -3422,7 +3563,8 @@ function startBossFight(game, ui) {
     projectile: null,
     stun: 0,
     guard: 0, // 🛡️ 가드 자세 남은 시간(그 사이 파도가 닿으면 반사)
-    guardCd: 0
+    guardCd: 0,
+    bellCd: 0 // 🔔 충격파 쿨다운
   };
   syncBossWeakColor(game);
   ui.root.classList.add('is-combat');
@@ -3632,6 +3774,9 @@ function updateCombat(delta, game, ui) {
   }
   if (c.guardCd > 0) {
     c.guardCd = Math.max(0, c.guardCd - delta);
+  }
+  if (c.bellCd > 0) {
+    c.bellCd = Math.max(0, c.bellCd - delta);
   }
   const boss = game.renderState?.noiseBoss;
   if (boss && boss.kind === 'noise') {
