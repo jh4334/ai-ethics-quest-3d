@@ -460,6 +460,58 @@ try {
   }));
   check(turtle.dialog && (turtle.text.includes('모래시계') || turtle.text.includes('잠')), '등대거북 정령 대화(불면 증상·나침반 예고)');
   await closeDlg();
+
+  // ── 모래시계 사구: 나침반 당김 타이밍 → 3개 잠금 → 거북 숙면·완료 ──
+  await tp(-6.6, 0.6, 0, -1);
+  await p.waitForTimeout(1000);
+  await A(600);
+  const dunesOn = await p.evaluate(() => Boolean(window.__ethicsGame.isle?.challenge?.locked));
+  check(dunesOn, '사구 도전 시작(모래시계 흔들림)');
+  // 타이밍 미스: 최대 기울기 시점에 당기면 wobble(잠기지 않음).
+  await p.evaluate(() => {
+    const isle = window.__ethicsGame.isle;
+    isle.pullCd = 0;
+    isle.challenge.t = Math.PI / 0.9 + Math.PI / (2 * 0.9); // g1 최대 기울기
+    window.__ethicsGame.player.position.set(-6.4 + 0.6, 0.55, -3.2);
+  });
+  await p.keyboard.press('f');
+  await p.waitForTimeout(900);
+  const wobbled = await p.evaluate(() => window.__ethicsGame.isle.challenge.locked.g1 === false);
+  check(wobbled, '기울어진 순간의 당김은 실패(멈출 때 타이밍)');
+  // 각 모래시계: 똑바로 선 t로 워프 → F (느린 프레임 드리프트 대비 재시도).
+  const glasses = [
+    ['g1', -6.4, -3.2, Math.PI / 0.9],
+    ['g2', -8.6, 1.4, (Math.PI - 1.3) / 1.3],
+    ['g3', -4.6, 2.8, (Math.PI - 2.6) / 1.7]
+  ];
+  for (const [gid, gx, gz, tUp] of glasses) {
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      await p.evaluate(([gx, gz, tUp]) => {
+        const g = window.__ethicsGame;
+        g.isle.pullCd = 0;
+        g.isle.challenge.t = tUp;
+        g.player.position.set(gx + 0.6, 0.55, gz);
+      }, [gx, gz, tUp]);
+      await p.keyboard.press('f');
+      await p.waitForTimeout(900);
+      if (await p.evaluate((gid) => window.__ethicsGame.isle.challenge?.locked[gid] !== false, gid)) break;
+    }
+  }
+  const dunesDone = await p.evaluate(() => {
+    const g = window.__ethicsGame;
+    return {
+      cleared: g.isle.challenge?.cleared === true,
+      completed: g.progress.stages['hourglass-port']?.completed === true,
+      sand: [...g.isle.built.sandCores.values()].every((s) => s.visible),
+      thanks: !window.__ethicsUi.dialog.hidden
+    };
+  });
+  check(
+    dunesDone.cleared && dunesDone.completed && dunesDone.sand && dunesDone.thanks,
+    '사구 클리어 → 거북 숙면 + 스테이지 완료 기록 + 감사 대화'
+  );
+  await closeDlg();
+
   await tp(-3.4, 10.0, 0, 1);
   await p.waitForTimeout(1000);
   await A(800);

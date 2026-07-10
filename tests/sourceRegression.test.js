@@ -233,6 +233,19 @@ test('rumor wall: 순수 로직 + 종 라우팅 + blind 강제 + 완료 전이',
   assert.match(mainSource, /isle\.built\.heal\(\)/);
 });
 
+test('dunes: 순수 로직 + 나침반 라우팅 + 타이밍 잠금 + 완료 전이', () => {
+  const dunesSource = readFileSync(new URL('../src/dunesLogic.js', import.meta.url), 'utf8');
+  const isleSrc2 = readFileSync(new URL('../src/isle.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(dunesSource, /from 'three'/);
+  assert.doesNotMatch(dunesSource, /Math\.random/);
+  // 모래시계 좌표·주기는 로직이 단일 출처 — 표현 계층이 읽는다.
+  assert.match(isleSrc2, /DUNES\.glasses\.forEach/);
+  // F = 섬별 동사 디스패치(모래시계 항구 = 당기기) + 잠금은 창 안에서만.
+  assert.match(mainSource, /dunesPull\(game, ui\)/);
+  assert.match(dunesSource, /lockWindow/);
+  assert.match(mainSource, /function finishDunes/);
+});
+
 test('stage frame: 순수 데이터 모듈 + 세이브 v2 + 항로 지도', () => {
   const stageSource = readFileSync(new URL('../src/stageData.js', import.meta.url), 'utf8');
   const worldSource = readFileSync(new URL('../src/worldData.js', import.meta.url), 'utf8');
