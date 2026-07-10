@@ -157,6 +157,22 @@ test('certificate has a handwriting name line (no input — privacy stays zero)'
   assert.doesNotMatch(mainSource, /<input[^>]*name/);
 });
 
+test('scene BGM: three procedural layers crossfade on dungeon/boss transitions (no assets, no timers)', () => {
+  const audioSource = readFileSync(new URL('../src/audio.js', import.meta.url), 'utf8');
+  // 3레이어(오버월드/던전/보스) + 크로스페이드 API.
+  assert.match(audioSource, /setMusicMode/);
+  assert.match(audioSource, /MUSIC_LEVEL = \{ overworld:/);
+  assert.match(audioSource, /function applyMusicMode/);
+  // 리듬은 setInterval/타이머가 아니라 LFO 게이팅 — 결정적이고 저렴하다.
+  assert.match(audioSource, /gateHz/);
+  assert.doesNotMatch(audioSource, /setInterval/);
+  assert.doesNotMatch(audioSource, /Math\.random/);
+  // 장면 전환 지점에서 모드가 바뀐다: 던전 진입·퇴장, 보스 시작·격파.
+  assert.match(mainSource, /setMusicMode\?\.\('dungeon'\)/);
+  assert.match(mainSource, /setMusicMode\?\.\('boss'\)/);
+  assert.ok((mainSource.match(/setMusicMode\?\.\('overworld'\)/g) ?? []).length >= 2);
+});
+
 test('package engine range matches the locked Vite runtime floor', () => {
   assert.equal(packageJson.engines.node, '^20.19.0 || >=22.12.0');
 });

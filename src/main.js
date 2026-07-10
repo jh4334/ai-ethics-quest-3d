@@ -2834,6 +2834,7 @@ function enterDungeon(game, ui, topicId, shrineId) {
 
   triggerFlash(ui, '#ffffff');
   game.audio?.playClick();
+  game.audio?.setMusicMode?.('dungeon'); // 신비로운 던전 BGM으로 크로스페이드
   ui.root.classList.add('is-combat'); // A 버튼 강조
   const ACTION_LABEL = { push: '밀기', carry: '잡기', beam: '돌리기' };
   const FIRST_HINT = {
@@ -2871,6 +2872,7 @@ function exitDungeon(game, ui) {
   game.mode = 'overworld';
   game.dungeon = null;
   game.keys.clear();
+  game.audio?.setMusicMode?.('overworld'); // 섬 패드로 복귀
 
   const back = dg.returnPosition;
   game.player.position.copy(back);
@@ -3292,6 +3294,7 @@ function startBossFight(game, ui) {
     game.renderState.companion.visible = false; // 도트는 후드로 숨는다
   }
   game.audio?.resume();
+  game.audio?.setMusicMode?.('boss'); // 맥동하는 긴장 BGM
   game.audio?.playNoiseGroan();
   // 페이즈 1(개인정보)부터 — 각 페이즈는 그 주제의 아이템만 통한다.
   const tools = owned.slice();
@@ -3620,6 +3623,7 @@ function winBossFight(game, ui) {
     boss.baseZ = 0;
     boss.targetScale = 0.42; // 지쳐 작게 웅크린다
   }
+  game.audio?.setMusicMode?.('overworld'); // 긴장 해제 — 섬 패드로
   game.audio?.playCorrect();
   addShake(game, 0.55);
   game.hitStop = 0.09;
