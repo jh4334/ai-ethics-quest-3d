@@ -7,9 +7,13 @@ const AudioContextClass =
 export function createAudioEngine() {
   let ctx = null;
   let master = null;
-  let ambientGain = null;
   let muted = false;
   let started = false;
+  // 장면별 BGM 레이어 — 셋 다 상시 재생하고 게인 크로스페이드로 전환한다.
+  // (오실레이터 소수 + LFO 게이팅이라 저사양에도 부담 없고, 타이머가 없어 결정적이다.)
+  let musicLayers = null;
+  let musicMode = 'overworld';
+  const MUSIC_LEVEL = { overworld: 0.06, dungeon: 0.055, boss: 0.075 };
 
   function ensureContext() {
     if (!AudioContextClass) {
@@ -24,7 +28,7 @@ export function createAudioEngine() {
     return ctx;
   }
 
-  // 첫 상호작용에서 호출 — 오디오 컨텍스트를 깨우고 잔잔한 배경 패드를 시작한다.
+  // 첫 상호작용에서 호출 — 오디오 컨텍스트를 깨우고 장면 BGM을 시작한다.
   function resume() {
     const context = ensureContext();
     if (!context) {
@@ -35,34 +39,87 @@ export function createAudioEngine() {
     }
     if (!started) {
       started = true;
-      startAmbient();
+      startMusic();
     }
   }
 
-  function startAmbient() {
-    if (!ctx || ambientGain) {
-      return;
+  // 지속음 오실레이터 한 줄: freq를 lfo로 살짝 흔들거나(비브라토), gateHz로 뚝뚝 끊는다(맥동).
+  function voice(target, { freq, type = 'sine', level = 1, vibratoHz = 0, vibratoDepth = 0, gateHz = 0 }) {
+    const osc = ctx.createOscillator();
+    osc.type = type;
+    osc.frequency.value = freq;
+    let out = target;
+    if (level !== 1 || gateHz) {
+      const g = ctx.createGain();
+      g.gain.value = gateHz ? 0.5 * level : level;
+      if (gateHz) {
+        // 사각파 LFO(-0.5~0.5)를 더해 0↔level로 게이팅 — 타이머 없는 리듬.
+        const gate = ctx.createOscillator();
+        gate.type = 'square';
+        gate.frequency.value = gateHz;
+        const gateGain = ctx.createGain();
+        gateGain.gain.value = 0.5 * level;
+        gate.connect(gateGain);
+        gateGain.connect(g.gain);
+        gate.start();
+      }
+      osc.connect(g);
+      g.connect(target);
+      out = g;
+    } else {
+      osc.connect(target);
     }
-    ambientGain = ctx.createGain();
-    ambientGain.gain.value = 0.0;
-    ambientGain.connect(master);
-    // 낮은 두 음을 겹쳐 은은한 섬 분위기 패드를 만든다.
-    for (const freq of [110, 164.81]) {
-      const osc = ctx.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
+    if (vibratoHz) {
       const lfo = ctx.createOscillator();
       lfo.type = 'sine';
-      lfo.frequency.value = 0.08;
+      lfo.frequency.value = vibratoHz;
       const lfoGain = ctx.createGain();
-      lfoGain.gain.value = 3;
+      lfoGain.gain.value = vibratoDepth;
       lfo.connect(lfoGain);
       lfoGain.connect(osc.frequency);
-      osc.connect(ambientGain);
-      osc.start();
       lfo.start();
     }
-    ambientGain.gain.linearRampToValueAtTime(0.06, ctx.currentTime + 2.5);
+    osc.start();
+    return out;
+  }
+
+  function startMusic() {
+    if (!ctx || musicLayers) {
+      return;
+    }
+    musicLayers = {};
+    for (const name of ['overworld', 'dungeon', 'boss']) {
+      const gain = ctx.createGain();
+      gain.gain.value = 0;
+      gain.connect(master);
+      musicLayers[name] = gain;
+    }
+    // 오버월드 — 낮은 두 음의 은은한 섬 패드(기존 분위기 유지).
+    voice(musicLayers.overworld, { freq: 110, vibratoHz: 0.08, vibratoDepth: 3 });
+    voice(musicLayers.overworld, { freq: 164.81, vibratoHz: 0.08, vibratoDepth: 3 });
+    // 던전 — 단3도 저음 드론 + 아주 느리게 반짝이는 높은 물방울(신비·수수께끼).
+    voice(musicLayers.dungeon, { freq: 87.31, vibratoHz: 0.05, vibratoDepth: 2 });
+    voice(musicLayers.dungeon, { freq: 103.83, vibratoHz: 0.07, vibratoDepth: 2 });
+    voice(musicLayers.dungeon, { freq: 523.25, type: 'triangle', level: 0.12, gateHz: 0.14 });
+    // 보스 — 낮은 톱니 드론 + 2.2Hz로 맥동하는 단3도(긴장, 위협적이지 않게 작게).
+    voice(musicLayers.boss, { freq: 55, type: 'sawtooth', level: 0.5, vibratoHz: 0.3, vibratoDepth: 1.5 });
+    voice(musicLayers.boss, { freq: 110, type: 'triangle', level: 0.8, gateHz: 2.2 });
+    voice(musicLayers.boss, { freq: 130.81, type: 'triangle', level: 0.6, gateHz: 1.1 });
+    applyMusicMode(2.5);
+  }
+
+  // 현재 모드의 레이어만 들리게 크로스페이드.
+  function applyMusicMode(seconds = 1.2) {
+    if (!ctx || !musicLayers) {
+      return;
+    }
+    const now = ctx.currentTime;
+    for (const [name, gain] of Object.entries(musicLayers)) {
+      const target = name === musicMode ? MUSIC_LEVEL[name] : 0;
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(gain.gain.value, now);
+      gain.gain.linearRampToValueAtTime(target, now + seconds);
+    }
   }
 
   // 짧은 톤 하나를 재생하는 공통 헬퍼.
@@ -101,6 +158,14 @@ export function createAudioEngine() {
 
   return {
     resume,
+    // 장면 전환 BGM: 'overworld' | 'dungeon' | 'boss'. 컨텍스트가 아직 없으면 모드만 기억해 둔다.
+    setMusicMode(mode) {
+      if (!MUSIC_LEVEL[mode] || mode === musicMode) {
+        return;
+      }
+      musicMode = mode;
+      applyMusicMode();
+    },
     isMuted: () => muted,
     toggleMute() {
       muted = !muted;
