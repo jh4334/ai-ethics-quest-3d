@@ -22,6 +22,7 @@ import {
   computeBeamPath,
   countRemaining,
   createRoomState,
+  firstCrateInLine,
   getDungeonRoom,
   hasDungeonRoom,
   isRoomSolved,
@@ -1513,6 +1514,11 @@ function bindInput(game, ui) {
       event.preventDefault();
       toggleJournal(game, ui);
     }
+    // F: 도구의 '동사' 발동 — 전투에선 방패 가드, 밀기 던전에선 나침반 끌어당기기.
+    if (!isFormControl && !event.repeat && event.code === 'KeyF') {
+      event.preventDefault();
+      useToolVerb(game, ui);
+    }
     // 전투 중 도구 바꾸기: Q(순환) / 1~4(직접 선택).
     if (game.combat?.active && (event.code === 'KeyQ' || event.code === 'Tab')) {
       event.preventDefault();
@@ -1547,7 +1553,14 @@ function bindInput(game, ui) {
       if (action === 'action') {
         primaryAction(game, ui);
       } else if (action === 'tool') {
-        cycleActiveTool(game, ui, 1);
+        // 던전 = 동사 발동(나침반 당기기). 전투 = 방패를 들었으면 가드, 아니면 도구 전환(벨트 탭으로도 전환 가능).
+        if (game.dungeon?.active) {
+          useToolVerb(game, ui);
+        } else if (game.combat?.active && game.combat.tools[game.combat.activeTool] === 'shield') {
+          useToolVerb(game, ui);
+        } else {
+          cycleActiveTool(game, ui, 1);
+        }
       } else {
         game.keys.add(action);
       }
@@ -2095,6 +2108,92 @@ function updateNearestInteractable(game, interactables, ui) {
       ui.prompt.hidden = false;
       ui.prompt.textContent = MOVE_HINT;
     }
+  }
+}
+
+// 도구의 '동사' 발동(F/던전 도구버튼) — 도구는 열쇠가 아니라 세계와 상호작용하는 수단이다.
+// M1-S1: 전투 중 방패 = 타이밍 가드(파도 반사), 밀기 던전 = 나침반 끌어당기기.
+function useToolVerb(game, ui) {
+  game.audio?.resume();
+  if (game.combat?.active) {
+    shieldGuard(game, ui);
+    return;
+  }
+  if (game.dungeon?.active && game.dungeon.room.mechanic === 'push') {
+    compassPull(game, ui);
+  }
+}
+
+// 🛡️ 방패 가드: 짧은 가드 자세 — 그 사이 잡음 파도가 닿으면 스턴 대신 반사한다.
+const GUARD_TIME = 0.55;
+const GUARD_COOLDOWN = 1.4;
+
+function shieldGuard(game, ui) {
+  const c = game.combat;
+  if (!c || !c.active || c.stun > 0 || c.guardCd > 0) {
+    return;
+  }
+  if (c.tools[c.activeTool] !== 'shield') {
+    ui.bossHint.textContent = '막으려면 🛡️ 약속의 방패를 들어요 (Q/벨트로 전환)';
+    c.hintHold = 1.4;
+    game.audio?.playClick();
+    return;
+  }
+  c.guard = GUARD_TIME;
+  c.guardCd = GUARD_COOLDOWN;
+  game.audio?.playClick();
+  ui.bossHint.textContent = '🛡️ 가드! 파도를 받아친다';
+  c.hintHold = 0.8;
+}
+
+// 🧭 나침반 당기기: 바라보는 방향 직선의 첫 상자를 내 쪽으로 한 칸 끌어온다.
+const PULL_RANGE = 5;
+
+function compassPull(game, ui) {
+  const dg = game.dungeon;
+  if (!dg || !dg.active || dg.solved || dg.actionCooldown > 0) {
+    return;
+  }
+  if (!(game.progress.tools ?? []).includes('compass')) {
+    ui.puzzleHint.textContent = '🧭 진실의 나침반이 있으면 멀리 있는 상자를 끌어올 수 있어요';
+    return;
+  }
+  dg.actionCooldown = DUNGEON_PUSH_COOLDOWN;
+  const dir = facingGridDir(game.player.direction);
+  const playerCell = worldToCell(dg.topicId, game.player.position.x, game.player.position.z);
+  const crateId = firstCrateInLine(dg.topicId, dg.state, playerCell, dir, PULL_RANGE);
+  if (!crateId) {
+    game.audio?.playClick();
+    ui.puzzleHint.textContent = '🧭 시선 방향에 끌어올 상자가 없어요';
+    return;
+  }
+  // 당기기 = 상자를 플레이어 쪽(-dir)으로 한 칸. 내 발밑까지는 못 온다.
+  const pullDir = [-dir[0], -dir[1]];
+  const cur = dg.state.crates[crateId];
+  const dest = [cur[0] + pullDir[0], cur[1] + pullDir[1]];
+  if (dest[0] === playerCell[0] && dest[1] === playerCell[1]) {
+    game.audio?.playClick();
+    ui.puzzleHint.textContent = '이미 코앞이에요 — A로 밀어요';
+    return;
+  }
+  const result = pushCrate(dg.topicId, dg.state, crateId, pullDir);
+  if (result.event === 'wrong-zone') {
+    dungeonRefuse(game, ui, '거기엔 안 돼요!', '내 것만 공개 게시판에, 친구 것은 잠금 금고에!');
+    return;
+  }
+  if (!result.moved) {
+    game.audio?.playClick();
+    return;
+  }
+  dg.state = result.state;
+  syncDungeon(dg);
+  game.audio?.[result.event === 'placed' ? 'playCorrect' : 'playClick']?.();
+  flashCombatPopup(ui, '🧭 끌어당김!', 'hit');
+  if (isRoomSolved(dg.topicId, dg.state)) {
+    markDungeonSolved(game, ui);
+  } else {
+    const left = countRemaining(dg.topicId, dg.state);
+    ui.puzzleHint.textContent = `상자 ${left}개가 아직 제자리가 아니에요`;
   }
 }
 
@@ -2850,6 +2949,10 @@ function enterDungeon(game, ui, topicId, shrineId) {
   ui.puzzleTitle.textContent = `🧩 ${room.titleKo}`;
   ui.puzzleGoal.textContent = room.goalKo;
   ui.puzzleHint.textContent = FIRST_HINT[room.mechanic] ?? '';
+  // 나침반을 얻었다면 밀기 방에서 '끌어당기기' 동사를 알려준다.
+  if (room.mechanic === 'push' && (game.progress.tools ?? []).includes('compass')) {
+    ui.puzzleHint.textContent += ' · 도구버튼(F) 🧭 끌어당기기';
+  }
   // 초기 상태를 비주얼에 반영(빔 방은 초기 광선 경로 포함).
   syncDungeonVisuals(topicId, built, game.dungeon.state, {
     beam: room.mechanic === 'beam' ? computeBeamPath(topicId, game.dungeon.state) : undefined
@@ -3317,7 +3420,9 @@ function startBossFight(game, ui) {
     fireTimer: PHASE_FIRE[0],
     windup: 0,
     projectile: null,
-    stun: 0
+    stun: 0,
+    guard: 0, // 🛡️ 가드 자세 남은 시간(그 사이 파도가 닿으면 반사)
+    guardCd: 0
   };
   syncBossWeakColor(game);
   ui.root.classList.add('is-combat');
@@ -3522,6 +3627,12 @@ function updateCombat(delta, game, ui) {
   if (c.hintHold > 0) {
     c.hintHold = Math.max(0, c.hintHold - delta);
   }
+  if (c.guard > 0) {
+    c.guard = Math.max(0, c.guard - delta);
+  }
+  if (c.guardCd > 0) {
+    c.guardCd = Math.max(0, c.guardCd - delta);
+  }
   const boss = game.renderState?.noiseBoss;
   if (boss && boss.kind === 'noise') {
     c.driftAngle += delta * 0.5;
@@ -3537,7 +3648,15 @@ function updateCombat(delta, game, ui) {
       pr.mesh.position.set(pr.x, 1.2, pr.z);
       pr.mesh.rotation.x += delta * 6;
       const hit = Math.hypot(game.player.position.x - pr.x, game.player.position.z - pr.z) < PROJECTILE_HIT;
-      if (hit && c.stun <= 0) {
+      if (hit && c.guard > 0) {
+        // 🛡️ 가드 성공: 스턴 대신 파도를 받아쳐 흩어버린다.
+        game.audio?.playCorrect();
+        flashCombatPopup(ui, '🛡️ 반사!', 'hit');
+        addShake(game, 0.2);
+        game.hitStop = 0.05;
+        ui.bossHint.textContent = '멋진 가드! 약속은 방패가 된다';
+        c.hintHold = 1.4;
+      } else if (hit && c.stun <= 0) {
         staggerPlayer(game, ui);
       }
       if (hit || pr.life <= 0) {
@@ -3568,7 +3687,9 @@ function updateCombat(delta, game, ui) {
         const weak = getToolById(c.weakToolId);
         ui.bossHint.textContent = `${weak?.emoji ?? ''} ${weak?.nameKo ?? ''}(으)로 바꿔서 공격!`;
       } else {
-        ui.bossHint.textContent = '이 상황엔 어떤 약속이 필요할까? 도구를 골라 공격!';
+        ui.bossHint.textContent = c.tools[c.activeTool] === 'shield'
+          ? '이 상황엔 어떤 약속이 필요할까? 공격! (도구버튼/F: 🛡️ 가드)'
+          : '이 상황엔 어떤 약속이 필요할까? 도구를 골라 공격!';
       }
     }
   }

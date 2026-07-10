@@ -185,6 +185,18 @@ test('mobile HUD stays minimal: one-line objective, small popups, clamped dungeo
   assert.match(mobile, /\.class-hint \{\s*\n?\s*display: none/);
 });
 
+test('tool verbs exist: shield guard reflects waves, compass pulls crates (items are verbs, not keys)', () => {
+  // 동사 시스템 진입점 + F키/터치 도구버튼 라우팅.
+  assert.match(mainSource, /function useToolVerb/);
+  assert.match(mainSource, /event\.code === 'KeyF'/);
+  // 방패 가드: 가드 중 파도 명중은 스턴 대신 반사.
+  assert.match(mainSource, /function shieldGuard/);
+  assert.match(mainSource, /hit && c\.guard > 0/);
+  // 나침반 당기기: 시선 직선 탐색 후 플레이어 쪽으로 한 칸(발밑 금지).
+  assert.match(mainSource, /function compassPull/);
+  assert.match(mainSource, /firstCrateInLine\(dg\.topicId/);
+});
+
 test('package engine range matches the locked Vite runtime floor', () => {
   assert.equal(packageJson.engines.node, '^20.19.0 || >=22.12.0');
 });

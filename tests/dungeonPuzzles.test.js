@@ -6,6 +6,7 @@ import {
   computeBeamPath,
   countRemaining,
   createRoomState,
+  firstCrateInLine,
   getDungeonRoom,
   hasDungeonRoom,
   isRoomSolved,
@@ -336,6 +337,22 @@ test('deepfake rotateMirror toggles and is pure/deterministic; bad id is a no-op
   const p1 = computeBeamPath('deepfake', { mirrors: { m1: 0, m2: 1, m3: 1 } });
   const p2 = computeBeamPath('deepfake', { mirrors: { m1: 0, m2: 1, m3: 1 } });
   assert.deepEqual(p1, p2);
+});
+
+// ── compass pull (나침반 끌어당기기) 탐색 ─────────────────────
+
+test('firstCrateInLine finds the nearest crate along the facing axis within range', () => {
+  const state = createRoomState('privacy'); // p1[3,3] p2[5,3] p3[4,4]
+  // [0,3]에서 동쪽을 보면 3칸 앞의 p1이 먼저 잡힌다(p2는 그 뒤).
+  assert.equal(firstCrateInLine('privacy', state, [0, 3], [1, 0]), 'p1');
+  // [4,6]에서 북쪽을 보면 2칸 앞의 p3.
+  assert.equal(firstCrateInLine('privacy', state, [4, 6], [0, -1]), 'p3');
+  // 사거리 밖(기본 5칸)이면 null: [0,3]→동쪽 p1은 3칸이라 잡히지만, 사거리 2로 줄이면 못 잡는다.
+  assert.equal(firstCrateInLine('privacy', state, [0, 3], [1, 0], 2), null);
+  // 상자가 없는 방향은 null, 경계 밖으로 나가도 null.
+  assert.equal(firstCrateInLine('privacy', state, [0, 0], [0, -1]), null);
+  // push 방이 아니면 null(안전).
+  assert.equal(firstCrateInLine('bias', createRoomState('bias'), [4, 6], [0, -1]), null);
 });
 
 // ── shared generics work across new rooms ───────────────────
