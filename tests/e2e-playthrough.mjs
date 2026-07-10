@@ -245,6 +245,16 @@ try {
   const journal = await p.evaluate(() => window.__ethicsUi.journalContent?.innerText ?? '');
   check(journal.length > 400 && journal.includes('개인정보'), `학습 리포트 렌더(${journal.length}자)`);
 
+  // ── 항로 지도(스테이지 프레임): 보스 격파 후 프롤로그=완료, 섬1=준비 중 ──
+  const voyage = await p.evaluate(() => {
+    const items = [...document.querySelectorAll('[data-voyage-map] .voyage-list li')];
+    return items.map((li) => li.dataset.state);
+  });
+  check(
+    voyage.length === 6 && voyage[0] === 'completed' && voyage[1] === 'coming' && voyage[5] === 'locked',
+    `항로 지도 6섬 상태(${voyage.join(',')})`
+  );
+
   check(errs.length === 0, `콘솔·페이지 에러 0 (실제 ${errs.length}${errs.length ? ': ' + errs[0] : ''})`);
 } catch (e) {
   failures.push('예외: ' + e.message);
