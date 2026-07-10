@@ -205,7 +205,12 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
       delta = raw * 0.06;
     }
     if (game.started && !game.paused) {
-      updateGame(delta, game, renderState, ui);
+      // 프롤로그 시네마틱 중에는 카메라를 키프레임이 소유한다(플레이어 추종·조작 정지).
+      if (game.cinematic) {
+        updateCinematic(raw, game, renderState, ui);
+      } else {
+        updateGame(delta, game, renderState, ui);
+      }
     }
     updateAmbient(raw, renderState);
     if (renderState.composer) {
@@ -266,6 +271,13 @@ function createShell() {
       </button>
 
       <div class="screen-flash" data-flash></div>
+
+      <div class="cinematic" data-cinematic hidden aria-label="프롤로그 연출">
+        <div class="cine-bar cine-bar-top"></div>
+        <div class="cine-bar cine-bar-bottom"></div>
+        <div class="cine-caption" data-cine-caption aria-live="polite"></div>
+        <button type="button" class="cine-skip" data-prologue-skip>건너뛰기 ▸</button>
+      </div>
 
       <aside class="journal-panel" data-journal hidden>
         <div class="panel-heading">
@@ -375,6 +387,9 @@ function bindUi(root) {
     toolBelt: root.querySelector('[data-tool-belt]'),
     soundToggle: root.querySelector('[data-sound-toggle]'),
     flash: root.querySelector('[data-flash]'),
+    cinematic: root.querySelector('[data-cinematic]'),
+    cineCaption: root.querySelector('[data-cine-caption]'),
+    cineSkip: root.querySelector('[data-prologue-skip]'),
     title: root.querySelector('[data-title]'),
     titleActions: root.querySelector('[data-title-actions]'),
     rotateHint: root.querySelector('[data-rotate-hint]'),
@@ -443,6 +458,7 @@ function createGameState(ui) {
     combat: null,
     puzzle: null,
     dungeon: null,
+    cinematic: null,
     mode: 'overworld',
     finaleResolving: false,
     hitStop: 0,
@@ -1669,60 +1685,137 @@ function dismissTitle(game, ui) {
     ui.title.classList.add('is-hidden');
     window.setTimeout(() => {
       ui.title.hidden = true;
-      // 첫 플레이라면 프롤로그로 이야기를 열어 준다.
+      // 첫 플레이라면 인엔진 시네마틱으로 이야기를 열어 준다.
       if (!game.progress.prologueSeen) {
-        openPrologue(game, ui);
+        startPrologueCinematic(game, ui);
       }
     }, 420);
   }
 }
 
-// 프롤로그 시퀀스: 해변 각성 → 도트 마중 → 노이즈 위기 → 첫 목표. 한 번 보면 다시 안 나온다.
-function openPrologue(game, ui) {
-  ui.dialogKicker.textContent = PROLOGUE.titleKo;
-  ui.dialogTitle.textContent = '낯선 섬의 해변';
+// 프롤로그 인엔진 시네마틱 — 카메라 플라이오버 + 레터박스 + 자막 카드. 외부 영상 파일 0.
+// 키프레임은 전부 상수(초 단위)라 결정적이다. 마지막 키(플레이어 추종 위치로 수렴)는
+// 시작 시점의 플레이어 좌표로 계산해 붙인다 — snapCamera/updateCamera 상수와 반드시 일치.
+const CINEMATIC_KEYS = [
+  { t: 0, pos: [0, 9.5, 16], look: [0, 1.4, 0] }, // 타이틀 전경을 그대로 이어받는다
+  { t: 3.6, pos: [0, 26, 36], look: [0, 0.5, 0] }, // 상승 — 섬 전체가 한눈에
+  { t: 7.4, pos: [-19, 13, 13], look: [-10, 1, -6] }, // 서쪽 사당 지붕을 스치듯
+  { t: 11.2, pos: [16, 11, -9], look: [10, 1, 4] } // 잿빛 안개 지대를 가로질러
+];
+const CINEMATIC_LAST_KEY_T = 14.6; // 여기서 플레이어 추종 위치에 도착
+const CINEMATIC_END = 15.4;
+// 자막 카드: PROLOGUE 비트를 그대로 재사용한다(스토리 데이터 단일 출처).
+const CINEMATIC_CAPTIONS = [
+  { beat: 0, from: 0.9, to: 6.8 },
+  { beat: 1, from: 7.8, to: 14.0 },
+  { beat: 'closing', from: 14.2, to: 15.3 }
+];
 
-  const render = (index) => {
-    const beat = PROLOGUE.beats[index];
-    const isLast = index + 1 >= PROLOGUE.beats.length;
-    const speaker = beat.speakerKo
-      ? `<p class="finale-tool">${beat.speakerKo === '도트' ? '✨ ' : ''}${beat.speakerKo}</p>`
-      : '';
-    const lines = beat.linesKo.map((text) => `<p class="finale-line">${text}</p>`).join('');
-    ui.dialogBody.innerHTML = `
-      <div class="finale-scene" data-noise="big">
-        <p class="finale-count">프롤로그 ${index + 1}/${PROLOGUE.beats.length}</p>
-        ${speaker}
-        ${lines}
-      </div>
-      <div class="finale-nav">
-        <button type="button" class="finale-next" data-prologue-next>
-          ${isLast ? `${PROLOGUE.closingKo} →` : '다음 →'}
-        </button>
-        ${isLast ? '' : '<button type="button" class="finale-skip" data-prologue-skip>건너뛰기</button>'}
-      </div>
-    `;
-    const finish = () => {
-      game.progress = { ...game.progress, prologueSeen: true };
-      persistProgress(game.progress);
-      closeDialog(game, ui);
-    };
-    ui.dialogBody.querySelector('[data-prologue-next]').addEventListener('click', () => {
-      game.audio?.playClick();
-      if (isLast) {
-        finish();
-      } else {
-        render(index + 1);
+function startPrologueCinematic(game, ui) {
+  if (!ui.cinematic) {
+    // 안전망: 오버레이가 없으면 연출 없이 본 것으로 처리한다.
+    game.progress = { ...game.progress, prologueSeen: true };
+    persistProgress(game.progress);
+    return;
+  }
+  const p = game.player.position;
+  game.cinematic = {
+    t: 0,
+    captionKey: null,
+    keys: [
+      ...CINEMATIC_KEYS,
+      {
+        t: CINEMATIC_LAST_KEY_T,
+        pos: [p.x * 0.6, p.y + 8.7, p.z + 13.8],
+        look: [p.x * 0.4, p.y + 1.35, p.z - 1.2]
       }
-    });
-    ui.dialogBody.querySelector('[data-prologue-skip]')?.addEventListener('click', () => {
-      game.audio?.playClick();
-      finish();
-    });
+    ]
   };
+  ui.cineCaption.classList.remove('is-visible');
+  ui.cinematic.hidden = false;
+  void ui.cinematic.offsetWidth; // 리플로우로 레터박스 슬라이드 인 트랜지션 재생
+  ui.cinematic.classList.add('is-on');
+  // 재시작('처음부터')에도 중복 바인딩되지 않게 프로퍼티 할당.
+  ui.cineSkip.onclick = () => {
+    game.audio?.playClick();
+    finishPrologueCinematic(game, ui);
+  };
+}
 
-  render(0);
-  openDialog(game, ui);
+function updateCinematic(delta, game, renderState, ui) {
+  const c = game.cinematic;
+  c.t += delta;
+  // 키프레임 구간 보간(스무스스텝) — 구간 경계마다 살짝 멈춰 자막을 읽을 틈을 준다.
+  const keys = c.keys;
+  let a = keys[keys.length - 1];
+  let b = a;
+  for (let i = 0; i < keys.length - 1; i += 1) {
+    if (c.t >= keys[i].t && c.t < keys[i + 1].t) {
+      a = keys[i];
+      b = keys[i + 1];
+      break;
+    }
+  }
+  const span = b.t - a.t;
+  const s = span > 0 ? Math.min(1, Math.max(0, (c.t - a.t) / span)) : 1;
+  const e = s * s * (3 - 2 * s);
+  const camera = renderState.camera;
+  camera.position.set(
+    a.pos[0] + (b.pos[0] - a.pos[0]) * e,
+    a.pos[1] + (b.pos[1] - a.pos[1]) * e,
+    a.pos[2] + (b.pos[2] - a.pos[2]) * e
+  );
+  camera.lookAt(
+    a.look[0] + (b.look[0] - a.look[0]) * e,
+    a.look[1] + (b.look[1] - a.look[1]) * e,
+    a.look[2] + (b.look[2] - a.look[2]) * e
+  );
+  // 자막 카드 전환.
+  const cap = CINEMATIC_CAPTIONS.find((k) => c.t >= k.from && c.t < k.to) ?? null;
+  const key = cap ? cap.beat : null;
+  if (key !== c.captionKey) {
+    c.captionKey = key;
+    renderCineCaption(ui, key);
+  }
+  // 플라이오버 중에도 세계는 살아 있게(크리스털 회전·잡음 관문 지지직).
+  animateWorld(delta, renderState, game);
+  if (c.t >= CINEMATIC_END) {
+    finishPrologueCinematic(game, ui);
+  }
+}
+
+function renderCineCaption(ui, key) {
+  if (key === null) {
+    ui.cineCaption.classList.remove('is-visible');
+    return;
+  }
+  if (key === 'closing') {
+    ui.cineCaption.innerHTML = `<p class="cine-closing">— ${PROLOGUE.closingKo} —</p>`;
+  } else {
+    const beat = PROLOGUE.beats[key];
+    const speaker = beat.speakerKo
+      ? `<p class="cine-speaker">${beat.speakerKo === '도트' ? '✨ ' : ''}${beat.speakerKo}</p>`
+      : '';
+    const lines = beat.linesKo.map((text) => `<p>${text}</p>`).join('');
+    ui.cineCaption.innerHTML = `${speaker}${lines}`;
+  }
+  ui.cineCaption.classList.add('is-visible');
+}
+
+function finishPrologueCinematic(game, ui) {
+  if (!game.cinematic) {
+    return;
+  }
+  game.cinematic = null;
+  game.progress = { ...game.progress, prologueSeen: true };
+  persistProgress(game.progress);
+  ui.cineCaption.classList.remove('is-visible');
+  ui.cinematic.classList.remove('is-on');
+  window.setTimeout(() => {
+    ui.cinematic.hidden = true;
+  }, 720);
+  // 다음 프레임부터 플레이어 추종이 이어받도록 즉시 스냅(활공 방지).
+  snapCamera(game.renderState.camera, game.player.position);
 }
 
 // AI 코어를 완성하면 수료증(엔딩)을 띄운다.

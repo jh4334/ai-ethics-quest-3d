@@ -66,11 +66,19 @@ try {
   const interactable = (type, key, id) => p.evaluate(([type, key, id]) => { const it = window.__ethicsGame.renderState.interactables.find((i) => i.type === type && i[key] === id); return it ? { x: it.position.x, z: it.position.z } : null; }, [type, key, id]);
   const closeDlg = async () => { await p.evaluate(() => window.__ethicsUi.dialogClose?.click()); await p.waitForTimeout(400); };
 
-  // ── 타이틀 → 프롤로그 스킵 ─────────────────────────
+  // ── 타이틀 → 프롤로그 시네마틱 스킵 ─────────────────
   await p.click('button.title-start');
-  await p.waitForFunction(() => window.__ethicsUi && !window.__ethicsUi.dialog.hidden, { timeout: 5000 }).catch(() => {});
+  await p.waitForFunction(() => Boolean(window.__ethicsGame?.cinematic), { timeout: 5000 }).catch(() => {});
+  const cine = await p.evaluate(() => {
+    const g = window.__ethicsGame;
+    const overlay = document.querySelector('[data-cinematic]');
+    return { active: Boolean(g.cinematic), letterbox: Boolean(overlay && !overlay.hidden && overlay.classList.contains('is-on')) };
+  });
+  check(cine.active && cine.letterbox, '프롤로그 인엔진 시네마틱 시작(레터박스 표시)');
   const skip = await p.$('[data-prologue-skip]');
   if (skip) { await skip.click(); await p.waitForTimeout(400); }
+  const afterSkip = await p.evaluate(() => ({ cine: Boolean(window.__ethicsGame.cinematic), seen: window.__ethicsGame.progress.prologueSeen }));
+  check(!afterSkip.cine && afterSkip.seen, '시네마틱 스킵 → prologueSeen 저장·연출 종료');
   check((await st()).mode === 'overworld', '타이틀→프롤로그 스킵→오버월드 진입');
 
   // ── 간격 불변식: 모든 상호작용 대상 쌍 ≥ MIN_SEPARATION ──

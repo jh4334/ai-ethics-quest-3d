@@ -142,6 +142,22 @@ test('prologue is short (2 beats) and skippable', () => {
   void beats;
 });
 
+test('prologue cinematic is in-engine, deterministic, and hands the camera back', () => {
+  // 인엔진 연출: 카메라 키프레임 플라이오버 + 레터박스 + 자막 카드(외부 영상 파일 0).
+  assert.match(mainSource, /const CINEMATIC_KEYS = \[/);
+  assert.match(mainSource, /function startPrologueCinematic/);
+  assert.match(mainSource, /function updateCinematic/);
+  assert.match(mainSource, /function finishPrologueCinematic/);
+  // 자막은 PROLOGUE 비트를 재사용한다(스토리 데이터 단일 출처).
+  assert.match(mainSource, /PROLOGUE\.beats\[key\]/);
+  assert.match(cssSource, /\.cine-bar/);
+  assert.match(cssSource, /\.cine-caption/);
+  // 연출이 끝나면 카메라를 플레이어 추종 위치로 즉시 스냅해야 한다(활공 방지).
+  assert.match(mainSource, /snapCamera\(game\.renderState\.camera, game\.player\.position\)/);
+  // 시네마틱 동안에도 조작 게임 루프는 돌지 않는다(카메라 소유권 충돌 방지).
+  assert.match(mainSource, /if \(game\.cinematic\) \{\s*\n\s*updateCinematic\(raw, game, renderState, ui\);/);
+});
+
 test('bias room is colorblind-accessible: each seed color has a distinct shape', () => {
   // 색으로만 구분하면 색약 학생이 편향 방을 풀 수 없다 — 색+모양 병행.
   assert.match(dungeonSource, /const SEED_GEOS = \[/);
