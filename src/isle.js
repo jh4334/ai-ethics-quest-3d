@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { CORRIDOR } from './corridorLogic.js';
 import { RUMOR } from './rumorLogic.js';
 import { DUNES } from './dunesLogic.js';
+import { HEART } from './heartLogic.js';
 
 export const ISLE_RADIUS = 12.6;
 
@@ -618,9 +619,142 @@ export function buildHourglassPortScene({ makeLabel, healed = false }) {
   return built;
 }
 
+// 4호: 기억의 심장 외곽 (종합 + 인간-AI 협업 — "함께 살아가기").
+// 보랏빛 결정 섬 — 맥동하는 심장 결정을 네 개의 동사 봉인이 지키고 있다.
+export function buildMemoryOuterScene({ makeLabel, healed = false }) {
+  const root = new THREE.Group();
+
+  root.add(new THREE.HemisphereLight(0x9a8ac8, 0x241c38, 1.45));
+  const glow = new THREE.DirectionalLight(0xc89ae8, 0.75);
+  glow.position.set(8, 18, 10);
+  root.add(glow);
+
+  // 어두운 결정 대지.
+  const land = new THREE.Mesh(
+    new THREE.CylinderGeometry(13.2, 11.8, 0.9, 64),
+    new THREE.MeshStandardMaterial({ color: 0x4a4468, emissive: 0x1e1a30, emissiveIntensity: 0.5, roughness: 0.95 })
+  );
+  land.position.y = -0.18;
+  root.add(land);
+  const water = new THREE.Mesh(
+    new THREE.CircleGeometry(60, 48),
+    new THREE.MeshStandardMaterial({ color: 0x2a2a52, emissive: 0x121228, emissiveIntensity: 0.45, roughness: 0.85 })
+  );
+  water.rotation.x = -Math.PI / 2;
+  water.position.y = -0.32;
+  root.add(water);
+
+  // 기억의 심장 — 섬 전체가 이 박동에 맞춰 산다.
+  const heartMat = new THREE.MeshStandardMaterial({
+    color: 0xa84a6c,
+    emissive: 0x7c2846,
+    emissiveIntensity: 0.7,
+    roughness: 0.35,
+    flatShading: true
+  });
+  const heart = new THREE.Mesh(new THREE.IcosahedronGeometry(1.9, 0), heartMat);
+  heart.position.set(0.4, 3.0, -5.2);
+  root.add(heart);
+  // 심장을 도는 결정 조각 고리.
+  const shards = [];
+  const shardMat = new THREE.MeshBasicMaterial({ color: 0xd88ab0, transparent: true, opacity: 0.8 });
+  for (let i = 0; i < 5; i += 1) {
+    const shard = new THREE.Mesh(new THREE.OctahedronGeometry(0.22, 0), shardMat);
+    root.add(shard);
+    shards.push(shard);
+  }
+  const heartLabel = makeLabel('💠 기억의 심장', '#e8b8d8');
+  heartLabel.position.set(0.4, 6.0, -5.2);
+  root.add(heartLabel);
+
+  // 심부 관문 — 심장 뒤편, 봉인이 풀리면 빛이 들어온다.
+  const pillarMat = new THREE.MeshStandardMaterial({ color: 0x6a5a8c, emissive: 0x2a2240, emissiveIntensity: 0.55, roughness: 0.9, flatShading: true });
+  for (const px of [-1.6, 2.4]) {
+    const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 3.6, 6), pillarMat);
+    pillar.position.set(0.4 + px, 1.6, -9.6);
+    root.add(pillar);
+  }
+  const portalMat = new THREE.MeshBasicMaterial({ color: 0x140f22 });
+  const portal = new THREE.Mesh(new THREE.CircleGeometry(1.5, 24), portalMat);
+  portal.position.set(0.4, 1.7, -9.7);
+  root.add(portal);
+
+  // 동사 봉인석 — 좌표·주기는 heartLogic(HEART.seals)이 단일 출처.
+  const sealOrbs = new Map();
+  HEART.seals.forEach((sealData) => {
+    const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.7, 0.8, 8), pillarMat);
+    pedestal.position.set(sealData.x, 0.4, sealData.z);
+    root.add(pedestal);
+    const orbMat = new THREE.MeshStandardMaterial({
+      color: 0x8a7ab8,
+      emissive: 0x6a5a9c,
+      emissiveIntensity: 0.4,
+      roughness: 0.3
+    });
+    const orb = new THREE.Mesh(new THREE.OctahedronGeometry(0.42, 0), orbMat);
+    orb.position.set(sealData.x, 1.35, sealData.z);
+    root.add(orb);
+    sealOrbs.set(sealData.id, orb);
+    const sealLabel = makeLabel(`${sealData.emoji} 봉인`, '#c8b8e8');
+    sealLabel.scale.multiplyScalar(0.7);
+    sealLabel.position.set(sealData.x, 2.5, sealData.z);
+    root.add(sealLabel);
+  });
+
+  // 남쪽 물가의 뗏목.
+  const raft = new THREE.Mesh(
+    new THREE.BoxGeometry(1.6, 0.14, 2.0),
+    new THREE.MeshStandardMaterial({ color: 0x8a6a3f, emissive: 0x241a0c, emissiveIntensity: 0.4, roughness: 0.9 })
+  );
+  raft.position.set(-3.4, 0.02, 11.0);
+  root.add(raft);
+  const raftLabel = makeLabel('🛶 뗏목', '#ffd88a');
+  raftLabel.position.set(-3.4, 1.6, 11.0);
+  root.add(raftLabel);
+
+  const interactables = [
+    { id: 'spirit', x: 0.4, z: -3.0, labelKo: '기억의 심장에 다가간다' },
+    { id: 'raft', x: -3.4, z: 10.4, labelKo: '뗏목 — 바다로 돌아간다' }
+  ];
+
+  let open = false; // 봉인 해제 여부 — 관문·심장 연출 분기
+  const animate = (delta, elapsed) => {
+    // 심장 박동: 쿵, 쿵 — 두 박자 맥동.
+    const beat = Math.max(Math.sin(elapsed * 2.4), Math.sin(elapsed * 2.4 + 0.6) * 0.6);
+    heart.scale.setScalar(1 + Math.max(0, beat) * 0.12);
+    heart.rotation.y += delta * 0.5;
+    heartMat.emissiveIntensity = (open ? 1.0 : 0.7) + Math.max(0, beat) * 0.35;
+    shards.forEach((shard, i) => {
+      const angle = elapsed * 0.7 + (i / shards.length) * Math.PI * 2;
+      shard.position.set(0.4 + Math.cos(angle) * 3.1, 3.0 + Math.sin(elapsed * 1.3 + i) * 0.4, -5.2 + Math.sin(angle) * 3.1);
+    });
+    if (open) {
+      portalMat.color.setHex(0x9fd8ff);
+    }
+  };
+
+  // 봉인이 모두 풀리면 심부 관문이 빛난다.
+  const heal = () => {
+    open = true;
+    sealOrbs.forEach((orb) => {
+      orb.material.color.setHex(0xffd88a);
+      orb.material.emissive.setHex(0xc89a40);
+      orb.material.emissiveIntensity = 1.0;
+    });
+    portalMat.color.setHex(0x9fd8ff);
+  };
+
+  const built = { root, spirit: heart, interactables, animate, heal, sealOrbs, portalMat };
+  if (healed) {
+    heal();
+  }
+  return built;
+}
+
 // 스테이지 id → 섬 씬 빌더. 상륙 가능한 섬이 늘 때마다 여기에 등록한다.
 export const ISLE_SCENES = {
   'whisper-cape': buildWhisperCapeScene,
   'echo-cave': buildEchoCaveScene,
-  'hourglass-port': buildHourglassPortScene
+  'hourglass-port': buildHourglassPortScene,
+  'memory-outer': buildMemoryOuterScene
 };

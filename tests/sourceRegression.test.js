@@ -194,6 +194,7 @@ test('isle: 확장 섬 씬은 저사양·결정적이고 도착 서사는 visite
   assert.match(registryBlock, /'whisper-cape'/);
   assert.match(registryBlock, /'echo-cave'/);
   assert.match(registryBlock, /'hourglass-port'/);
+  assert.match(registryBlock, /'memory-outer'/);
   assert.match(mainSource, /ISLE_SCENES\[stageId\]\(/);
   assert.match(mainSource, /const ISLE_CONTENT = \{/);
   // built:true인 섬은 반드시 씬이 등록되어 있어야 한다(상륙 불가 섬 방지).
@@ -244,6 +245,19 @@ test('dunes: 순수 로직 + 나침반 라우팅 + 타이밍 잠금 + 완료 전
   assert.match(mainSource, /dunesPull\(game, ui\)/);
   assert.match(dunesSource, /lockWindow/);
   assert.match(mainSource, /function finishDunes/);
+});
+
+test('heart seals: 순수 로직 + 4동사 봉인 + 완료 전이', () => {
+  const heartSource = readFileSync(new URL('../src/heartLogic.js', import.meta.url), 'utf8');
+  const isleSrc3 = readFileSync(new URL('../src/isle.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(heartSource, /from 'three'/);
+  assert.doesNotMatch(heartSource, /Math\.random/);
+  // 봉인 = 도구 4종 id와 동일(동사 조합 훈련) — 좌표는 로직이 단일 출처.
+  assert.match(heartSource, /'shield'/);
+  assert.match(heartSource, /'mirror'/);
+  assert.match(isleSrc3, /HEART\.seals\.forEach/);
+  assert.match(mainSource, /heartUse\(game, ui\)/);
+  assert.match(mainSource, /function finishHeart/);
 });
 
 test('stage frame: 순수 데이터 모듈 + 세이브 v2 + 항로 지도', () => {

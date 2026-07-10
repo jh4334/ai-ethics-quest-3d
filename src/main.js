@@ -46,6 +46,7 @@ import {
   tickRumor
 } from './rumorLogic.js';
 import { DUNES, createDunesState, glassAngle, nearestGlass, pullGlass, tickDunes } from './dunesLogic.js';
+import { HEART, createHeartState, nearestSeal, sealPulse, tickHeart, useSeal } from './heartLogic.js';
 import {
   FINALE,
   buildNovaCertificate,
@@ -2276,12 +2277,14 @@ function updateNearestInteractable(game, interactables, ui) {
 // 전투: 방패=가드(반사) · 종=울림 충격파 · 거울=약점 공개. 던전: 방별 동사(당기기/공명/판별).
 function useToolVerb(game, ui) {
   game.audio?.resume();
-  // 섬 도전 중엔 F = 그 섬의 동사(곶 = 방패 가드, 동굴 = 종 울림, 항구 = 나침반 당기기).
+  // 섬 도전 중엔 F = 그 섬의 동사(곶 = 가드, 동굴 = 울림, 항구 = 당기기, 심장 외곽 = 봉인 해제).
   if (game.isle?.challenge && !game.isle.challenge.cleared) {
     if (game.isle.stageId === 'echo-cave') {
       rumorBell(game, ui);
     } else if (game.isle.stageId === 'hourglass-port') {
       dunesPull(game, ui);
+    } else if (game.isle.stageId === 'memory-outer') {
+      heartUse(game, ui);
     } else {
       corridorGuard(game, ui);
     }
@@ -2318,6 +2321,34 @@ function useToolVerb(game, ui) {
 // 🛡️ 방패 가드: 짧은 가드 자세 — 그 사이 잡음 파도가 닿으면 스턴 대신 반사한다.
 const GUARD_TIME = 0.55;
 const GUARD_COOLDOWN = 1.4;
+
+// 기억의 심장 외곽의 봉인 해제 — 봉인석의 빛이 가장 환해진 순간 약속의 힘(F)을 쓴다.
+function heartUse(game, ui) {
+  const isle = game.isle;
+  if (!isle || isle.pullCd > 0 || !isle.challenge || isle.challenge.cleared) {
+    return;
+  }
+  isle.pullCd = 0.6;
+  const seal = nearestSeal(isle.challenge, game.player.position.x, game.player.position.z);
+  if (!seal) {
+    game.audio?.playClick();
+    flashCombatPopup(ui, '봉인석 가까이에서 약속의 힘(F)을 써요', 'miss');
+    return;
+  }
+  const events = useSeal(isle.challenge, seal.id);
+  for (const event of events) {
+    if (event === 'dim') {
+      game.audio?.playWrong();
+      flashCombatPopup(ui, '아직 어두워요 — 빛이 가장 환해지는 순간에!', 'miss');
+    } else if (event === 'released') {
+      game.audio?.playCorrect();
+      const count = Object.values(isle.challenge.released).filter(Boolean).length;
+      flashCombatPopup(ui, `${seal.emoji} ${seal.nameKo}의 봉인 해제! (${count}/${HEART.seals.length})`, 'match');
+    } else if (event === 'cleared') {
+      finishHeart(game, ui);
+    }
+  }
+}
 
 // 모래시계 사구의 나침반 당기기 — 똑바로 선 순간에 당겨야 잠긴다('멈출 때'를 아는 타이밍).
 function dunesPull(game, ui) {
@@ -3562,6 +3593,27 @@ const ISLE_CONTENT = {
       '"하암… 푹 잤더니 세상이 반짝반짝해!"',
       '"기억해 줘 — 반짝이는 것에도 쉬는 시간이 필요해. 등대도, 화면도, 너도!"'
     ]
+  },
+  'memory-outer': {
+    fog: [0x241c38, 26, 72],
+    clearColor: 0x1c1630,
+    flash: '#e8b8d8',
+    goalKo: '기억의 심장에 다가가 목소리를 들어 보세요',
+    healedGoalKo: '바깥 봉인이 풀렸어요 — 심부로 가는 길이 열립니다',
+    arrivalKo: [
+      '"여기가 기억의 심장 외곽… 쿵, 쿵 — 섬 전체가 심장처럼 뛰고 있어."',
+      '"저 큰 결정 깊은 곳에서 마지막 잡음이 느껴져. 하지만 바깥 봉인 네 개가 길을 막고 있네 — 심장의 목소리를 들어 보자."'
+    ],
+    spiritNameKo: '💠 기억의 심장',
+    spiritSickKo: [
+      '"…쿵… 쿵… 잘 왔구나, 수호자. 내 깊은 곳에 마지막 잡음이 뭉쳐 있어."',
+      '"바깥 봉인 네 개는 네 가지 약속의 힘으로만 풀려 — 봉인석의 빛이 가장 환해지는 순간, 그 앞에서 약속의 힘(F)을 사용해 줘."',
+      '"네가 섬들을 돌며 깨운 힘들이야. 서두르지 말고, 빛의 박자에 맞춰서."'
+    ],
+    spiritHealedKo: [
+      '"바깥 봉인이 모두 풀렸어… 심부로 가는 길이 곧 열릴 거야."',
+      '"네 가지 약속을 모두 기억하는 손 — 마지막 잡음도 그 손이라면 가르칠 수 있어."'
+    ]
   }
 };
 
@@ -3670,6 +3722,18 @@ function updateIsle(delta, game, ui) {
     tickDunes(isle.challenge, delta);
     isle.built.hourglasses.forEach((hourglass, glassId) => {
       hourglass.rotation.z = glassAngle(isle.challenge, glassId);
+    });
+  }
+
+  // 4봉인 도전(기억의 심장 외곽) — 봉인석 빛 맥동 구동.
+  if (isle.stageId === 'memory-outer' && isle.challenge && !isle.challenge.cleared) {
+    tickHeart(isle.challenge, delta);
+    isle.built.sealOrbs.forEach((orb, sealId) => {
+      const pulse = sealPulse(isle.challenge, sealId);
+      const released = isle.challenge.released[sealId];
+      orb.material.emissiveIntensity = released ? 1.0 : 0.25 + pulse * 1.15;
+      orb.rotation.y += delta * (released ? 0.4 : 1.6);
+      orb.scale.setScalar(released ? 1.15 : 0.9 + pulse * 0.3);
     });
   }
 
@@ -3871,11 +3935,38 @@ function isleAction(game, ui) {
     game.audio?.playClick();
     const content = ISLE_CONTENT[game.isle.stageId];
     const stage = getStageById(game.isle.stageId);
+    // 기억의 심장: 목소리를 들으면 곧바로 4봉인 훈련이 시작된다(별도 도전 지점 없음).
+    if (game.isle.stageId === 'memory-outer' && !completed && !game.isle.challenge) {
+      game.isle.challenge = createHeartState();
+      ui.puzzleGoal.textContent = `동사 봉인 ${HEART.seals.length}개를 해제하세요`;
+      ui.puzzleHint.textContent = '봉인석의 빛이 가장 환해지는 순간, 그 앞에서 약속의 힘(F/도구버튼)!';
+    }
     ui.dialogKicker.textContent = stage.nameKo;
     ui.dialogTitle.textContent = content.spiritNameKo;
     ui.dialogBody.innerHTML = speechHtml(completed ? content.spiritHealedKo : content.spiritSickKo);
     openDialog(game, ui);
   }
+}
+
+// 4봉인 클리어: 심부 관문 개방 + 스테이지 완료 기록(항로 지도 전이).
+function finishHeart(game, ui) {
+  const isle = game.isle;
+  isle.built.heal();
+  game.progress = markStageCompleted(game.progress, isle.stageId);
+  persistProgress(game.progress);
+  updateHud(game, ui);
+  game.audio?.playCoreAwaken();
+  triggerFlash(ui, '#e8b8d8');
+  ui.puzzleGoal.textContent = ISLE_CONTENT[isle.stageId].healedGoalKo;
+  ui.puzzleHint.textContent = '뗏목으로 돌아가면 다시 바다로';
+  ui.dialogKicker.textContent = '기억의 심장 외곽';
+  ui.dialogTitle.textContent = '💠 기억의 심장';
+  ui.dialogBody.innerHTML = speechHtml([
+    '"…봉인이 전부 풀렸어. 네 가지 약속이 한 손에 모였구나."',
+    '"심부로 가는 관문이 곧 열려. 그 안에서 마지막 잡음 — 노이즈의 잔영이 기다리고 있어."',
+    '"두려워하지 마. 혼자가 아니야 — 네가 치유한 정령들이 지켜보고 있으니까."'
+  ]);
+  openDialog(game, ui);
 }
 
 // 모래시계 사구 클리어: 거북 숙면 + 스테이지 완료 기록(항로 지도 전이) + 감사 인사.

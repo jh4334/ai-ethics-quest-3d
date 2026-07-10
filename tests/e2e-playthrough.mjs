@@ -517,6 +517,65 @@ try {
   await A(800);
   check((await st()).mode === 'voyage', '모래시계 항구 → 바다 복귀');
 
+  // ── 기억의 심장 외곽: 상륙 → 심장의 목소리(도전 시작) → 4봉인 해제 → 심부 개방 ──
+  await tp(17.6, -51.9, 0, -1);
+  await p.waitForTimeout(1000);
+  await A(800);
+  const outer = await p.evaluate(() => ({
+    mode: window.__ethicsGame.mode,
+    stage: window.__ethicsGame.isle?.stageId,
+    arrival: !window.__ethicsUi.dialog.hidden
+  }));
+  check(outer.mode === 'isle' && outer.stage === 'memory-outer' && outer.arrival, '기억의 심장 외곽 상륙(도착 서사)');
+  await closeDlg();
+  await tp(0.4, -2.6, 0, -1);
+  await p.waitForTimeout(1000);
+  await A(700);
+  const heartVoice = await p.evaluate(() => ({
+    dialog: !window.__ethicsUi.dialog.hidden,
+    challenge: Boolean(window.__ethicsGame.isle?.challenge?.released)
+  }));
+  check(heartVoice.dialog && heartVoice.challenge, '심장의 목소리 → 4봉인 훈련 시작');
+  await closeDlg();
+  // 봉인별: 빛 만개 t로 워프 → F (느린 프레임 드리프트 대비 재시도).
+  const seals = [
+    ['shield', -5.2, -1.2, (Math.PI / 2 + 2 * Math.PI) / 1.1],
+    ['compass', 5.8, -1.6, (Math.PI / 2 - 1.6 + 2 * Math.PI) / 1.4],
+    ['bell', -3.8, -9.0, (Math.PI / 2 - 3.2 + 2 * Math.PI) / 0.8],
+    ['mirror', 4.6, -9.2, (Math.PI / 2 - 4.8 + 2 * Math.PI) / 0.65]
+  ];
+  for (const [sid, sx, sz, tPeak] of seals) {
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      await p.evaluate(([sx, sz, tPeak]) => {
+        const g = window.__ethicsGame;
+        g.isle.pullCd = 0;
+        g.isle.challenge.t = tPeak;
+        g.player.position.set(sx + 0.6, 0.55, sz);
+      }, [sx, sz, tPeak]);
+      await p.keyboard.press('f');
+      await p.waitForTimeout(900);
+      if (await p.evaluate((sid) => window.__ethicsGame.isle.challenge?.released[sid] !== false, sid)) break;
+    }
+  }
+  const heartDone = await p.evaluate(() => {
+    const g = window.__ethicsGame;
+    return {
+      cleared: g.isle.challenge?.cleared === true,
+      completed: g.progress.stages['memory-outer']?.completed === true,
+      portal: g.isle.built.portalMat.color.getHex() !== 0x140f22,
+      dialog: !window.__ethicsUi.dialog.hidden
+    };
+  });
+  check(
+    heartDone.cleared && heartDone.completed && heartDone.portal && heartDone.dialog,
+    '4봉인 해제 → 심부 관문 개방 + 스테이지 완료 기록'
+  );
+  await closeDlg();
+  await tp(-3.4, 10.0, 0, 1);
+  await p.waitForTimeout(1000);
+  await A(800);
+  check((await st()).mode === 'voyage', '기억의 심장 외곽 → 바다 복귀');
+
   // 시작의 섬으로 귀항.
   await tp(0, 5, 0, -1);
   await p.waitForTimeout(1000);

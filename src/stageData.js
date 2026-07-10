@@ -58,7 +58,7 @@ export const STAGES = [
     verbKo: '4동사 조합',
     emoji: '💠',
     sea: [8, -26],
-    built: false,
+    built: true,
     requires: 'hourglass-port'
   },
   {
