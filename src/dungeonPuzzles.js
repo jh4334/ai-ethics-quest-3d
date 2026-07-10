@@ -192,6 +192,28 @@ function crateKind(room, crateId) {
   return room.crates.find((c) => c.id === crateId)?.kind ?? null;
 }
 
+// 시선 방향 직선에서 처음 만나는 상자(나침반 '끌어당기기' 대상 탐색).
+// fromCell에서 dir로 한 칸씩 나아가며 maxRange 안의 첫 상자 id를 돌려준다. 없으면 null.
+export function firstCrateInLine(topicId, state, fromCell, dir, maxRange = 5) {
+  const room = DUNGEON_ROOMS[topicId];
+  if (!room || room.mechanic !== 'push') {
+    return null;
+  }
+  let [c, r] = fromCell;
+  for (let step = 0; step < maxRange; step += 1) {
+    c += dir[0];
+    r += dir[1];
+    if (!inBounds(room, c, r)) {
+      return null;
+    }
+    const hit = crateAt(room, state, c, r, null);
+    if (hit) {
+      return hit;
+    }
+  }
+  return null;
+}
+
 // 상자를 dir([dCol,dRow]) 방향으로 한 칸 민다.
 // 반환: { state, moved, event }. event: null | 'blocked' | 'wrong-zone' | 'placed'.
 export function pushCrate(topicId, state, crateId, dir) {
