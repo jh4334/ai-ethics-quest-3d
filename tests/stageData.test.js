@@ -6,6 +6,7 @@ import {
   getStageById,
   getStageStates,
   markStageCompleted,
+  markStageVisited,
   nearestSeaIsland,
   normalizeStages
 } from '../src/stageData.js';
@@ -38,11 +39,11 @@ test('getStageStates: 새 세이브 — 프롤로그만 진행 중, 나머지는
   }
 });
 
-test('getStageStates: 프롤로그 완료(aiCoreCompleted 파생) → 섬1은 준비 중, 섬2는 잠김', () => {
+test('getStageStates: 프롤로그 완료(aiCoreCompleted 파생) → 섬1(속삭임 곶)은 진행 중, 섬2는 잠김', () => {
   const progress = { ...createInitialProgress(), aiCoreCompleted: true };
   const states = getStageStates(progress);
   assert.equal(states[0].state, 'completed');
-  assert.equal(states[1].state, 'coming'); // built:false — 콘텐츠가 오면 'current'
+  assert.equal(states[1].state, 'current'); // M3-S1: built:true — 상륙 콘텐츠가 들어왔다
   assert.equal(states[2].state, 'locked');
 });
 
@@ -59,19 +60,31 @@ test('markStageCompleted: 순수 함수 — 원본 불변, 알 수 없는 섬은
   assert.equal(states[2].state, 'coming');
 });
 
-test('normalizeStages: 알 수 없는 섬·깨진 값은 버리고 completed만 남긴다', () => {
+test('normalizeStages: 알 수 없는 섬·깨진 값은 버리고 completed/visited만 남긴다', () => {
   assert.deepEqual(normalizeStages(null), {});
   assert.deepEqual(normalizeStages('junk'), {});
   const cleaned = normalizeStages({
-    'whisper-cape': { completed: true, junk: 1 },
+    'whisper-cape': { completed: true, visited: true, junk: 1 },
     'echo-cave': { completed: 'yes' },
     atlantis: { completed: true },
     'hourglass-port': null
   });
   assert.deepEqual(cleaned, {
-    'whisper-cape': { completed: true },
-    'echo-cave': { completed: false }
+    'whisper-cape': { completed: true, visited: true },
+    'echo-cave': { completed: false, visited: false }
   });
+});
+
+test('markStageVisited: 첫 상륙 신호 — completed는 건드리지 않고 원본 불변', () => {
+  const progress = createInitialProgress();
+  const visited = markStageVisited(progress, 'whisper-cape');
+  assert.deepEqual(visited.stages['whisper-cape'], { completed: false, visited: true });
+  assert.deepEqual(progress.stages, {});
+  // 완료 후 재방문해도 완료가 지워지지 않는다.
+  const done = markStageCompleted(visited, 'whisper-cape');
+  const again = markStageVisited(done, 'whisper-cape');
+  assert.equal(again.stages['whisper-cape'].completed, true);
+  assert.throws(() => markStageVisited(progress, 'atlantis'), RangeError);
 });
 
 test('세이브 v2 마이그레이션: v1 세이브(version·stages 없음)가 손실 없이 올라온다', () => {
@@ -109,7 +122,7 @@ test('nearestSeaIsland: 범위 안 최근접 섬, 밖이면 null, 두 섬 사이
 });
 
 test('세이브 v2: stages 맵이 정규화를 거쳐 왕복 보존된다', () => {
-  const v2 = { ...createInitialProgress(), stages: { 'whisper-cape': { completed: true }, atlantis: {} } };
+  const v2 = { ...createInitialProgress(), stages: { 'whisper-cape': { completed: true, visited: true }, atlantis: {} } };
   const normalized = normalizeProgress(v2);
-  assert.deepEqual(normalized.stages, { 'whisper-cape': { completed: true } });
+  assert.deepEqual(normalized.stages, { 'whisper-cape': { completed: true, visited: true } });
 });

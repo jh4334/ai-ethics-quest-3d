@@ -32,8 +32,9 @@ import {
   worldToCell
 } from './dungeonPuzzles.js';
 import { buildDungeonRoom, disposeDungeonRoom, makeGlyphSprite, syncDungeonVisuals } from './dungeon.js';
-import { getStageStates, nearestSeaIsland } from './stageData.js';
-import { SEA_APPROACH, SEA_RADIUS, SEA_SCALE, buildSeaScene } from './sea.js';
+import { getStageById, getStageStates, markStageVisited, nearestSeaIsland } from './stageData.js';
+import { SEA_APPROACH, SEA_RADIUS, SEA_SCALE, buildSeaScene, seaWorldPosition } from './sea.js';
+import { ISLE_RADIUS, buildWhisperCapeScene } from './isle.js';
 import {
   FINALE,
   buildNovaCertificate,
@@ -461,6 +462,7 @@ function createGameState(ui) {
     puzzle: null,
     dungeon: null,
     voyage: null,
+    isle: null,
     cinematic: null,
     mode: 'overworld',
     finaleResolving: false,
@@ -1931,6 +1933,10 @@ function updateGame(delta, game, renderState, ui) {
     updateVoyage(delta, game, ui);
     return;
   }
+  if (game.mode === 'isle') {
+    updateIsle(delta, game, ui);
+    return;
+  }
   animateWorld(delta, renderState, game);
   updateCombat(delta, game, ui);
   updatePuzzle(delta, game, ui);
@@ -1973,7 +1979,9 @@ function updatePlayer(delta, game, playerGroup) {
         ? clampToRoom(game.player.position, game.dungeon?.bounds)
         : game.mode === 'voyage'
           ? clampToSea(game.player.position)
-          : clampToIsland(game.player.position)
+          : game.mode === 'isle'
+            ? clampToRadius(game.player.position, ISLE_RADIUS)
+            : clampToIsland(game.player.position)
     );
     playerGroup.rotation.y = Math.atan2(move.x, move.z);
     // 걸을 때 통통 튀는 느낌 + 살짝 기우뚱.
@@ -2449,6 +2457,8 @@ function primaryAction(game, ui) {
     dungeonAction(game, ui);
   } else if (game.voyage) {
     voyageAction(game, ui);
+  } else if (game.isle) {
+    isleAction(game, ui);
   } else if (game.combat?.active) {
     playerAttack(game, ui);
   } else if (game.puzzle?.active) {
@@ -3257,20 +3267,25 @@ function exitDungeon(game, ui) {
 // ── 항해 씬(잡음의 군도 바다) ─────────────────────────
 // 던전과 같은 수명주기: 오버월드 Group을 숨기고 바다 루트를 lazy build → 귀항 시 dispose.
 
-// 뗏목이 바다 경계를 넘지 않게(섬 클램프와 같은 방식).
-function clampToSea(position) {
+// 원형 경계 클램프(바다·확장 섬 공용).
+function clampToRadius(position, radius) {
   const flatLength = Math.hypot(position.x, position.z);
-  if (flatLength <= SEA_RADIUS) {
+  if (flatLength <= radius) {
     return position;
   }
-  const scale = SEA_RADIUS / flatLength;
+  const scale = radius / flatLength;
   position.x *= scale;
   position.z *= scale;
   return position;
 }
 
-function enterVoyage(game, ui) {
-  if (game.voyage || game.mode !== 'overworld') {
+function clampToSea(position) {
+  return clampToRadius(position, SEA_RADIUS);
+}
+
+function enterVoyage(game, ui, spawn) {
+  // 부두(오버월드)와 확장 섬의 뗏목(isle) 두 곳에서 호출된다.
+  if (game.voyage || game.dungeon || game.combat?.active) {
     return;
   }
   const rs = game.renderState;
@@ -3295,7 +3310,11 @@ function enterVoyage(game, ui) {
   };
   game.keys.clear();
   game.player.speed = 7.4; // 뗏목은 걷기보다 조금 빠르게
-  game.player.position.set(0, 0.78, 9); // 시작의 섬 실루엣 남쪽 바다
+  if (spawn) {
+    game.player.position.set(spawn.x, 0.78, spawn.z);
+  } else {
+    game.player.position.set(0, 0.78, 9); // 시작의 섬 실루엣 남쪽 바다
+  }
   game.player.direction.set(0, 0, -1);
   rs.playerGroup.position.copy(game.player.position);
   rs.companion.position.copy(game.player.position).add(new THREE.Vector3(0.8, 1.2, 0));
@@ -3384,8 +3403,140 @@ function voyageAction(game, ui) {
   if (island.id === 'prologue') {
     game.audio?.playClick();
     exitVoyage(game, ui);
+    return;
   }
-  // 다른 열린 섬 상륙은 해당 섬 콘텐츠(M3+)와 함께 붙는다.
+  if (island.id === 'whisper-cape') {
+    game.audio?.playClick();
+    enterIsle(game, ui, island.id);
+  }
+  // 다른 열린 섬 상륙은 해당 섬 콘텐츠(M4+)와 함께 붙는다.
+}
+
+// ── 확장 섬(스테이지) 상륙 ─────────────────────────────
+// 항해 → 섬 지형 씬. 던전·바다와 같은 수명주기(lazy build → dispose).
+
+function enterIsle(game, ui, stageId) {
+  if (game.isle || !game.voyage) {
+    return;
+  }
+  const rs = game.renderState;
+  const stage = getStageById(stageId);
+  // 바다 씬을 걷어내고 섬 지형을 올린다.
+  const vg = game.voyage;
+  disposeDungeonRoom(vg.built.root, rs.scene);
+  game.voyage = null;
+  game.player.speed = vg.walkSpeed;
+
+  const built = buildWhisperCapeScene({ makeLabel: createLabelSprite });
+  rs.scene.add(built.root);
+  // 새벽 갯벌 톤 — 안개는 섬 너머 바다에만.
+  rs.scene.fog = new THREE.Fog(0x9aa7bd, 30, 80);
+  rs.renderer.setClearColor(0x93a2b8, 1);
+
+  game.mode = 'isle';
+  game.isle = { built, stageId, nearestSpot: null };
+  game.keys.clear();
+  game.player.position.set(-3.4, 0.55, 9.4); // 뗏목 옆 물가
+  game.player.direction.set(0, 0, -1);
+  rs.playerGroup.position.copy(game.player.position);
+  rs.companion.position.copy(game.player.position).add(new THREE.Vector3(0.8, 1.2, 0));
+  snapCamera(rs.camera, game.player.position);
+
+  triggerFlash(ui, '#e8eef8');
+  ui.prompt.hidden = true;
+  ui.puzzleHud.hidden = false;
+  ui.puzzleTitle.textContent = `${stage.emoji} ${stage.nameKo}`;
+  ui.puzzleGoal.textContent = '병든 정령을 찾아가 이야기를 들어 보세요';
+  ui.puzzleHint.textContent = '뗏목으로 돌아가면 다시 바다로';
+  game.updateRotateHint?.();
+
+  // 첫 상륙에만 도착 서사를 튼다(세이브 v2 visited 신호).
+  if (!game.progress.stages?.[stageId]?.visited) {
+    game.progress = markStageVisited(game.progress, stageId);
+    persistProgress(game.progress);
+    ui.dialogKicker.textContent = `${stage.emoji} ${stage.nameKo}`;
+    ui.dialogTitle.textContent = '✨ 도트';
+    ui.dialogBody.innerHTML = speechHtml([
+      '"여기가 속삭임 곶… 공기가 따가워. 저 검은 파편들은 말-화살 — 누군가 내뱉은 뾰족한 말이 아직도 땅에 박혀 있는 거야."',
+      '"절벽 쪽에서 앓는 소리가 들려. 이 곶의 정령이 아픈가 봐 — 가서 이야기를 들어 보자."'
+    ]);
+    openDialog(game, ui);
+  }
+}
+
+function exitIsle(game, ui) {
+  const isle = game.isle;
+  if (!isle) {
+    return;
+  }
+  const rs = game.renderState;
+  const stage = getStageById(isle.stageId);
+  disposeDungeonRoom(isle.built.root, rs.scene);
+  game.isle = null;
+  game.mode = 'overworld'; // enterVoyage가 곧바로 'voyage'로 바꾼다
+  ui.puzzleHud.hidden = true;
+  // 섬 실루엣 남쪽 바다에서 항해 재개.
+  const sea = seaWorldPosition(stage);
+  enterVoyage(game, ui, { x: sea.x, z: sea.z + SEA_APPROACH + 1.5 });
+}
+
+function updateIsle(delta, game, ui) {
+  const isle = game.isle;
+  const elapsed = clock.elapsedTime;
+  // 병든 정령의 숨: 몸이 느리게 부풀었다 꺼지고, 잡음 위스프가 주위를 돈다.
+  const spirit = isle.built.spirit;
+  spirit.scale.y = 1 + Math.sin(elapsed * 1.4) * 0.03;
+  isle.built.wisps.forEach((wisp, i) => {
+    const angle = elapsed * (0.8 + i * 0.25) + i * 2.1;
+    wisp.position.set(Math.cos(angle) * 1.1, 1.5 + Math.sin(elapsed * 2 + i) * 0.25, Math.sin(angle) * 1.1);
+  });
+
+  // 씬 로컬 상호작용 안내(정령·뗏목).
+  let nearestSpot = null;
+  let nearestDistance = INTERACTION_RADIUS;
+  for (const spot of isle.built.interactables) {
+    const distance = Math.hypot(game.player.position.x - spot.x, game.player.position.z - spot.z);
+    if (distance < nearestDistance) {
+      nearestSpot = spot;
+      nearestDistance = distance;
+    }
+  }
+  isle.nearestSpot = nearestSpot;
+  if (!ui.dialog.hidden) {
+    return;
+  }
+  if (nearestSpot) {
+    ui.prompt.hidden = false;
+    ui.prompt.textContent = `${ACTION_LABEL}${nearestSpot.labelKo}`;
+  } else if (IS_TOUCH) {
+    ui.prompt.hidden = true;
+  } else {
+    ui.prompt.hidden = false;
+    ui.prompt.textContent = '방향키로 곶을 둘러보세요';
+  }
+}
+
+function isleAction(game, ui) {
+  const spot = game.isle?.nearestSpot;
+  if (!spot || !ui.dialog.hidden) {
+    return;
+  }
+  if (spot.id === 'raft') {
+    game.audio?.playClick();
+    exitIsle(game, ui);
+    return;
+  }
+  if (spot.id === 'spirit') {
+    game.audio?.playClick();
+    ui.dialogKicker.textContent = '속삭임 곶';
+    ui.dialogTitle.textContent = '🕊️ 바닷새 정령';
+    ui.dialogBody.innerHTML = speechHtml([
+      '"끼륵… 잘 와 주었어, 수호자. 미운 말들이 화살이 되어 깃털에 박혀 버렸어."',
+      '"한 번 내뱉은 말은 주워 담을 수 없어 — 그래서 이렇게 오래 아픈 거야."',
+      '"절벽 안 「말-화살 회랑」에 잡음이 소용돌이치고 있어. 네 방패의 힘이 깨어나면, 화살을 밀쳐낼 수 있을 거야… 준비되면 다시 와 줘."'
+    ]);
+    openDialog(game, ui);
+  }
 }
 
 // 플레이어가 바라보는 방향 → 그리드 한 칸 방향([dCol, dRow]).
