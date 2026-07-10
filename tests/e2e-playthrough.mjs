@@ -375,6 +375,32 @@ try {
   const backToSea = await p.evaluate(() => ({ mode: window.__ethicsGame.mode, isle: Boolean(window.__ethicsGame.isle) }));
   check(backToSea.mode === 'voyage' && !backToSea.isle, '뗏목으로 바다 복귀(곶 dispose)');
 
+  // ── 메아리 동굴: 속삭임 곶 완료로 항로 개방 → 상륙 → 고래 정령 ──
+  await tp(26.4, -25.6, 0, -1);
+  await p.waitForTimeout(1000);
+  await A(800);
+  const echo = await p.evaluate(() => ({
+    mode: window.__ethicsGame.mode,
+    stage: window.__ethicsGame.isle?.stageId,
+    arrival: !window.__ethicsUi.dialog.hidden,
+    visited: window.__ethicsGame.progress.stages['echo-cave']?.visited === true
+  }));
+  check(echo.mode === 'isle' && echo.stage === 'echo-cave' && echo.arrival && echo.visited, '메아리 동굴 상륙(항로 개방 + 도착 서사)');
+  await closeDlg();
+  await tp(0.6, -0.5, 0, -1);
+  await p.waitForTimeout(1000);
+  await A(600);
+  const whale = await p.evaluate(() => ({
+    dialog: !window.__ethicsUi.dialog.hidden,
+    text: window.__ethicsUi.dialogBody?.innerText ?? ''
+  }));
+  check(whale.dialog && (whale.text.includes('메아리') || whale.text.includes('출처')), '고래 정령 대화(메아리 증상·종 예고)');
+  await closeDlg();
+  await tp(-3.4, 10.0, 0, 1);
+  await p.waitForTimeout(1000);
+  await A(800);
+  check((await st()).mode === 'voyage', '메아리 동굴 → 바다 복귀');
+
   // 시작의 섬으로 귀항.
   await tp(0, 5, 0, -1);
   await p.waitForTimeout(1000);

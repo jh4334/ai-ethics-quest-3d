@@ -189,6 +189,14 @@ test('isle: 확장 섬 씬은 저사양·결정적이고 도착 서사는 visite
   // 도착 서사는 세이브 v2 visited 신호로 첫 상륙에만.
   assert.match(mainSource, /stages\?\.\[stageId\]\?\.visited/);
   assert.match(mainSource, /markStageVisited\(game\.progress, stageId\)/);
+  // 다중 섬: 씬 빌더 레지스트리 + 섬별 연출 데이터로 일반화.
+  const registryBlock = isleSource.match(/export const ISLE_SCENES = \{[\s\S]*?\};/)?.[0] ?? '';
+  assert.match(registryBlock, /'whisper-cape'/);
+  assert.match(registryBlock, /'echo-cave'/);
+  assert.match(mainSource, /ISLE_SCENES\[stageId\]\(/);
+  assert.match(mainSource, /const ISLE_CONTENT = \{/);
+  // built:true인 섬은 반드시 씬이 등록되어 있어야 한다(상륙 불가 섬 방지).
+  assert.match(mainSource, /if \(ISLE_SCENES\[island\.id\]\)/);
 });
 
 test('corridor: 회랑 도전은 순수 로직 + F 가드 라우팅 + 완료 전이', () => {
