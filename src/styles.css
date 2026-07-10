@@ -882,6 +882,64 @@ button:disabled {
     transform: none;
     font-size: 0.82rem;
   }
+
+  /* ── 작은 화면 최소화: 판·팝업을 눌러 조작 공간을 확보한다 ── */
+  /* 목표 칩은 한 줄로 — 상단 바 높이를 줄인다 */
+  .objective-chip {
+    padding: 6px 10px;
+  }
+
+  .objective-chip p:last-child {
+    -webkit-line-clamp: 1;
+    font-size: 0.78rem;
+  }
+
+  /* 전투 팝업은 화면을 덜 가리게 작게(연출 유지) */
+  .combat-popup {
+    font-size: 1.35rem;
+  }
+
+  .combat-popup[data-kind="bounce"] { font-size: 1.1rem; }
+  .combat-popup[data-kind="win"] { font-size: 1.7rem; }
+
+  /* 던전 안내판: 제목·목표를 한 줄씩으로 압축 */
+  .puzzle-hud {
+    width: min(400px, calc(100vw - 24px));
+    padding: 6px 10px 8px;
+  }
+
+  .puzzle-title {
+    font-size: 0.88rem;
+  }
+
+  .puzzle-goal {
+    font-size: 0.74rem;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
+  }
+
+  .puzzle-hint {
+    font-size: 0.78rem;
+  }
+
+  /* 보스 HUD도 슬림하게 — 상황 말풍선은 두 줄까지만 */
+  .boss-hud {
+    padding: 6px 10px;
+  }
+
+  .boss-memory {
+    font-size: 0.8rem;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  .boss-hint {
+    font-size: 0.76rem;
+  }
 }
 
 /* 가로로 짧은 폰: 세로 공간이 부족하니 목표를 한 줄로 */
