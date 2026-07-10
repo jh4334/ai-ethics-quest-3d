@@ -32,9 +32,10 @@ import {
   worldToCell
 } from './dungeonPuzzles.js';
 import { buildDungeonRoom, disposeDungeonRoom, makeGlyphSprite, syncDungeonVisuals } from './dungeon.js';
-import { getStageById, getStageStates, markStageVisited, nearestSeaIsland } from './stageData.js';
+import { getStageById, getStageStates, markStageCompleted, markStageVisited, nearestSeaIsland } from './stageData.js';
 import { SEA_APPROACH, SEA_RADIUS, SEA_SCALE, buildSeaScene, seaWorldPosition } from './sea.js';
-import { ISLE_RADIUS, buildWhisperCapeScene } from './isle.js';
+import { ISLE_RADIUS, buildWhisperCapeScene, healSpiritVisuals } from './isle.js';
+import { createCorridorState, stepCorridor } from './corridorLogic.js';
 import {
   FINALE,
   buildNovaCertificate,
@@ -1614,8 +1615,8 @@ function bindInput(game, ui) {
       if (action === 'action') {
         primaryAction(game, ui);
       } else if (action === 'tool') {
-        // 던전 = 동사 발동(나침반 당기기). 전투 = 방패를 들었으면 가드, 아니면 도구 전환(벨트 탭으로도 전환 가능).
-        if (game.dungeon?.active) {
+        // 던전·회랑 = 동사 발동. 전투 = 방패를 들었으면 가드, 아니면 도구 전환(벨트 탭으로도 전환 가능).
+        if (game.dungeon?.active || game.isle?.challenge) {
           useToolVerb(game, ui);
         } else if (game.combat?.active && game.combat.tools[game.combat.activeTool] === 'shield') {
           useToolVerb(game, ui);
@@ -2265,6 +2266,11 @@ function updateNearestInteractable(game, interactables, ui) {
 // 전투: 방패=가드(반사) · 종=울림 충격파 · 거울=약점 공개. 던전: 방별 동사(당기기/공명/판별).
 function useToolVerb(game, ui) {
   game.audio?.resume();
+  // 회랑 도전 중엔 F = 방패 가드(화살 되돌리기).
+  if (game.isle?.challenge && !game.isle.challenge.cleared) {
+    corridorGuard(game, ui);
+    return;
+  }
   if (game.combat?.active) {
     const toolId = game.combat.tools[game.combat.activeTool];
     if (toolId === 'shield') {
@@ -2296,6 +2302,17 @@ function useToolVerb(game, ui) {
 // 🛡️ 방패 가드: 짧은 가드 자세 — 그 사이 잡음 파도가 닿으면 스턴 대신 반사한다.
 const GUARD_TIME = 0.55;
 const GUARD_COOLDOWN = 1.4;
+
+// 회랑 도전의 방패 가드 — 전투 가드와 같은 리듬(짧은 자세 + 쿨다운).
+function corridorGuard(game, ui) {
+  const isle = game.isle;
+  if (!isle || isle.guardCd > 0) {
+    return;
+  }
+  isle.guard = GUARD_TIME;
+  isle.guardCd = GUARD_COOLDOWN;
+  game.audio?.playClick();
+}
 
 function shieldGuard(game, ui) {
   const c = game.combat;
@@ -3427,14 +3444,15 @@ function enterIsle(game, ui, stageId) {
   game.voyage = null;
   game.player.speed = vg.walkSpeed;
 
-  const built = buildWhisperCapeScene({ makeLabel: createLabelSprite });
+  const healed = game.progress.stages?.[stageId]?.completed === true;
+  const built = buildWhisperCapeScene({ makeLabel: createLabelSprite, healed });
   rs.scene.add(built.root);
   // 새벽 갯벌 톤 — 안개는 섬 너머 바다에만.
   rs.scene.fog = new THREE.Fog(0x9aa7bd, 30, 80);
   rs.renderer.setClearColor(0x93a2b8, 1);
 
   game.mode = 'isle';
-  game.isle = { built, stageId, nearestSpot: null };
+  game.isle = { built, stageId, nearestSpot: null, challenge: null, guard: 0, guardCd: 0 };
   game.keys.clear();
   game.player.position.set(-3.4, 0.55, 9.4); // 뗏목 옆 물가
   game.player.direction.set(0, 0, -1);
@@ -3446,7 +3464,9 @@ function enterIsle(game, ui, stageId) {
   ui.prompt.hidden = true;
   ui.puzzleHud.hidden = false;
   ui.puzzleTitle.textContent = `${stage.emoji} ${stage.nameKo}`;
-  ui.puzzleGoal.textContent = '병든 정령을 찾아가 이야기를 들어 보세요';
+  ui.puzzleGoal.textContent = healed
+    ? '정령이 건강해졌어요 — 곶이 고요합니다'
+    : '병든 정령을 찾아가 이야기를 들어 보세요';
   ui.puzzleHint.textContent = '뗏목으로 돌아가면 다시 바다로';
   game.updateRotateHint?.();
 
@@ -3490,6 +3510,60 @@ function updateIsle(delta, game, ui) {
     const angle = elapsed * (0.8 + i * 0.25) + i * 2.1;
     wisp.position.set(Math.cos(angle) * 1.1, 1.5 + Math.sin(elapsed * 2 + i) * 0.25, Math.sin(angle) * 1.1);
   });
+  // 발사대 소용돌이 회전(부서지면 숨김).
+  isle.built.vortexes.forEach((vortex, emitterId) => {
+    if (isle.challenge?.broken[emitterId]) {
+      vortex.visible = false;
+      return;
+    }
+    vortex.rotation.y += delta * 2.4;
+    vortex.rotation.x = Math.sin(elapsed * 1.6) * 0.4;
+  });
+
+  // 방패 가드 타이머.
+  if (isle.guard > 0) {
+    isle.guard = Math.max(0, isle.guard - delta);
+  }
+  if (isle.guardCd > 0) {
+    isle.guardCd = Math.max(0, isle.guardCd - delta);
+  }
+
+  // 회랑 도전 진행.
+  if (isle.challenge && !isle.challenge.cleared) {
+    const events = stepCorridor(
+      isle.challenge,
+      delta,
+      { x: game.player.position.x, z: game.player.position.z },
+      isle.guard > 0
+    );
+    for (const event of events) {
+      if (event === 'fired') {
+        game.audio?.playNoiseGroan();
+      } else if (event === 'deflected') {
+        game.audio?.playCorrect();
+        flashCombatPopup(ui, '🛡️ 반사! 화살이 주인에게 돌아간다', 'match');
+      } else if (event === 'hit') {
+        game.audio?.playWrong();
+        addShake(game, 0.3);
+        flashCombatPopup(ui, '따끔! 화살이 가까울 때 방패(F)!', 'miss');
+      } else if (event === 'broken') {
+        game.audio?.playCollect();
+        flashCombatPopup(ui, '💥 발사대가 부서졌다!', 'match');
+      } else if (event === 'cleared') {
+        finishCorridor(game, ui);
+      }
+    }
+    // 화살 메시 동기화.
+    const arrowMesh = isle.built.arrowMesh;
+    const arrow = isle.challenge.arrow;
+    if (arrow) {
+      arrowMesh.visible = true;
+      arrowMesh.position.set(arrow.x, 1.15, arrow.z);
+      arrowMesh.rotation.set(Math.PI / 2, 0, -Math.atan2(arrow.dx, arrow.dz));
+    } else {
+      arrowMesh.visible = false;
+    }
+  }
 
   // 씬 로컬 상호작용 안내(정령·뗏목).
   let nearestSpot = null;
@@ -3521,22 +3595,68 @@ function isleAction(game, ui) {
   if (!spot || !ui.dialog.hidden) {
     return;
   }
+  const completed = game.progress.stages?.[game.isle.stageId]?.completed === true;
   if (spot.id === 'raft') {
     game.audio?.playClick();
     exitIsle(game, ui);
+    return;
+  }
+  if (spot.id === 'corridor') {
+    if (completed || game.isle.challenge?.cleared) {
+      game.audio?.playClick();
+      ui.dialogKicker.textContent = '말-화살 회랑';
+      ui.dialogTitle.textContent = '✨ 도트';
+      ui.dialogBody.innerHTML = speechHtml(['"회랑이 고요해. 뾰족한 말들이 더는 날아다니지 않아 — 네 덕분이야."']);
+      openDialog(game, ui);
+      return;
+    }
+    if (!game.isle.challenge) {
+      // 도전 시작 — 발사대가 차례로 말-화살을 쏜다.
+      game.audio?.playNoiseGroan();
+      game.isle.challenge = createCorridorState();
+      flashCombatPopup(ui, '🏹 말-화살이 날아온다!', 'miss');
+      ui.puzzleGoal.textContent = '잡음 발사대 3개를 부수세요';
+      ui.puzzleHint.textContent = '화살이 가까워지는 순간 🛡️ 방패(F/도구버튼)로 되돌려요';
+    }
     return;
   }
   if (spot.id === 'spirit') {
     game.audio?.playClick();
     ui.dialogKicker.textContent = '속삭임 곶';
     ui.dialogTitle.textContent = '🕊️ 바닷새 정령';
-    ui.dialogBody.innerHTML = speechHtml([
-      '"끼륵… 잘 와 주었어, 수호자. 미운 말들이 화살이 되어 깃털에 박혀 버렸어."',
-      '"한 번 내뱉은 말은 주워 담을 수 없어 — 그래서 이렇게 오래 아픈 거야."',
-      '"절벽 안 「말-화살 회랑」에 잡음이 소용돌이치고 있어. 네 방패의 힘이 깨어나면, 화살을 밀쳐낼 수 있을 거야… 준비되면 다시 와 줘."'
-    ]);
+    ui.dialogBody.innerHTML = completed
+      ? speechHtml([
+          '"고마워, 수호자! 깃털이 다시 따뜻해졌어."',
+          '"기억해 줘 — 뾰족한 말은 방패로 막고, 나는 따뜻한 말만 남기기. 그거면 이 바다의 어떤 곶도 아프지 않아."'
+        ])
+      : speechHtml([
+          '"끼륵… 잘 와 주었어, 수호자. 미운 말들이 화살이 되어 깃털에 박혀 버렸어."',
+          '"한 번 내뱉은 말은 주워 담을 수 없어 — 그래서 이렇게 오래 아픈 거야."',
+          '"절벽의 「말-화살 회랑」에 잡음 발사대가 숨어 있어. 방패로 화살을 주인에게 되돌려 줘!"'
+        ]);
     openDialog(game, ui);
   }
+}
+
+// 회랑 클리어: 정령 치유 + 스테이지 완료 기록(항로 지도 전이) + 감사 인사.
+function finishCorridor(game, ui) {
+  const isle = game.isle;
+  healSpiritVisuals(isle.built);
+  game.progress = markStageCompleted(game.progress, isle.stageId);
+  persistProgress(game.progress);
+  updateHud(game, ui);
+  game.audio?.playNovaChime();
+  triggerFlash(ui, '#ffe9b0');
+  ui.puzzleGoal.textContent = '정령이 건강해졌어요 — 곶이 고요합니다';
+  ui.puzzleHint.textContent = '뗏목으로 돌아가면 다시 바다로';
+  ui.dialogKicker.textContent = '속삭임 곶';
+  ui.dialogTitle.textContent = '🕊️ 바닷새 정령';
+  ui.dialogBody.innerHTML = speechHtml([
+    '"화살이… 멈췄어. 깃털이 다시 따뜻해!"',
+    '"고마워, 수호자. 한 번 내뱉은 말은 주워 담을 수 없지만 — 방패처럼 막아 주는 친구가 있으면 상처는 아물 수 있어."',
+    '"다음 섬의 친구들도 부탁해. 바다 저편에서 메아리가 앓는 소리가 들려…"'
+  ]);
+  openDialog(game, ui);
 }
 
 // 플레이어가 바라보는 방향 → 그리드 한 칸 방향([dCol, dRow]).

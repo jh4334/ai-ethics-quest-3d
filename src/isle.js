@@ -1,6 +1,7 @@
 // 확장 섬(스테이지) 지형 — 표현 계층. 1호: 속삭임 곶 (악플·혐오표현 + 디지털 발자국).
 // 저사양 원칙: 그림자 캐스터 0, 라이트 2개, 지오메트리 전부 코드 생성, 배치 좌표 전부 상수(결정성).
 import * as THREE from 'three';
+import { CORRIDOR } from './corridorLogic.js';
 
 export const ISLE_RADIUS = 12.6;
 
@@ -41,12 +42,15 @@ function buildSpirit() {
   beak.rotation.x = Math.PI / 2;
   beak.position.set(0, 1.9, 1.0);
   spirit.add(beak);
-  // 축 처진 날개 두 장.
+  // 축 처진 날개 두 장(치유되면 펴진다).
+  const wings = [];
   for (const side of [-1, 1]) {
     const wing = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.9, 1.1), bodyMat);
     wing.position.set(side * 0.78, 1.15, 0);
     wing.rotation.z = side * 0.5;
+    wing.userData.side = side;
     spirit.add(wing);
+    wings.push(wing);
   }
   // 깃털에 박힌 잡음 파편(주위를 도는 위스프) — updateIsle이 elapsed로 돌린다.
   const wisps = [];
@@ -56,11 +60,58 @@ function buildSpirit() {
     spirit.add(wisp);
     wisps.push(wisp);
   }
-  return { spirit, wisps };
+  return { spirit, wisps, wings, bodyMat };
 }
 
-// 속삭임 곶 씬 전체. interactables는 씬 로컬(정령·뗏목) — main이 근접 안내에 쓴다.
-export function buildWhisperCapeScene({ makeLabel }) {
+// 치유 연출: 위스프가 걷히고 깃털이 밝아지며 날개가 펴진다. 빌드(재상륙)와 런타임 둘 다 쓴다.
+export function healSpiritVisuals(built) {
+  built.wisps.forEach((wisp) => {
+    wisp.visible = false;
+  });
+  built.wings.forEach((wing) => {
+    wing.rotation.z = wing.userData.side * 0.14;
+    wing.position.y = 1.4;
+  });
+  built.bodyMat.color.setHex(0xffffff);
+  built.bodyMat.emissive.setHex(0x6a5c33);
+  built.bodyMat.emissiveIntensity = 0.4;
+  built.vortexes.forEach((vortex) => {
+    vortex.visible = false;
+  });
+}
+
+// 회랑 발사대(잡음 소용돌이) + 날아다니는 말-화살 메시.
+function buildCorridorProps(root) {
+  const vortexes = new Map();
+  for (const emitter of CORRIDOR.emitters) {
+    const vortex = new THREE.Group();
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x7a5f96, transparent: true, opacity: 0.85 });
+    for (let i = 0; i < 2; i += 1) {
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.46 + i * 0.24, 0.05, 8, 24), ringMat);
+      ring.rotation.set(i * 1.1, i * 0.7, 0);
+      vortex.add(ring);
+    }
+    const core = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.24, 0),
+      new THREE.MeshBasicMaterial({ color: 0x2a2136 })
+    );
+    vortex.add(core);
+    vortex.position.set(emitter.x, 3.0, emitter.z);
+    root.add(vortex);
+    vortexes.set(emitter.id, vortex);
+  }
+  const arrowMesh = new THREE.Mesh(
+    new THREE.ConeGeometry(0.16, 1.0, 5),
+    new THREE.MeshBasicMaterial({ color: 0xc25a68 })
+  );
+  arrowMesh.visible = false;
+  root.add(arrowMesh);
+  return { vortexes, arrowMesh };
+}
+
+// 속삭임 곶 씬 전체. interactables는 씬 로컬(정령·회랑·뗏목) — main이 근접 안내에 쓴다.
+// healed: 정령을 이미 치료한 세이브로 재상륙한 경우.
+export function buildWhisperCapeScene({ makeLabel, healed = false }) {
   const root = new THREE.Group();
 
   // 새벽 갯벌 톤: 차분한 반구광 + 약한 아침 해. 그림자 없음.
@@ -123,12 +174,15 @@ export function buildWhisperCapeScene({ makeLabel }) {
   }
 
   // 병든 바닷새 정령 — 북쪽 절벽 앞 둥지.
-  const { spirit, wisps } = buildSpirit();
+  const { spirit, wisps, wings, bodyMat } = buildSpirit();
   spirit.position.set(0.4, 0, -5.6);
   root.add(spirit);
   const spiritLabel = makeLabel('🕊️ 바닷새 정령', '#cfd8ea');
   spiritLabel.position.set(0.4, 3.4, -5.6);
   root.add(spiritLabel);
+
+  // 말-화살 회랑: 절벽의 발사대(잡음 소용돌이)와 화살.
+  const { vortexes, arrowMesh } = buildCorridorProps(root);
 
   // 남쪽 물가의 뗏목 — 바다로 돌아가는 문.
   const raft = new THREE.Mesh(
@@ -143,8 +197,13 @@ export function buildWhisperCapeScene({ makeLabel }) {
 
   const interactables = [
     { id: 'spirit', x: 0.4, z: -4.2, labelKo: '바닷새 정령에게 다가간다' },
+    { id: 'corridor', x: 3.2, z: -5.4, labelKo: healed ? '말-화살 회랑 — 고요하다' : '말-화살 회랑 — 잡음을 잠재운다' },
     { id: 'raft', x: -3.4, z: 10.6, labelKo: '뗏목 — 바다로 돌아간다' }
   ];
 
-  return { root, spirit, wisps, interactables };
+  const built = { root, spirit, wisps, wings, bodyMat, vortexes, arrowMesh, interactables };
+  if (healed) {
+    healSpiritVisuals(built);
+  }
+  return built;
 }
