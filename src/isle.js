@@ -5,6 +5,7 @@ import { CORRIDOR } from './corridorLogic.js';
 import { RUMOR } from './rumorLogic.js';
 import { DUNES } from './dunesLogic.js';
 import { HEART } from './heartLogic.js';
+import { RESIDUE } from './residueLogic.js';
 
 export const ISLE_RADIUS = 12.6;
 
@@ -714,6 +715,7 @@ export function buildMemoryOuterScene({ makeLabel, healed = false }) {
 
   const interactables = [
     { id: 'spirit', x: 0.4, z: -3.0, labelKo: '기억의 심장에 다가간다' },
+    { id: 'portal', x: 0.4, z: -8.0, labelKo: '심부 관문' },
     { id: 'raft', x: -3.4, z: 10.4, labelKo: '뗏목 — 바다로 돌아간다' }
   ];
 
@@ -751,10 +753,162 @@ export function buildMemoryOuterScene({ makeLabel, healed = false }) {
   return built;
 }
 
+// 5호: 기억의 심장 심부 (최종 재대결) — 심연 위의 아레나, 노이즈의 잔영이 기다린다.
+export function buildMemoryCoreScene({ makeLabel, healed = false }) {
+  const root = new THREE.Group();
+
+  root.add(new THREE.HemisphereLight(0x8a7ab8, 0x16101f, 1.5));
+  const abyssGlow = new THREE.DirectionalLight(0xb88ae8, 0.7);
+  abyssGlow.position.set(-8, 16, 8);
+  root.add(abyssGlow);
+
+  // 심연 위에 뜬 아레나 원반.
+  const arena = new THREE.Mesh(
+    new THREE.CylinderGeometry(11.6, 10.2, 1.0, 48),
+    new THREE.MeshStandardMaterial({ color: 0x3a3454, emissive: 0x1a1630, emissiveIntensity: 0.55, roughness: 0.9 })
+  );
+  arena.position.y = -0.2;
+  root.add(arena);
+  const rim = new THREE.Mesh(
+    new THREE.TorusGeometry(11.0, 0.14, 8, 48),
+    new THREE.MeshBasicMaterial({ color: 0x8a6cc8, transparent: true, opacity: 0.6 })
+  );
+  rim.rotation.x = -Math.PI / 2;
+  rim.position.y = 0.34;
+  root.add(rim);
+
+  // 노이즈의 잔영 — 검은 결정 덩어리. 4껍질(동사 색 고리)이 지키고 있다.
+  const bossMat = new THREE.MeshStandardMaterial({
+    color: 0x2a2438,
+    emissive: 0x4a1a2c,
+    emissiveIntensity: 0.5,
+    roughness: 0.4,
+    flatShading: true
+  });
+  const boss = new THREE.Mesh(new THREE.IcosahedronGeometry(1.5, 0), bossMat);
+  boss.position.set(RESIDUE.boss.x, 2.3, RESIDUE.boss.z);
+  root.add(boss);
+  const bossLabel = makeLabel('⚡ 노이즈의 잔영', '#d8a8c8');
+  bossLabel.position.set(RESIDUE.boss.x, 5.2, RESIDUE.boss.z);
+  root.add(bossLabel);
+  // 페이즈 껍질 고리 — 바깥부터 깨져 나간다.
+  const shellRings = [];
+  RESIDUE.phases.forEach((phase, i) => {
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(2.2 + i * 0.5, 0.09, 8, 36),
+      new THREE.MeshBasicMaterial({ color: phase.color, transparent: true, opacity: 0.8 })
+    );
+    ring.position.copy(boss.position);
+    root.add(ring);
+    shellRings.push(ring);
+  });
+
+  // 정령들의 목소리 — 각성 순간에 나타난다(빛 구슬 셋).
+  const spiritOrbs = [];
+  const spiritDefs = [
+    { emoji: '🕊️', color: 0xcfd8ea, x: -6.5, z: 2.5 },
+    { emoji: '🐋', color: 0xbfe8f4, x: 0.4, z: 6.5 },
+    { emoji: '🐢', color: 0xd8e8a8, x: 7.0, z: 2.2 }
+  ];
+  for (const def of spiritDefs) {
+    const orb = new THREE.Mesh(
+      new THREE.SphereGeometry(0.4, 12, 12),
+      new THREE.MeshBasicMaterial({ color: def.color })
+    );
+    orb.position.set(def.x, 1.6, def.z);
+    orb.visible = false;
+    root.add(orb);
+    const label = makeLabel(def.emoji, '#ffffff');
+    label.scale.multiplyScalar(0.45);
+    label.position.set(def.x, 2.7, def.z);
+    label.visible = false;
+    root.add(label);
+    spiritOrbs.push(orb, label);
+  }
+
+  // 기억의 별 — 격파 후 잔영이 흩어져 돌아온 기억들.
+  const memoryStars = [];
+  const starMat = new THREE.MeshBasicMaterial({ color: 0xfff3c0 });
+  for (let i = 0; i < 7; i += 1) {
+    const star = new THREE.Mesh(new THREE.OctahedronGeometry(0.18, 0), starMat);
+    star.visible = false;
+    root.add(star);
+    memoryStars.push(star);
+  }
+
+  // 남쪽 가장자리의 뗏목.
+  const raft = new THREE.Mesh(
+    new THREE.BoxGeometry(1.6, 0.14, 2.0),
+    new THREE.MeshStandardMaterial({ color: 0x8a6a3f, emissive: 0x241a0c, emissiveIntensity: 0.4, roughness: 0.9 })
+  );
+  raft.position.set(-3.4, 0.02, 9.4);
+  root.add(raft);
+  const raftLabel = makeLabel('🛶 뗏목', '#ffd88a');
+  raftLabel.position.set(-3.4, 1.6, 9.4);
+  root.add(raftLabel);
+
+  const interactables = [{ id: 'raft', x: -3.4, z: 8.8, labelKo: '뗏목 — 바다로 돌아간다' }];
+
+  let peaceful = healed;
+  const animate = (delta, elapsed) => {
+    if (peaceful) {
+      memoryStars.forEach((star, i) => {
+        const angle = elapsed * 0.5 + (i / memoryStars.length) * Math.PI * 2;
+        star.position.set(RESIDUE.boss.x + Math.cos(angle) * 3.4, 2.2 + Math.sin(elapsed * 1.2 + i) * 0.6, RESIDUE.boss.z + Math.sin(angle) * 3.4);
+        star.rotation.y += delta * 2;
+      });
+      return;
+    }
+    boss.rotation.y += delta * 0.8;
+    boss.rotation.x = Math.sin(elapsed * 1.7) * 0.15;
+    shellRings.forEach((ring, i) => {
+      if (!ring.visible) {
+        return;
+      }
+      ring.rotation.x = Math.PI / 2 + Math.sin(elapsed * (0.6 + i * 0.2)) * 0.5;
+      ring.rotation.y = elapsed * (0.4 + i * 0.15);
+    });
+  };
+
+  // 격파 연출: 잔영이 사라지고 기억의 별들이 떠오른다.
+  const heal = () => {
+    peaceful = true;
+    boss.visible = false;
+    bossLabel.visible = false;
+    shellRings.forEach((ring) => {
+      ring.visible = false;
+    });
+    spiritOrbs.forEach((orb) => {
+      orb.visible = true;
+    });
+    memoryStars.forEach((star) => {
+      star.visible = true;
+    });
+  };
+
+  const built = {
+    root,
+    spirit: boss,
+    interactables,
+    animate,
+    heal,
+    boss,
+    bossMat,
+    shellRings,
+    spiritOrbs,
+    memoryStars
+  };
+  if (healed) {
+    heal();
+  }
+  return built;
+}
+
 // 스테이지 id → 섬 씬 빌더. 상륙 가능한 섬이 늘 때마다 여기에 등록한다.
 export const ISLE_SCENES = {
   'whisper-cape': buildWhisperCapeScene,
   'echo-cave': buildEchoCaveScene,
   'hourglass-port': buildHourglassPortScene,
-  'memory-outer': buildMemoryOuterScene
+  'memory-outer': buildMemoryOuterScene,
+  'memory-core': buildMemoryCoreScene
 };
