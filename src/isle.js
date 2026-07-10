@@ -2,6 +2,7 @@
 // 저사양 원칙: 그림자 캐스터 0, 라이트 2개, 지오메트리 전부 코드 생성, 배치 좌표 전부 상수(결정성).
 import * as THREE from 'three';
 import { CORRIDOR } from './corridorLogic.js';
+import { RUMOR } from './rumorLogic.js';
 
 export const ISLE_RADIUS = 12.6;
 
@@ -272,31 +273,51 @@ export function buildEchoCaveScene({ makeLabel, healed = false }) {
     crystals.push(crystal);
   }
 
-  // 소문의 벽 — 같은 말만 되풀이하는 웅얼돌 무리(후속 도전 자리).
-  const murmurMat = new THREE.MeshStandardMaterial({
-    color: 0x4a4258,
-    emissive: 0x2c2440,
-    emissiveIntensity: 0.6,
-    roughness: 0.9,
-    flatShading: true
-  });
-  for (let i = 0; i < 5; i += 1) {
+  // 소문의 벽 — 같은 말만 되풀이하는 웅얼돌 무리. 좌표는 rumorLogic(RUMOR.stones)이 단일 출처.
+  // 판별 연출을 돌마다 따로 주기 위해 재질은 돌별 사본.
+  const rumorStones = new Map();
+  const stoneBubbles = new Map();
+  RUMOR.stones.forEach((stoneData, i) => {
+    const murmurMat = new THREE.MeshStandardMaterial({
+      color: 0x4a4258,
+      emissive: 0x2c2440,
+      emissiveIntensity: 0.6,
+      roughness: 0.9,
+      flatShading: true
+    });
     const stone = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.7 + (i % 3) * 0.4, 0.7), murmurMat);
-    const angle = -0.5 + i * 0.28;
-    stone.position.set(6.2 - Math.cos(angle) * 1.4, 0.85, -3.6 + i * 1.5);
-    stone.rotation.y = angle;
+    stone.position.set(stoneData.x, 0.85, stoneData.z);
+    stone.rotation.y = -0.5 + i * 0.28;
     root.add(stone);
-  }
+    rumorStones.set(stoneData.id, stone);
+    // 되풀이되는 소문 말풍선.
+    const bubble = makeLabel('💬 …', '#d8c8f0');
+    bubble.scale.multiplyScalar(0.55);
+    bubble.position.set(stoneData.x, 2.7 + (i % 3) * 0.3, stoneData.z);
+    bubble.userData.baseY = bubble.position.y;
+    root.add(bubble);
+    stoneBubbles.set(stoneData.id, bubble);
+  });
   const wallLabel = makeLabel('🗿 소문의 벽', '#b8a8d8');
-  wallLabel.position.set(5.6, 3.1, -1.4);
+  wallLabel.position.set(5.6, 4.1, -1.4);
   root.add(wallLabel);
+
+  // 출처의 종 울림 링 — 도전 중 F로 울리면 플레이어에서 퍼져 나간다.
+  const bellRing = new THREE.Mesh(
+    new THREE.TorusGeometry(1, 0.07, 6, 36),
+    new THREE.MeshBasicMaterial({ color: 0xffd88a, transparent: true, opacity: 0.7 })
+  );
+  bellRing.rotation.x = -Math.PI / 2;
+  bellRing.visible = false;
+  root.add(bellRing);
 
   // 갇힌 고래 정령 — 웅덩이에 떠서 잿빛 메아리 링에 둘러싸여 있다.
   const spirit = new THREE.Group();
+  // 병든 잿빛이 기본 — 치유 시 heal()이 맑은 색으로 바꾼다.
   const whaleMat = new THREE.MeshStandardMaterial({
-    color: healed ? 0x9fd8ec : 0x93a0b4,
-    emissive: healed ? 0x3a6a80 : 0x2a3240,
-    emissiveIntensity: healed ? 0.55 : 0.35,
+    color: 0x93a0b4,
+    emissive: 0x2a3240,
+    emissiveIntensity: 0.35,
     roughness: 0.6
   });
   const body = new THREE.Mesh(new THREE.SphereGeometry(1.0, 14, 12), whaleMat);
@@ -322,7 +343,6 @@ export function buildEchoCaveScene({ makeLabel, healed = false }) {
     );
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.5;
-    ring.visible = !healed;
     spirit.add(ring);
     rings.push(ring);
   }
@@ -364,9 +384,17 @@ export function buildEchoCaveScene({ makeLabel, healed = false }) {
     crystals.forEach((crystal, i) => {
       crystal.rotation.y += delta * (0.6 + i * 0.2);
     });
+    // 소문 말풍선이 웅얼웅얼 떠다닌다(치유되면 사라진다).
+    let bubbleIdx = 0;
+    stoneBubbles.forEach((bubble) => {
+      if (bubble.visible) {
+        bubble.position.y = bubble.userData.baseY + Math.sin(elapsed * 2 + bubbleIdx * 1.7) * 0.12;
+      }
+      bubbleIdx += 1;
+    });
   };
 
-  // 치유 연출(후속 도전에서 호출): 메아리 링이 걷히고 몸빛이 맑아진다.
+  // 치유 연출(소문의 벽 클리어 시 호출): 메아리 링·말풍선이 걷히고 벽이 고요해진다.
   const heal = () => {
     rings.forEach((ring) => {
       ring.visible = false;
@@ -374,9 +402,22 @@ export function buildEchoCaveScene({ makeLabel, healed = false }) {
     whaleMat.color.setHex(0x9fd8ec);
     whaleMat.emissive.setHex(0x3a6a80);
     whaleMat.emissiveIntensity = 0.55;
+    stoneBubbles.forEach((bubble) => {
+      bubble.visible = false;
+    });
+    rumorStones.forEach((stone) => {
+      stone.rotation.z = 0;
+      stone.material.color.setHex(0x5f6a80);
+      stone.material.emissive.setHex(0x232837);
+    });
+    bellRing.visible = false;
   };
 
-  return { root, spirit, interactables, animate, heal };
+  const built = { root, spirit, interactables, animate, heal, rumorStones, stoneBubbles, bellRing };
+  if (healed) {
+    heal();
+  }
+  return built;
 }
 
 // 스테이지 id → 섬 씬 빌더. 상륙 가능한 섬이 늘 때마다 여기에 등록한다.

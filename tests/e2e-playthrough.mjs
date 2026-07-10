@@ -396,6 +396,44 @@ try {
   }));
   check(whale.dialog && (whale.text.includes('메아리') || whale.text.includes('출처')), '고래 정령 대화(메아리 증상·종 예고)');
   await closeDlg();
+
+  // ── 소문의 벽: 종 울림 판별 → 원본 돌 3라운드 → 고래 치유·완료 ──
+  await tp(5.0, -1.9, 0, -1);
+  await p.waitForTimeout(1000);
+  await A(600);
+  const rumorOn = await p.evaluate(() => window.__ethicsGame.isle?.challenge?.round === 0);
+  check(rumorOn, '소문의 벽 도전 시작(3라운드)');
+  // 울림 없이 원본 앞에서 A → 평가하지 않는다(blind).
+  await tp(4.88, 1.4, 0, -1);
+  await p.waitForTimeout(1000);
+  await A(600);
+  const blind = await p.evaluate(() => window.__ethicsGame.isle.challenge.round === 0);
+  check(blind, '울림 없는 선택은 평가하지 않음(출처 확인 강제)');
+  // 라운드별: 종 울림(F) → 원본 돌 앞 A. (헤드리스 느린 프레임: 쿨다운 리셋)
+  const origins = [[4.88, 0.9], [4.97, -3.6], [4.8, -0.6]];
+  for (const [ox, oz] of origins) {
+    await p.evaluate(() => { window.__ethicsGame.isle.bellCd = 0; });
+    await p.keyboard.press('f');
+    await p.waitForTimeout(800);
+    await tp(ox, oz + 0.5, 0, -1);
+    await p.waitForTimeout(1000);
+    await A(700);
+  }
+  const rumorDone = await p.evaluate(() => {
+    const g = window.__ethicsGame;
+    return {
+      cleared: g.isle.challenge?.cleared === true,
+      completed: g.progress.stages['echo-cave']?.completed === true,
+      bubblesGone: [...g.isle.built.stoneBubbles.values()].every((b) => !b.visible),
+      thanks: !window.__ethicsUi.dialog.hidden
+    };
+  });
+  check(
+    rumorDone.cleared && rumorDone.completed && rumorDone.bubblesGone && rumorDone.thanks,
+    '소문의 벽 클리어 → 고래 치유 + 스테이지 완료 기록 + 감사 대화'
+  );
+  await closeDlg();
+
   await tp(-3.4, 10.0, 0, 1);
   await p.waitForTimeout(1000);
   await A(800);
