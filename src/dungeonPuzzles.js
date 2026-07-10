@@ -31,7 +31,7 @@ export const DUNGEON_ROOMS = {
     topicId: 'bias',
     mechanic: 'carry',
     titleKo: '모두의 꽃밭',
-    goalKo: '씨앗 통에서 서로 다른 색을 골라 네 밭을 모두 채우세요. 같은 색은 다시 심을 수 없어요.',
+    goalKo: '노이즈가 같은 색만 심어 뒀어요! 씨앗을 되집고 바꿔서 네 밭을 서로 다른 색으로 채우세요.',
     lessonKo: '데이터가 다양해야 편향이 줄어요. 같은 것만 모으면 모두의 꽃밭이 안 돼요.',
     grid: { cols: 9, rows: 7, cell: 1.2 },
     dispensers: [
@@ -46,6 +46,9 @@ export const DUNGEON_ROOMS = {
       { id: 'bed3', cell: [5, 3] },
       { id: 'bed4', cell: [6, 3] }
     ],
+    // 노이즈가 미리 잘못 심어둔 시작 배치 — 빨강이 두 밭에 중복.
+    // 빈 밭만 채우면 끝나지 않고, 중복을 되집어 고쳐야 한다(편향 교정 경험).
+    preset: [0, 0, null, null],
     // 밭 색 팔레트(렌더 참고용, 논리와 무관).
     palette: ['🔴', '🔵', '🟡', '🟣'],
     entry: [4, 6],
@@ -86,16 +89,18 @@ export const DUNGEON_ROOMS = {
     goalKo: '진실의 빛💡을 거울로 돌려 진짜 얼굴을 비추세요.',
     lessonKo: '멈추고 확인하는 사람에게 진실이 보여요. 매끈하고 흔들리는 건 가짜예요.',
     grid: { cols: 9, rows: 7, cell: 1.2 },
-    source: { cell: [3, 5], dir: [0, -1], emoji: '💡', labelKo: '진실의 빛' },
-    // orientation 0 = '/', 1 = '\\'
+    source: { cell: [2, 5], dir: [0, -1], emoji: '💡', labelKo: '진실의 빛' },
+    // orientation 0 = '/', 1 = '\\'. 거울 3장 — 정답은 두 번의 조작({m1:0,m2:1,m3:1}).
+    // 8조합 전수: 초기(000)는 벽, m1을 돌리면(1xx) 매끈한 가짜, 010은 흔들리는 가짜, 011만 진짜.
     mirrors: [
-      { id: 'm1', cell: [3, 1], states: 2, emoji: '🪞', labelKo: '거울' },
-      { id: 'm2', cell: [6, 1], states: 2, emoji: '🪞', labelKo: '거울' }
+      { id: 'm1', cell: [2, 1], states: 2, emoji: '🪞', labelKo: '거울' },
+      { id: 'm2', cell: [5, 1], states: 2, emoji: '🪞', labelKo: '거울' },
+      { id: 'm3', cell: [5, 4], states: 2, emoji: '🪞', labelKo: '거울' }
     ],
     orbs: [
-      { id: 'o_real', cell: [6, 4], real: true, emoji: '😊', labelKo: '진짜 얼굴', hintKo: '또렷하고 자연스러워요.' },
-      { id: 'o_fake1', cell: [1, 1], real: false, emoji: '🎭', labelKo: '가짜 얼굴', hintKo: '경계가 흔들려요.' },
-      { id: 'o_fake2', cell: [7, 3], real: false, emoji: '👾', labelKo: '가짜 얼굴', hintKo: '너무 매끈해 어색해요.' }
+      { id: 'o_real', cell: [7, 4], real: true, emoji: '😊', labelKo: '진짜 얼굴', hintKo: '또렷하고 자연스러워요.' },
+      { id: 'o_fake1', cell: [3, 4], real: false, emoji: '🎭', labelKo: '가짜 얼굴', hintKo: '경계가 흔들려요.' },
+      { id: 'o_fake2', cell: [1, 1], real: false, emoji: '👾', labelKo: '가짜 얼굴', hintKo: '너무 매끈해 어색해요.' }
     ],
     entry: [4, 6],
     pedestal: [4, 0]
@@ -129,7 +134,8 @@ export function createRoomState(topicId) {
     }
     case 'carry': {
       if (room.beds) {
-        return { held: null, beds: room.beds.map(() => null) };
+        // preset이 있으면 노이즈가 미리 심어둔 배치로 시작(중복을 되집어 고쳐야 함).
+        return { held: null, beds: room.preset ? room.preset.slice() : room.beds.map(() => null) };
       }
       if (room.exhibits) {
         const exhibits = {};
@@ -387,8 +393,9 @@ export function isRoomSolved(topicId, state) {
       });
     case 'carry':
       if (room.beds) {
-        // 중복 규칙 덕분에 모든 밭이 차면 곧 서로 다른 4색.
-        return state.beds.every((b) => b !== null);
+        // 프리셋 중복이 남아 있을 수 있으므로 '다 찼다'만으로는 부족 — 서로 달라야 해결.
+        const filled = state.beds.filter((b) => b !== null);
+        return filled.length === state.beds.length && new Set(filled).size === filled.length;
       }
       if (room.exhibits) {
         // 진짜 이름표만 걸리므로 다 채워지면 곧 정답.
@@ -416,7 +423,11 @@ export function countRemaining(topicId, state) {
       }, 0);
     case 'carry':
       if (room.beds) {
-        return state.beds.filter((b) => b === null).length;
+        // 빈 밭 수 + 중복으로 바꿔야 할 밭 수.
+        const filled = state.beds.filter((b) => b !== null);
+        const empties = state.beds.length - filled.length;
+        const duplicates = filled.length - new Set(filled).size;
+        return empties + duplicates;
       }
       if (room.exhibits) {
         return room.exhibits.filter((ex) => state.exhibits[ex.id] === null).length;

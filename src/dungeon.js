@@ -17,6 +17,13 @@ const ZONE_COLOR = {
 };
 // 씨앗/꽃 색(편향 방 colorIdx 0..3).
 const SEED_COLOR = [0xff5a5a, 0x4f9dff, 0xffd23f, 0xa88bff];
+// 색약 학생도 구분하도록 색마다 모양을 다르게(●▲■◆) — '다양성' 주제와도 맞닿는다.
+const SEED_GEOS = [
+  new THREE.IcosahedronGeometry(0.2, 0), // 빨강 ●
+  new THREE.ConeGeometry(0.2, 0.34, 8), // 파랑 ▲
+  new THREE.BoxGeometry(0.3, 0.3, 0.3), // 노랑 ■
+  new THREE.OctahedronGeometry(0.22, 0) // 보라 ◆
+];
 
 // 이모지/기호 스프라이트(캔버스 생성 — 파일 에셋 없음).
 export function makeGlyphSprite(glyph, scale = 0.9) {
@@ -39,7 +46,7 @@ export function makeGlyphSprite(glyph, scale = 0.9) {
 const CRATE_GEO = new THREE.BoxGeometry(0.86, 0.86, 0.86);
 const BEAM_GEO_H = new THREE.BoxGeometry(1.2, 0.09, 0.09);
 const BEAM_GEO_V = new THREE.BoxGeometry(0.09, 0.09, 1.2);
-const SHARED = new Set([CRATE_GEO, BEAM_GEO_H, BEAM_GEO_V]);
+const SHARED = new Set([CRATE_GEO, BEAM_GEO_H, BEAM_GEO_V, ...SEED_GEOS]);
 
 function buildShell(room, topicId, makeLabel) {
   const root = new THREE.Group();
@@ -182,7 +189,7 @@ function buildCarryProps(room, topicId, root, addLabel) {
     );
     barrel.position.y = 0.31;
     const seed = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(0.2, 0),
+      SEED_GEOS[d.colorIdx], // 색마다 모양이 달라 색약 학생도 구분 가능
       new THREE.MeshStandardMaterial({ color: SEED_COLOR[d.colorIdx], emissive: SEED_COLOR[d.colorIdx], emissiveIntensity: 0.55, flatShading: true })
     );
     seed.position.y = 0.85;
@@ -207,7 +214,7 @@ function buildCarryProps(room, topicId, root, addLabel) {
     );
     stem.position.y = 0.42;
     const bloomMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.5, flatShading: true });
-    const bloom = new THREE.Mesh(new THREE.IcosahedronGeometry(0.2, 0), bloomMat);
+    const bloom = new THREE.Mesh(SEED_GEOS[0], bloomMat); // 모양은 sync에서 심은 색에 맞춰 교체
     bloom.position.y = 0.72;
     const flower = new THREE.Group();
     flower.add(stem, bloom);
@@ -215,7 +222,7 @@ function buildCarryProps(room, topicId, root, addLabel) {
     group.add(soil, flower);
     group.position.set(x, 0, z);
     root.add(group);
-    props.bedMeshes.set(i, { group, flower, bloomMat });
+    props.bedMeshes.set(i, { group, flower, bloom, bloomMat });
   });
   // 저작권: 전시대 + 이름표.
   for (const ex of room.exhibits ?? []) {
@@ -366,6 +373,7 @@ export function syncDungeonVisuals(topicId, built, state, extras = {}) {
       if (colorIdx !== null) {
         mesh.bloomMat.color.setHex(SEED_COLOR[colorIdx]);
         mesh.bloomMat.emissive.setHex(SEED_COLOR[colorIdx]);
+        mesh.bloom.geometry = SEED_GEOS[colorIdx]; // 색과 함께 모양도 바뀐다(공유 지오메트리라 dispose 불요)
       }
     });
     for (const p of room.plates ?? []) {

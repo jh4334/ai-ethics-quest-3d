@@ -121,54 +121,46 @@ test('bias room exists with 4 dispensers, 4 beds, wired to its shrine', () => {
   assert.deepEqual(room.pedestal, [4, 0]);
 });
 
-test('bias fresh state starts empty and unsolved', () => {
+test('bias fresh state starts with the Noise preset (duplicate reds) and is unsolved', () => {
   const state = createRoomState('bias');
-  assert.deepEqual(state, { held: null, beds: [null, null, null, null] });
+  // 노이즈가 빨강을 두 밭에 미리 심어둠 — 빈 밭만 채워서는 끝나지 않는다.
+  assert.deepEqual(state, { held: null, beds: [0, 0, null, null] });
   assert.equal(isRoomSolved('bias', state), false);
-  assert.equal(countRemaining('bias', state), 4);
+  // 빈 밭 2 + 중복 1 = 3곳을 바꿔야 한다.
+  assert.equal(countRemaining('bias', state), 3);
 });
 
-test('bias happy path: pick 4 different colors, plant them, room solves', () => {
-  let state = createRoomState('bias');
-  const plan = [
-    ['red', 'bed1'],
-    ['blue', 'bed2'],
-    ['yellow', 'bed3'],
-    ['purple', 'bed4']
-  ];
-  for (const [dispId, bedId] of plan) {
-    const pick = pickOrPlace('bias', state, dispId);
-    assert.equal(pick.event, 'picked');
-    state = pick.state;
-    const place = pickOrPlace('bias', state, bedId);
-    assert.equal(place.event, 'placed');
-    state = place.state;
-    assert.equal(state.held, null);
-  }
+test('bias happy path: lift a duplicate red, swap it, fill the rest, room solves', () => {
+  let state = createRoomState('bias'); // [0,0,null,null]
+  // 중복 빨강 하나를 되집는다(빈 손 + 채워진 밭 = picked).
+  const lift = pickOrPlace('bias', state, 'bed2');
+  assert.equal(lift.event, 'picked');
+  assert.equal(lift.state.held, 0);
+  state = lift.state; // beds [0,null,null,null], held red
+  // 들고 있던 빨강은 통에서 다른 색으로 교체(무한 공급 모델).
+  state = pickOrPlace('bias', state, 'blue').state;
+  state = pickOrPlace('bias', state, 'bed2').state; // 파랑 심기
+  state = pickOrPlace('bias', state, 'yellow').state;
+  state = pickOrPlace('bias', state, 'bed3').state;
+  state = pickOrPlace('bias', state, 'purple').state;
+  const last = pickOrPlace('bias', state, 'bed4');
+  assert.equal(last.event, 'placed');
+  state = last.state;
   assert.deepEqual(state.beds, [0, 1, 2, 3]);
   assert.equal(isRoomSolved('bias', state), true);
   assert.equal(countRemaining('bias', state), 0);
 });
 
-test('bias refuses a duplicate color (편향 방지) and allows picking a filled bed back', () => {
-  let state = createRoomState('bias');
-  state = pickOrPlace('bias', state, 'red').state;
-  state = pickOrPlace('bias', state, 'bed1').state; // bed1 = red
-  // 다시 빨강을 들고 다른 밭에 심으려 하면 거부.
-  state = pickOrPlace('bias', state, 'red').state;
-  const dup = pickOrPlace('bias', state, 'bed2');
-  assert.equal(dup.event, 'duplicate');
-  assert.deepEqual(dup.state.beds, [0, null, null, null]);
-  // 손이 빈 상태로 채워진 밭을 누르면 되집는다.
-  const empty = pickOrPlace('bias', createRoomState('bias'), 'bed1');
-  assert.equal(empty.event, null); // 빈 밭 + 빈 손 = 아무 일 없음
-  let s2 = createRoomState('bias');
-  s2 = pickOrPlace('bias', s2, 'blue').state;
-  s2 = pickOrPlace('bias', s2, 'bed3').state; // bed3 = blue
-  const back = pickOrPlace('bias', s2, 'bed3');
-  assert.equal(back.event, 'picked');
-  assert.equal(back.state.held, 1);
-  assert.equal(back.state.beds[2], null);
+test('bias refuses planting a color that already grows in another bed (편향 방지)', () => {
+  let state = createRoomState('bias'); // bed1·bed2에 빨강
+  state = pickOrPlace('bias', state, 'red').state; // 통에서 또 빨강을 집어
+  const dup = pickOrPlace('bias', state, 'bed3'); // 빈 밭에 심으려 하면
+  assert.equal(dup.event, 'duplicate'); // 거부.
+  assert.deepEqual(dup.state.beds, [0, 0, null, null]);
+  // 밭이 다 찼어도 중복이 남으면 미해결(프리셋 함정의 핵심).
+  const fullDup = { held: null, beds: [0, 0, 1, 2] };
+  assert.equal(isRoomSolved('bias', fullDup), false);
+  assert.equal(countRemaining('bias', fullDup), 1);
 });
 
 test('bias dispenser swaps held color; functions stay pure', () => {
@@ -178,8 +170,8 @@ test('bias dispenser swaps held color; functions stay pure', () => {
   const r2 = pickOrPlace('bias', r1.state, 'purple');
   assert.equal(r2.event, 'picked');
   assert.equal(r2.state.held, 3);
-  // 원본 불변.
-  assert.deepEqual(start, { held: null, beds: [null, null, null, null] });
+  // 원본 불변(프리셋 포함).
+  assert.deepEqual(start, { held: null, beds: [0, 0, null, null] });
 });
 
 // ── copyright — 이름의 전당 (carry) ─────────────────────────
@@ -264,53 +256,69 @@ test('copyright locked exhibit ignores further input; swap keeps prior plate on 
 
 // ── deepfake — 진실의 동굴 (beam) ───────────────────────────
 
-test('deepfake room exists: source north, 2 mirrors, 3 orbs (exactly one real)', () => {
+test('deepfake room exists: source north, 3 mirrors, 3 orbs (exactly one real)', () => {
   assert.ok(hasDungeonRoom('deepfake'));
   const room = getDungeonRoom('deepfake');
   assert.equal(room.shrineId, 'deepfake-shrine');
   assert.equal(room.mechanic, 'beam');
   assert.deepEqual(room.source.dir, [0, -1]);
-  assert.equal(room.mirrors.length, 2);
+  assert.equal(room.mirrors.length, 3);
   assert.equal(room.orbs.length, 3);
   assert.equal(room.orbs.filter((o) => o.real).length, 1);
 });
 
-test('deepfake fresh state has both mirrors at 0 and is unsolved (beam hits wall)', () => {
+test('deepfake fresh state has all mirrors at 0 and is unsolved (beam hits wall)', () => {
   const state = createRoomState('deepfake');
-  assert.deepEqual(state, { mirrors: { m1: 0, m2: 0 } });
+  assert.deepEqual(state, { mirrors: { m1: 0, m2: 0, m3: 0 } });
   const path = computeBeamPath('deepfake', state);
   assert.equal(path.hit.kind, 'wall');
   assert.equal(isRoomSolved('deepfake', state), false);
   assert.equal(countRemaining('deepfake', state), 1);
 });
 
-test('deepfake exhaustive 4-combo check: initial wall, one real, at least one fake', () => {
+test('deepfake exhaustive 8-combo check: initial wall, exactly one real, both fakes reachable', () => {
   const results = {};
   for (const m1 of [0, 1]) {
     for (const m2 of [0, 1]) {
-      const state = { mirrors: { m1, m2 } };
-      const { hit } = computeBeamPath('deepfake', state);
-      results[`${m1}${m2}`] = hit.kind === 'orb' ? (hit.real ? 'real' : 'fake') : hit.kind;
+      for (const m3 of [0, 1]) {
+        const state = { mirrors: { m1, m2, m3 } };
+        const { hit } = computeBeamPath('deepfake', state);
+        results[`${m1}${m2}${m3}`] = hit.kind === 'orb'
+          ? (hit.real ? 'real' : `fake:${hit.orbId}`)
+          : hit.kind;
+      }
     }
   }
-  // 설계된 정확한 결과.
-  assert.deepEqual(results, { '00': 'wall', '01': 'real', '10': 'fake', '11': 'fake' });
-  // 초기(00)는 벽, 정답 콤보는 정확히 하나, 가짜를 맞히는 콤보도 존재.
-  assert.equal(results['00'], 'wall');
+  // 설계된 정확한 결과: 초기 벽, m1을 돌리면 매끈한 가짜(o_fake2),
+  // m2만 돌리면 흔들리는 가짜(o_fake1) 경로, m2+m3 두 번을 돌려야 진짜.
+  assert.deepEqual(results, {
+    '000': 'wall',
+    '001': 'wall',
+    '010': 'fake:o_fake1',
+    '011': 'real',
+    '100': 'fake:o_fake2',
+    '101': 'fake:o_fake2',
+    '110': 'fake:o_fake2',
+    '111': 'fake:o_fake2'
+  });
   assert.equal(Object.values(results).filter((v) => v === 'real').length, 1);
-  assert.ok(Object.values(results).some((v) => v === 'fake'));
+  // 두 가짜 모두 실제로 도달 가능한 경로가 있어야 교훈이 산다.
+  assert.ok(Object.values(results).some((v) => v === 'fake:o_fake1'));
+  assert.ok(Object.values(results).some((v) => v === 'fake:o_fake2'));
 });
 
-test('deepfake happy path: rotate m2 once to hit the real orb and solve', () => {
+test('deepfake happy path needs two rotations (m2 then m3) to hit the real orb', () => {
   let state = createRoomState('deepfake');
-  const rot = rotateMirror('deepfake', state, 'm2');
+  state = rotateMirror('deepfake', state, 'm2').state;
+  // 한 번으로는 아직 — 흔들리는 가짜에 닿는다(교훈 순간).
+  assert.equal(computeBeamPath('deepfake', state).hit.real, false);
+  const rot = rotateMirror('deepfake', state, 'm3');
   assert.equal(rot.event, 'rotated');
   state = rot.state;
-  assert.deepEqual(state.mirrors, { m1: 0, m2: 1 });
+  assert.deepEqual(state.mirrors, { m1: 0, m2: 1, m3: 1 });
   const path = computeBeamPath('deepfake', state);
   assert.equal(path.hit.kind, 'orb');
   assert.equal(path.hit.real, true);
-  assert.ok(getDungeonRoom('deepfake').orbs.find((o) => o.id === path.hit.orbId).real);
   assert.equal(isRoomSolved('deepfake', state), true);
   assert.equal(countRemaining('deepfake', state), 0);
 });
@@ -321,12 +329,12 @@ test('deepfake rotateMirror toggles and is pure/deterministic; bad id is a no-op
   const b = rotateMirror('deepfake', a.state, 'm1');
   assert.equal(a.state.mirrors.m1, 1);
   assert.equal(b.state.mirrors.m1, 0);
-  assert.deepEqual(start, { mirrors: { m1: 0, m2: 0 } }); // 원본 불변
+  assert.deepEqual(start, { mirrors: { m1: 0, m2: 0, m3: 0 } }); // 원본 불변
   const bad = rotateMirror('deepfake', start, 'nope');
   assert.equal(bad.event, null);
   // 같은 입력 → 같은 경로.
-  const p1 = computeBeamPath('deepfake', { mirrors: { m1: 0, m2: 1 } });
-  const p2 = computeBeamPath('deepfake', { mirrors: { m1: 0, m2: 1 } });
+  const p1 = computeBeamPath('deepfake', { mirrors: { m1: 0, m2: 1, m3: 1 } });
+  const p2 = computeBeamPath('deepfake', { mirrors: { m1: 0, m2: 1, m3: 1 } });
   assert.deepEqual(p1, p2);
 });
 
