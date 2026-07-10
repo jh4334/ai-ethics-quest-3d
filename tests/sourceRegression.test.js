@@ -173,6 +173,18 @@ test('scene BGM: three procedural layers crossfade on dungeon/boss transitions (
   assert.ok((mainSource.match(/setMusicMode\?\.\('overworld'\)/g) ?? []).length >= 2);
 });
 
+test('mobile HUD stays minimal: one-line objective, small popups, clamped dungeon/boss panels', () => {
+  const mobile = cssSource.match(/@media \(pointer: coarse\), \(max-width: 760px\) \{[\s\S]*?\n\}\n/g)?.join('') ?? '';
+  // 목표 칩은 모바일에서 한 줄로(작은 화면에서 조작 공간 확보).
+  assert.match(mobile, /\.objective-chip p:last-child \{[\s\S]*?-webkit-line-clamp: 1/);
+  // 전투 팝업·던전 목표·보스 말풍선은 축소/클램프.
+  assert.match(mobile, /\.combat-popup \{[\s\S]*?font-size: 1\.35rem/);
+  assert.match(mobile, /\.puzzle-goal \{[\s\S]*?-webkit-line-clamp: 1/);
+  assert.match(mobile, /\.boss-memory \{[\s\S]*?-webkit-line-clamp: 2/);
+  // 수업 차시 칩은 모바일에서 숨긴다(교사용 정보).
+  assert.match(mobile, /\.class-hint \{\s*\n?\s*display: none/);
+});
+
 test('package engine range matches the locked Vite runtime floor', () => {
   assert.equal(packageJson.engines.node, '^20.19.0 || >=22.12.0');
 });
