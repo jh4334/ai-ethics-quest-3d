@@ -3506,6 +3506,27 @@ const ISLE_CONTENT = {
       '"고마워, 수호자! 이제 진짜 목소리가 들려."',
       '"같은 말만 자꾸 들려올 땐 꼭 물어봐 줘 — 이 이야기의 진짜 출처는 어디일까?"'
     ]
+  },
+  'hourglass-port': {
+    fog: [0x4a3a5c, 28, 75],
+    clearColor: 0x443655,
+    flash: '#ffd8b0',
+    goalKo: '등대 아래 잠들지 못하는 거북 정령을 찾아가세요',
+    healedGoalKo: '정령이 곤히 잠들었어요 — 항구가 평화롭습니다',
+    arrivalKo: [
+      '"여기가 모래시계 항구… 밤이 오는데 등대가 쉬지 않고 깜박이고 있어."',
+      '"저 커다란 모래시계들도 전부 기울어진 채 멈췄네. 등대 아래에서 앓는 소리가 들려 — 가 보자."'
+    ],
+    spiritNameKo: '🐢 등대거북 정령',
+    spiritSickKo: [
+      '"으으… 눈이 감기질 않아. 불빛이 밤새 깜박여서, 나도 항구도 잠들 수가 없어."',
+      '"쉬는 때를 알려 주던 큰 모래시계가 기울어진 채 멈춰 버렸거든 — \'멈출 때\'를 잃어버린 거야."',
+      '"네 나침반의 힘이 깨어나면 모래시계를 당겨 바로 세울 수 있을 거야… 그때 다시 와 줘."'
+    ],
+    spiritHealedKo: [
+      '"하암… 푹 잤더니 세상이 반짝반짝해!"',
+      '"기억해 줘 — 반짝이는 것에도 쉬는 시간이 필요해. 등대도, 화면도, 너도!"'
+    ]
   }
 };
 
@@ -3768,6 +3789,17 @@ function isleAction(game, ui) {
       ui.puzzleGoal.textContent = `소문의 원본 돌을 ${RUMOR.rounds.length}번 찾아내세요`;
       ui.puzzleHint.textContent = '🔔 종(F/도구버튼)을 울리면 메아리 돌이 떨려요 — 굳건한 돌 앞에서 A';
     }
+    return;
+  }
+  if (spot.id === 'cargo') {
+    game.audio?.playClick();
+    ui.dialogKicker.textContent = '표시 없는 화물';
+    ui.dialogTitle.textContent = '✨ 도트';
+    ui.dialogBody.innerHTML = speechHtml([
+      '"이 상자들, 겉만 봐서는 누가 만든 물건인지 알 수 없어 — 사람이 만든 걸까, AI가 만든 걸까?"',
+      '"AI가 만든 것에는 표시가 필요해. 항구의 수수께끼는 곧 풀어 보자 — 지금은 정령이 먼저야."'
+    ]);
+    openDialog(game, ui);
     return;
   }
   if (spot.id === 'spirit') {

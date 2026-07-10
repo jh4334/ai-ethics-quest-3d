@@ -439,6 +439,32 @@ try {
   await A(800);
   check((await st()).mode === 'voyage', '메아리 동굴 → 바다 복귀');
 
+  // ── 모래시계 항구: 메아리 동굴 완료로 개방 → 상륙 → 등대거북 정령 ──
+  await tp(-13.2, -38.8, 0, -1);
+  await p.waitForTimeout(1000);
+  await A(800);
+  const port = await p.evaluate(() => ({
+    mode: window.__ethicsGame.mode,
+    stage: window.__ethicsGame.isle?.stageId,
+    arrival: !window.__ethicsUi.dialog.hidden,
+    visited: window.__ethicsGame.progress.stages['hourglass-port']?.visited === true
+  }));
+  check(port.mode === 'isle' && port.stage === 'hourglass-port' && port.arrival && port.visited, '모래시계 항구 상륙(항로 개방 + 도착 서사)');
+  await closeDlg();
+  await tp(0.5, -2.4, 0, -1);
+  await p.waitForTimeout(1000);
+  await A(600);
+  const turtle = await p.evaluate(() => ({
+    dialog: !window.__ethicsUi.dialog.hidden,
+    text: window.__ethicsUi.dialogBody?.innerText ?? ''
+  }));
+  check(turtle.dialog && (turtle.text.includes('모래시계') || turtle.text.includes('잠')), '등대거북 정령 대화(불면 증상·나침반 예고)');
+  await closeDlg();
+  await tp(-3.4, 10.0, 0, 1);
+  await p.waitForTimeout(1000);
+  await A(800);
+  check((await st()).mode === 'voyage', '모래시계 항구 → 바다 복귀');
+
   // 시작의 섬으로 귀항.
   await tp(0, 5, 0, -1);
   await p.waitForTimeout(1000);

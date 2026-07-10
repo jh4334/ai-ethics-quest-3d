@@ -420,8 +420,175 @@ export function buildEchoCaveScene({ makeLabel, healed = false }) {
   return built;
 }
 
+// 3호: 모래시계 항구 (스크린타임·디지털 웰빙 + AI 생성물 표시 — "AI와 나의 습관").
+// 노을 진 항구 — 등대가 쉬지 않고 깜박여 거북 정령이 잠들지 못한다.
+export function buildHourglassPortScene({ makeLabel, healed = false }) {
+  const root = new THREE.Group();
+
+  root.add(new THREE.HemisphereLight(0xe8c8b0, 0x3a3448, 1.4));
+  const sunset = new THREE.DirectionalLight(0xff9a5c, 0.85);
+  sunset.position.set(-14, 12, 10);
+  root.add(sunset);
+
+  // 모래빛 항구 섬.
+  const land = new THREE.Mesh(
+    new THREE.CylinderGeometry(13.2, 11.8, 0.9, 64),
+    new THREE.MeshStandardMaterial({ color: 0xd4b98a, emissive: 0x3a3020, emissiveIntensity: 0.35, roughness: 0.95 })
+  );
+  land.position.y = -0.18;
+  root.add(land);
+  const water = new THREE.Mesh(
+    new THREE.CircleGeometry(60, 48),
+    new THREE.MeshStandardMaterial({ color: 0x3a4a72, emissive: 0x1a2238, emissiveIntensity: 0.4, roughness: 0.85 })
+  );
+  water.rotation.x = -Math.PI / 2;
+  water.position.y = -0.32;
+  root.add(water);
+
+  // 부두 + 표시 없는 화물 상자들(생성물 표시 주제 — 후속 도전 자리).
+  const plankMat = new THREE.MeshStandardMaterial({ color: 0x9a7648, emissive: 0x2a2012, emissiveIntensity: 0.35, roughness: 0.9 });
+  const pier = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.18, 6.0), plankMat);
+  pier.position.set(5.2, 0.45, 8.0);
+  pier.rotation.y = -0.3;
+  root.add(pier);
+  const crateMat = new THREE.MeshStandardMaterial({ color: 0xb08a52, emissive: 0x2c2012, emissiveIntensity: 0.35, roughness: 0.85, flatShading: true });
+  for (const [cx, cz, s, rot] of [[4.6, 6.6, 1.0, 0.2], [5.6, 5.4, 0.8, -0.4], [4.2, 5.0, 0.7, 0.7]]) {
+    const crate = new THREE.Mesh(new THREE.BoxGeometry(1.0 * s, 1.0 * s, 1.0 * s), crateMat);
+    crate.position.set(cx, 0.5 * s, cz);
+    crate.rotation.y = rot;
+    root.add(crate);
+  }
+  const cargoLabel = makeLabel('📦 표시 없는 화물', '#e8c89a');
+  cargoLabel.position.set(4.8, 2.4, 5.6);
+  root.add(cargoLabel);
+
+  // 뒤집힌 채 멈춘 모래시계 사구 — '멈출 때'를 잃어버린 항구의 상징.
+  const glassMat = new THREE.MeshStandardMaterial({
+    color: 0x9fc8d8,
+    emissive: 0x3a5866,
+    emissiveIntensity: 0.5,
+    roughness: 0.35,
+    flatShading: true
+  });
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x7a5a34, emissive: 0x241a0c, emissiveIntensity: 0.4, roughness: 0.8 });
+  for (const [hx, hz, s, tilt] of [[-6.4, -3.2, 1.25, 0.16], [-8.6, 1.4, 0.85, -0.3]]) {
+    const hourglass = new THREE.Group();
+    const top = new THREE.Mesh(new THREE.ConeGeometry(0.9 * s, 1.3 * s, 8), glassMat);
+    top.rotation.x = Math.PI;
+    top.position.y = 2.0 * s;
+    const bottom = new THREE.Mesh(new THREE.ConeGeometry(0.9 * s, 1.3 * s, 8), glassMat);
+    bottom.position.y = 0.7 * s;
+    hourglass.add(top, bottom);
+    for (const ringY of [0.05, 1.35, 2.65]) {
+      const band = new THREE.Mesh(new THREE.TorusGeometry(0.95 * s, 0.09 * s, 8, 18), frameMat);
+      band.rotation.x = Math.PI / 2;
+      band.position.y = ringY * s;
+      hourglass.add(band);
+    }
+    hourglass.position.set(hx, 0, hz);
+    hourglass.rotation.z = tilt;
+    root.add(hourglass);
+  }
+
+  // 등대 — 밤새 쉬지 않고 깜박이는 불빛(치유되면 느리게 숨 쉰다).
+  const tower = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.7, 1.0, 4.2, 10),
+    new THREE.MeshStandardMaterial({ color: 0xe8dccc, emissive: 0x3c362c, emissiveIntensity: 0.4, roughness: 0.8 })
+  );
+  tower.position.set(2.0, 2.1, -6.5);
+  root.add(tower);
+  const cap = new THREE.Mesh(
+    new THREE.ConeGeometry(0.95, 0.9, 10),
+    new THREE.MeshStandardMaterial({ color: 0xb85a4a, emissive: 0x3a1812, emissiveIntensity: 0.4, roughness: 0.8 })
+  );
+  cap.position.set(2.0, 4.7, -6.5);
+  root.add(cap);
+  const lampMat = new THREE.MeshBasicMaterial({ color: 0xffe9a0 });
+  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.34, 10, 10), lampMat);
+  lamp.position.set(2.0, 4.15, -6.5);
+  root.add(lamp);
+
+  // 잠들지 못하는 등대거북 정령 — 등대 아래에서 뒤척인다.
+  const spirit = new THREE.Group();
+  const turtleMat = new THREE.MeshStandardMaterial({
+    color: 0x8a927e,
+    emissive: 0x262b22,
+    emissiveIntensity: 0.4,
+    roughness: 0.85,
+    flatShading: true
+  });
+  const shell = new THREE.Mesh(new THREE.SphereGeometry(1.0, 10, 8), turtleMat);
+  shell.scale.set(1.15, 0.6, 1.3);
+  shell.position.y = 0.62;
+  spirit.add(shell);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.34, 10, 8), turtleMat);
+  head.position.set(0, 0.55, 1.45);
+  spirit.add(head);
+  for (const [fx, fz] of [[-1.0, 0.7], [1.0, 0.7], [-1.0, -0.8], [1.0, -0.8]]) {
+    const flipper = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.14, 0.4), turtleMat);
+    flipper.position.set(fx, 0.2, fz);
+    spirit.add(flipper);
+  }
+  // 숙면 표시 — 치유되면 나타난다.
+  const sleepMark = makeLabel('💤', '#cfe0ff');
+  sleepMark.scale.multiplyScalar(0.5);
+  sleepMark.position.set(0.9, 2.0, 0.6);
+  sleepMark.visible = false;
+  spirit.add(sleepMark);
+  spirit.position.set(0.5, 0, -4.4);
+  root.add(spirit);
+  const spiritLabel = makeLabel('🐢 등대거북 정령', '#ffd8a8');
+  spiritLabel.position.set(0.5, 3.0, -4.4);
+  root.add(spiritLabel);
+
+  // 남쪽 물가의 뗏목.
+  const raft = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.14, 2.0), plankMat);
+  raft.position.set(-3.4, 0.02, 11.0);
+  root.add(raft);
+  const raftLabel = makeLabel('🛶 뗏목', '#ffd88a');
+  raftLabel.position.set(-3.4, 1.6, 11.0);
+  root.add(raftLabel);
+
+  const interactables = [
+    { id: 'spirit', x: 0.5, z: -2.8, labelKo: '등대거북 정령에게 다가간다' },
+    { id: 'cargo', x: 4.8, z: 5.4, labelKo: '표시 없는 화물을 살펴본다' },
+    { id: 'raft', x: -3.4, z: 10.4, labelKo: '뗏목 — 바다로 돌아간다' }
+  ];
+
+  let calm = false; // 치유 여부 — 등불·거북 애니메이션 분기
+  const animate = (delta, elapsed) => {
+    if (calm) {
+      // 느리게 숨 쉬는 등불 + 곤히 잠든 거북.
+      lampMat.color.setHex(0xffe9a0);
+      lamp.scale.setScalar(1 + Math.sin(elapsed * 0.8) * 0.08);
+      spirit.rotation.z = 0;
+      return;
+    }
+    // 쉬지 않는 깜박임(결정적 다중 사인) — 거북이 그 리듬에 뒤척인다.
+    const blink = Math.sin(elapsed * 7) + Math.sin(elapsed * 11.3);
+    lampMat.color.setHex(blink > 0 ? 0xfff3c0 : 0x6a5a30);
+    lamp.scale.setScalar(blink > 0 ? 1.25 : 0.85);
+    spirit.rotation.z = Math.sin(elapsed * 5.2) * 0.03;
+  };
+
+  const heal = () => {
+    calm = true;
+    turtleMat.color.setHex(0x9ab86a);
+    turtleMat.emissive.setHex(0x2c3a1c);
+    turtleMat.emissiveIntensity = 0.5;
+    sleepMark.visible = true;
+  };
+
+  const built = { root, spirit, interactables, animate, heal };
+  if (healed) {
+    heal();
+  }
+  return built;
+}
+
 // 스테이지 id → 섬 씬 빌더. 상륙 가능한 섬이 늘 때마다 여기에 등록한다.
 export const ISLE_SCENES = {
   'whisper-cape': buildWhisperCapeScene,
-  'echo-cave': buildEchoCaveScene
+  'echo-cave': buildEchoCaveScene,
+  'hourglass-port': buildHourglassPortScene
 };

@@ -47,7 +47,7 @@ export const STAGES = [
     verbKo: '🧭 끌어당기기',
     emoji: '⏳',
     sea: [-6, -20],
-    built: false,
+    built: true,
     requires: 'echo-cave'
   },
   {
