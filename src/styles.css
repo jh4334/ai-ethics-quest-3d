@@ -1373,6 +1373,123 @@ button:disabled {
   background: rgba(255, 255, 255, 0.7);
 }
 
+/* ===== 프롤로그 인엔진 시네마틱: 레터박스 + 자막 카드 ===== */
+/* HUD(≤6) 위, 대화창·타이틀(20+) 아래. 오버레이 자체는 클릭을 막지 않는다(스킵 버튼만 예외). */
+.cinematic {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  pointer-events: none;
+}
+
+.cinematic[hidden] {
+  display: none;
+}
+
+/* 시네마틱 동안에는 HUD를 잠시 감춰 화면을 연출에 온전히 내준다. */
+.quest-shell:has(.cinematic.is-on) .objective-chip,
+.quest-shell:has(.cinematic.is-on) .status-strip,
+.quest-shell:has(.cinematic.is-on) .journal-toggle,
+.quest-shell:has(.cinematic.is-on) .sound-toggle,
+.quest-shell:has(.cinematic.is-on) .rotate-hint,
+.quest-shell:has(.cinematic.is-on) .touch-controls {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.cine-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 12vh;
+  background: #0a0716;
+  transform: translateY(var(--slide, 0));
+  transition: transform 0.7s ease;
+}
+
+.cine-bar-top {
+  top: 0;
+  --slide: -100%;
+}
+
+.cine-bar-bottom {
+  bottom: 0;
+  --slide: 100%;
+}
+
+.cinematic.is-on .cine-bar {
+  --slide: 0%;
+}
+
+.cine-caption {
+  position: absolute;
+  left: 50%;
+  bottom: 15vh;
+  transform: translateX(-50%);
+  width: min(680px, 88vw);
+  text-align: center;
+  color: #f4eeff;
+  text-shadow: 0 2px 10px rgba(5, 2, 20, 0.9);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.cine-caption.is-visible {
+  opacity: 1;
+}
+
+.cine-caption p {
+  margin: 0.2rem 0;
+  font-size: 1.05rem;
+  line-height: 1.55;
+}
+
+.cine-caption .cine-speaker {
+  font-weight: 800;
+  color: #ffd88a;
+  margin-bottom: 0.35rem;
+}
+
+.cine-caption .cine-closing {
+  font-weight: 800;
+  font-size: 1.2rem;
+  letter-spacing: 0.12em;
+  color: #ffe9b0;
+}
+
+.cine-skip {
+  position: absolute;
+  right: 16px;
+  bottom: calc(6vh - 17px);
+  min-height: 34px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  color: #e8e2f8;
+  font-weight: 700;
+  font-size: 0.82rem;
+  pointer-events: auto;
+}
+
+@media (max-width: 640px) {
+  .cine-bar {
+    height: 10vh;
+  }
+
+  .cine-caption {
+    bottom: 12.5vh;
+  }
+
+  .cine-caption p {
+    font-size: 0.9rem;
+  }
+
+  .cine-skip {
+    bottom: calc(5vh - 15px);
+  }
+}
+
 .cert-actions {
   display: flex;
   gap: 10px;
