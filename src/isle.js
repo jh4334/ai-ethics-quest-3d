@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { CORRIDOR } from './corridorLogic.js';
 import { RUMOR } from './rumorLogic.js';
+import { DUNES } from './dunesLogic.js';
 
 export const ISLE_RADIUS = 12.6;
 
@@ -471,7 +472,11 @@ export function buildHourglassPortScene({ makeLabel, healed = false }) {
     flatShading: true
   });
   const frameMat = new THREE.MeshStandardMaterial({ color: 0x7a5a34, emissive: 0x241a0c, emissiveIntensity: 0.4, roughness: 0.8 });
-  for (const [hx, hz, s, tilt] of [[-6.4, -3.2, 1.25, 0.16], [-8.6, 1.4, 0.85, -0.3]]) {
+  // 좌표·주기는 dunesLogic(DUNES.glasses)이 단일 출처 — 도전 중 updateIsle이 기울기를 구동한다.
+  const hourglasses = new Map();
+  const sandCores = new Map();
+  DUNES.glasses.forEach((glassData) => {
+    const s = glassData.scale;
     const hourglass = new THREE.Group();
     const top = new THREE.Mesh(new THREE.ConeGeometry(0.9 * s, 1.3 * s, 8), glassMat);
     top.rotation.x = Math.PI;
@@ -485,10 +490,22 @@ export function buildHourglassPortScene({ makeLabel, healed = false }) {
       band.position.y = ringY * s;
       hourglass.add(band);
     }
-    hourglass.position.set(hx, 0, hz);
-    hourglass.rotation.z = tilt;
+    // 다시 흐르는 모래 — 잠금 성공 시에만 보인다.
+    const sand = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.07 * s, 0.07 * s, 1.1 * s, 6),
+      new THREE.MeshBasicMaterial({ color: 0xffd88a })
+    );
+    sand.position.y = 1.35 * s;
+    sand.visible = false;
+    hourglass.add(sand);
+    hourglass.position.set(glassData.x, 0, glassData.z);
     root.add(hourglass);
-  }
+    hourglasses.set(glassData.id, hourglass);
+    sandCores.set(glassData.id, sand);
+  });
+  const dunesLabel = makeLabel('⏳ 모래시계 사구', '#e8d8a8');
+  dunesLabel.position.set(-6.6, 4.4, -0.2);
+  root.add(dunesLabel);
 
   // 등대 — 밤새 쉬지 않고 깜박이는 불빛(치유되면 느리게 숨 쉰다).
   const tower = new THREE.Mesh(
@@ -551,6 +568,7 @@ export function buildHourglassPortScene({ makeLabel, healed = false }) {
 
   const interactables = [
     { id: 'spirit', x: 0.5, z: -2.8, labelKo: '등대거북 정령에게 다가간다' },
+    { id: 'dunes', x: -6.6, z: 0.2, labelKo: '모래시계 사구 — 멈춘 시간을 되돌린다' },
     { id: 'cargo', x: 4.8, z: 5.4, labelKo: '표시 없는 화물을 살펴본다' },
     { id: 'raft', x: -3.4, z: 10.4, labelKo: '뗏목 — 바다로 돌아간다' }
   ];
@@ -569,6 +587,7 @@ export function buildHourglassPortScene({ makeLabel, healed = false }) {
     lampMat.color.setHex(blink > 0 ? 0xfff3c0 : 0x6a5a30);
     lamp.scale.setScalar(blink > 0 ? 1.25 : 0.85);
     spirit.rotation.z = Math.sin(elapsed * 5.2) * 0.03;
+    // 도전 전에는 기울어진 채 멈춰 있다(도전 중엔 updateIsle이 기울기를 구동).
   };
 
   const heal = () => {
@@ -577,9 +596,22 @@ export function buildHourglassPortScene({ makeLabel, healed = false }) {
     turtleMat.emissive.setHex(0x2c3a1c);
     turtleMat.emissiveIntensity = 0.5;
     sleepMark.visible = true;
+    // 모래시계들이 바로 서고 모래가 다시 흐른다.
+    hourglasses.forEach((hourglass) => {
+      hourglass.rotation.z = 0;
+    });
+    sandCores.forEach((sand) => {
+      sand.visible = true;
+    });
   };
 
-  const built = { root, spirit, interactables, animate, heal };
+  // 병든 상태의 초기 기울기(정지) — 도전 시작 전 모습.
+  hourglasses.forEach((hourglass, id) => {
+    const index = DUNES.glasses.findIndex((glass) => glass.id === id);
+    hourglass.rotation.z = Math.sin(index * 1.3) * DUNES.amplitude || 0.5;
+  });
+
+  const built = { root, spirit, interactables, animate, heal, hourglasses, sandCores };
   if (healed) {
     heal();
   }

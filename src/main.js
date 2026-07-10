@@ -45,6 +45,7 @@ import {
   ringRumorBell,
   tickRumor
 } from './rumorLogic.js';
+import { DUNES, createDunesState, glassAngle, nearestGlass, pullGlass, tickDunes } from './dunesLogic.js';
 import {
   FINALE,
   buildNovaCertificate,
@@ -2275,10 +2276,12 @@ function updateNearestInteractable(game, interactables, ui) {
 // 전투: 방패=가드(반사) · 종=울림 충격파 · 거울=약점 공개. 던전: 방별 동사(당기기/공명/판별).
 function useToolVerb(game, ui) {
   game.audio?.resume();
-  // 섬 도전 중엔 F = 그 섬의 동사(속삭임 곶 = 방패 가드, 메아리 동굴 = 종 울림).
+  // 섬 도전 중엔 F = 그 섬의 동사(곶 = 방패 가드, 동굴 = 종 울림, 항구 = 나침반 당기기).
   if (game.isle?.challenge && !game.isle.challenge.cleared) {
     if (game.isle.stageId === 'echo-cave') {
       rumorBell(game, ui);
+    } else if (game.isle.stageId === 'hourglass-port') {
+      dunesPull(game, ui);
     } else {
       corridorGuard(game, ui);
     }
@@ -2315,6 +2318,38 @@ function useToolVerb(game, ui) {
 // 🛡️ 방패 가드: 짧은 가드 자세 — 그 사이 잡음 파도가 닿으면 스턴 대신 반사한다.
 const GUARD_TIME = 0.55;
 const GUARD_COOLDOWN = 1.4;
+
+// 모래시계 사구의 나침반 당기기 — 똑바로 선 순간에 당겨야 잠긴다('멈출 때'를 아는 타이밍).
+function dunesPull(game, ui) {
+  const isle = game.isle;
+  if (!isle || isle.pullCd > 0 || !isle.challenge || isle.challenge.cleared) {
+    return;
+  }
+  isle.pullCd = 0.6;
+  const glass = nearestGlass(isle.challenge, game.player.position.x, game.player.position.z);
+  if (!glass) {
+    game.audio?.playClick();
+    flashCombatPopup(ui, '흔들리는 모래시계 가까이에서 🧭 당겨요', 'miss');
+    return;
+  }
+  const events = pullGlass(isle.challenge, glass.id);
+  for (const event of events) {
+    if (event === 'wobble') {
+      game.audio?.playWrong();
+      flashCombatPopup(ui, '아직이야 — 똑바로 서는 순간에 당겨요!', 'miss');
+    } else if (event === 'locked') {
+      game.audio?.playCorrect();
+      const lockedCount = Object.values(isle.challenge.locked).filter(Boolean).length;
+      flashCombatPopup(ui, `⏳ 딱 멈췄다! 모래가 흐른다 (${lockedCount}/${DUNES.glasses.length})`, 'match');
+      const sand = isle.built.sandCores.get(glass.id);
+      if (sand) {
+        sand.visible = true;
+      }
+    } else if (event === 'cleared') {
+      finishDunes(game, ui);
+    }
+  }
+}
 
 // 소문의 벽의 종 울림 — 전투 충격파와 같은 쿨다운 리듬. 판별 창을 연다.
 function rumorBell(game, ui) {
@@ -3551,7 +3586,7 @@ function enterIsle(game, ui, stageId) {
   rs.renderer.setClearColor(content.clearColor, 1);
 
   game.mode = 'isle';
-  game.isle = { built, stageId, nearestSpot: null, challenge: null, guard: 0, guardCd: 0, bellCd: 0, ringT: 0 };
+  game.isle = { built, stageId, nearestSpot: null, challenge: null, guard: 0, guardCd: 0, bellCd: 0, ringT: 0, pullCd: 0 };
   game.keys.clear();
   game.player.position.set(-3.4, 0.55, 9.4); // 뗏목 옆 물가
   game.player.direction.set(0, 0, -1);
@@ -3625,6 +3660,17 @@ function updateIsle(delta, game, ui) {
   }
   if (isle.bellCd > 0) {
     isle.bellCd = Math.max(0, isle.bellCd - delta);
+  }
+  if (isle.pullCd > 0) {
+    isle.pullCd = Math.max(0, isle.pullCd - delta);
+  }
+
+  // 모래시계 사구 도전(모래시계 항구) — 흔들림 구동.
+  if (isle.stageId === 'hourglass-port' && isle.challenge && !isle.challenge.cleared) {
+    tickDunes(isle.challenge, delta);
+    isle.built.hourglasses.forEach((hourglass, glassId) => {
+      hourglass.rotation.z = glassAngle(isle.challenge, glassId);
+    });
   }
 
   // 소문의 벽 도전(메아리 동굴) — 판별 창 감쇠 + 돌·울림 링 연출.
@@ -3791,6 +3837,25 @@ function isleAction(game, ui) {
     }
     return;
   }
+  if (spot.id === 'dunes') {
+    if (completed || game.isle.challenge?.cleared) {
+      game.audio?.playClick();
+      ui.dialogKicker.textContent = '모래시계 사구';
+      ui.dialogTitle.textContent = '✨ 도트';
+      ui.dialogBody.innerHTML = speechHtml(['"모래가 사르르 흐르고 있어. 항구의 시간이 다시 돌아왔네 — 네 덕분이야."']);
+      openDialog(game, ui);
+      return;
+    }
+    if (!game.isle.challenge) {
+      // 도전 시작 — 멈췄던 모래시계들이 불안하게 흔들리기 시작한다.
+      game.audio?.playNoiseGroan();
+      game.isle.challenge = createDunesState();
+      flashCombatPopup(ui, '⏳ 모래시계들이 흔들린다!', 'miss');
+      ui.puzzleGoal.textContent = `모래시계 ${DUNES.glasses.length}개를 바로 세우세요`;
+      ui.puzzleHint.textContent = '똑바로 서는 순간 🧭 나침반(F/도구버튼)으로 당겨요 — 멈출 때를 아는 게 열쇠!';
+    }
+    return;
+  }
   if (spot.id === 'cargo') {
     game.audio?.playClick();
     ui.dialogKicker.textContent = '표시 없는 화물';
@@ -3811,6 +3876,27 @@ function isleAction(game, ui) {
     ui.dialogBody.innerHTML = speechHtml(completed ? content.spiritHealedKo : content.spiritSickKo);
     openDialog(game, ui);
   }
+}
+
+// 모래시계 사구 클리어: 거북 숙면 + 스테이지 완료 기록(항로 지도 전이) + 감사 인사.
+function finishDunes(game, ui) {
+  const isle = game.isle;
+  isle.built.heal();
+  game.progress = markStageCompleted(game.progress, isle.stageId);
+  persistProgress(game.progress);
+  updateHud(game, ui);
+  game.audio?.playNovaChime();
+  triggerFlash(ui, '#ffe0b0');
+  ui.puzzleGoal.textContent = ISLE_CONTENT[isle.stageId].healedGoalKo;
+  ui.puzzleHint.textContent = '뗏목으로 돌아가면 다시 바다로';
+  ui.dialogKicker.textContent = '모래시계 항구';
+  ui.dialogTitle.textContent = '🐢 등대거북 정령';
+  ui.dialogBody.innerHTML = speechHtml([
+    '"모래가… 다시 흘러. 등대도 천천히 숨을 쉬어. 하암…"',
+    '"고마워, 수호자. 재미있는 것일수록 \'멈출 때\'가 필요해 — 화면도, 놀이도, 시간을 정해 두면 더 반짝여."',
+    '"바다 한가운데서 커다란 심장 소리가 들려… 마지막 항로가 머지않았어."'
+  ]);
+  openDialog(game, ui);
 }
 
 // 소문의 벽 클리어: 고래 치유 + 스테이지 완료 기록(항로 지도 전이) + 감사 인사.
