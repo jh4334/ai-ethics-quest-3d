@@ -142,6 +142,21 @@ test('prologue is short (2 beats) and skippable', () => {
   void beats;
 });
 
+test('bias room is colorblind-accessible: each seed color has a distinct shape', () => {
+  // 색으로만 구분하면 색약 학생이 편향 방을 풀 수 없다 — 색+모양 병행.
+  assert.match(dungeonSource, /const SEED_GEOS = \[/);
+  assert.match(dungeonSource, /SEED_GEOS\[d\.colorIdx\]/);
+  assert.match(dungeonSource, /bloom\.geometry = SEED_GEOS\[colorIdx\]/);
+});
+
+test('certificate has a handwriting name line (no input — privacy stays zero)', () => {
+  assert.match(mainSource, /cert-name-line/);
+  const nameRule = cssSource.match(/\.cert-name-line \{[\s\S]*?\}/)?.[0] ?? '';
+  assert.match(nameRule, /border-bottom/);
+  // 이름을 입력받는 코드가 아니어야 한다(개인정보 0 정책).
+  assert.doesNotMatch(mainSource, /<input[^>]*name/);
+});
+
 test('package engine range matches the locked Vite runtime floor', () => {
   assert.equal(packageJson.engines.node, '^20.19.0 || >=22.12.0');
 });

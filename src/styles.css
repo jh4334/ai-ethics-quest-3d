@@ -1199,6 +1199,21 @@ button:disabled {
   color: #7a5a12;
 }
 
+/* 이름 손글씨 칸 — 개인정보는 입력받지 않는다. 인쇄 후 학생이 직접 쓴다. */
+.cert-name {
+  margin: 0 0 18px;
+  font-weight: 700;
+  color: #4a3a10;
+}
+
+.cert-name-line {
+  display: inline-block;
+  width: 12em;
+  border-bottom: 2px solid #b99a3e;
+  vertical-align: baseline;
+  height: 1.1em;
+}
+
 /* ===== 최종장(노이즈의 뱃속) 연출 ===== */
 .finale-scene {
   padding: 4px 0 2px;

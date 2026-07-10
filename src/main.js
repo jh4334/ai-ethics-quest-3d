@@ -1738,6 +1738,7 @@ function showCertificate(game, ui) {
     ${cert.recoveredNoteKo ? `<p class="cert-recovered">${cert.recoveredNoteKo}</p>` : ''}
     <p class="cert-pledge">${cert.pledgeKo}</p>
     <p class="cert-signature">${cert.novaLineKo}</p>
+    <p class="cert-name">이 증명서의 수호자: <span class="cert-name-line" aria-label="이름을 손으로 적는 칸"></span></p>
     <div class="cert-actions">
       <button type="button" class="cert-print" data-cert-print>인쇄 / 저장</button>
       <button type="button" class="cert-close" data-cert-close>닫기</button>
@@ -3104,7 +3105,11 @@ function dungeonCarryAction(game, ui) {
       : `🏷️ 「${info?.labelKo ?? ''}」 이름표를 들었어요! 맞는 작품 앞에서 A로 걸어요`;
   } else {
     const left = countRemaining(dg.topicId, dg.state);
-    ui.puzzleHint.textContent = `아직 ${left}곳이 비어 있어요`;
+    // 밭이 다 찼는데 안 풀렸다면 중복이 남은 것 — 되집기를 유도.
+    const fullButDup = dg.room.beds && dg.state.beds.every((b) => b !== null);
+    ui.puzzleHint.textContent = fullButDup
+      ? '같은 색이 두 밭에 있어요 — 하나를 되집어 다른 색으로 바꿔요'
+      : `아직 ${left}곳이 남았어요`;
   }
 }
 
