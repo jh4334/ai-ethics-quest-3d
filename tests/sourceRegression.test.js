@@ -158,6 +158,21 @@ test('prologue cinematic is in-engine, deterministic, and hands the camera back'
   assert.match(mainSource, /if \(game\.cinematic\) \{\s*\n\s*updateCinematic\(raw, game, renderState, ui\);/);
 });
 
+test('stage frame: 순수 데이터 모듈 + 세이브 v2 + 항로 지도', () => {
+  const stageSource = readFileSync(new URL('../src/stageData.js', import.meta.url), 'utf8');
+  const worldSource = readFileSync(new URL('../src/worldData.js', import.meta.url), 'utf8');
+  // 스테이지 데이터는 THREE 무의존 순수 모듈이어야 한다(node 테스트 가능).
+  assert.doesNotMatch(stageSource, /from 'three'/);
+  assert.match(stageSource, /export const STAGES = \[/);
+  // 세이브 v2: version + stages 맵, 프롤로그 완료는 기존 신호에서 파생(중복 기록 금지).
+  assert.match(worldSource, /version: 2/);
+  assert.match(worldSource, /stages: normalizeStages\(candidate\.stages\)/);
+  assert.match(stageSource, /aiCoreCompleted === true/);
+  // 탐험 노트의 항로 지도.
+  assert.match(mainSource, /data-voyage-map/);
+  assert.match(cssSource, /\.voyage-list/);
+});
+
 test('bias room is colorblind-accessible: each seed color has a distinct shape', () => {
   // 색으로만 구분하면 색약 학생이 편향 방을 풀 수 없다 — 색+모양 병행.
   assert.match(dungeonSource, /const SEED_GEOS = \[/);

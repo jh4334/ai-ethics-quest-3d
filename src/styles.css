@@ -311,6 +311,66 @@ button:disabled {
   background: rgba(255, 255, 255, 0.6);
 }
 
+/* ===== 잡음의 군도 항로 지도 (탐험 노트) ===== */
+.voyage-map {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(198, 231, 246, 0.55), rgba(255, 255, 255, 0.6));
+}
+
+.voyage-map h3 {
+  margin: 0 0 8px;
+  font-size: 0.92rem;
+}
+
+.voyage-list {
+  margin: 0;
+  padding: 0 0 0 2px;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.voyage-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.55);
+  font-size: 0.84rem;
+}
+
+.voyage-list li span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  text-align: right;
+}
+
+/* 완료된 섬은 또렷하게, 안개 속 섬은 실루엣처럼. */
+.voyage-list li[data-state='completed'] strong {
+  color: #1d7a4f;
+}
+
+.voyage-list li[data-state='current'] {
+  background: rgba(255, 244, 205, 0.85);
+  border: 1px solid rgba(214, 170, 60, 0.45);
+}
+
+.voyage-list li[data-state='coming'],
+.voyage-list li[data-state='locked'] {
+  opacity: 0.62;
+}
+
+.voyage-note {
+  margin: 8px 0 0;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
 .learning-report h3 {
   margin: 0 0 6px;
   font-size: 0.92rem;

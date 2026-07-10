@@ -1,4 +1,5 @@
 import { createStoryState, normalizeStoryState } from './story.js';
+import { normalizeStages } from './stageData.js';
 
 // 네 개의 약속 도구 — 사당 시련의 보상. 능력이 곧 윤리 개념이다.
 export const PROMISE_TOOLS = [
@@ -448,6 +449,7 @@ export function getProgressSummary(collectedTopicIds) {
 
 export function createInitialProgress() {
   return {
+    version: 2,
     visitedTopics: [],
     completedShrines: [],
     collectedFragments: [],
@@ -455,7 +457,10 @@ export function createInitialProgress() {
     tools: [],
     story: createStoryState(),
     prologueSeen: false,
-    aiCoreCompleted: false
+    aiCoreCompleted: false,
+    // 세이브 v2: 「잡음의 군도」 섬별 진행 맵. 프롤로그(시작의 섬) 완료는
+    // 기존 신호(aiCoreCompleted)에서 파생하므로 여기 중복 기록하지 않는다.
+    stages: {}
   };
 }
 
@@ -491,6 +496,8 @@ export function normalizeProgress(candidate) {
       : [];
 
   return {
+    // v1 세이브(version 없음)도 필드 손실 없이 v2로 올라온다 — stages만 새로 붙는다.
+    version: 2,
     visitedTopics: uniqueValidTopicIds(stringArray(candidate.visitedTopics)),
     completedShrines: stringArray(candidate.completedShrines).filter((id) => Boolean(getShrineById(id))),
     collectedFragments: uniqueValidTopicIds(stringArray(candidate.collectedFragments)),
@@ -498,7 +505,8 @@ export function normalizeProgress(candidate) {
     tools: [...new Set(stringArray(candidate.tools).filter((id) => toolIdSet.has(id)))],
     story: normalizeStoryState(candidate.story),
     prologueSeen: candidate.prologueSeen === true,
-    aiCoreCompleted: candidate.aiCoreCompleted === true
+    aiCoreCompleted: candidate.aiCoreCompleted === true,
+    stages: normalizeStages(candidate.stages)
   };
 }
 

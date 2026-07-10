@@ -32,6 +32,7 @@ import {
   worldToCell
 } from './dungeonPuzzles.js';
 import { buildDungeonRoom, disposeDungeonRoom, makeGlyphSprite, syncDungeonVisuals } from './dungeon.js';
+import { getStageStates } from './stageData.js';
 import {
   FINALE,
   buildNovaCertificate,
@@ -4220,12 +4221,42 @@ function updateHud(game, ui) {
   renderJournal(game, ui);
 }
 
+// 스테이지 상태 → 항로 지도 한 줄 문구.
+function voyageStatusKo(stage) {
+  if (stage.state === 'completed') {
+    return '완료';
+  }
+  if (stage.state === 'current') {
+    return '진행 중';
+  }
+  if (stage.state === 'coming') {
+    return '항로 준비 중';
+  }
+  return '안개에 잠김';
+}
+
 function renderJournal(game, ui) {
   const summary = getProgressSummary(game.progress.collectedFragments);
   const report = getLearningReport(game.progress);
   const deeds = getStoryDeeds(game.progress);
+  const voyage = getStageStates(game.progress);
   ui.journalContent.innerHTML = `
     <p class="controls-note">${MOVE_HINT}</p>
+    <section class="voyage-map" data-voyage-map>
+      <h3>🧭 잡음의 군도 — 항로</h3>
+      <ol class="voyage-list">
+        ${voyage
+          .map(
+            (stage) => `
+          <li data-state="${stage.state}">
+            <strong>${stage.state === 'locked' ? '🌫️' : stage.emoji} ${stage.nameKo}</strong>
+            <span>${stage.frameKo} · ${voyageStatusKo(stage)}</span>
+          </li>`
+          )
+          .join('')}
+      </ol>
+      <p class="voyage-note">노이즈가 바다 건너로 도망쳤어요. 새 항로가 하나씩 열립니다.</p>
+    </section>
     ${deeds.length > 0
       ? `<section class="learning-report">
            <h3>📖 나의 이야기 — 섬이 기억하는 나의 행동</h3>
