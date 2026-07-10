@@ -25,7 +25,7 @@ export const STAGES = [
     verbKo: '🛡️ 막기·밀쳐내기',
     emoji: '🌊',
     sea: [-16, -9],
-    built: false,
+    built: true,
     requires: 'prologue'
   },
   {
@@ -90,19 +90,32 @@ export function normalizeStages(candidate) {
     if (!stageIdSet.has(id) || !entry || typeof entry !== 'object') {
       continue;
     }
-    stages[id] = { completed: entry.completed === true };
+    stages[id] = { completed: entry.completed === true, visited: entry.visited === true };
   }
   return stages;
 }
 
-// 스테이지 완료 기록(순수 함수) — 앞으로 각 섬의 정령 치료 시점에 호출한다.
+// 스테이지 완료 기록(순수 함수) — 각 섬의 정령 치료 시점에 호출한다.
 export function markStageCompleted(progress, stageId) {
   if (!stageIdSet.has(stageId)) {
     throw new RangeError(`Unknown stage: ${stageId}`);
   }
+  const prev = progress.stages?.[stageId] ?? {};
   return {
     ...progress,
-    stages: { ...(progress.stages ?? {}), [stageId]: { completed: true } }
+    stages: { ...(progress.stages ?? {}), [stageId]: { ...prev, visited: true, completed: true } }
+  };
+}
+
+// 첫 상륙 기록(순수 함수) — 도착 서사를 한 번만 틀기 위한 신호.
+export function markStageVisited(progress, stageId) {
+  if (!stageIdSet.has(stageId)) {
+    throw new RangeError(`Unknown stage: ${stageId}`);
+  }
+  const prev = progress.stages?.[stageId] ?? {};
+  return {
+    ...progress,
+    stages: { ...(progress.stages ?? {}), [stageId]: { ...prev, completed: prev.completed === true, visited: true } }
   };
 }
 

@@ -267,7 +267,7 @@ try {
     return items.map((li) => li.dataset.state);
   });
   check(
-    voyage.length === 6 && voyage[0] === 'completed' && voyage[1] === 'coming' && voyage[5] === 'locked',
+    voyage.length === 6 && voyage[0] === 'completed' && voyage[1] === 'current' && voyage[5] === 'locked',
     `항로 지도 6섬 상태(${voyage.join(',')})`
   );
 
@@ -284,8 +284,8 @@ try {
   }));
   check(sail.mode === 'voyage' && sail.overworldHidden && sail.islands === 6, `항해 진입(섬 실루엣 ${sail.islands}개, 오버월드 숨김)`);
 
-  // 안개 섬(속삭임 곶, sea [-16,-9] × 2.2) 접근 → A는 거부된다.
-  await tp(-35.2, -16.5, 0, -1);
+  // 안개 섬(메아리 동굴, sea [12,-14] × 2.2) 접근 → A는 거부된다.
+  await tp(26.4, -27.2, 0, -1);
   await p.waitForTimeout(1000);
   await A(600);
   const fog = await p.evaluate(() => ({
@@ -293,6 +293,36 @@ try {
     prompt: window.__ethicsUi.prompt?.textContent ?? ''
   }));
   check(fog.mode === 'voyage' && fog.prompt.includes('안개'), `안개 섬 상륙 거부(${fog.prompt.slice(0, 24)}…)`);
+
+  // ── 속삭임 곶 상륙: 도착 서사 → 정령 대화 → 뗏목 복귀 ──
+  await tp(-35.2, -14.5, 0, -1);
+  await p.waitForTimeout(1000);
+  await A(800);
+  const landed = await p.evaluate(() => ({
+    mode: window.__ethicsGame.mode,
+    stage: window.__ethicsGame.isle?.stageId,
+    arrival: !window.__ethicsUi.dialog.hidden,
+    visited: window.__ethicsGame.progress.stages['whisper-cape']?.visited === true
+  }));
+  check(
+    landed.mode === 'isle' && landed.stage === 'whisper-cape' && landed.arrival && landed.visited,
+    '속삭임 곶 상륙(도착 서사 + visited 기록)'
+  );
+  await closeDlg();
+  await tp(0.4, -3.6, 0, -1);
+  await p.waitForTimeout(1000);
+  await A(600);
+  const spirit = await p.evaluate(() => ({
+    dialog: !window.__ethicsUi.dialog.hidden,
+    text: window.__ethicsUi.dialogBody?.innerText ?? ''
+  }));
+  check(spirit.dialog && spirit.text.includes('말'), '바닷새 정령 대화(말-화살 증상)');
+  await closeDlg();
+  await tp(-3.4, 10.2, 0, 1);
+  await p.waitForTimeout(1000);
+  await A(800);
+  const backToSea = await p.evaluate(() => ({ mode: window.__ethicsGame.mode, isle: Boolean(window.__ethicsGame.isle) }));
+  check(backToSea.mode === 'voyage' && !backToSea.isle, '뗏목으로 바다 복귀(곶 dispose)');
 
   // 시작의 섬으로 귀항.
   await tp(0, 5, 0, -1);
