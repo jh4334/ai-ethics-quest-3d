@@ -97,6 +97,22 @@ try {
   });
   check(sep.d >= MIN_SEPARATION, `상호작용 간격 불변식 최솟값 ${sep.d} (${sep.a} ↔ ${sep.b}) ≥ ${MIN_SEPARATION}`);
 
+  // ── 부두 게이트: 프롤로그 완료 전엔 도트가 항해를 말린다 ──
+  const dockPos = await p.evaluate(() => {
+    const it = window.__ethicsGame.renderState.interactables.find((i) => i.type === 'dock');
+    return it ? { x: it.position.x, z: it.position.z } : null;
+  });
+  await tp(dockPos.x, dockPos.z - 0.6, 0, 1);
+  await p.waitForTimeout(1000);
+  await A(500);
+  const dockGate = await p.evaluate(() => ({
+    mode: window.__ethicsGame.mode,
+    dialog: !window.__ethicsUi.dialog.hidden,
+    text: window.__ethicsUi.dialogBody?.innerText ?? ''
+  }));
+  check(dockGate.mode === 'overworld' && dockGate.dialog && dockGate.text.includes('시련'), '부두 게이트(완료 전 출항 거부 대화)');
+  await closeDlg();
+
   // ── 던전 공통 ──────────────────────────────────────
   const enterDungeon = async (topic) => {
     const s = await interactable('shrine', 'shrineId', `${topic}-shrine`);
@@ -254,6 +270,40 @@ try {
     voyage.length === 6 && voyage[0] === 'completed' && voyage[1] === 'coming' && voyage[5] === 'locked',
     `항로 지도 6섬 상태(${voyage.join(',')})`
   );
+
+  // ── 항해 씬: 출항 → 안개 섬 거부 → 귀항 ──────────────
+  await p.evaluate(() => window.__ethicsUi.journalClose?.click());
+  await p.waitForTimeout(400);
+  await tp(dockPos.x, dockPos.z - 0.6, 0, 1);
+  await p.waitForTimeout(1000);
+  await A(700);
+  const sail = await p.evaluate(() => ({
+    mode: window.__ethicsGame.mode,
+    overworldHidden: !window.__ethicsGame.renderState.overworld.visible,
+    islands: window.__ethicsGame.voyage?.built.islands.length ?? 0
+  }));
+  check(sail.mode === 'voyage' && sail.overworldHidden && sail.islands === 6, `항해 진입(섬 실루엣 ${sail.islands}개, 오버월드 숨김)`);
+
+  // 안개 섬(속삭임 곶, sea [-16,-9] × 2.2) 접근 → A는 거부된다.
+  await tp(-35.2, -16.5, 0, -1);
+  await p.waitForTimeout(1000);
+  await A(600);
+  const fog = await p.evaluate(() => ({
+    mode: window.__ethicsGame.mode,
+    prompt: window.__ethicsUi.prompt?.textContent ?? ''
+  }));
+  check(fog.mode === 'voyage' && fog.prompt.includes('안개'), `안개 섬 상륙 거부(${fog.prompt.slice(0, 24)}…)`);
+
+  // 시작의 섬으로 귀항.
+  await tp(0, 5, 0, -1);
+  await p.waitForTimeout(1000);
+  await A(700);
+  const home = await p.evaluate(() => ({
+    mode: window.__ethicsGame.mode,
+    overworldVisible: window.__ethicsGame.renderState.overworld.visible,
+    voyage: Boolean(window.__ethicsGame.voyage)
+  }));
+  check(home.mode === 'overworld' && home.overworldVisible && !home.voyage, '시작의 섬 귀항(오버월드 복원)');
 
   check(errs.length === 0, `콘솔·페이지 에러 0 (실제 ${errs.length}${errs.length ? ': ' + errs[0] : ''})`);
 } catch (e) {

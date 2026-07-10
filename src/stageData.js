@@ -106,6 +106,21 @@ export function markStageCompleted(progress, stageId) {
   };
 }
 
+// 항해 씬: 뗏목 위치에서 범위 안의 가장 가까운 섬(순수 함수).
+// seaScale(sea 좌표 → 월드 배율)은 표현 계층이 정해서 넘긴다.
+export function nearestSeaIsland(x, z, seaScale, range) {
+  let best = null;
+  let bestDistance = range;
+  for (const stage of STAGES) {
+    const distance = Math.hypot(x - stage.sea[0] * seaScale, z - stage.sea[1] * seaScale);
+    if (distance < bestDistance) {
+      best = stage;
+      bestDistance = distance;
+    }
+  }
+  return best;
+}
+
 // 스테이지별 상태 판정(순수 함수).
 // 프롤로그 완료는 기존 신호(aiCoreCompleted)에서 파생한다 — 같은 사실을 두 곳에 쓰지 않는다.
 // state: 'current'(열림·진행 중) | 'completed'(완료) | 'locked'(이전 섬 미완) | 'coming'(콘텐츠 준비 중)
