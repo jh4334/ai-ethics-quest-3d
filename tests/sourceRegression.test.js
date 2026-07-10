@@ -195,6 +195,7 @@ test('isle: 확장 섬 씬은 저사양·결정적이고 도착 서사는 visite
   assert.match(registryBlock, /'echo-cave'/);
   assert.match(registryBlock, /'hourglass-port'/);
   assert.match(registryBlock, /'memory-outer'/);
+  assert.match(registryBlock, /'memory-core'/);
   assert.match(mainSource, /ISLE_SCENES\[stageId\]\(/);
   assert.match(mainSource, /const ISLE_CONTENT = \{/);
   // built:true인 섬은 반드시 씬이 등록되어 있어야 한다(상륙 불가 섬 방지).
@@ -258,6 +259,24 @@ test('heart seals: 순수 로직 + 4동사 봉인 + 완료 전이', () => {
   assert.match(isleSrc3, /HEART\.seals\.forEach/);
   assert.match(mainSource, /heartUse\(game, ui\)/);
   assert.match(mainSource, /function finishHeart/);
+});
+
+test('residue: 패배 연출 → 각성 → 4껍질 동사전 → 2막 엔딩 (프롤로그 증명서 불변)', () => {
+  const residueSource = readFileSync(new URL('../src/residueLogic.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(residueSource, /from 'three'/);
+  assert.doesNotMatch(residueSource, /Math\.random/);
+  // 패배 연출은 심부 도입부에 있다 — 프롤로그 보스 흐름은 건드리지 않는다(기획 재결정).
+  assert.match(residueSource, /'intro'/);
+  assert.match(residueSource, /deflectsToAwaken/);
+  assert.match(mainSource, /function residueAwaken/);
+  assert.match(mainSource, /function finishResidue/);
+  // 페이즈 = 도구 4종 순서(방패→나침반→종→거울).
+  assert.match(residueSource, /'shield'[\s\S]*'compass'[\s\S]*'bell'[\s\S]*'mirror'/);
+  // 프롤로그 승리 흐름(가르침→증명서)은 그대로 남아 있다.
+  assert.match(mainSource, /startBossFight/);
+  assert.match(mainSource, /buildNovaCertificate/);
+  // 외곽 관문에서 심부 직행(섬→섬 전환).
+  assert.match(mainSource, /enterIsle\(game, ui, 'memory-core'\)/);
 });
 
 test('stage frame: 순수 데이터 모듈 + 세이브 v2 + 항로 지도', () => {

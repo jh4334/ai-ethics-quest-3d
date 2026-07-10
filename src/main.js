@@ -47,6 +47,7 @@ import {
 } from './rumorLogic.js';
 import { DUNES, createDunesState, glassAngle, nearestGlass, pullGlass, tickDunes } from './dunesLogic.js';
 import { HEART, createHeartState, nearestSeal, sealPulse, tickHeart, useSeal } from './heartLogic.js';
+import { RESIDUE, createResidueState, residueIntroHit, strikeResidue, tickResidue, windupGauge } from './residueLogic.js';
 import {
   FINALE,
   buildNovaCertificate,
@@ -2285,6 +2286,8 @@ function useToolVerb(game, ui) {
       dunesPull(game, ui);
     } else if (game.isle.stageId === 'memory-outer') {
       heartUse(game, ui);
+    } else if (game.isle.stageId === 'memory-core') {
+      residueUse(game, ui);
     } else {
       corridorGuard(game, ui);
     }
@@ -2321,6 +2324,104 @@ function useToolVerb(game, ui) {
 // 🛡️ 방패 가드: 짧은 가드 자세 — 그 사이 잡음 파도가 닿으면 스턴 대신 반사한다.
 const GUARD_TIME = 0.55;
 const GUARD_COOLDOWN = 1.4;
+
+// 심부의 잔영전 — 패배 연출 단계에선 전부 튕겨나고, 각성 후엔 공격 자세의 절정에 껍질을 깬다.
+function residueUse(game, ui) {
+  const isle = game.isle;
+  if (!isle || isle.pullCd > 0 || !isle.challenge) {
+    return;
+  }
+  const ch = isle.challenge;
+  if (ch.stage === 'defeated') {
+    return;
+  }
+  const distance = Math.hypot(
+    game.player.position.x - RESIDUE.boss.x,
+    game.player.position.z - RESIDUE.boss.z
+  );
+  if (distance > RESIDUE.useRange) {
+    game.audio?.playClick();
+    flashCombatPopup(ui, '잔영에게 더 가까이!', 'miss');
+    return;
+  }
+  isle.pullCd = 0.6;
+  if (ch.stage === 'intro') {
+    // 패배 연출: 어떤 힘도 닿지 않는다.
+    const events = residueIntroHit(ch);
+    game.audio?.playWrong();
+    addShake(game, 0.35);
+    flashCombatPopup(ui, '튕겨났다! 힘이… 닿지 않아?!', 'miss');
+    if (events.includes('awaken')) {
+      residueAwaken(game, ui);
+    }
+    return;
+  }
+  const events = strikeResidue(ch);
+  for (const event of events) {
+    if (event === 'early') {
+      game.audio?.playWrong();
+      flashCombatPopup(ui, '아직! 잔영이 공격 자세의 절정일 때(F)!', 'miss');
+    } else if (event === 'break') {
+      game.audio?.playCorrect();
+      addShake(game, 0.4);
+      const brokenCount = Math.min(ch.phase, RESIDUE.phases.length);
+      const broken = RESIDUE.phases[brokenCount - 1];
+      flashCombatPopup(ui, `${broken.emoji} ${broken.nameKo} — 껍질 파괴! (${brokenCount}/${RESIDUE.phases.length})`, 'match');
+      const ring = isle.built.shellRings[brokenCount - 1];
+      if (ring) {
+        ring.visible = false;
+      }
+      if (!events.includes('defeated') && ch.stage === 'fight') {
+        const next = RESIDUE.phases[ch.phase];
+        ui.puzzleGoal.textContent = `지금 껍질: ${next.emoji} ${next.nameKo}`;
+      }
+    } else if (event === 'defeated') {
+      finishResidue(game, ui);
+    }
+  }
+}
+
+// 각성 연출: 치유한 정령들의 목소리가 진짜 힘을 깨운다.
+function residueAwaken(game, ui) {
+  const isle = game.isle;
+  isle.built.spiritOrbs.forEach((orb) => {
+    orb.visible = true;
+  });
+  game.audio?.playNovaChime();
+  triggerFlash(ui, '#ffffff');
+  const first = RESIDUE.phases[0];
+  ui.puzzleGoal.textContent = `지금 껍질: ${first.emoji} ${first.nameKo}`;
+  ui.puzzleHint.textContent = '잔영이 공격 자세의 절정일 때 약속의 힘(F)!';
+  ui.dialogKicker.textContent = '기억의 심장 심부';
+  ui.dialogTitle.textContent = '정령들의 목소리';
+  ui.dialogBody.innerHTML = speechHtml([
+    '🕊️ "수호자! 도구를 *갖고 있는 것*과 *쓸 줄 아는 것*은 달라 — 우리가 함께 배웠잖아!"',
+    '🐋 "출처를 묻던 그 울림을 기억해!" 🐢 "멈출 때를 알던 그 손을 기억해!"',
+    '✨ 도트: "네 가지 약속이 하나로 깨어난다 — 이제 잔영의 공격 자세를 노려, 절정의 순간에 힘을 써!"'
+  ]);
+  openDialog(game, ui);
+}
+
+// 잔영 격파: 2막 엔딩 — 기억의 별이 떠오르고 군도가 완전히 치유된다.
+function finishResidue(game, ui) {
+  const isle = game.isle;
+  isle.built.heal();
+  game.progress = markStageCompleted(game.progress, isle.stageId);
+  persistProgress(game.progress);
+  updateHud(game, ui);
+  game.audio?.playCoreAwaken();
+  triggerFlash(ui, '#fff3c0');
+  ui.puzzleGoal.textContent = ISLE_CONTENT[isle.stageId].healedGoalKo;
+  ui.puzzleHint.textContent = '뗏목으로 돌아가면 다시 바다로';
+  ui.dialogKicker.textContent = '🌊 잡음의 군도 — 완전 치유';
+  ui.dialogTitle.textContent = '✨ 도트';
+  ui.dialogBody.innerHTML = speechHtml([
+    '"잔영이… 빛으로 흩어졌어. 삼켰던 기억들이 별이 되어 돌아오고 있어!"',
+    '"봐, 수호자 — 곶의 바닷새도, 동굴의 고래도, 항구의 거북도, 이제 모두 건강해. 군도의 항로가 전부 열렸어."',
+    '"이 모험을 잊지 마. 방패처럼 지켜 주고, 종처럼 물어보고, 모래시계처럼 멈출 줄 알고, 거울처럼 서로를 비춰 주기 — 그게 네가 완성한 네 가지 약속이야. 🏅"'
+  ]);
+  openDialog(game, ui);
+}
 
 // 기억의 심장 외곽의 봉인 해제 — 봉인석의 빛이 가장 환해진 순간 약속의 힘(F)을 쓴다.
 function heartUse(game, ui) {
@@ -3614,20 +3715,39 @@ const ISLE_CONTENT = {
       '"바깥 봉인이 모두 풀렸어… 심부로 가는 길이 곧 열릴 거야."',
       '"네 가지 약속을 모두 기억하는 손 — 마지막 잡음도 그 손이라면 가르칠 수 있어."'
     ]
+  },
+  'memory-core': {
+    fog: [0x120d20, 22, 60],
+    clearColor: 0x0e0a18,
+    flash: '#d8a8c8',
+    goalKo: '노이즈의 잔영과 마주하세요',
+    healedGoalKo: '군도가 완전히 치유되었습니다 — 기억의 별이 빛나요',
+    arrivalKo: [
+      '"여기가 심부… 조심해, 저기 있어 — 노이즈가 흘리고 간 마지막 잡음 덩어리, 노이즈의 잔영이야."',
+      '"떨지 마. 네가 배운 네 가지 약속의 힘(F)으로 부딪혀 보자!"'
+    ],
+    spiritNameKo: '⚡ 노이즈의 잔영',
+    spiritSickKo: ['"…지지직…"'],
+    spiritHealedKo: ['"…고마워… 이 기억들, 이제 제자리로…"']
   }
 };
 
 function enterIsle(game, ui, stageId) {
-  if (game.isle || !game.voyage) {
+  // 바다에서 상륙하거나, 다른 섬의 관문에서 직행한다(심부).
+  if (game.isle?.stageId === stageId || (!game.voyage && !game.isle)) {
     return;
   }
   const rs = game.renderState;
   const stage = getStageById(stageId);
-  // 바다 씬을 걷어내고 섬 지형을 올린다.
-  const vg = game.voyage;
-  disposeDungeonRoom(vg.built.root, rs.scene);
-  game.voyage = null;
-  game.player.speed = vg.walkSpeed;
+  if (game.voyage) {
+    const vg = game.voyage;
+    disposeDungeonRoom(vg.built.root, rs.scene);
+    game.voyage = null;
+    game.player.speed = vg.walkSpeed;
+  } else {
+    disposeDungeonRoom(game.isle.built.root, rs.scene);
+    game.isle = null;
+  }
 
   const healed = game.progress.stages?.[stageId]?.completed === true;
   const content = ISLE_CONTENT[stageId];
@@ -3653,6 +3773,13 @@ function enterIsle(game, ui, stageId) {
   ui.puzzleGoal.textContent = healed ? content.healedGoalKo : content.goalKo;
   ui.puzzleHint.textContent = '뗏목으로 돌아가면 다시 바다로';
   game.updateRotateHint?.();
+
+  // 심부: 잔영이 남아 있으면 도착과 동시에 리매치가 시작된다(패배 연출 단계).
+  if (stageId === 'memory-core' && !healed) {
+    game.isle.challenge = createResidueState();
+    ui.puzzleGoal.textContent = '노이즈의 잔영에게 약속의 힘(F)을 써 보세요';
+    ui.puzzleHint.textContent = '';
+  }
 
   // 첫 상륙에만 도착 서사를 튼다(세이브 v2 visited 신호).
   if (!game.progress.stages?.[stageId]?.visited) {
@@ -3723,6 +3850,18 @@ function updateIsle(delta, game, ui) {
     isle.built.hourglasses.forEach((hourglass, glassId) => {
       hourglass.rotation.z = glassAngle(isle.challenge, glassId);
     });
+  }
+
+  // 잔영전(기억의 심장 심부) — 공격 자세 게이지 구동.
+  if (isle.stageId === 'memory-core' && isle.challenge && isle.challenge.stage === 'fight') {
+    tickResidue(isle.challenge, delta);
+    const gauge = windupGauge(isle.challenge);
+    const phase = RESIDUE.phases[isle.challenge.phase];
+    const boss = isle.built.boss;
+    // 절정에 가까울수록 그 동사의 색으로 달아오르고 몸을 부풀린다.
+    isle.built.bossMat.emissive.setHex(gauge > 0.6 ? phase.color : 0x4a1a2c);
+    isle.built.bossMat.emissiveIntensity = 0.4 + gauge * 0.9;
+    boss.scale.setScalar(1 + gauge * 0.22);
   }
 
   // 4봉인 도전(기억의 심장 외곽) — 봉인석 빛 맥동 구동.
@@ -3917,6 +4056,17 @@ function isleAction(game, ui) {
       flashCombatPopup(ui, '⏳ 모래시계들이 흔들린다!', 'miss');
       ui.puzzleGoal.textContent = `모래시계 ${DUNES.glasses.length}개를 바로 세우세요`;
       ui.puzzleHint.textContent = '똑바로 서는 순간 🧭 나침반(F/도구버튼)으로 당겨요 — 멈출 때를 아는 게 열쇠!';
+    }
+    return;
+  }
+  if (spot.id === 'portal') {
+    // 외곽 → 심부 직행 관문(4봉인 해제 후에만).
+    if (completed) {
+      game.audio?.playClick();
+      enterIsle(game, ui, 'memory-core');
+    } else {
+      game.audio?.playWrong();
+      flashCombatPopup(ui, '🌑 봉인이 남아 있다 — 네 봉인석을 먼저 깨워요', 'miss');
     }
     return;
   }
@@ -5096,7 +5246,9 @@ function renderJournal(game, ui) {
           )
           .join('')}
       </ol>
-      <p class="voyage-note">노이즈가 바다 건너로 도망쳤어요. 새 항로가 하나씩 열립니다.</p>
+      <p class="voyage-note">${voyage.every((stage) => stage.state === 'completed')
+        ? '🌊 군도의 모든 정령이 건강해요 — 완전 치유! 네 가지 약속이 바다를 지킵니다.'
+        : '노이즈가 바다 건너로 도망쳤어요. 새 항로가 하나씩 열립니다.'}</p>
     </section>
     ${deeds.length > 0
       ? `<section class="learning-report">

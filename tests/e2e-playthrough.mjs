@@ -571,10 +571,74 @@ try {
     '4봉인 해제 → 심부 관문 개방 + 스테이지 완료 기록'
   );
   await closeDlg();
-  await tp(-3.4, 10.0, 0, 1);
+
+  // ── 심부: 관문 직행 → 패배 연출 → 각성 → 4껍질 동사전 → 2막 엔딩 ──
+  await tp(0.4, -7.6, 0, -1);
   await p.waitForTimeout(1000);
   await A(800);
-  check((await st()).mode === 'voyage', '기억의 심장 외곽 → 바다 복귀');
+  const core = await p.evaluate(() => ({
+    mode: window.__ethicsGame.mode,
+    stage: window.__ethicsGame.isle?.stageId,
+    intro: window.__ethicsGame.isle?.challenge?.stage === 'intro',
+    arrival: !window.__ethicsUi.dialog.hidden
+  }));
+  check(core.mode === 'isle' && core.stage === 'memory-core' && core.intro && core.arrival, '심부 관문 직행(잔영 조우·패배 연출 시작)');
+  await closeDlg();
+  // 패배 연출: 힘이 3번 튕겨나면 정령들이 각성시킨다.
+  await tp(0.4, -1.5, 0, -1);
+  await p.waitForTimeout(1000);
+  for (let i = 0; i < 3; i += 1) {
+    await p.evaluate(() => { window.__ethicsGame.isle.pullCd = 0; });
+    await p.keyboard.press('f');
+    await p.waitForTimeout(900);
+  }
+  const awaken = await p.evaluate(() => ({
+    stage: window.__ethicsGame.isle.challenge?.stage,
+    dialog: !window.__ethicsUi.dialog.hidden,
+    spirits: window.__ethicsGame.isle.built.spiritOrbs.every((o) => o.visible)
+  }));
+  check(awaken.stage === 'fight' && awaken.dialog && awaken.spirits, '패배 연출 → 정령들의 각성 개입');
+  await closeDlg();
+  // 4껍질: 페이즈별 공격 자세 절정 t로 워프 → F.
+  const phases = [
+    [0, (Math.PI / 2 + 2 * Math.PI) / 1.2],
+    [1, (Math.PI / 2 - 1.1 + 2 * Math.PI) / 1.5],
+    [2, (Math.PI / 2 - 2.2 + 2 * Math.PI) / 0.9],
+    [3, (Math.PI / 2 - 3.3 + 2 * Math.PI) / 0.7]
+  ];
+  for (const [idx, tPeak] of phases) {
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      await p.evaluate((tPeak) => {
+        const g = window.__ethicsGame;
+        g.isle.pullCd = 0;
+        g.isle.challenge.t = tPeak;
+      }, tPeak);
+      await p.keyboard.press('f');
+      await p.waitForTimeout(900);
+      if (await p.evaluate((idx) => window.__ethicsGame.isle.challenge?.phase > idx || window.__ethicsGame.isle.challenge?.stage === 'defeated', idx)) break;
+    }
+  }
+  const finale = await p.evaluate(() => {
+    const g = window.__ethicsGame;
+    const stages = g.progress.stages;
+    return {
+      defeated: g.isle.challenge?.stage === 'defeated',
+      completed: stages['memory-core']?.completed === true,
+      allHealed: ['whisper-cape', 'echo-cave', 'hourglass-port', 'memory-outer', 'memory-core'].every((id) => stages[id]?.completed === true),
+      stars: g.isle.built.memoryStars.every((s) => s.visible),
+      bossGone: !g.isle.built.boss.visible,
+      ending: !window.__ethicsUi.dialog.hidden
+    };
+  });
+  check(
+    finale.defeated && finale.completed && finale.allHealed && finale.stars && finale.bossGone && finale.ending,
+    '잔영 격파 → 2막 엔딩(기억의 별·군도 완전 치유)'
+  );
+  await closeDlg();
+  await tp(-3.4, 8.4, 0, 1);
+  await p.waitForTimeout(1000);
+  await A(800);
+  check((await st()).mode === 'voyage', '심부 → 바다 복귀');
 
   // 시작의 섬으로 귀항.
   await tp(0, 5, 0, -1);

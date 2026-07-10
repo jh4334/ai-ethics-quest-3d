@@ -69,7 +69,7 @@ export const STAGES = [
     verbKo: '4동사 총동원',
     emoji: '⚡',
     sea: [8, -34],
-    built: false,
+    built: true,
     requires: 'memory-outer'
   }
 ];
