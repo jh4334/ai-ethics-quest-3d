@@ -32,7 +32,8 @@ import {
   worldToCell
 } from './dungeonPuzzles.js';
 import { buildDungeonRoom, disposeDungeonRoom, makeGlyphSprite, syncDungeonVisuals } from './dungeon.js';
-import { getStageStates } from './stageData.js';
+import { getStageStates, nearestSeaIsland } from './stageData.js';
+import { SEA_APPROACH, SEA_RADIUS, SEA_SCALE, buildSeaScene } from './sea.js';
 import {
   FINALE,
   buildNovaCertificate,
@@ -459,6 +460,7 @@ function createGameState(ui) {
     combat: null,
     puzzle: null,
     dungeon: null,
+    voyage: null,
     cinematic: null,
     mode: 'overworld',
     finaleResolving: false,
@@ -602,6 +604,8 @@ function createWorld(renderState) {
   createGrassField(world);
 
   createCenterCore(world, animated);
+
+  createDock(world, interactables);
 
   renderState.gates = renderState.gates ?? new Map();
   renderState.zoneAuras = renderState.zoneAuras ?? new Map();
@@ -1033,6 +1037,44 @@ function createDeepfakeCave(scene, position) {
   opening.rotation.x = 0;
   scene.add(opening);
   return { opening };
+}
+
+// 뗏목 선착장 — 남쪽 해변에서 「잡음의 군도」 항해 씬으로 나가는 문.
+const DOCK_POS = { x: 2.6, z: 15.0 };
+
+function createDock(scene, interactables) {
+  const dock = new THREE.Group();
+  const plankMat = new THREE.MeshStandardMaterial({ color: 0x9a7648, roughness: 0.9 });
+  // 물 위로 뻗은 판자 통로.
+  const walkway = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.16, 3.6), plankMat);
+  walkway.position.set(0, 0.42, 1.2);
+  dock.add(walkway);
+  for (const [px, pz] of [[-0.6, 0.2], [0.6, 0.2], [-0.6, 2.6], [0.6, 2.6]]) {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.9, 8), plankMat);
+    post.position.set(px, 0.12, pz);
+    dock.add(post);
+  }
+  // 정박한 작은 뗏목 + 등불(라이트 없이 발광 재질만).
+  const raft = new THREE.Mesh(
+    new THREE.BoxGeometry(1.5, 0.14, 1.9),
+    new THREE.MeshStandardMaterial({ color: 0x8a6a3f, roughness: 0.9 })
+  );
+  raft.position.set(0.2, 0.1, 3.6);
+  dock.add(raft);
+  const lantern = new THREE.Mesh(
+    new THREE.SphereGeometry(0.16, 10, 10),
+    new THREE.MeshBasicMaterial({ color: 0xffd88a })
+  );
+  lantern.position.set(0.6, 1.0, 2.6);
+  dock.add(lantern);
+  dock.position.set(DOCK_POS.x, 0, DOCK_POS.z);
+  scene.add(dock);
+
+  interactables.push({
+    type: 'dock',
+    position: new THREE.Vector3(DOCK_POS.x, 0, DOCK_POS.z + 0.6),
+    labelKo: '뗏목 선착장 — 군도로 항해'
+  });
 }
 
 function createNpc(scene, zone, zonePosition, interactables) {
@@ -1885,6 +1927,10 @@ function updateGame(delta, game, renderState, ui) {
     updateDungeon(delta, game, ui);
     return;
   }
+  if (game.mode === 'voyage') {
+    updateVoyage(delta, game, ui);
+    return;
+  }
   animateWorld(delta, renderState, game);
   updateCombat(delta, game, ui);
   updatePuzzle(delta, game, ui);
@@ -1925,7 +1971,9 @@ function updatePlayer(delta, game, playerGroup) {
     game.player.position.copy(
       game.mode === 'dungeon'
         ? clampToRoom(game.player.position, game.dungeon?.bounds)
-        : clampToIsland(game.player.position)
+        : game.mode === 'voyage'
+          ? clampToSea(game.player.position)
+          : clampToIsland(game.player.position)
     );
     playerGroup.rotation.y = Math.atan2(move.x, move.z);
     // 걸을 때 통통 튀는 느낌 + 살짝 기우뚱.
@@ -2399,6 +2447,8 @@ function primaryAction(game, ui) {
   game.audio?.resume();
   if (game.dungeon?.active) {
     dungeonAction(game, ui);
+  } else if (game.voyage) {
+    voyageAction(game, ui);
   } else if (game.combat?.active) {
     playerAttack(game, ui);
   } else if (game.puzzle?.active) {
@@ -2435,6 +2485,19 @@ function interact(game, ui) {
     }
   } else if (game.nearest.type === 'gate') {
     openGateDialog(game, ui, game.nearest.topicId);
+  } else if (game.nearest.type === 'dock') {
+    // 바다는 노이즈를 가르친 뒤에 열린다 — 그 전엔 도트가 말린다(기록 없음).
+    if (game.progress.aiCoreCompleted) {
+      enterVoyage(game, ui);
+    } else {
+      ui.dialogKicker.textContent = '뗏목 선착장';
+      ui.dialogTitle.textContent = '✨ 도트';
+      ui.dialogBody.innerHTML = speechHtml([
+        '"바다 너머에서 잡음의 기척이 느껴져… 하지만 지금은 이 섬의 시련이 먼저야."',
+        '"조각 네 개를 모으고 노이즈를 가르치면, 그때 함께 군도로 항해하자!"'
+      ]);
+      openDialog(game, ui);
+    }
   } else if (
     canUnlockFinalCore(game.progress.collectedFragments)
     && !game.progress.aiCoreCompleted
@@ -3189,6 +3252,140 @@ function exitDungeon(game, ui) {
   }
   ui.puzzleHud.hidden = true;
   game.updateRotateHint?.();
+}
+
+// ── 항해 씬(잡음의 군도 바다) ─────────────────────────
+// 던전과 같은 수명주기: 오버월드 Group을 숨기고 바다 루트를 lazy build → 귀항 시 dispose.
+
+// 뗏목이 바다 경계를 넘지 않게(섬 클램프와 같은 방식).
+function clampToSea(position) {
+  const flatLength = Math.hypot(position.x, position.z);
+  if (flatLength <= SEA_RADIUS) {
+    return position;
+  }
+  const scale = SEA_RADIUS / flatLength;
+  position.x *= scale;
+  position.z *= scale;
+  return position;
+}
+
+function enterVoyage(game, ui) {
+  if (game.voyage || game.mode !== 'overworld') {
+    return;
+  }
+  const rs = game.renderState;
+  // 열린 섬 = 항로 지도의 '진행 중/완료'와 같은 판정(데이터 단일 출처).
+  const states = new Map(getStageStates(game.progress).map((s) => [s.id, s.state]));
+  const built = buildSeaScene({
+    makeLabel: createLabelSprite,
+    isOpen: (stage) => states.get(stage.id) === 'current' || states.get(stage.id) === 'completed'
+  });
+  rs.scene.add(built.root);
+  rs.overworld.visible = false;
+  // 밤바다 톤: 안개는 먼 섬 실루엣이 어스름하게 남을 만큼만.
+  rs.scene.fog = new THREE.Fog(0x0a0e26, 55, 130);
+  rs.renderer.setClearColor(0x080b20, 1);
+
+  game.mode = 'voyage';
+  game.voyage = {
+    built,
+    nearestIsland: null,
+    returnPosition: new THREE.Vector3(DOCK_POS.x, 0.55, DOCK_POS.z - 1.8),
+    walkSpeed: game.player.speed
+  };
+  game.keys.clear();
+  game.player.speed = 7.4; // 뗏목은 걷기보다 조금 빠르게
+  game.player.position.set(0, 0.78, 9); // 시작의 섬 실루엣 남쪽 바다
+  game.player.direction.set(0, 0, -1);
+  rs.playerGroup.position.copy(game.player.position);
+  rs.companion.position.copy(game.player.position).add(new THREE.Vector3(0.8, 1.2, 0));
+  snapCamera(rs.camera, game.player.position);
+
+  triggerFlash(ui, '#bcd8ff');
+  game.audio?.playClick();
+  game.audio?.setMusicMode?.('dungeon'); // 신비로운 밤바다 무드
+  ui.prompt.hidden = true;
+  ui.puzzleHud.hidden = false;
+  ui.puzzleTitle.textContent = '🌊 잡음의 군도 — 항해';
+  ui.puzzleGoal.textContent = '뗏목을 몰아 군도를 살펴보세요 · 시작의 섬에 다가가면 귀항';
+  ui.puzzleHint.textContent = '안개에 잠긴 섬은 아직 들어갈 수 없어요';
+  game.updateRotateHint?.();
+}
+
+function exitVoyage(game, ui) {
+  const vg = game.voyage;
+  if (!vg) {
+    return;
+  }
+  const rs = game.renderState;
+  disposeDungeonRoom(vg.built.root, rs.scene); // 범용 트래버스 dispose 재사용
+  rs.overworld.visible = true;
+  rs.scene.fog = rs.overworldFog;
+  rs.renderer.setClearColor(0x8fd3ef, 1);
+
+  game.mode = 'overworld';
+  game.voyage = null;
+  game.keys.clear();
+  game.player.speed = vg.walkSpeed;
+  game.audio?.setMusicMode?.('overworld');
+
+  const back = vg.returnPosition;
+  game.player.position.copy(back);
+  game.player.direction.set(0, 0, -1);
+  rs.playerGroup.position.copy(back);
+  rs.companion.position.copy(back).add(new THREE.Vector3(0.8, 1.2, 0));
+  snapCamera(rs.camera, back);
+
+  triggerFlash(ui, '#ffffff');
+  ui.puzzleHud.hidden = true;
+  game.updateRotateHint?.();
+}
+
+function updateVoyage(delta, game, ui) {
+  const vg = game.voyage;
+  const elapsed = clock.elapsedTime;
+  // 뗏목이 플레이어를 태우고 물결 따라 흔들린다(결정적 사인파).
+  const raft = vg.built.raft;
+  raft.position.set(game.player.position.x, 0.18 + Math.sin(elapsed * 1.7) * 0.07, game.player.position.z);
+  raft.rotation.y = game.renderState.playerGroup.rotation.y;
+  raft.rotation.z = Math.sin(elapsed * 1.3) * 0.04;
+  // 달빛 물결 일렁임.
+  vg.built.waterMat.emissiveIntensity = 0.55 + Math.sin(elapsed * 0.8) * 0.08;
+
+  // 가까운 섬 안내 — 열린 섬은 상륙(귀항), 안개 섬은 거부 안내.
+  const island = nearestSeaIsland(game.player.position.x, game.player.position.z, SEA_SCALE, SEA_APPROACH);
+  vg.nearestIsland = island;
+  if (island) {
+    const open = vg.built.islands.find((item) => item.stage.id === island.id)?.open;
+    ui.prompt.hidden = false;
+    ui.prompt.textContent = open
+      ? `${ACTION_LABEL}${island.id === 'prologue' ? `${island.nameKo}으로 귀항` : `${island.nameKo} 상륙`}`
+      : `🌫️ ${island.nameKo} — 안개가 짙어 아직 들어갈 수 없어요`;
+  } else if (IS_TOUCH) {
+    ui.prompt.hidden = true;
+  } else {
+    ui.prompt.hidden = false;
+    ui.prompt.textContent = '🌊 방향키로 항해 · 섬에 다가가면 안내가 떠요';
+  }
+}
+
+function voyageAction(game, ui) {
+  const vg = game.voyage;
+  const island = vg?.nearestIsland;
+  if (!island) {
+    return;
+  }
+  const open = vg.built.islands.find((item) => item.stage.id === island.id)?.open;
+  if (!open) {
+    game.audio?.playWrong();
+    flashCombatPopup(ui, '🌫️ 안개가 걷히지 않았다…', 'miss');
+    return;
+  }
+  if (island.id === 'prologue') {
+    game.audio?.playClick();
+    exitVoyage(game, ui);
+  }
+  // 다른 열린 섬 상륙은 해당 섬 콘텐츠(M3+)와 함께 붙는다.
 }
 
 // 플레이어가 바라보는 방향 → 그리드 한 칸 방향([dCol, dRow]).

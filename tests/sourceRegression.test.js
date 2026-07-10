@@ -158,6 +158,26 @@ test('prologue cinematic is in-engine, deterministic, and hands the camera back'
   assert.match(mainSource, /if \(game\.cinematic\) \{\s*\n\s*updateCinematic\(raw, game, renderState, ui\);/);
 });
 
+test('voyage: 항해 씬은 저사양·결정적이고 부두는 프롤로그 완료로 게이트된다', () => {
+  const seaSource = readFileSync(new URL('../src/sea.js', import.meta.url), 'utf8');
+  // 결정성 + 저사양: 랜덤 금지, 그림자 캐스터 0(밤바다는 발광 재질로 보정).
+  assert.doesNotMatch(seaSource, /Math\.random/);
+  assert.doesNotMatch(seaSource, /castShadow = true/);
+  assert.match(seaSource, /emissive/);
+  // 던전과 같은 수명주기: 오버월드 숨김 → dispose 재사용 → 복귀 시 톤 복원.
+  assert.match(mainSource, /function enterVoyage/);
+  assert.match(mainSource, /function exitVoyage/);
+  assert.match(mainSource, /disposeDungeonRoom\(vg\.built\.root, rs\.scene\)/);
+  // 부두 게이트: 노이즈를 가르치기 전엔 항해가 열리지 않는다.
+  assert.match(mainSource, /type: 'dock'/);
+  assert.match(
+    mainSource.replace(/\s+/g, ' '),
+    /if \(game\.progress\.aiCoreCompleted\) \{ enterVoyage\(game, ui\);/
+  );
+  // 열린 섬 판정은 항로 지도와 같은 getStageStates에서 나온다(데이터 단일 출처).
+  assert.match(mainSource, /getStageStates\(game\.progress\)\.map/);
+});
+
 test('stage frame: 순수 데이터 모듈 + 세이브 v2 + 항로 지도', () => {
   const stageSource = readFileSync(new URL('../src/stageData.js', import.meta.url), 'utf8');
   const worldSource = readFileSync(new URL('../src/worldData.js', import.meta.url), 'utf8');
