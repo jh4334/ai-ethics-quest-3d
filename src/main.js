@@ -391,6 +391,7 @@ function bindUi(root) {
     puzzleGoal: root.querySelector('[data-puzzle-goal]'),
     puzzleHint: root.querySelector('[data-puzzle-hint]'),
     actionLabel: root.querySelector('[data-action-label]'),
+    toolButton: root.querySelector('[data-touch="tool"]'),
     dialog: root.querySelector('[data-dialog]'),
     dialogKicker: root.querySelector('[data-dialog-kicker]'),
     dialogTitle: root.querySelector('[data-dialog-title]'),
@@ -1932,6 +1933,7 @@ function celebrate(game, worldPosition, colorHex, kind) {
 
 function updateGame(delta, game, renderState, ui) {
   updatePlayer(delta, game, renderState.playerGroup);
+  syncToolButton(game, ui);
   if (game.shake > 0) {
     game.shake = Math.max(0, game.shake - delta * 3.2);
   }
@@ -2276,6 +2278,34 @@ function updateNearestInteractable(game, interactables, ui) {
 
 // 도구의 '동사' 발동(F/던전 도구버튼) — 도구는 열쇠가 아니라 세계와 상호작용하는 수단이다.
 // 전투: 방패=가드(반사) · 종=울림 충격파 · 거울=약점 공개. 던전: 방별 동사(당기기/공명/판별).
+// 터치 도구(F) 버튼 아이콘을 맥락 동사와 일치시킨다 — 태블릿에서 '누르면 무엇이 나가는지' 보이게.
+const TOOL_EMOJI = { shield: '🛡️', compass: '🧭', bell: '🔔', mirror: '🪞' };
+const DUNGEON_VERB_EMOJI = { push: '🧭', carry: '🔔', beam: '🪞' };
+const ISLE_VERB_EMOJI = {
+  'whisper-cape': '🛡️',
+  'echo-cave': '🔔',
+  'hourglass-port': '🧭',
+  'memory-outer': '💠',
+  'memory-core': '⚡'
+};
+
+function syncToolButton(game, ui) {
+  if (!ui.toolButton) {
+    return;
+  }
+  let icon = '🔄';
+  if (game.dungeon?.active) {
+    icon = DUNGEON_VERB_EMOJI[game.dungeon.room.mechanic] ?? '🔄';
+  } else if (game.isle) {
+    icon = ISLE_VERB_EMOJI[game.isle.stageId] ?? '🔄';
+  } else if (game.combat?.active) {
+    icon = TOOL_EMOJI[game.combat.tools[game.combat.activeTool]] ?? '🔄';
+  }
+  if (ui.toolButton.textContent !== icon) {
+    ui.toolButton.textContent = icon;
+  }
+}
+
 function useToolVerb(game, ui) {
   game.audio?.resume();
   // 섬 도전 중엔 F = 그 섬의 동사(곶 = 가드, 동굴 = 울림, 항구 = 당기기, 심장 외곽 = 봉인 해제).
@@ -3767,6 +3797,7 @@ function enterIsle(game, ui, stageId) {
   snapCamera(rs.camera, game.player.position);
 
   triggerFlash(ui, content.flash);
+  ui.root.classList.add('is-isle'); // 터치 동사 버튼(F) 표시 — 섬 도전의 필수 입력
   ui.prompt.hidden = true;
   ui.puzzleHud.hidden = false;
   ui.puzzleTitle.textContent = `${stage.emoji} ${stage.nameKo}`;
@@ -3802,6 +3833,7 @@ function exitIsle(game, ui) {
   disposeDungeonRoom(isle.built.root, rs.scene);
   game.isle = null;
   game.mode = 'overworld'; // enterVoyage가 곧바로 'voyage'로 바꾼다
+  ui.root.classList.remove('is-isle');
   ui.puzzleHud.hidden = true;
   // 섬 실루엣 남쪽 바다에서 항해 재개.
   const sea = seaWorldPosition(stage);
