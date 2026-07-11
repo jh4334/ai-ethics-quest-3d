@@ -45,11 +45,35 @@ test('voyage guide: 화살표가 다음 목적지를 가리키고, 출항 브리
 test('camera keeps the player near screen center (no strong center bias)', () => {
   // 시선은 항상 플레이어 — 중심 편향(x*0.6·시선 x*0.4)이 부활하면 넓은 씬에서 캐릭터가 화면 밖으로 밀린다.
   assert.match(mainSource, /target\.x \* 0\.9, target\.y \+ 8\.7, target\.z \+ 13\.8/);
-  assert.match(mainSource, /camera\.lookAt\(target\.x, target\.y \+ 1\.35, target\.z - 1\.2\)/);
+  assert.match(mainSource, /new THREE\.Vector3\(target\.x, target\.y \+ 1\.35, target\.z - 1\.2\)/);
   assert.doesNotMatch(mainSource, /target\.x \* 0\.6/);
   // snapCamera와 updateCamera 상수는 반드시 일치(씬 전환 활공 방지) — 두 곳 다 같은 공식.
   const matches = mainSource.match(/target\.x \* 0\.9, target\.y \+ 8\.7, target\.z \+ 13\.8/g) ?? [];
   assert.equal(matches.length, 2);
+});
+
+test('idle overview: 3초 유휴 시 씬 전체 조망, 전투·도전 중엔 꺼진다', () => {
+  // 씬별 조망 시점 + 스무스 블렌드.
+  assert.match(mainSource, /const OVERVIEW_VIEWS = \{/);
+  assert.match(mainSource, /game\.idleT > 3/);
+  // 전투·섬 도전(타이밍 게임) 중엔 조망 금지.
+  assert.match(mainSource, /overviewBlocked = game\.combat\?\.active \|\| \(game\.isle\?\.challenge && !game\.isle\.challenge\.cleared\)/);
+  // 항해 조망 시 안개를 밀어 군도 전체 가시화(복귀 시 원상).
+  assert.match(mainSource, /fog\.far = 130 \+ ovBlend \* 160/);
+  // 씬 전환 시 조망 상태 리셋.
+  assert.match(mainSource, /game\.lastCameraMode !== game\.mode/);
+});
+
+test('story depth: 정령 재방문 대화 + 노바의 편지(읽음 세이브·항로 순서)', () => {
+  const worldSrc2 = readFileSync(new URL('../src/worldData.js', import.meta.url), 'utf8');
+  // 재방문 사이드 대화 — 치유 후 두 번째 대화부터.
+  assert.match(mainSource, /spiritRevisitKo/);
+  assert.match(mainSource, /game\.isle\.spiritTalked/);
+  // 노바의 편지: 항로 순서 고정 + 읽음은 세이브에.
+  assert.match(mainSource, /NOVA_LETTER_ORDER = \['whisper-cape', 'echo-cave', 'hourglass-port', 'memory-core'\]/);
+  assert.match(mainSource, /function getUnreadNovaLetters/);
+  assert.match(worldSrc2, /novaLettersRead: \[\.\.\.new Set\(stringArray\(candidate\.novaLettersRead\)\)\]/);
+  assert.match(mainSource, /type: 'letter'/);
 });
 
 test('touch movement is a virtual stick on the left (free direction)', () => {

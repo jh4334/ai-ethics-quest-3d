@@ -459,6 +459,7 @@ export function createInitialProgress() {
     prologueSeen: false,
     aiCoreCompleted: false,
     voyageIntroSeen: false,
+    novaLettersRead: [],
     // 세이브 v2: 「잡음의 군도」 섬별 진행 맵. 프롤로그(시작의 섬) 완료는
     // 기존 신호(aiCoreCompleted)에서 파생하므로 여기 중복 기록하지 않는다.
     stages: {}
@@ -508,6 +509,7 @@ export function normalizeProgress(candidate) {
     prologueSeen: candidate.prologueSeen === true,
     aiCoreCompleted: candidate.aiCoreCompleted === true,
     voyageIntroSeen: candidate.voyageIntroSeen === true,
+    novaLettersRead: [...new Set(stringArray(candidate.novaLettersRead))],
     stages: normalizeStages(candidate.stages)
   };
 }
