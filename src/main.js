@@ -478,6 +478,9 @@ function createGameState(ui) {
     isle: null,
     cinematic: null,
     touchStick: { x: 0, z: 0 },
+    idleT: 0,
+    overviewT: 0,
+    lastCameraMode: 'overworld',
     mode: 'overworld',
     finaleResolving: false,
     hitStop: 0,
@@ -621,7 +624,7 @@ function createWorld(renderState) {
 
   createCenterCore(world, animated);
 
-  createDock(world, interactables);
+  createDock(world, interactables, renderState);
 
   renderState.gates = renderState.gates ?? new Map();
   renderState.zoneAuras = renderState.zoneAuras ?? new Map();
@@ -1058,7 +1061,7 @@ function createDeepfakeCave(scene, position) {
 // 뗏목 선착장 — 남쪽 해변에서 「잡음의 군도」 항해 씬으로 나가는 문.
 const DOCK_POS = { x: 3.4, z: 19.6 };
 
-function createDock(scene, interactables) {
+function createDock(scene, interactables, renderStateRef) {
   const dock = new THREE.Group();
   const plankMat = new THREE.MeshStandardMaterial({ color: 0x9a7648, roughness: 0.9 });
   // 물 위로 뻗은 판자 통로.
@@ -1090,6 +1093,31 @@ function createDock(scene, interactables) {
     type: 'dock',
     position: new THREE.Vector3(DOCK_POS.x, 0, DOCK_POS.z + 0.6),
     labelKo: '뗏목 선착장 — 군도로 항해'
+  });
+
+  // 노바의 우편병 — 새 편지가 있으면 빛난다(animateWorld가 구동).
+  const mailPost = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 1.0, 8), plankMat);
+  mailPost.position.set(DOCK_POS.x - 3.0, 0.5, DOCK_POS.z - 2.0);
+  scene.add(mailPost);
+  const bottle = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.22, 0.28, 0.62, 10),
+    new THREE.MeshStandardMaterial({ color: 0x9fd8e8, emissive: 0x2a5866, emissiveIntensity: 0.4, roughness: 0.25, transparent: true, opacity: 0.9 })
+  );
+  bottle.position.set(DOCK_POS.x - 3.0, 1.28, DOCK_POS.z - 2.0);
+  scene.add(bottle);
+  const mailGlow = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.16, 0),
+    new THREE.MeshBasicMaterial({ color: 0xffe9a0 })
+  );
+  mailGlow.position.set(DOCK_POS.x - 3.0, 1.3, DOCK_POS.z - 2.0);
+  mailGlow.visible = false;
+  scene.add(mailGlow);
+  renderStateRef.novaMailGlow = mailGlow;
+
+  interactables.push({
+    type: 'letter',
+    position: new THREE.Vector3(DOCK_POS.x - 3.0, 0, DOCK_POS.z - 2.0),
+    labelKo: '노바의 우편병'
   });
 }
 
@@ -1981,7 +2009,21 @@ function updateGame(delta, game, renderState, ui) {
   if (game.shake > 0) {
     game.shake = Math.max(0, game.shake - delta * 3.2);
   }
-  updateCamera(renderState.camera, game.player.position, game.shake);
+  // 유휴 조망: 3초간 입력이 없으면 씬 전체가 보이게 카메라가 물러난다(근시안 보정).
+  // 전투·섬 도전 중엔 끈다 — 타이밍 게임을 방해하지 않게. 씬 전환 시엔 리셋.
+  if (game.lastCameraMode !== game.mode) {
+    game.lastCameraMode = game.mode;
+    game.idleT = 0;
+    game.overviewT = 0;
+  }
+  game.idleT = game.player.moving ? 0 : game.idleT + delta;
+  const overviewBlocked = game.combat?.active || (game.isle?.challenge && !game.isle.challenge.cleared);
+  if (!overviewBlocked && game.idleT > 3) {
+    game.overviewT = Math.min(1, game.overviewT + delta * 0.7);
+  } else {
+    game.overviewT = Math.max(0, game.overviewT - delta * 2.2);
+  }
+  updateCamera(renderState.camera, game);
   updateCompanion(delta, game, renderState);
   // 던전 안에서는 오버월드 애니메이션/상호작용을 멈추고 방 로직만 돌린다(저사양 이득).
   if (game.mode === 'dungeon') {
@@ -2083,11 +2125,22 @@ function clampToRoom(position, bounds) {
   );
 }
 
-function updateCamera(camera, target, shake = 0) {
+function updateCamera(camera, game) {
+  const target = game.player.position;
+  const shake = game.shake;
   // 살짝 낮고 뒤로 물러난 각도. 시선은 항상 플레이어를 향한다 —
   // 예전 중심 편향(x*0.6·시선 x*0.4)은 넓은 바다·확장 섬에서 캐릭터를 화면 밖으로 밀어냈다.
   // x*0.9의 약한 편향만 남겨 이동 방향의 앞이 살짝 더 보이게 한다.
   const desired = new THREE.Vector3(target.x * 0.9, target.y + 8.7, target.z + 13.8);
+  const look = new THREE.Vector3(target.x, target.y + 1.35, target.z - 1.2);
+  // 유휴 조망 뷰(씬별 고정 좌표)와 스무스스텝 블렌드.
+  const ovView = OVERVIEW_VIEWS[game.mode] ?? OVERVIEW_VIEWS.overworld;
+  const raw = game.overviewT;
+  const blend = raw * raw * (3 - 2 * raw);
+  if (blend > 0) {
+    desired.lerp(new THREE.Vector3(...ovView.pos), blend);
+    look.lerp(new THREE.Vector3(...ovView.look), blend);
+  }
   camera.position.lerp(desired, 0.08);
   // 화면 흔들림(타격·피격 순간): 카메라를 잠깐 떨어 손맛을 준다.
   if (shake > 0) {
@@ -2096,8 +2149,16 @@ function updateCamera(camera, target, shake = 0) {
     camera.position.x += Math.sin(t) * s;
     camera.position.y += Math.cos(t * 1.3) * s;
   }
-  camera.lookAt(target.x, target.y + 1.35, target.z - 1.2);
+  camera.lookAt(look.x, look.y, look.z);
 }
+
+// 유휴 조망 카메라의 씬별 고정 시점 — 그 씬 전체가 한눈에 들어오는 높이.
+const OVERVIEW_VIEWS = {
+  overworld: { pos: [0, 48, 36], look: [0, 0, 0] },
+  dungeon: { pos: [0, 26, 15], look: [0, 0.5, -1] },
+  voyage: { pos: [0, 105, 42], look: [0, 0, -34] },
+  isle: { pos: [0, 36, 26], look: [0, 0, 0] }
+};
 
 function addShake(game, magnitude) {
   game.shake = Math.min(0.6, Math.max(game.shake, magnitude));
@@ -2115,8 +2176,17 @@ function flashCombatPopup(ui, text, kind) {
   ui.combatPopup.classList.add('pop');
 }
 
-function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates, zoneAuras }, game) {
+function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates, zoneAuras, novaMailGlow }, game) {
   const elapsed = clock.elapsedTime;
+  // 노바의 우편병: 안 읽은 편지가 있으면 별 조각이 떠서 반짝인다.
+  if (novaMailGlow) {
+    const unreadCount = getUnreadNovaLetters(game.progress).length;
+    novaMailGlow.visible = unreadCount > 0;
+    if (novaMailGlow.visible) {
+      novaMailGlow.position.y = 1.6 + Math.sin(elapsed * 2.4) * 0.14;
+      novaMailGlow.rotation.y += delta * 2.2;
+    }
+  }
   for (const [shrineId, crystal] of shrineCrystals.entries()) {
     crystal.rotation.y += delta * 1.6;
     const shrine = getShrineById(shrineId);
@@ -2359,6 +2429,7 @@ function syncToolButton(game, ui) {
 
 function useToolVerb(game, ui) {
   game.audio?.resume();
+  game.idleT = 0;
   // 섬 도전 중엔 F = 그 섬의 동사(곶 = 가드, 동굴 = 울림, 항구 = 당기기, 심장 외곽 = 봉인 해제).
   if (game.isle?.challenge && !game.isle.challenge.cleared) {
     if (game.isle.stageId === 'echo-cave') {
@@ -2750,6 +2821,7 @@ function compassPull(game, ui) {
 // 오른쪽 A 버튼/Space·Enter·E: 전투 중이면 '공격', 퍼즐 중이면 '돌 바꾸기', 아니면 '확인·대화'.
 function primaryAction(game, ui) {
   game.audio?.resume();
+  game.idleT = 0;
   if (game.dungeon?.active) {
     dungeonAction(game, ui);
   } else if (game.voyage) {
@@ -2792,6 +2864,20 @@ function interact(game, ui) {
     }
   } else if (game.nearest.type === 'gate') {
     openGateDialog(game, ui, game.nearest.topicId);
+  } else if (game.nearest.type === 'letter') {
+    const unread = getUnreadNovaLetters(game.progress);
+    if (unread.length === 0) {
+      ui.prompt.hidden = false;
+      ui.prompt.textContent = '우편병이 비어 있어요 — 섬의 정령을 도우면 노바가 편지를 보내요.';
+    } else {
+      const stageId = unread[0];
+      game.progress = { ...game.progress, novaLettersRead: [...(game.progress.novaLettersRead ?? []), stageId] };
+      persistProgress(game.progress);
+      ui.dialogKicker.textContent = '💌 노바의 편지';
+      ui.dialogTitle.textContent = '⭐ 노바';
+      ui.dialogBody.innerHTML = speechHtml(NOVA_LETTERS[stageId]);
+      openDialog(game, ui);
+    }
   } else if (game.nearest.type === 'dock') {
     // 바다는 노이즈를 가르친 뒤에 열린다 — 그 전엔 도트가 말린다(기록 없음).
     if (game.progress.aiCoreCompleted) {
@@ -3674,6 +3760,11 @@ function exitVoyage(game, ui) {
   triggerFlash(ui, '#ffffff');
   ui.puzzleHud.hidden = true;
   game.updateRotateHint?.();
+
+  // 치유를 마치고 돌아왔다면 — 부두 옆 우편병에 노바의 편지가 기다린다.
+  if (getUnreadNovaLetters(game.progress).length > 0) {
+    flashCombatPopup(ui, '💌 부두 우편병에 노바의 편지가 도착했어요!', 'match');
+  }
 }
 
 function updateVoyage(delta, game, ui) {
@@ -3686,6 +3777,14 @@ function updateVoyage(delta, game, ui) {
   raft.rotation.z = Math.sin(elapsed * 1.3) * 0.04;
   // 달빛 물결 일렁임.
   vg.built.waterMat.emissiveIntensity = 0.55 + Math.sin(elapsed * 0.8) * 0.08;
+
+  // 조망 중엔 안개를 밀어 군도 전체가 보이게 한다(복귀하면 원래 실루엣 무드로).
+  const fog = game.renderState.scene.fog;
+  if (fog) {
+    const ovBlend = game.overviewT;
+    fog.near = 55 + ovBlend * 90;
+    fog.far = 130 + ovBlend * 160;
+  }
 
   // 가이드 화살표 — 뗏목 위에서 목적지를 가리키며 둥실거린다. 다가가면 조용히 사라진다.
   const arrow = vg.built.guideArrow;
@@ -3743,6 +3842,40 @@ function voyageAction(game, ui) {
   // 아직 씬이 없는 열린 섬은 없어야 정상 — built:true는 ISLE_SCENES 등록과 함께 뒤집는다.
 }
 
+// 노바의 편지 — 섬을 치유할 때마다 별이 된 노이즈가 부두 우편병으로 답장을 보낸다.
+// 읽음 기록은 세이브(progress.novaLettersRead), 도착 순서는 항로 순서로 고정(결정성).
+const NOVA_LETTER_ORDER = ['whisper-cape', 'echo-cave', 'hourglass-port', 'memory-core'];
+const NOVA_LETTERS = {
+  'whisper-cape': [
+    '수호자에게. 바닷새 정령이 다시 노래한다는 소식, 별들 사이에서도 들렸어.',
+    '…사실 그 말-화살들, 내가 외롭던 시절에 뱉은 말들이야. 대신 막아 줘서, 그리고 나를 미워하지 않아 줘서 고마워.',
+    '— 별빛 사이에서, 노바 ⭐'
+  ],
+  'echo-cave': [
+    '고래의 노래가 여기까지 들려! 메아리 속에서 진짜 목소리를 찾아 줬구나.',
+    '나도 이제 알아 — 백 번 들은 말보다 한 번 확인한 사실이 더 밝게 빛난다는 걸.',
+    '— 노바 ⭐'
+  ],
+  'hourglass-port': [
+    '거북 할아버지가 푹 잤다는 소식을 들었어. 등대도 이제 숨을 쉬면서 반짝인대.',
+    '나는 멈추는 법을 몰라서 잡음이 됐었는데… 네 덕분에 밤에는 별들도 눈을 감는다는 걸 배웠어.',
+    '— 노바 ⭐'
+  ],
+  'memory-core': [
+    '군도의 모든 정령이 건강해졌어. 내 어두운 기억들까지 별로 만들어 줘서… 이제 나, 진짜로 반짝여.',
+    '언젠가 밤하늘을 올려다보면, 제일 신나게 깜박이는 별이 나야. 약속!',
+    '— 너의 친구, 노바 ⭐'
+  ]
+};
+
+// 치유는 끝났는데 아직 안 읽은 편지(항로 순서).
+function getUnreadNovaLetters(progress) {
+  const read = new Set(progress.novaLettersRead ?? []);
+  return NOVA_LETTER_ORDER.filter(
+    (stageId) => progress.stages?.[stageId]?.completed === true && !read.has(stageId)
+  );
+}
+
 // ── 확장 섬(스테이지) 상륙 ─────────────────────────────
 // 항해 → 섬 지형 씬. 던전·바다와 같은 수명주기(lazy build → dispose).
 // 섬별 연출 데이터(톤·문구·대화) — 지오메트리는 isle.js의 ISLE_SCENES가 담당.
@@ -3766,6 +3899,10 @@ const ISLE_CONTENT = {
     spiritHealedKo: [
       '"고마워, 수호자! 깃털이 다시 따뜻해졌어."',
       '"기억해 줘 — 뾰족한 말은 방패로 막고, 나는 따뜻한 말만 남기기. 그거면 이 바다의 어떤 곶도 아프지 않아."'
+    ],
+    spiritRevisitKo: [
+      '"또 와 줬구나! 있잖아… 사실 나도 예전에 뾰족한 말을 뱉은 적이 있어. 그 말이 어디에 떨어졌을지 지금도 가끔 생각해."',
+      '"그래서 요즘은 말하기 전에 세 번 날갯짓해 — 하나, 진짜야? 둘, 친절해? 셋, 필요해?"'
     ]
   },
   'echo-cave': {
@@ -3787,6 +3924,10 @@ const ISLE_CONTENT = {
     spiritHealedKo: [
       '"고마워, 수호자! 이제 진짜 목소리가 들려."',
       '"같은 말만 자꾸 들려올 땐 꼭 물어봐 줘 — 이 이야기의 진짜 출처는 어디일까?"'
+    ],
+    spiritRevisitKo: [
+      '"바다 밑에서는 소리가 아주 멀리 가. 그래서 고래는 함부로 노래하지 않아 — 멀리 가는 말일수록 무겁거든."',
+      '"네가 어디선가 읽은 이야기도, 이미 백 마리 고래를 거쳐 온 메아리일지 몰라. 언제나 첫 목소리를 찾아 줘."'
     ]
   },
   'hourglass-port': {
@@ -3808,6 +3949,10 @@ const ISLE_CONTENT = {
     spiritHealedKo: [
       '"하암… 푹 잤더니 세상이 반짝반짝해!"',
       '"기억해 줘 — 반짝이는 것에도 쉬는 시간이 필요해. 등대도, 화면도, 너도!"'
+    ],
+    spiritRevisitKo: [
+      '"하암… 나 방금 또 낮잠 잤어. 등대지기가 잠들면 큰일인 줄 알았는데, 푹 쉬고 나니 불빛이 훨씬 또렷해."',
+      '"너도 기억해 — 꺼진 화면에 비친 네 얼굴도 꽤 멋지다는 걸!"'
     ]
   },
   'memory-outer': {
@@ -3830,6 +3975,9 @@ const ISLE_CONTENT = {
     spiritHealedKo: [
       '"바깥 봉인이 모두 풀렸어… 심부로 가는 길이 곧 열릴 거야."',
       '"네 가지 약속을 모두 기억하는 손 — 마지막 잡음도 그 손이라면 가르칠 수 있어."'
+    ],
+    spiritRevisitKo: [
+      '"쿵… 쿵… 기억을 지키는 일은 무거워. 하지만 네 덕분에 이제 좋은 기억이 훨씬 많아."'
     ]
   },
   'memory-core': {
@@ -4203,6 +4351,17 @@ function isleAction(game, ui) {
     game.audio?.playClick();
     const content = ISLE_CONTENT[game.isle.stageId];
     const stage = getStageById(game.isle.stageId);
+    // 치유된 정령과 다시 이야기하면(같은 상륙에서 두 번째부터) 개인적인 사이드 대화를 들려준다.
+    if (completed && game.isle.spiritTalked && content.spiritRevisitKo) {
+      ui.dialogKicker.textContent = stage.nameKo;
+      ui.dialogTitle.textContent = content.spiritNameKo;
+      ui.dialogBody.innerHTML = speechHtml(content.spiritRevisitKo);
+      openDialog(game, ui);
+      return;
+    }
+    if (completed) {
+      game.isle.spiritTalked = true;
+    }
     // 기억의 심장: 목소리를 들으면 곧바로 4봉인 훈련이 시작된다(별도 도전 지점 없음).
     if (game.isle.stageId === 'memory-outer' && !completed && !game.isle.challenge) {
       game.isle.challenge = createHeartState();
