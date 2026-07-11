@@ -642,6 +642,8 @@ function createWorld(renderState) {
 
   createDock(world, interactables, renderState);
 
+  createLighthouse(world, interactables, animated, renderState);
+
   renderState.gates = renderState.gates ?? new Map();
   renderState.zoneAuras = renderState.zoneAuras ?? new Map();
   for (const zone of WORLD_ZONES) {
@@ -1262,6 +1264,133 @@ function createDock(scene, interactables, renderStateRef) {
     type: 'letter',
     position: new THREE.Vector3(DOCK_POS.x - 3.0, 0, DOCK_POS.z - 2.0),
     labelKo: '노바의 우편병'
+  });
+}
+
+// 진실의 등대(Z4) — 섬 어디서든 보이는 세로 랜드마크이자 "신뢰할 수 있는 출처"의 은유.
+// 광선은 치유한 스테이지 수만큼 늘어난다(진행도가 풍경에 기록된다 — 뉴럴 가든 이식).
+const LIGHTHOUSE_POS = { x: 8.2, z: 15.6 };
+function createLighthouse(scene, interactables, animated, renderStateRef) {
+  const g = new THREE.Group();
+  const stone = new THREE.MeshStandardMaterial({ color: 0xcfd6da, roughness: 0.85 });
+  const white = new THREE.MeshStandardMaterial({ color: 0xf4f1e6, roughness: 0.7 });
+  const red = new THREE.MeshStandardMaterial({ color: 0xd95f4e, roughness: 0.7 });
+
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.75, 1.1, 12), stone);
+  base.position.y = 0.55;
+  g.add(base);
+  const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.78, 1.05, 6.4, 12), white);
+  tower.position.y = 4.2;
+  g.add(tower);
+  // 빨간 줄무늬 두 단 — 멀리서도 등대로 읽히는 실루엣 문법. 탑 반지름보다 살짝 크게(묻힘 방지).
+  for (const y of [2.6, 4.9]) {
+    const towerR = 1.05 + ((y - 1.0) / 6.4) * (0.78 - 1.05);
+    const stripe = new THREE.Mesh(new THREE.CylinderGeometry(towerR + 0.05, towerR + 0.07, 0.7, 12), red);
+    stripe.position.y = y;
+    g.add(stripe);
+  }
+  const gallery = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.05, 0.28, 12), stone);
+  gallery.position.y = 7.5;
+  g.add(gallery);
+  const lampRoom = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.62, 0.62, 0.9, 10),
+    new THREE.MeshStandardMaterial({
+      color: 0xbfeaff,
+      emissive: 0x7fd4ff,
+      emissiveIntensity: 0.5,
+      transparent: true,
+      opacity: 0.55,
+      roughness: 0.2
+    })
+  );
+  lampRoom.position.y = 8.1;
+  g.add(lampRoom);
+  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 12), new THREE.MeshBasicMaterial({ color: 0xfff2b8 }));
+  lamp.position.y = 8.1;
+  g.add(lamp);
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(0.85, 0.9, 10), red);
+  roof.position.y = 9.0;
+  g.add(roof);
+
+  // 진행도 광선 — 최대 6줄기, animateWorld가 beaconCount만큼 켠다. 느리게 회전.
+  const beamGroup = new THREE.Group();
+  beamGroup.position.y = 8.1;
+  const beams = [];
+  for (let i = 0; i < 6; i += 1) {
+    const beam = new THREE.Mesh(
+      new THREE.ConeGeometry(0.34, 7.0, 8, 1, true),
+      new THREE.MeshBasicMaterial({
+        color: 0xfff0b0,
+        transparent: true,
+        opacity: 0.12,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      })
+    );
+    // 원뿔 꼭짓점이 등실에 — 낮 배경에 씻기지 않게 가늘게, 하늘 쪽으로 들어 올린다.
+    beam.rotation.z = Math.PI / 2 - 0.3;
+    beam.position.x = 3.35;
+    beam.position.y = 1.05;
+    const arm = new THREE.Group();
+    arm.rotation.y = (i / 6) * Math.PI * 2;
+    arm.add(beam);
+    arm.visible = false;
+    beamGroup.add(arm);
+    beams.push(arm);
+  }
+  g.add(beamGroup);
+
+  g.traverse((child) => {
+    if (child.isMesh && !child.material.transparent) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
+  g.position.set(LIGHTHOUSE_POS.x, 0, LIGHTHOUSE_POS.z);
+  scene.add(g);
+  renderStateRef.lighthouseBeams = { group: beamGroup, beams };
+
+  interactables.push({
+    type: 'lighthouse',
+    position: new THREE.Vector3(LIGHTHOUSE_POS.x, 0, LIGHTHOUSE_POS.z + 1.6),
+    labelKo: '진실의 등대'
+  });
+
+  // 부두 → 등대 → 중앙 코어를 잇는 해류 유도등 — 빛이 순서대로 흘러 길을 가리킨다.
+  const guideLights = [];
+  const waypoints = [
+    [DOCK_POS.x, DOCK_POS.z - 1.6],
+    [LIGHTHOUSE_POS.x - 2.4, LIGHTHOUSE_POS.z - 0.6],
+    [0, 0]
+  ];
+  let idx = 0;
+  for (let seg = 0; seg < waypoints.length - 1; seg += 1) {
+    const [ax, az] = waypoints[seg];
+    const [bx, bz] = waypoints[seg + 1];
+    const steps = seg === 0 ? 3 : 6;
+    for (let i = 1; i <= steps; i += 1) {
+      const t = i / (steps + 1);
+      const dot = new THREE.Mesh(
+        new THREE.CircleGeometry(0.2, 10),
+        new THREE.MeshBasicMaterial({ color: 0x8fe0ff, transparent: true, opacity: 0.3, depthWrite: false })
+      );
+      dot.rotation.x = -Math.PI / 2;
+      dot.position.set(ax + (bx - ax) * t, 0.06, az + (bz - az) * t);
+      dot.userData.order = idx;
+      idx += 1;
+      scene.add(dot);
+      guideLights.push(dot);
+    }
+  }
+  animated.push({
+    update: (elapsed) => {
+      for (const dot of guideLights) {
+        // 파도처럼 순서대로 밝아지는 유도등(공항 활주로 등화 문법).
+        const wave = Math.sin(elapsed * 2.4 - dot.userData.order * 0.7);
+        dot.material.opacity = 0.18 + Math.max(0, wave) * 0.5;
+      }
+    }
   });
 }
 
@@ -2255,6 +2384,14 @@ function updatePlayer(delta, game, playerGroup) {
 }
 
 function clampToIsland(position) {
+  // 진실의 등대는 유일하게 통과 불가한 대형 구조물 — 밑동 반경 밖으로 밀어낸다.
+  const ldx = position.x - LIGHTHOUSE_POS.x;
+  const ldz = position.z - LIGHTHOUSE_POS.z;
+  const lightDist = Math.hypot(ldx, ldz);
+  if (lightDist < 1.9 && lightDist > 0.0001) {
+    const push = 1.9 / lightDist;
+    position = new THREE.Vector3(LIGHTHOUSE_POS.x + ldx * push, position.y, LIGHTHOUSE_POS.z + ldz * push);
+  }
   const flatLength = Math.hypot(position.x, position.z);
   if (flatLength <= ISLAND_RADIUS) {
     return position;
@@ -2357,8 +2494,16 @@ function flashCombatPopup(ui, text, kind) {
   ui.combatPopup.classList.add('pop');
 }
 
-function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates, zoneAuras, novaMailGlow }, game) {
+function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates, zoneAuras, novaMailGlow, lighthouseBeams }, game) {
   const elapsed = clock.elapsedTime;
+  // 진실의 등대 — 광선이 느리게 돌고, 치유한 스테이지 수(beaconCount)만큼 줄기가 켜진다.
+  if (lighthouseBeams) {
+    lighthouseBeams.group.rotation.y = elapsed * 0.22;
+    const count = game.beaconCount ?? 0;
+    lighthouseBeams.beams.forEach((arm, i) => {
+      arm.visible = i < count;
+    });
+  }
   // 에필로그 별똥별: 결정적 경로로 하늘을 가로지르고 스스로 정리된다.
   const shower = game.renderState?.starShower;
   if (shower?.active) {
@@ -3092,6 +3237,19 @@ function interact(game, ui) {
         updateHud(game, ui); // 탐험 노트의 완결 기록 갱신
       }
     }
+  } else if (game.nearest.type === 'lighthouse') {
+    // 진실의 등대 — 광선 수 = 치유한 스테이지 수. 컨셉(출처 확인)을 대사로 심는다.
+    const lit = game.beaconCount ?? 0;
+    ui.dialogKicker.textContent = '💡 진실의 등대';
+    ui.dialogTitle.textContent = '✨ 도트';
+    ui.dialogBody.innerHTML = speechHtml([
+      '"이 등대는 확인된 이야기의 불빛으로 정보의 바다를 비춰. 출처가 분명한 빛만 항해자를 지켜 주거든."',
+      lit === 0
+        ? '"아직 광선이 하나도 없네… 섬의 시련을 통과하면 불빛이 하나씩 켜질 거야!"'
+        : `"지금 광선이 ${lit}줄기야 — 네가 치유한 이야기의 수만큼 바다가 밝아지고 있어!"`,
+      lit >= 6 ? '"여섯 줄기 전부! 정보의 바다 어디서든 이 빛이 보일 거야. 고마워, 수호자!"' : ''
+    ].filter(Boolean));
+    openDialog(game, ui);
   } else if (game.nearest.type === 'dock') {
     // 바다는 노이즈를 가르친 뒤에 열린다 — 그 전엔 도트가 말린다(기록 없음).
     if (game.progress.aiCoreCompleted) {
@@ -5762,6 +5920,8 @@ function closeJournal(game, ui) {
 
 function updateHud(game, ui) {
   const summary = getProgressSummary(game.progress.collectedFragments);
+  // 진실의 등대 광선 수 — 진행이 바뀌는 지점마다 HUD와 함께 갱신된다(프레임당 재계산 방지).
+  game.beaconCount = getStageStates(game.progress).filter((s) => s.state === 'completed').length;
   ui.objective.textContent = getStoryObjective(game.progress);
   ui.fragmentCount.textContent = `조각 ${summary.collected}/${summary.total}`;
   ui.coreStatus.textContent = game.progress.aiCoreCompleted
