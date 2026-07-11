@@ -460,10 +460,38 @@ export function createInitialProgress() {
     aiCoreCompleted: false,
     voyageIntroSeen: false,
     novaLettersRead: [],
+    knowledgeBottles: [],
     // 세이브 v2: 「잡음의 군도」 섬별 진행 맵. 프롤로그(시작의 섬) 완료는
     // 기존 신호(aiCoreCompleted)에서 파생하므로 여기 중복 기록하지 않는다.
     stages: {}
   };
+}
+
+// 지식의 유리병(Z5) — 시작의 섬 곳곳에 숨은 12개. 위치·꿀팁 고정(교실 재현성).
+// 정보의 바다에서 떠밀려온 좋은 정보 조각이라는 설정 — 발견 = 능동적 정보 탐색.
+export const KNOWLEDGE_BOTTLES = [
+  { id: 'kb-source', pos: [-19.2, 3.0], tipKo: '이야기를 만나면 먼저 물어요 — "누가 말했지? 출처가 어디지?"' },
+  { id: 'kb-double', pos: [-15.5, -13.5], tipKo: '중요한 정보는 두 곳 이상에서 같은 내용인지 확인해요.' },
+  { id: 'kb-shock', pos: [-4.5, -19.5], tipKo: '너무 놀랍거나 화나게 하는 이야기일수록 한 번 더 의심해요.' },
+  { id: 'kb-image', pos: [9.0, -18.0], tipKo: '사진과 영상도 AI로 만들 수 있어요 — 그럴듯하다고 다 진짜는 아니에요.' },
+  { id: 'kb-privacy', pos: [18.5, -8.5], tipKo: '개인정보는 꼭 필요한 곳에만, 허락을 받고 알려 줘요.' },
+  { id: 'kb-password', pos: [19.5, 6.5], tipKo: '비밀번호는 나만의 열쇠 — 친한 친구에게도 비밀이에요.' },
+  { id: 'kb-footprint', pos: [14.0, 16.0], tipKo: '인터넷에 올린 글과 사진은 완전히 지우기 어려워요. 올리기 전에 한 번 더!' },
+  { id: 'kb-kindness', pos: [-9.0, 18.5], tipKo: '기분 나쁜 말은 옮기지 말고 나에게서 멈춰요.' },
+  { id: 'kb-credit', pos: [-16.0, 13.8], tipKo: '남의 그림·글을 쓸 때 만든 사람을 밝히면 모두가 기뻐요.' },
+  { id: 'kb-ai-check', pos: [10.6, 14.8], tipKo: 'AI의 답도 틀릴 수 있어요 — 마지막 확인은 언제나 사람의 몫이에요.' },
+  { id: 'kb-ad', pos: [0.5, -8.2], tipKo: '광고와 정보를 구별해요 — "이걸 보여 주는 이유가 뭘까?"' },
+  { id: 'kb-honest', pos: [-7.5, 7.8], tipKo: '확실하지 않은 이야기는 "아직 잘 몰라"라고 말해도 괜찮아요.' }
+];
+
+const bottleIdSet = new Set(KNOWLEDGE_BOTTLES.map((bottle) => bottle.id));
+
+// 유리병 수집 기록(중복 없이). 알 수 없는 id는 무시한다.
+export function collectKnowledgeBottle(progress, bottleId) {
+  if (!bottleIdSet.has(bottleId) || (progress.knowledgeBottles ?? []).includes(bottleId)) {
+    return progress;
+  }
+  return { ...progress, knowledgeBottles: [...(progress.knowledgeBottles ?? []), bottleId] };
 }
 
 const toolIdSet = new Set(PROMISE_TOOLS.map((tool) => tool.id));
@@ -510,6 +538,7 @@ export function normalizeProgress(candidate) {
     aiCoreCompleted: candidate.aiCoreCompleted === true,
     voyageIntroSeen: candidate.voyageIntroSeen === true,
     novaLettersRead: [...new Set(stringArray(candidate.novaLettersRead))],
+    knowledgeBottles: [...new Set(stringArray(candidate.knowledgeBottles).filter((id) => bottleIdSet.has(id)))],
     stages: normalizeStages(candidate.stages)
   };
 }
