@@ -1706,7 +1706,9 @@ button:disabled {
   box-shadow: 0 6px 16px rgba(40, 90, 70, 0.28);
 }
 
-.is-combat .touch-tool {
+/* 전투·던전(is-combat)과 확장 섬(is-isle)에서 동사 버튼을 보인다 — 섬 도전의 필수 입력. */
+.is-combat .touch-tool,
+.is-isle .touch-tool {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1714,6 +1716,56 @@ button:disabled {
 
 .touch-tool:active {
   transform: translateY(2px) scale(0.95);
+}
+
+/* ===== 태블릿 레이어: 터치 + 넓은 화면 — 어린이 손가락 기준으로 타깃을 키운다 ===== */
+@media (pointer: coarse) and (min-width: 700px) {
+  .touch-controls {
+    left: 26px;
+    right: 26px;
+    bottom: 26px;
+  }
+
+  .touch-dpad {
+    grid-template-columns: repeat(3, 64px);
+    grid-template-rows: repeat(3, 64px);
+    gap: 9px;
+  }
+
+  .touch-dpad button {
+    min-width: 64px;
+    min-height: 64px;
+    font-size: 1.3rem;
+  }
+
+  .touch-a {
+    width: 118px;
+    height: 118px;
+    font-size: 1.9rem;
+  }
+
+  .touch-tool {
+    width: 82px;
+    height: 82px;
+    margin-right: 14px;
+    font-size: 1.7rem;
+  }
+
+  /* 커진 A·동사 버튼과 겹치지 않게 안내문 폭을 조정. */
+  .interaction-prompt {
+    font-size: 1.05rem;
+    left: 26px;
+    right: 260px;
+    bottom: 30px;
+  }
+
+  .puzzle-hud [data-puzzle-goal] {
+    font-size: 0.98rem;
+  }
+
+  .puzzle-hud [data-puzzle-hint] {
+    font-size: 0.9rem;
+  }
 }
 
 .reflection[data-tool="true"] {
