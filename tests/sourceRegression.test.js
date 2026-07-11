@@ -42,6 +42,23 @@ test('voyage guide: 화살표가 다음 목적지를 가리키고, 출항 브리
   assert.match(mainSource, /전부 별이 되어 돌아오고 있어/);
 });
 
+test('living world(Z1): 풀 흔들림·앰비언트 생물·블롭 그림자가 결정적으로 존재한다', () => {
+  const charSrc = readFileSync(new URL('../src/characters.js', import.meta.url), 'utf8');
+  // 풀 해류 바람 — 인스턴스 위치 위상 + uTime 정점 셰이더(CPU 무비용).
+  assert.match(mainSource, /swayPhase = instanceMatrix\[3\]\.x/);
+  assert.match(mainSource, /uTime \* 1\.9 \+ swayPhase/);
+  // 앰비언트 생물: 비트나비·소식 갈매기·굴뚝 연기 — elapsed 기반 결정적 궤도.
+  const lifeBlock = mainSource.match(/function createAmbientLife[\s\S]*?\n\}\n/)?.[0] ?? '';
+  assert.ok(lifeBlock.includes('butterflies'), 'createAmbientLife에 비트나비');
+  assert.ok(lifeBlock.includes('gulls'), 'createAmbientLife에 갈매기');
+  assert.ok(lifeBlock.includes('puffs'), 'createAmbientLife에 연기 퍼프');
+  assert.doesNotMatch(lifeBlock, /Math\.random/);
+  // 블롭 그림자 — 그림자 캐스터 없이 접지감. 플레이어·NPC에 부착.
+  assert.match(charSrc, /export function makeBlobShadow/);
+  assert.match(charSrc, /g\.add\(makeBlobShadow\(0\.46\)\)/);
+  assert.match(charSrc, /g\.add\(makeBlobShadow\(0\.52\)\)/);
+});
+
 test('concept: 「정보의 바다」 언어가 타이틀·출항 브리지에 정착돼 있다', () => {
   // 공간 컨셉(기획서 7장) — 세계의 바다 이름. 지역명 「잡음의 군도」와 공존한다.
   assert.match(mainSource, /정보의 바다에 떠 있는 섬/);

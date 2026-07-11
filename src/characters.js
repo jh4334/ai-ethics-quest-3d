@@ -32,6 +32,21 @@ function castAll(group) {
   return group;
 }
 
+// 블롭 그림자 — 발밑 반투명 원판. 실그림자가 없는 씬(던전·섬·항해)에서도
+// 캐릭터가 땅에 붙어 보이게 하는 접지감 장치. 그림자 캐스터가 아니므로 저사양 무비용.
+export function makeBlobShadow(radius = 0.42) {
+  const disc = new THREE.Mesh(
+    new THREE.CircleGeometry(radius, 20),
+    new THREE.MeshBasicMaterial({ color: 0x10241c, transparent: true, opacity: 0.24, depthWrite: false })
+  );
+  disc.rotation.x = -Math.PI / 2;
+  disc.position.y = 0.03;
+  disc.castShadow = false;
+  disc.receiveShadow = false;
+  disc.renderOrder = 1;
+  return disc;
+}
+
 // 플레이어 — 노란 우비를 입은 표류자 (원뿔 후드 + 백팩 실루엣)
 export function createPlayerCharacter() {
   const g = new THREE.Group();
@@ -53,7 +68,9 @@ export function createPlayerCharacter() {
     g.add(boot);
   }
   g.add(cloak, hood, face, bag, strap);
-  return castAll(g);
+  castAll(g);
+  g.add(makeBlobShadow(0.46));
+  return g;
 }
 
 // 도트 — 겁 많은 픽셀 반딧불 (각진 빛의 별). 발광이라 블룸에 반짝인다.
@@ -229,7 +246,9 @@ const NPC_BUILDERS = {
 
 export function createNpcCharacter(topicId) {
   const builder = NPC_BUILDERS[topicId] ?? createTurtle;
-  return builder();
+  const g = builder();
+  g.add(makeBlobShadow(0.52));
+  return g;
 }
 
 // 노이즈 — 잘못 배운 아기 AI. 커다란 지지직 정전기 뭉치(회색+보라 글리치), 노란 눈 두 개만 껌뻑.
