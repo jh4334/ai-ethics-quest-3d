@@ -1829,8 +1829,8 @@ function startPrologueCinematic(game, ui) {
       ...CINEMATIC_KEYS,
       {
         t: CINEMATIC_LAST_KEY_T,
-        pos: [p.x * 0.6, p.y + 8.7, p.z + 13.8],
-        look: [p.x * 0.4, p.y + 1.35, p.z - 1.2]
+        pos: [p.x * 0.9, p.y + 8.7, p.z + 13.8],
+        look: [p.x, p.y + 1.35, p.z - 1.2]
       }
     ]
   };
@@ -2084,8 +2084,10 @@ function clampToRoom(position, bounds) {
 }
 
 function updateCamera(camera, target, shake = 0) {
-  // 살짝 낮고 뒤로 물러난 각도 — 넓어진 섬이 한눈에 들어오도록 조금 더 물러난다.
-  const desired = new THREE.Vector3(target.x * 0.6, target.y + 8.7, target.z + 13.8);
+  // 살짝 낮고 뒤로 물러난 각도. 시선은 항상 플레이어를 향한다 —
+  // 예전 중심 편향(x*0.6·시선 x*0.4)은 넓은 바다·확장 섬에서 캐릭터를 화면 밖으로 밀어냈다.
+  // x*0.9의 약한 편향만 남겨 이동 방향의 앞이 살짝 더 보이게 한다.
+  const desired = new THREE.Vector3(target.x * 0.9, target.y + 8.7, target.z + 13.8);
   camera.position.lerp(desired, 0.08);
   // 화면 흔들림(타격·피격 순간): 카메라를 잠깐 떨어 손맛을 준다.
   if (shake > 0) {
@@ -2094,7 +2096,7 @@ function updateCamera(camera, target, shake = 0) {
     camera.position.x += Math.sin(t) * s;
     camera.position.y += Math.cos(t * 1.3) * s;
   }
-  camera.lookAt(target.x * 0.4, target.y + 1.35, target.z - 1.2);
+  camera.lookAt(target.x, target.y + 1.35, target.z - 1.2);
 }
 
 function addShake(game, magnitude) {
@@ -3441,8 +3443,8 @@ function enterShrineChallenge(game, ui, shrineId, topicId) {
 
 // 카메라를 목표 추종 위치로 즉시 스냅(섬→방 활공 방지). updateCamera의 상수와 반드시 일치.
 function snapCamera(camera, target) {
-  camera.position.set(target.x * 0.6, target.y + 8.7, target.z + 13.8);
-  camera.lookAt(target.x * 0.4, target.y + 1.35, target.z - 1.2);
+  camera.position.set(target.x * 0.9, target.y + 8.7, target.z + 13.8);
+  camera.lookAt(target.x, target.y + 1.35, target.z - 1.2);
 }
 
 function enterDungeon(game, ui, topicId, shrineId) {

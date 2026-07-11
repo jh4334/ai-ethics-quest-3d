@@ -25,6 +25,16 @@ test('final core runs the Noise->Nova finale and is terminal once completed', ()
   assert.match(mainSource, /if \(game\.progress\.aiCoreCompleted\)/);
 });
 
+test('camera keeps the player near screen center (no strong center bias)', () => {
+  // 시선은 항상 플레이어 — 중심 편향(x*0.6·시선 x*0.4)이 부활하면 넓은 씬에서 캐릭터가 화면 밖으로 밀린다.
+  assert.match(mainSource, /target\.x \* 0\.9, target\.y \+ 8\.7, target\.z \+ 13\.8/);
+  assert.match(mainSource, /camera\.lookAt\(target\.x, target\.y \+ 1\.35, target\.z - 1\.2\)/);
+  assert.doesNotMatch(mainSource, /target\.x \* 0\.6/);
+  // snapCamera와 updateCamera 상수는 반드시 일치(씬 전환 활공 방지) — 두 곳 다 같은 공식.
+  const matches = mainSource.match(/target\.x \* 0\.9, target\.y \+ 8\.7, target\.z \+ 13\.8/g) ?? [];
+  assert.equal(matches.length, 2);
+});
+
 test('touch movement is a virtual stick on the left (free direction)', () => {
   // 이동 스틱: 브라우저 제스처를 막고(touch-action) 포인터 캡처로 끊김 없이 따라간다.
   const stickRule = cssSource.match(/\.touch-stick \{[\s\S]*?\}/)?.[0] ?? '';
