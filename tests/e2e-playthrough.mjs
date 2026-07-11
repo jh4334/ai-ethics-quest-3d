@@ -665,6 +665,14 @@ try {
   }));
   check(home.mode === 'overworld' && home.overworldVisible && !home.voyage, '시작의 섬 귀항(오버월드 복원)');
 
+  // 진실의 등대 — 전 스테이지 치유 후 광선 6줄기가 전부 켜져 있어야 한다.
+  const beacon = await p.evaluate(() => {
+    const g = window.__ethicsGame;
+    const lb = g.renderState.lighthouseBeams;
+    return { count: g.beaconCount, visible: lb ? lb.beams.filter((a) => a.visible).length : -1 };
+  });
+  check(beacon.count === 6 && beacon.visible === 6, `진실의 등대 진행도 광선 6줄기 (실제 ${beacon.visible})`);
+
   // ── 에필로그: 노바의 편지 4통 완독 → 별똥별 인사 + 완결 기록 ──
   await tp(0.4, 17.2, 0, -1);
   await p.waitForTimeout(1000);
