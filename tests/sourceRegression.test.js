@@ -25,6 +25,23 @@ test('final core runs the Noise->Nova finale and is terminal once completed', ()
   assert.match(mainSource, /if \(game\.progress\.aiCoreCompleted\)/);
 });
 
+test('voyage guide: 화살표가 다음 목적지를 가리키고, 출항 브리지·기억 조각 서사가 이어진다', () => {
+  const seaSrc = readFileSync(new URL('../src/sea.js', import.meta.url), 'utf8');
+  const worldSrc = readFileSync(new URL('../src/worldData.js', import.meta.url), 'utf8');
+  // 가이드 화살표: 표현은 sea.js, 목적지 판정(첫 '진행 중' 섬)은 main.
+  assert.match(seaSrc, /guideArrow/);
+  assert.match(mainSource, /find\(\(s\) => s\.state === 'current'\)/);
+  assert.match(mainSource, /arrow\.rotation\.y = Math\.atan2\(dx, dz\)/);
+  // 첫 출항 브리지 서사(1회) — 스키마에 voyageIntroSeen 추가(기존 필드 불변).
+  assert.match(worldSrc, /voyageIntroSeen: candidate\.voyageIntroSeen === true/);
+  assert.match(mainSource, /voyageIntroSeen: true/);
+  // 기억 조각 관통 서사: 3섬 치유에 심고 심장·엔딩에서 회수한다.
+  assert.match(mainSource, /아무도 나에게 말을 걸어 주지 않았어/);
+  assert.match(mainSource, /진짜 내가 누군지 잊어버렸어/);
+  assert.match(mainSource, /멈추는 법을 배운 적이 없어서/);
+  assert.match(mainSource, /전부 별이 되어 돌아오고 있어/);
+});
+
 test('camera keeps the player near screen center (no strong center bias)', () => {
   // 시선은 항상 플레이어 — 중심 편향(x*0.6·시선 x*0.4)이 부활하면 넓은 씬에서 캐릭터가 화면 밖으로 밀린다.
   assert.match(mainSource, /target\.x \* 0\.9, target\.y \+ 8\.7, target\.z \+ 13\.8/);

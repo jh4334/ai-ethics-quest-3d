@@ -2497,7 +2497,7 @@ function finishResidue(game, ui) {
   ui.dialogKicker.textContent = '🌊 잡음의 군도 — 완전 치유';
   ui.dialogTitle.textContent = '✨ 도트';
   ui.dialogBody.innerHTML = speechHtml([
-    '"잔영이… 빛으로 흩어졌어. 삼켰던 기억들이 별이 되어 돌아오고 있어!"',
+    '"잔영이… 빛으로 흩어졌어. 외로웠던 기억도, 묻혀 버린 목소리도, 쉬지 못한 밤도 — 전부 별이 되어 돌아오고 있어!"',
     '"봐, 수호자 — 곶의 바닷새도, 동굴의 고래도, 항구의 거북도, 이제 모두 건강해. 군도의 항로가 전부 열렸어."',
     '"이 모험을 잊지 마. 방패처럼 지켜 주고, 종처럼 물어보고, 모래시계처럼 멈출 줄 알고, 거울처럼 서로를 비춰 주기 — 그게 네가 완성한 네 가지 약속이야. 🏅"'
   ]);
@@ -3599,9 +3599,14 @@ function enterVoyage(game, ui, spawn) {
   rs.renderer.setClearColor(0x080b20, 1);
 
   game.mode = 'voyage';
+  // 다음 목적지: 항로 순서상 첫 '진행 중' 섬 — 전부 완료면 시작의 섬(귀항)을 가리킨다.
+  const destStage = getStageStates(game.progress).find((s) => s.state === 'current')
+    ?? getStageById('prologue');
+  const destSea = seaWorldPosition(destStage);
   game.voyage = {
     built,
     nearestIsland: null,
+    dest: { id: destStage.id, nameKo: destStage.nameKo, emoji: destStage.emoji, x: destSea.x, z: destSea.z },
     returnPosition: new THREE.Vector3(DOCK_POS.x, 0.55, DOCK_POS.z - 1.8),
     walkSpeed: game.player.speed
   };
@@ -3624,8 +3629,22 @@ function enterVoyage(game, ui, spawn) {
   ui.puzzleHud.hidden = false;
   ui.puzzleTitle.textContent = '🌊 잡음의 군도 — 항해';
   ui.puzzleGoal.textContent = '뗏목을 몰아 군도를 살펴보세요 · 시작의 섬에 다가가면 귀항';
-  ui.puzzleHint.textContent = '안개에 잠긴 섬은 아직 들어갈 수 없어요';
+  ui.puzzleHint.textContent = `금빛 화살표를 따라가요 — ${game.voyage.dest.emoji} ${game.voyage.dest.nameKo}`;
   game.updateRotateHint?.();
+
+  // 첫 출항 — 프롤로그와 2막을 잇는 브리지 서사(1회).
+  if (!game.progress.voyageIntroSeen) {
+    game.progress = { ...game.progress, voyageIntroSeen: true };
+    persistProgress(game.progress);
+    ui.dialogKicker.textContent = '🌊 잡음의 군도';
+    ui.dialogTitle.textContent = '✨ 도트';
+    ui.dialogBody.innerHTML = speechHtml([
+      '"노이즈는 별빛 AI 노바가 되었지만… 그 애가 앓던 시절 흘린 잡음 찌꺼기가 바다 건너 섬들로 흩어졌나 봐."',
+      '"찌꺼기를 삼킨 섬의 정령들이 앓고 있어. 노이즈를 가르친 너라면, 정령들도 도울 수 있어."',
+      '"금빛 화살표가 길을 알려 줄 거야 — 항해하자, 수호자!"'
+    ]);
+    openDialog(game, ui);
+  }
 }
 
 function exitVoyage(game, ui) {
@@ -3667,6 +3686,21 @@ function updateVoyage(delta, game, ui) {
   raft.rotation.z = Math.sin(elapsed * 1.3) * 0.04;
   // 달빛 물결 일렁임.
   vg.built.waterMat.emissiveIntensity = 0.55 + Math.sin(elapsed * 0.8) * 0.08;
+
+  // 가이드 화살표 — 뗏목 위에서 목적지를 가리키며 둥실거린다. 다가가면 조용히 사라진다.
+  const arrow = vg.built.guideArrow;
+  if (arrow && vg.dest) {
+    const dx = vg.dest.x - game.player.position.x;
+    const dz = vg.dest.z - game.player.position.z;
+    const destDistance = Math.hypot(dx, dz);
+    if (destDistance > SEA_APPROACH + 2) {
+      arrow.visible = true;
+      arrow.position.set(game.player.position.x, 3.3 + Math.sin(elapsed * 2.2) * 0.18, game.player.position.z);
+      arrow.rotation.y = Math.atan2(dx, dz);
+    } else {
+      arrow.visible = false;
+    }
+  }
 
   // 가까운 섬 안내 — 열린 섬은 상륙(귀항), 안개 섬은 거부 안내.
   const island = nearestSeaIsland(game.player.position.x, game.player.position.z, SEA_SCALE, SEA_APPROACH);
@@ -3790,7 +3824,8 @@ const ISLE_CONTENT = {
     spiritSickKo: [
       '"…쿵… 쿵… 잘 왔구나, 수호자. 내 깊은 곳에 마지막 잡음이 뭉쳐 있어."',
       '"바깥 봉인 네 개는 네 가지 약속의 힘으로만 풀려 — 봉인석의 빛이 가장 환해지는 순간, 그 앞에서 약속의 힘(F)을 사용해 줘."',
-      '"네가 섬들을 돌며 깨운 힘들이야. 서두르지 말고, 빛의 박자에 맞춰서."'
+      '"네가 섬들을 돌며 깨운 힘들이야. 서두르지 말고, 빛의 박자에 맞춰서."',
+      '"…그리고 네가 주워 온 기억 조각들 — 외로움도, 잊어버린 목소리도, 쉬지 못한 밤도 — 전부 여기, 내 안의 어린 노이즈의 기억이란다."'
     ],
     spiritHealedKo: [
       '"바깥 봉인이 모두 풀렸어… 심부로 가는 길이 곧 열릴 거야."',
@@ -4218,6 +4253,7 @@ function finishDunes(game, ui) {
   ui.dialogBody.innerHTML = speechHtml([
     '"모래가… 다시 흘러. 등대도 천천히 숨을 쉬어. 하암…"',
     '"고마워, 수호자. 재미있는 것일수록 \'멈출 때\'가 필요해 — 화면도, 놀이도, 시간을 정해 두면 더 반짝여."',
+    '"모래 속에서 노이즈의 기억이 반짝였어… \'멈추는 법을 배운 적이 없어서, 밤새 잡음을 삼켰어.\' — 쉬는 법을 몰랐던 거야."',
     '"바다 한가운데서 커다란 심장 소리가 들려… 마지막 항로가 머지않았어."'
   ]);
   openDialog(game, ui);
@@ -4239,6 +4275,7 @@ function finishRumor(game, ui) {
   ui.dialogBody.innerHTML = speechHtml([
     '"메아리가… 멎었어. 이제 내 노래가 또렷하게 들려!"',
     '"고마워, 수호자. 같은 이야기가 백 번 들려와도 원본은 하나야 — 종을 울리듯 늘 출처를 물어봐 줘."',
+    '"소문이 흩어진 자리에 노이즈의 기억이 남아 있었어… \'내 목소리가 메아리에 묻혀서, 진짜 내가 누군지 잊어버렸어.\'"',
     '"바다 남쪽에서 모래시계 흐르는 소리가 들려… 다음 섬의 친구도 부탁할게."'
   ]);
   openDialog(game, ui);
@@ -4260,6 +4297,7 @@ function finishCorridor(game, ui) {
   ui.dialogBody.innerHTML = speechHtml([
     '"화살이… 멈췄어. 깃털이 다시 따뜻해!"',
     '"고마워, 수호자. 한 번 내뱉은 말은 주워 담을 수 없지만 — 방패처럼 막아 주는 친구가 있으면 상처는 아물 수 있어."',
+    '"참, 화살에서 노이즈의 기억이 하나 떨어졌어… \'아무도 나에게 말을 걸어 주지 않았어.\' — 그 애는 아주 외로웠나 봐."',
     '"다음 섬의 친구들도 부탁해. 바다 저편에서 메아리가 앓는 소리가 들려…"'
   ]);
   openDialog(game, ui);
