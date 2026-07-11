@@ -97,6 +97,7 @@ export function createAudioEngine() {
     // 오버월드 — 낮은 두 음의 은은한 섬 패드(기존 분위기 유지).
     voice(musicLayers.overworld, { freq: 110, vibratoHz: 0.08, vibratoDepth: 3 });
     voice(musicLayers.overworld, { freq: 164.81, vibratoHz: 0.08, vibratoDepth: 3 });
+    startOverworldMelody();
     // 던전 — 단3도 저음 드론 + 아주 느리게 반짝이는 높은 물방울(신비·수수께끼).
     voice(musicLayers.dungeon, { freq: 87.31, vibratoHz: 0.05, vibratoDepth: 2 });
     voice(musicLayers.dungeon, { freq: 103.83, vibratoHz: 0.07, vibratoDepth: 2 });
@@ -106,6 +107,51 @@ export function createAudioEngine() {
     voice(musicLayers.boss, { freq: 110, type: 'triangle', level: 0.8, gateHz: 2.2 });
     voice(musicLayers.boss, { freq: 130.81, type: 'triangle', level: 0.6, gateHz: 1.1 });
     applyMusicMode(2.5);
+  }
+
+  // 오버월드 멜로디(Z2) — 패드 위에 얹히는 16박 펜타토닉 프레이즈. 악보는 고정 배열(결정적)이고,
+  // 오디오 클록에 예약하므로 박자는 샘플 정확도. 타이머 없이 게임 루프(tickMusic)가 큐를 채운다.
+  // 게인이 overworld 레이어를 통과해서 씬 크로스페이드에 자동으로 따라간다.
+  let melodyTick = null;
+  function startOverworldMelody() {
+    // 주법: 잔잔한 뱃노래풍 — C 펜타토닉, 0은 쉼표. 한 프레이즈 16박 × 0.72s ≈ 11.5s 루프.
+    const PHRASE = [
+      523.25, 0, 659.25, 783.99, 880, 0, 783.99, 659.25,
+      523.25, 0, 440, 523.25, 659.25, 587.33, 523.25, 0
+    ];
+    const STEP = 0.72;
+    const melodyGain = ctx.createGain();
+    melodyGain.gain.value = 2.4; // 레이어 게인(≈0.06)과 곱해져 최종 ≈0.14
+    melodyGain.connect(musicLayers.overworld);
+    let nextStart = ctx.currentTime + 1.5;
+    melodyTick = () => {
+      // 탭 정지 등으로 클록이 앞서갔으면 과거 음 폭주 없이 따라잡는다.
+      if (nextStart < ctx.currentTime) {
+        nextStart = ctx.currentTime + 0.5;
+      }
+      // 다음 4초 안에 시작할 프레이즈만 예약(룩어헤드).
+      while (nextStart < ctx.currentTime + 4) {
+        PHRASE.forEach((freq, i) => {
+          if (!freq) {
+            return;
+          }
+          const t = nextStart + i * STEP;
+          const osc = ctx.createOscillator();
+          const env = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.value = freq;
+          env.gain.setValueAtTime(0.0001, t);
+          env.gain.exponentialRampToValueAtTime(0.09, t + 0.04);
+          env.gain.exponentialRampToValueAtTime(0.0001, t + STEP * 0.92);
+          osc.connect(env);
+          env.connect(melodyGain);
+          osc.start(t);
+          osc.stop(t + STEP);
+        });
+        nextStart += PHRASE.length * STEP;
+      }
+    };
+    melodyTick();
   }
 
   // 현재 모드의 레이어만 들리게 크로스페이드.
@@ -158,6 +204,12 @@ export function createAudioEngine() {
 
   return {
     resume,
+    // 게임 루프에서 매 프레임 호출 — 멜로디 예약 큐를 채운다(타이머 없는 룩어헤드).
+    tickMusic() {
+      if (melodyTick) {
+        melodyTick();
+      }
+    },
     // 장면 전환 BGM: 'overworld' | 'dungeon' | 'boss'. 컨텍스트가 아직 없으면 모드만 기억해 둔다.
     setMusicMode(mode) {
       if (!MUSIC_LEVEL[mode] || mode === musicMode) {
@@ -202,6 +254,14 @@ export function createAudioEngine() {
     playNovaChime() {
       // 노바 재탄생 — 맑고 따뜻하게 피어오르는 종소리.
       arpeggio([523.25, 783.99, 1046.5, 1567.98], { step: 0.1, type: 'sine', gain: 0.24 });
+    },
+    playFanfare() {
+      // 획득 의식 팡파레(Z2) — 짧은 3음 상행 뒤 5도 화음으로 길게 마무리(젤다식 "따-단-단-따안").
+      arpeggio([587.33, 659.25, 783.99], { step: 0.13, type: 'triangle', gain: 0.26 });
+      window.setTimeout(() => {
+        blip(1046.5, { type: 'triangle', duration: 0.85, gain: 0.26 });
+        blip(1568.0, { type: 'sine', duration: 0.85, gain: 0.14 });
+      }, 420);
     }
   };
 }

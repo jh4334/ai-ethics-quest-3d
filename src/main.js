@@ -164,6 +164,7 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
 
   game.audio = createAudioEngine();
   game.renderState = renderState;
+  renderState.game = game; // updateAmbient에서 오디오 큐 톱업에 쓰는 역참조
 
   const cleanupInput = bindInput(game, ui);
   bindHudActions(game, ui, renderState);
@@ -325,6 +326,13 @@ function createShell() {
 
       <div class="combat-popup" data-combat-popup aria-hidden="true"></div>
 
+      <div class="ceremony" data-ceremony hidden aria-hidden="true">
+        <div class="ceremony-rays"></div>
+        <div class="ceremony-item" data-ceremony-item></div>
+        <div class="ceremony-title" data-ceremony-title></div>
+        <div class="ceremony-sub" data-ceremony-sub></div>
+      </div>
+
       <div class="puzzle-hud" data-puzzle-hud hidden aria-live="polite">
         <div class="puzzle-title" data-puzzle-title></div>
         <div class="puzzle-goal" data-puzzle-goal></div>
@@ -383,6 +391,10 @@ function bindUi(root) {
     bossWeak: root.querySelector('[data-boss-weak]'),
     bossMemory: root.querySelector('[data-boss-memory]'),
     combatPopup: root.querySelector('[data-combat-popup]'),
+    ceremony: root.querySelector('[data-ceremony]'),
+    ceremonyItem: root.querySelector('[data-ceremony-item]'),
+    ceremonyTitle: root.querySelector('[data-ceremony-title]'),
+    ceremonySub: root.querySelector('[data-ceremony-sub]'),
     puzzleHud: root.querySelector('[data-puzzle-hud]'),
     puzzleTitle: root.querySelector('[data-puzzle-title]'),
     puzzleGoal: root.querySelector('[data-puzzle-goal]'),
@@ -559,6 +571,7 @@ function setupPostProcessing(renderState, root) {
 
 function updateAmbient(delta, renderState) {
   const elapsed = clock.elapsedTime;
+  renderState.game?.audio?.tickMusic?.();
   for (const item of renderState.animated) {
     item.update(elapsed, delta);
   }
@@ -2309,6 +2322,29 @@ function addShake(game, magnitude) {
   game.shake = Math.min(0.6, Math.max(game.shake, magnitude));
 }
 
+// 획득 의식(Z2) — 데이터 캡슐이 열리듯 아이템이 빛기둥 위로 떠오르고 팡파레가 울린다.
+// pointer-events 없음(순수 연출)이라 어떤 대화·입력과도 충돌하지 않는다.
+let ceremonyTimer = 0;
+function showItemCeremony(game, ui, { emoji, title, subtitle = '', color = '#ffd76a' }) {
+  if (!ui.ceremony) {
+    return;
+  }
+  window.clearTimeout(ceremonyTimer);
+  ui.ceremonyItem.textContent = emoji;
+  ui.ceremonyTitle.textContent = title;
+  ui.ceremonySub.textContent = subtitle;
+  ui.ceremony.style.setProperty('--ceremony-color', color);
+  ui.ceremony.hidden = false;
+  ui.ceremony.classList.remove('is-on');
+  void ui.ceremony.offsetWidth; // 리플로우로 애니메이션 재시작
+  ui.ceremony.classList.add('is-on');
+  game.audio?.playFanfare?.();
+  ceremonyTimer = window.setTimeout(() => {
+    ui.ceremony.classList.remove('is-on');
+    ui.ceremony.hidden = true;
+  }, 2600);
+}
+
 // 전투 팝업 텍스트("일치!", "튕김!", "회피 실패!") — 잠깐 크게 떴다 사라진다.
 function flashCombatPopup(ui, text, kind) {
   if (!ui.combatPopup) {
@@ -3151,9 +3187,15 @@ function openGateDialog(game, ui, topicId) {
           for (const sibling of ui.dialogBody.querySelectorAll('[data-gate-choice]')) {
             sibling.disabled = true;
           }
-          // 조각 획득 연출 + 코어 각성 체크.
+          // 조각 획득 연출 + 획득 의식 + 코어 각성 체크.
           const topic = getTopicById(topicId);
           celebrate(game, new THREE.Vector3(quest.gatePosition[0], 1.4, quest.gatePosition[1]), topic?.color ?? '#7cf0ff', 'collect');
+          showItemCeremony(game, ui, {
+            emoji: '💠',
+            title: `${topic?.titleKo ?? '윤리'} 조각 획득!`,
+            subtitle: '탐험 노트(기록)에서 모은 조각을 볼 수 있어요',
+            color: topic?.color ?? '#7cf0ff'
+          });
           window.setTimeout(() => {
             ui.dialogBody.innerHTML += `<div class="gate-resolve">${speechHtml(outcome.resolveKo)}<p class="quest-hint">${getStoryObjective(game.progress)}</p></div>`;
           }, 500);
@@ -3661,6 +3703,12 @@ function winShrinePuzzle(game, ui) {
     `;
     ui.dialogBody.querySelector('[data-dialog-ok]').addEventListener('click', () => closeDialog(game, ui));
     openDialog(game, ui);
+    showItemCeremony(game, ui, {
+      emoji: tool.emoji,
+      title: `「${tool.nameKo}」 획득!`,
+      subtitle: tool.powerKo,
+      color: topic?.color ?? '#ffd76a'
+    });
   }
 }
 
@@ -4949,10 +4997,15 @@ function awardDungeonItem(game, ui) {
   celebrate(game, new THREE.Vector3(dg.pedestalWorld.x, 1.5, dg.pedestalWorld.z), topic?.color ?? '#ffd76a', 'collect');
   exitDungeon(game, ui);
   updateHud(game, ui);
-  // 대화창 대신 큼직한 획득 팝업(전투 팝업 재사용 — 다음 프레임에 덮이지 않음).
+  // 획득 의식 — 데이터 캡슐이 열리듯 도구가 떠오르고 팡파레(젤다식 의례화).
   if (toolId) {
     const tool = getToolById(toolId);
-    flashCombatPopup(ui, `${tool.emoji} 「${tool.nameKo}」 획득!`, 'match');
+    showItemCeremony(game, ui, {
+      emoji: tool.emoji,
+      title: `「${tool.nameKo}」 획득!`,
+      subtitle: tool.powerKo,
+      color: topic?.color ?? '#ffd76a'
+    });
   }
 }
 

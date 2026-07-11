@@ -750,6 +750,86 @@ button:disabled {
   opacity: 0;
 }
 
+/* 획득 의식(Z2) — 데이터 캡슐이 열리듯 아이템이 빛살 위로 떠오른다. 입력 차단 없음. */
+.ceremony {
+  position: absolute;
+  z-index: 7;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  pointer-events: none;
+  opacity: 0;
+  --ceremony-color: #ffd76a;
+}
+
+.ceremony.is-on {
+  animation: ceremonyFade 2.6s ease-out forwards;
+}
+
+.ceremony-rays {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 340px;
+  height: 340px;
+  margin: -170px 0 0 -170px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    transparent 0deg 22deg,
+    var(--ceremony-color) 22deg 30deg
+  );
+  opacity: 0.22;
+  -webkit-mask-image: radial-gradient(circle, rgba(0, 0, 0, 1) 0 38%, transparent 70%);
+  mask-image: radial-gradient(circle, rgba(0, 0, 0, 1) 0 38%, transparent 70%);
+  animation: ceremonyRays 7s linear infinite;
+}
+
+.ceremony-item {
+  font-size: 4.4rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 22px var(--ceremony-color));
+  animation: ceremonyItem 700ms cubic-bezier(0.22, 1.4, 0.36, 1);
+}
+
+.ceremony-title {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3), 0 0 16px var(--ceremony-color);
+}
+
+.ceremony-sub {
+  max-width: min(430px, 84vw);
+  text-align: center;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #ffffffee;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  background: rgba(12, 32, 26, 0.38);
+  padding: 4px 14px;
+  border-radius: 999px;
+}
+
+@keyframes ceremonyFade {
+  0% { opacity: 0; }
+  8% { opacity: 1; }
+  78% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes ceremonyRays {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes ceremonyItem {
+  0% { transform: translateY(46px) scale(0.4); }
+  100% { transform: translateY(0) scale(1); }
+}
+
 .combat-popup[data-kind="hit"] { color: #fff2b0; }
 .combat-popup[data-kind="bounce"] { color: #cfd6d2; font-size: 1.7rem; }
 .combat-popup[data-kind="stagger"] { color: #ff8a9e; }
