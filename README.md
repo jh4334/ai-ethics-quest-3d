@@ -29,6 +29,10 @@ npm run smoke
 
 - Four ethics zones: 개인정보, 편향, 저작권, 딥페이크
 - NPC learning prompts, shrine puzzles, progress tracking, and final AI Core mission
+- 심화 확장 2막 「잡음의 군도」: after the certificate, a raft voyage opens four themed
+  islands — 악플·혐오표현 (🛡️ shield deflection), 가짜뉴스·출처 (🔔 bell reveal),
+  스크린타임·디지털 웰빙 (🧭 compass timing), and a final rematch combining all four
+  "promise verbs" (bonus journey — does not affect the certificate or learning report)
 - No accounts, backend, secrets, payments, analytics, or student data storage
 - Class documents in `docs/` — trilogy program (기획서·성취기준 매핑·지도안) in `docs/trilogy/`
 
