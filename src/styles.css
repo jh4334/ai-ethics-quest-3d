@@ -618,36 +618,31 @@ button:disabled {
   background: rgba(255, 250, 240, 0.88);
 }
 
-.touch-dpad {
-  display: grid;
-  grid-template-columns: repeat(3, 48px);
-  grid-template-rows: repeat(3, 48px);
-  gap: 7px;
+/* 이동 스틱 — 왼쪽 엄지. 베이스 안에서 노브를 끄는 방향으로 걷는다(8방향이 아닌 자유 방향). */
+.touch-stick {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  background: rgba(255, 250, 240, 0.42);
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  box-shadow: inset 0 4px 14px rgba(60, 40, 20, 0.16);
+  pointer-events: auto;
+  touch-action: none;
 }
 
-.touch-dpad button {
-  min-width: 48px;
-  min-height: 48px;
-}
-
-.touch-dpad [data-touch="up"] {
-  grid-column: 2;
-  grid-row: 1;
-}
-
-.touch-dpad [data-touch="left"] {
-  grid-column: 1;
-  grid-row: 2;
-}
-
-.touch-dpad [data-touch="right"] {
-  grid-column: 3;
-  grid-row: 2;
-}
-
-.touch-dpad [data-touch="down"] {
-  grid-column: 2;
-  grid-row: 3;
+.stick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 58px;
+  height: 58px;
+  margin: -29px 0 0 -29px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, #fffdf4, #f0e3c8 70%, #d9c49a);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 6px 14px rgba(80, 55, 20, 0.3);
+  pointer-events: none;
 }
 
 .touch-actions {
@@ -1726,16 +1721,15 @@ button:disabled {
     bottom: 26px;
   }
 
-  .touch-dpad {
-    grid-template-columns: repeat(3, 64px);
-    grid-template-rows: repeat(3, 64px);
-    gap: 9px;
+  .touch-stick {
+    width: 172px;
+    height: 172px;
   }
 
-  .touch-dpad button {
-    min-width: 64px;
-    min-height: 64px;
-    font-size: 1.3rem;
+  .stick-knob {
+    width: 74px;
+    height: 74px;
+    margin: -37px 0 0 -37px;
   }
 
   .touch-a {

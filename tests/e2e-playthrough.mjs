@@ -251,7 +251,7 @@ try {
   await p.emulateMedia({ media: 'print' });
   const vis = await p.evaluate(() => {
     const v = (sel) => { const el = document.querySelector(sel); return el ? getComputedStyle(el).visibility : 'missing'; };
-    return { hud: v('.status-strip'), cert: v('.certificate'), dpad: v('.touch-dpad') };
+    return { hud: v('.status-strip'), cert: v('.certificate'), dpad: v('.touch-stick') };
   });
   await p.emulateMedia({ media: 'screen' });
   check(vis.cert === 'visible' && vis.hud === 'hidden' && vis.dpad === 'hidden', `인쇄 격리(cert=${vis.cert}, hud=${vis.hud}, dpad=${vis.dpad})`);

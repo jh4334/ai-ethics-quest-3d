@@ -98,7 +98,7 @@ const IS_TOUCH = typeof window !== 'undefined'
 const TOPIC_NAMES_KO = { privacy: '개인정보 마을', bias: '편향의 숲', copyright: '저작권 유적', deepfake: '딥페이크 동굴' };
 
 const MOVE_HINT = IS_TOUCH
-  ? '왼쪽 방향 버튼 이동 · 오른쪽 A로 확인·공격'
+  ? '왼쪽 스틱 이동 · 오른쪽 A로 확인·공격'
   : 'WASD/방향키 이동 · E·Space 확인/공격 · J 기록';
 const ACTION_LABEL = IS_TOUCH ? '' : 'E: ';
 const PLAYER_START = new THREE.Vector3(0, 0.55, 11.6);
@@ -332,11 +332,8 @@ function createShell() {
       </div>
 
       <div class="touch-controls" aria-label="터치 조작">
-        <div class="touch-dpad" aria-label="이동">
-          <button type="button" data-touch="up" aria-label="위로 이동">▲</button>
-          <button type="button" data-touch="left" aria-label="왼쪽 이동">◀</button>
-          <button type="button" data-touch="right" aria-label="오른쪽 이동">▶</button>
-          <button type="button" data-touch="down" aria-label="아래로 이동">▼</button>
+        <div class="touch-stick" data-stick aria-label="이동 스틱 — 끌어서 이동">
+          <div class="stick-knob" data-stick-knob></div>
         </div>
         <div class="touch-actions">
           <button type="button" data-touch="tool" class="touch-tool" aria-label="도구 바꾸기">🔄</button>
@@ -361,7 +358,7 @@ function createShell() {
           <h1 class="title-name">AI 윤리의 섬</h1>
           <p class="title-desc">섬을 탐험하며 네 가지 윤리 조각을 모아 AI 코어를 깨우는 수호자가 되어 보세요.</p>
           <div class="title-actions" data-title-actions></div>
-          <p class="title-controls">${IS_TOUCH ? '왼쪽 방향 버튼으로 이동 · 오른쪽 A 버튼으로 확인·공격' : '이동 WASD·방향키 · 확인/공격 E·Space·Enter · 기록 J'}</p>
+          <p class="title-controls">${IS_TOUCH ? '왼쪽 스틱으로 이동 · 오른쪽 A 버튼으로 확인·공격' : '이동 WASD·방향키 · 확인/공격 E·Space·Enter · 기록 J'}</p>
         </div>
       </section>
 
@@ -392,6 +389,8 @@ function bindUi(root) {
     puzzleHint: root.querySelector('[data-puzzle-hint]'),
     actionLabel: root.querySelector('[data-action-label]'),
     toolButton: root.querySelector('[data-touch="tool"]'),
+    stick: root.querySelector('[data-stick]'),
+    stickKnob: root.querySelector('[data-stick-knob]'),
     dialog: root.querySelector('[data-dialog]'),
     dialogKicker: root.querySelector('[data-dialog-kicker]'),
     dialogTitle: root.querySelector('[data-dialog-title]'),
@@ -478,6 +477,7 @@ function createGameState(ui) {
     voyage: null,
     isle: null,
     cinematic: null,
+    touchStick: { x: 0, z: 0 },
     mode: 'overworld',
     finaleResolving: false,
     hitStop: 0,
@@ -1636,28 +1636,72 @@ function bindInput(game, ui) {
         } else {
           cycleActiveTool(game, ui, 1);
         }
-      } else {
-        game.keys.add(action);
       }
     };
-    const up = () => {
-      game.keys.delete(action);
-    };
     button.addEventListener('pointerdown', down);
-    button.addEventListener('pointerup', up);
-    button.addEventListener('pointercancel', up);
-    button.addEventListener('pointerleave', up);
     return () => {
       button.removeEventListener('pointerdown', down);
-      button.removeEventListener('pointerup', up);
-      button.removeEventListener('pointercancel', up);
-      button.removeEventListener('pointerleave', up);
     };
   });
+
+  // 가상 조이스틱 — 베이스 안에서 노브를 끄는 방향이 곧 이동 방향(아날로그 방향 · 일정 속도).
+  let stopStick = () => {};
+  if (ui.stick && ui.stickKnob) {
+    let stickPointerId = null;
+    const applyStick = (event) => {
+      const rect = ui.stick.getBoundingClientRect();
+      const half = rect.width / 2;
+      let dx = (event.clientX - (rect.left + half)) / half;
+      let dy = (event.clientY - (rect.top + half)) / half;
+      const length = Math.hypot(dx, dy);
+      if (length > 1) {
+        dx /= length;
+        dy /= length;
+      }
+      game.touchStick.x = dx;
+      game.touchStick.z = dy;
+      const travel = half * 0.6; // 노브 이동 반경
+      ui.stickKnob.style.transform = `translate(${dx * travel}px, ${dy * travel}px)`;
+    };
+    const resetStick = () => {
+      stickPointerId = null;
+      game.touchStick.x = 0;
+      game.touchStick.z = 0;
+      ui.stickKnob.style.transform = 'translate(0px, 0px)';
+    };
+    const stickDown = (event) => {
+      event.preventDefault();
+      stickPointerId = event.pointerId;
+      ui.stick.setPointerCapture(event.pointerId);
+      applyStick(event);
+    };
+    const stickMove = (event) => {
+      if (event.pointerId === stickPointerId) {
+        applyStick(event);
+      }
+    };
+    const stickUp = (event) => {
+      if (event.pointerId === stickPointerId) {
+        resetStick();
+      }
+    };
+    ui.stick.addEventListener('pointerdown', stickDown);
+    ui.stick.addEventListener('pointermove', stickMove);
+    ui.stick.addEventListener('pointerup', stickUp);
+    ui.stick.addEventListener('pointercancel', stickUp);
+    stopStick = () => {
+      resetStick();
+      ui.stick.removeEventListener('pointerdown', stickDown);
+      ui.stick.removeEventListener('pointermove', stickMove);
+      ui.stick.removeEventListener('pointerup', stickUp);
+      ui.stick.removeEventListener('pointercancel', stickUp);
+    };
+  }
 
   return () => {
     window.removeEventListener('keydown', onKeyDown);
     window.removeEventListener('keyup', onKeyUp);
+    stopStick();
     for (const stop of touchStops) {
       stop();
     }
@@ -1982,6 +2026,11 @@ function updatePlayer(delta, game, playerGroup) {
     0,
     (game.keys.has('down') ? 1 : 0) - (game.keys.has('up') ? 1 : 0)
   );
+  // 터치 스틱이 기울어 있으면 그 방향으로 걷는다(아날로그 방향 · 일정 속도 — 결정성 유지).
+  const stick = game.touchStick;
+  if (stick && Math.hypot(stick.x, stick.z) > 0.22) {
+    move.set(stick.x, 0, stick.z);
+  }
 
   const moving = move.lengthSq() > 0;
   game.player.moving = moving;
@@ -5181,7 +5230,7 @@ function openDialog(game, ui) {
   game.paused = true;
   ui.dialog.hidden = false;
   ui.prompt.hidden = true;
-  // 모바일에서 대화창 뒤로 방향 버튼이 비치지 않도록 숨긴다(대화 중엔 이동 불가).
+  // 모바일에서 대화창 뒤로 스틱·버튼이 비치지 않도록 숨긴다(대화 중엔 이동 불가).
   ui.root.classList.add('is-dialog-open');
   game.updateRotateHint?.();
 }

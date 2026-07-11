@@ -25,11 +25,17 @@ test('final core runs the Noise->Nova finale and is terminal once completed', ()
   assert.match(mainSource, /if \(game\.progress\.aiCoreCompleted\)/);
 });
 
-test('touch controls expose all movement directions including down', () => {
-  const downRule = cssSource.match(/\.touch-dpad \[data-touch="down"\] \{[\s\S]*?\}/)?.[0] ?? '';
-  assert.match(downRule, /grid-row:\s*3/);
-  assert.doesNotMatch(downRule, /display:\s*none/);
-  assert.match(cssSource, /grid-template-rows:\s*repeat\(3, 48px\)/);
+test('touch movement is a virtual stick on the left (free direction)', () => {
+  // 이동 스틱: 브라우저 제스처를 막고(touch-action) 포인터 캡처로 끊김 없이 따라간다.
+  const stickRule = cssSource.match(/\.touch-stick \{[\s\S]*?\}/)?.[0] ?? '';
+  assert.match(stickRule, /touch-action:\s*none/);
+  assert.doesNotMatch(stickRule, /display:\s*none/);
+  assert.match(mainSource, /data-stick/);
+  assert.match(mainSource, /setPointerCapture/);
+  // 스틱 벡터가 이동 방향이 된다(아날로그 방향 · 일정 속도) — 키보드 이동은 그대로.
+  assert.match(mainSource, /game\.touchStick/);
+  assert.match(mainSource, /move\.set\(stick\.x, 0, stick\.z\)/);
+  assert.match(mainSource, /game\.keys\.has\('right'\)/);
 });
 
 test('defeated boss does not become a full-HP re-fight, and certificate prints cleanly', () => {
@@ -284,10 +290,10 @@ test('tablet: 섬 도전에서 동사 버튼이 보이고, 태블릿 레이어�
   assert.match(cssSource, /\.is-isle \.touch-tool/);
   assert.match(mainSource, /classList\.add\('is-isle'\)/);
   assert.match(mainSource, /classList\.remove\('is-isle'\)/);
-  // 태블릿 레이어: 터치 + 넓은 화면에서 d-pad·A·동사 버튼 확대(기본 48px 규칙은 유지).
+  // 태블릿 레이어: 터치 + 넓은 화면에서 스틱·A·동사 버튼 확대.
   assert.match(cssSource, /@media \(pointer: coarse\) and \(min-width: 700px\)/);
-  assert.match(cssSource, /repeat\(3, 64px\)/);
-  assert.match(cssSource, /grid-template-rows:\s*repeat\(3, 48px\)/);
+  const tabletBlock = cssSource.slice(cssSource.indexOf('@media (pointer: coarse) and (min-width: 700px)'));
+  assert.match(tabletBlock, /\.touch-stick \{[\s\S]*?width: 172px/);
   // 도구 버튼 아이콘은 맥락 동사와 일치한다.
   assert.match(mainSource, /function syncToolButton/);
   assert.match(mainSource, /ISLE_VERB_EMOJI/);
