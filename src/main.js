@@ -621,7 +621,9 @@ function createWorld(renderState) {
   beach.position.y = 0.08;
   world.add(beach);
 
-  createGrassField(world);
+  createGrassField(world, animated);
+
+  createAmbientLife(world, animated);
 
   createCenterCore(world, animated);
 
@@ -756,18 +758,32 @@ function createStylizedWater(scene, animated) {
   });
 }
 
-function createGrassField(scene) {
+function createGrassField(scene, animated) {
   // 인스턴싱으로 가벼운 풀·꽃을 뿌려 바닥을 생기 있게 만든다.
   const bladeGeometry = new THREE.ConeGeometry(0.09, 0.42, 4);
   bladeGeometry.translate(0, 0.21, 0);
   const grassColors = [0x5fbf5a, 0x7ed36a, 0x54b07a];
   const flowerColors = [0xff7eb6, 0xffd23f, 0x9b7cff, 0xff9f43];
   const count = 430;
-  const grass = new THREE.InstancedMesh(
-    bladeGeometry,
-    new THREE.MeshStandardMaterial({ vertexColors: false, color: 0xffffff, roughness: 0.9 }),
-    count
-  );
+  const grassMaterial = new THREE.MeshStandardMaterial({ vertexColors: false, color: 0xffffff, roughness: 0.9 });
+  // 해류 바람: 섬을 가로질러 파도처럼 지나가는 결정적 사인 흔들림(정점 셰이더 — CPU 무비용).
+  // 위상은 인스턴스 위치에서 얻으므로 풀마다 다르게, 시간은 uTime 하나로 구동한다.
+  grassMaterial.onBeforeCompile = (shader) => {
+    shader.uniforms.uTime = { value: 0 };
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\n uniform float uTime;')
+      .replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+         #ifdef USE_INSTANCING
+           float swayPhase = instanceMatrix[3].x * 0.55 + instanceMatrix[3].z * 0.45;
+           transformed.x += sin(uTime * 1.9 + swayPhase) * position.y * 0.42;
+           transformed.z += cos(uTime * 1.3 + swayPhase) * position.y * 0.2;
+         #endif`
+      );
+    grassMaterial.userData.shader = shader;
+  };
+  const grass = new THREE.InstancedMesh(bladeGeometry, grassMaterial, count);
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
   let placed = 0;
@@ -798,6 +814,120 @@ function createGrassField(scene) {
   grass.castShadow = false;
   grass.receiveShadow = true;
   scene.add(grass);
+  animated.push({
+    update: (elapsed) => {
+      const shader = grassMaterial.userData.shader;
+      if (shader) {
+        shader.uniforms.uTime.value = elapsed;
+      }
+    }
+  });
+}
+
+// 살아있는 세계(Z1) — 비트나비·소식 갈매기·굴뚝 연기. 전부 elapsed 기반 결정적 궤도라
+// 교실 어느 기기에서든 같은 순간 같은 장면이 나온다. 라이트·렌더타깃 추가 없음.
+function createAmbientLife(scene, animated) {
+  const life = new THREE.Group();
+  scene.add(life);
+
+  // 비트나비 — 픽셀 사각 날개 나비 4마리, 구역 꽃밭 위를 리사주 궤도로 팔랑인다.
+  const butterflyColors = [0xff7eb6, 0x7cd7ff, 0xffd23f, 0x9b7cff];
+  const butterflies = [];
+  WORLD_ZONES.forEach((zone, i) => {
+    const b = new THREE.Group();
+    const wingMat = new THREE.MeshBasicMaterial({
+      color: butterflyColors[i % butterflyColors.length],
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.92
+    });
+    const wingGeo = new THREE.PlaneGeometry(0.16, 0.22);
+    const left = new THREE.Mesh(wingGeo, wingMat);
+    const right = new THREE.Mesh(wingGeo, wingMat);
+    left.position.x = -0.09;
+    right.position.x = 0.09;
+    b.add(left, right);
+    b.userData = { left, right, cx: zone.position[0], cz: zone.position[2], phase: i * 1.7 };
+    life.add(b);
+    butterflies.push(b);
+  });
+
+  // 소식 갈매기 — 섬 상공을 크게 선회하는 3마리. 몸통 원뿔 + 판 날개 2장.
+  const gulls = [];
+  for (let i = 0; i < 3; i += 1) {
+    const gull = new THREE.Group();
+    const bodyMat = new THREE.MeshBasicMaterial({ color: 0xf4f7ff });
+    const body = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.62, 6), bodyMat);
+    body.rotation.x = Math.PI / 2; // 부리가 진행 방향(+z)
+    gull.add(body);
+    const wings = [];
+    for (const side of [-1, 1]) {
+      const wing = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 0.26), bodyMat);
+      wing.position.x = side * 0.44;
+      wing.userData.side = side;
+      gull.add(wing);
+      wings.push(wing);
+    }
+    gull.userData = { wings, radius: 20 + i * 3.4, height: 8.6 + i * 1.5, speed: 0.14 + i * 0.03, phase: i * 2.1 };
+    life.add(gull);
+    gulls.push(gull);
+  }
+
+  // 굴뚝 연기 — 개인정보 마을 첫 집 지붕 위. 퍼프 3개가 떠오르며 커지고 옅어지는 루프.
+  const village = WORLD_ZONES.find((z) => z.id === 'privacy-village');
+  const puffs = [];
+  if (village) {
+    const chimneyBase = new THREE.Vector3(village.position[0] - 1.5, 1.18, village.position[2] - 0.7);
+    const chimney = new THREE.Mesh(
+      new THREE.BoxGeometry(0.16, 0.3, 0.16),
+      new THREE.MeshStandardMaterial({ color: 0x8a5b4a, roughness: 0.9 })
+    );
+    chimney.position.copy(chimneyBase).y -= 0.12;
+    life.add(chimney);
+    for (let i = 0; i < 3; i += 1) {
+      const puff = new THREE.Mesh(
+        new THREE.SphereGeometry(0.12, 8, 8),
+        new THREE.MeshBasicMaterial({ color: 0xf2f5f7, transparent: true, opacity: 0.5, depthWrite: false })
+      );
+      puff.userData = { base: chimneyBase, phase: i / 3 };
+      life.add(puff);
+      puffs.push(puff);
+    }
+  }
+
+  animated.push({
+    update: (elapsed) => {
+      for (const b of butterflies) {
+        const { left, right, cx, cz, phase } = b.userData;
+        b.position.set(
+          cx + Math.sin(elapsed * 0.62 + phase) * 2.1,
+          0.85 + Math.sin(elapsed * 2.3 + phase) * 0.28,
+          cz + Math.cos(elapsed * 0.5 + phase * 1.3) * 1.7
+        );
+        const flap = Math.sin(elapsed * 11 + phase) * 0.75;
+        left.rotation.y = flap;
+        right.rotation.y = -flap;
+      }
+      for (const gull of gulls) {
+        const { wings, radius, height, speed, phase } = gull.userData;
+        const a = elapsed * speed + phase;
+        gull.position.set(Math.cos(a) * radius, height + Math.sin(elapsed * 0.7 + phase) * 0.7, Math.sin(a) * radius);
+        gull.rotation.y = -a; // 원 접선 방향으로 머리를 둔다
+        for (const wing of wings) {
+          wing.rotation.z = wing.userData.side * Math.sin(elapsed * 5.2 + phase) * 0.42;
+        }
+      }
+      for (const puff of puffs) {
+        const t = (elapsed * 0.24 + puff.userData.phase) % 1;
+        puff.position.copy(puff.userData.base);
+        puff.position.y += t * 1.9;
+        puff.position.x += Math.sin(t * 6.0) * 0.12;
+        const s = 0.6 + t * 1.8;
+        puff.scale.set(s, s, s);
+        puff.material.opacity = 0.5 * (1 - t);
+      }
+    }
+  });
 }
 
 const ICON_FOR_TYPE = { shrine: ['❗', '#eba52c'], npc: ['💬', null], gate: ['⚠️', '#8a5eff'] };
