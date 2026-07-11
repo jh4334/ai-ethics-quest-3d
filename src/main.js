@@ -356,7 +356,7 @@ function createShell() {
         <div class="title-card">
           <p class="title-eyebrow">AI 윤리 어드벤처 · 2부</p>
           <h1 class="title-name">AI 윤리의 섬</h1>
-          <p class="title-desc">섬을 탐험하며 네 가지 윤리 조각을 모아 AI 코어를 깨우는 수호자가 되어 보세요.</p>
+          <p class="title-desc">정보의 바다에 떠 있는 섬을 탐험하며 네 가지 윤리 조각을 모아 AI 코어를 깨우는 수호자가 되어 보세요.</p>
           <div class="title-actions" data-title-actions></div>
           <p class="title-controls">${IS_TOUCH ? '왼쪽 스틱으로 이동 · 오른쪽 A 버튼으로 확인·공격' : '이동 WASD·방향키 · 확인/공격 E·Space·Enter · 기록 J'}</p>
         </div>
@@ -3773,6 +3773,7 @@ function enterVoyage(game, ui, spawn) {
     ui.dialogKicker.textContent = '🌊 잡음의 군도';
     ui.dialogTitle.textContent = '✨ 도트';
     ui.dialogBody.innerHTML = speechHtml([
+      '"이 바다는 「정보의 바다」 — 세상의 모든 이야기가 물결처럼 흘러다니는 곳이야."',
       '"노이즈는 별빛 AI 노바가 되었지만… 그 애가 앓던 시절 흘린 잡음 찌꺼기가 바다 건너 섬들로 흩어졌나 봐."',
       '"찌꺼기를 삼킨 섬의 정령들이 앓고 있어. 노이즈를 가르친 너라면, 정령들도 도울 수 있어."',
       '"금빛 화살표가 길을 알려 줄 거야 — 항해하자, 수호자!"'

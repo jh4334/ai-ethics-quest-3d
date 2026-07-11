@@ -42,6 +42,13 @@ test('voyage guide: 화살표가 다음 목적지를 가리키고, 출항 브리
   assert.match(mainSource, /전부 별이 되어 돌아오고 있어/);
 });
 
+test('concept: 「정보의 바다」 언어가 타이틀·출항 브리지에 정착돼 있다', () => {
+  // 공간 컨셉(기획서 7장) — 세계의 바다 이름. 지역명 「잡음의 군도」와 공존한다.
+  assert.match(mainSource, /정보의 바다에 떠 있는 섬/);
+  assert.match(mainSource, /「정보의 바다」/);
+  assert.match(mainSource, /잡음의 군도/);
+});
+
 test('camera keeps the player near screen center (no strong center bias)', () => {
   // 시선은 항상 플레이어 — 중심 편향(x*0.6·시선 x*0.4)이 부활하면 넓은 씬에서 캐릭터가 화면 밖으로 밀린다.
   assert.match(mainSource, /target\.x \* 0\.9, target\.y \+ 8\.7, target\.z \+ 13\.8/);
