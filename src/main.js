@@ -101,8 +101,8 @@ const MOVE_HINT = IS_TOUCH
   ? '왼쪽 스틱 이동 · 오른쪽 A로 확인·공격'
   : 'WASD/방향키 이동 · E·Space 확인/공격 · J 기록';
 const ACTION_LABEL = IS_TOUCH ? '' : 'E: ';
-const PLAYER_START = new THREE.Vector3(0, 0.55, 11.6);
-const ISLAND_RADIUS = 16.6;
+const PLAYER_START = new THREE.Vector3(0, 0.55, 15.1);
+const ISLAND_RADIUS = 21.6;
 const INTERACTION_RADIUS = 2.25;
 const CORE_RADIUS = 2.8;
 const clock = new THREE.Clock();
@@ -207,7 +207,7 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
   });
 
   // 타이틀 화면 뒤로 보일 섬 전경 카메라.
-  camera.position.set(0, 9.5, 16);
+  camera.position.set(0, 11.5, 20);
   camera.lookAt(0, 1.4, 0);
   setupTitleScreen(game, ui);
 
@@ -568,7 +568,7 @@ function updateAmbient(delta, renderState) {
 function createWorld(renderState) {
   const { scene, interactables, shrineCrystals, animated } = renderState;
   // 색을 살리기 위해 안개는 아주 옅게, 먼 배경만 살짝 감싸도록(넓어진 섬에 맞춰 더 멀리서 시작).
-  scene.fog = new THREE.Fog(0x9fd9f5, 46, 112);
+  scene.fog = new THREE.Fog(0x9fd9f5, 56, 132);
   renderState.overworldFog = scene.fog;
 
   // 사당 던전 진입 시 오버월드 전체를 한 번에 숨기려고 Group으로 감싼다.
@@ -586,10 +586,10 @@ function createWorld(renderState) {
   sun.position.set(-16, 24, 11);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
-  sun.shadow.camera.left = -26;
-  sun.shadow.camera.right = 26;
-  sun.shadow.camera.top = 26;
-  sun.shadow.camera.bottom = -26;
+  sun.shadow.camera.left = -31;
+  sun.shadow.camera.right = 31;
+  sun.shadow.camera.top = 31;
+  sun.shadow.camera.bottom = -31;
   sun.shadow.bias = -0.0004;
   world.add(sun);
 
@@ -601,7 +601,7 @@ function createWorld(renderState) {
   createStylizedWater(world, animated);
 
   const island = new THREE.Mesh(
-    new THREE.CylinderGeometry(17.6, 15.4, 0.92, 96),
+    new THREE.CylinderGeometry(22.9, 20.1, 0.92, 96),
     new THREE.MeshStandardMaterial({ color: 0x86c26a, roughness: 0.92 })
   );
   island.position.y = -0.18;
@@ -610,7 +610,7 @@ function createWorld(renderState) {
   world.add(island);
 
   const beach = new THREE.Mesh(
-    new THREE.TorusGeometry(16.75, 0.42, 12, 128),
+    new THREE.TorusGeometry(21.8, 0.5, 12, 144),
     new THREE.MeshStandardMaterial({ color: 0xf0dc98, roughness: 0.85 })
   );
   beach.rotation.x = Math.PI / 2;
@@ -636,9 +636,9 @@ function createWorld(renderState) {
     createZoneAura(world, zone, zonePosition, renderState.zoneAuras, landmark);
   }
 
-  for (let i = 0; i < 36; i += 1) {
-    const angle = (i / 36) * Math.PI * 2;
-    const radius = 13.2 + (i % 4) * 0.75;
+  for (let i = 0; i < 48; i += 1) {
+    const angle = (i / 48) * Math.PI * 2;
+    const radius = 17.4 + (i % 4) * 0.95;
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
     if (Math.abs(x) < 3.0 || Math.abs(z) < 3.0) {
@@ -758,7 +758,7 @@ function createGrassField(scene) {
   bladeGeometry.translate(0, 0.21, 0);
   const grassColors = [0x5fbf5a, 0x7ed36a, 0x54b07a];
   const flowerColors = [0xff7eb6, 0xffd23f, 0x9b7cff, 0xff9f43];
-  const count = 340;
+  const count = 430;
   const grass = new THREE.InstancedMesh(
     bladeGeometry,
     new THREE.MeshStandardMaterial({ vertexColors: false, color: 0xffffff, roughness: 0.9 }),
@@ -769,7 +769,7 @@ function createGrassField(scene) {
   let placed = 0;
   for (let i = 0; i < count * 2 && placed < count; i += 1) {
     const angle = (i * 2.399963) % (Math.PI * 2);
-    const radius = 2.6 + ((i * 0.618) % 1) * 12.4;
+    const radius = 2.6 + ((i * 0.618) % 1) * 17.0;
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
     // 중앙 코어와 길목은 비운다.
@@ -1056,7 +1056,7 @@ function createDeepfakeCave(scene, position) {
 }
 
 // 뗏목 선착장 — 남쪽 해변에서 「잡음의 군도」 항해 씬으로 나가는 문.
-const DOCK_POS = { x: 2.6, z: 15.0 };
+const DOCK_POS = { x: 3.4, z: 19.6 };
 
 function createDock(scene, interactables) {
   const dock = new THREE.Group();
@@ -1800,10 +1800,10 @@ function dismissTitle(game, ui) {
 // 키프레임은 전부 상수(초 단위)라 결정적이다. 마지막 키(플레이어 추종 위치로 수렴)는
 // 시작 시점의 플레이어 좌표로 계산해 붙인다 — snapCamera/updateCamera 상수와 반드시 일치.
 const CINEMATIC_KEYS = [
-  { t: 0, pos: [0, 9.5, 16], look: [0, 1.4, 0] }, // 타이틀 전경을 그대로 이어받는다
-  { t: 3.6, pos: [0, 26, 36], look: [0, 0.5, 0] }, // 상승 — 섬 전체가 한눈에
-  { t: 7.4, pos: [-19, 13, 13], look: [-10, 1, -6] }, // 서쪽 사당 지붕을 스치듯
-  { t: 11.2, pos: [16, 11, -9], look: [10, 1, 4] } // 잿빛 안개 지대를 가로질러
+  { t: 0, pos: [0, 11.5, 20], look: [0, 1.4, 0] }, // 타이틀 전경을 그대로 이어받는다
+  { t: 3.6, pos: [0, 31, 44], look: [0, 0.5, 0] }, // 상승 — 섬 전체가 한눈에
+  { t: 7.4, pos: [-24, 15, 17], look: [-13, 1, -8] }, // 서쪽 사당 지붕을 스치듯
+  { t: 11.2, pos: [21, 13, -12], look: [13, 1, 5] } // 잿빛 안개 지대를 가로질러
 ];
 const CINEMATIC_LAST_KEY_T = 14.6; // 여기서 플레이어 추종 위치에 도착
 const CINEMATIC_END = 15.4;
