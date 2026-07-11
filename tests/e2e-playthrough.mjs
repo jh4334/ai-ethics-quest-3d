@@ -97,6 +97,24 @@ try {
   });
   check(sep.d >= MIN_SEPARATION, `상호작용 간격 불변식 최솟값 ${sep.d} (${sep.a} ↔ ${sep.b}) ≥ ${MIN_SEPARATION}`);
 
+  // ── 지식의 유리병: 하나 주워서 대화·세이브·도감 확인 ──
+  const bottlePos = await p.evaluate(() => {
+    const it = window.__ethicsGame.renderState.interactables.find((i) => i.type === 'bottle' && i.bottleId === 'kb-ad');
+    return it ? { x: it.position.x, z: it.position.z } : null;
+  });
+  check(Boolean(bottlePos), '지식의 유리병 12개 배치(kb-ad 존재)');
+  await tp(bottlePos.x, bottlePos.z + 0.5, 0, -1);
+  await p.waitForTimeout(1100);
+  await A(600);
+  const bottleGot = await p.evaluate(() => ({
+    dialog: !window.__ethicsUi.dialog.hidden,
+    text: window.__ethicsUi.dialogBody?.innerText ?? '',
+    saved: window.__ethicsGame.progress.knowledgeBottles.includes('kb-ad'),
+    meshGone: !window.__ethicsGame.renderState.bottleMeshes.has('kb-ad')
+  }));
+  check(bottleGot.dialog && bottleGot.saved && bottleGot.meshGone && bottleGot.text.includes('광고'), '유리병 수집 → 꿀팁 대화·세이브·메시 정리');
+  await closeDlg();
+
   // ── 부두 게이트: 프롤로그 완료 전엔 도트가 항해를 말린다 ──
   const dockPos = await p.evaluate(() => {
     const it = window.__ethicsGame.renderState.interactables.find((i) => i.type === 'dock');

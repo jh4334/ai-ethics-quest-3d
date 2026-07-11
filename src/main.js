@@ -76,6 +76,8 @@ import {
   completeFinalCore,
   createInitialProgress,
   PROMISE_TOOLS,
+  KNOWLEDGE_BOTTLES,
+  collectKnowledgeBottle,
   awardFragment,
   getToolById,
   getExtraShrineQuestions,
@@ -151,6 +153,7 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
 
   configureRenderer(renderer);
   createWorld(renderState);
+  createKnowledgeBottles(renderState, game.progress);
   createPlayer(renderState);
   scene.add(renderState.playerGroup);
   setupPostProcessing(renderState, root);
@@ -834,6 +837,63 @@ function createGrassField(scene, animated) {
       const shader = grassMaterial.userData.shader;
       if (shader) {
         shader.uniforms.uTime.value = elapsed;
+      }
+    }
+  });
+}
+
+// 지식의 유리병(Z5) — 섬 곳곳에 숨은 12개. 이미 주운 병은 만들지 않는다(세이브 반영).
+// 위치·꿀팁은 worldData.KNOWLEDGE_BOTTLES가 단일 출처.
+function createKnowledgeBottles(renderState, progress) {
+  const collected = new Set(progress.knowledgeBottles ?? []);
+  const scene = renderState.overworld ?? renderState.scene;
+  const meshes = new Map();
+  for (const bottle of KNOWLEDGE_BOTTLES) {
+    if (collected.has(bottle.id)) {
+      continue;
+    }
+    const g = new THREE.Group();
+    const glass = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.14, 0.18, 0.42, 10),
+      new THREE.MeshStandardMaterial({
+        color: 0x9fd8e8,
+        emissive: 0x2a5866,
+        emissiveIntensity: 0.5,
+        roughness: 0.25,
+        transparent: true,
+        opacity: 0.9
+      })
+    );
+    glass.position.y = 0.36;
+    const cork = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.06, 0.07, 0.1, 8),
+      new THREE.MeshStandardMaterial({ color: 0x9a6a3c, roughness: 0.9 })
+    );
+    cork.position.y = 0.62;
+    const note = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.07, 0),
+      new THREE.MeshBasicMaterial({ color: 0xfff2b8 })
+    );
+    note.position.y = 0.36;
+    g.add(glass, cork, note);
+    g.position.set(bottle.pos[0], 0, bottle.pos[1]);
+    scene.add(g);
+    meshes.set(bottle.id, g);
+    renderState.interactables.push({
+      type: 'bottle',
+      bottleId: bottle.id,
+      position: new THREE.Vector3(bottle.pos[0], 0, bottle.pos[1]),
+      labelKo: '지식의 유리병'
+    });
+  }
+  renderState.bottleMeshes = meshes;
+  renderState.animated.push({
+    update: (elapsed) => {
+      let i = 0;
+      for (const mesh of meshes.values()) {
+        mesh.position.y = Math.sin(elapsed * 1.9 + i * 1.3) * 0.06;
+        mesh.rotation.y = elapsed * 0.8 + i;
+        i += 1;
       }
     }
   });
@@ -3236,6 +3296,42 @@ function interact(game, ui) {
         triggerStarShower(game);
         updateHud(game, ui); // 탐험 노트의 완결 기록 갱신
       }
+    }
+  } else if (game.nearest.type === 'bottle') {
+    // 지식의 유리병 — 줍는 순간 쪽지(디지털 리터러시 꿀팁)를 읽는다.
+    const bottleId = game.nearest.bottleId;
+    const bottle = KNOWLEDGE_BOTTLES.find((b) => b.id === bottleId);
+    const before = (game.progress.knowledgeBottles ?? []).length;
+    game.progress = collectKnowledgeBottle(game.progress, bottleId);
+    if (bottle && (game.progress.knowledgeBottles ?? []).length > before) {
+      persistProgress(game.progress);
+      const rs = game.renderState;
+      const mesh = rs.bottleMeshes?.get(bottleId);
+      if (mesh) {
+        disposeDungeonRoom(mesh, rs.overworld);
+        rs.bottleMeshes.delete(bottleId);
+      }
+      const idx = rs.interactables.findIndex((item) => item.type === 'bottle' && item.bottleId === bottleId);
+      if (idx >= 0) {
+        rs.interactables.splice(idx, 1);
+      }
+      game.nearest = null;
+      game.audio?.playCollect();
+      celebrate(game, new THREE.Vector3(bottle.pos[0], 1.0, bottle.pos[1]), '#8fe0ff', 'collect');
+      const count = game.progress.knowledgeBottles.length;
+      ui.dialogKicker.textContent = `🍾 지식의 유리병 ${count}/${KNOWLEDGE_BOTTLES.length}`;
+      ui.dialogTitle.textContent = '유리병 속 쪽지';
+      ui.dialogBody.innerHTML = speechHtml([
+        `"${bottle.tipKo}"`,
+        count === KNOWLEDGE_BOTTLES.length
+          ? '✨ 도트: "열두 병 전부 다 찾았어! 정보의 바다를 항해하는 지혜가 가득해졌네 — 탐험 노트의 항해일지를 봐!"'
+          : ''
+      ].filter(Boolean));
+      openDialog(game, ui);
+      if (count === KNOWLEDGE_BOTTLES.length) {
+        game.audio?.playNovaChime();
+      }
+      updateHud(game, ui);
     }
   } else if (game.nearest.type === 'lighthouse') {
     // 진실의 등대 — 광선 수 = 치유한 스테이지 수. 컨셉(출처 확인)을 대사로 심는다.
@@ -5983,6 +6079,18 @@ function renderJournal(game, ui) {
         : voyage.every((stage) => stage.state === 'completed')
           ? '🌊 군도의 모든 정령이 건강해요 — 완전 치유! 부두 우편병의 마지막 편지를 확인해 보세요.'
           : '노이즈가 바다 건너로 도망쳤어요. 새 항로가 하나씩 열립니다.'}</p>
+    </section>
+    <section class="learning-report" data-bottle-log>
+      <h3>🍾 항해일지 — 지식의 유리병 ${(game.progress.knowledgeBottles ?? []).length}/${KNOWLEDGE_BOTTLES.length}</h3>
+      <ul class="report-list">
+        ${KNOWLEDGE_BOTTLES.map((bottle) => {
+          const found = (game.progress.knowledgeBottles ?? []).includes(bottle.id);
+          return `<li>${found ? `🍾 ${bottle.tipKo}` : '🌫️ 아직 찾지 못한 유리병…'}</li>`;
+        }).join('')}
+      </ul>
+      <p class="class-note">${(game.progress.knowledgeBottles ?? []).length >= KNOWLEDGE_BOTTLES.length
+        ? '✨ 열두 병 완집! 정보의 바다를 항해하는 열두 가지 지혜를 모두 모았어요.'
+        : '섬 곳곳(해변가·나무 뒤·등대 근처)에 반짝이는 유리병이 숨어 있어요. 찾을 때마다 지혜가 한 줄씩 늘어나요.'}</p>
     </section>
     ${deeds.length > 0
       ? `<section class="learning-report">
