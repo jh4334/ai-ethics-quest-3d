@@ -151,5 +151,19 @@ export function buildSeaScene({ makeLabel, isOpen }) {
   const raft = buildRaft();
   root.add(raft);
 
-  return { root, islands, raft, waterMat };
+  // 가이드 화살표 — 다음 목적지 섬을 가리킨다(방향·표시는 main의 updateVoyage가 구동).
+  const guideArrow = new THREE.Group();
+  const arrowMat = new THREE.MeshBasicMaterial({ color: 0xffd88a });
+  const arrowHead = new THREE.Mesh(new THREE.ConeGeometry(0.34, 0.9, 6), arrowMat);
+  arrowHead.rotation.x = Math.PI / 2; // 그룹의 +z(바라보는 방향)를 가리키게
+  arrowHead.position.z = 0.55;
+  guideArrow.add(arrowHead);
+  const arrowTail = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.7, 6), arrowMat);
+  arrowTail.rotation.x = Math.PI / 2;
+  arrowTail.position.z = -0.15;
+  guideArrow.add(arrowTail);
+  guideArrow.visible = false;
+  root.add(guideArrow);
+
+  return { root, islands, raft, waterMat, guideArrow };
 }

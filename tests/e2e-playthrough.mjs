@@ -283,9 +283,14 @@ try {
   const sail = await p.evaluate(() => ({
     mode: window.__ethicsGame.mode,
     overworldHidden: !window.__ethicsGame.renderState.overworld.visible,
-    islands: window.__ethicsGame.voyage?.built.islands.length ?? 0
+    islands: window.__ethicsGame.voyage?.built.islands.length ?? 0,
+    dest: window.__ethicsGame.voyage?.dest?.id,
+    bridge: !window.__ethicsUi.dialog.hidden && (window.__ethicsUi.dialogBody?.innerText ?? '').includes('찌꺼기'),
+    introSeen: window.__ethicsGame.progress.voyageIntroSeen === true
   }));
   check(sail.mode === 'voyage' && sail.overworldHidden && sail.islands === 6, `항해 진입(섬 실루엣 ${sail.islands}개, 오버월드 숨김)`);
+  check(sail.bridge && sail.introSeen && sail.dest === 'whisper-cape', '첫 출항 브리지 서사 + 가이드 목적지(속삭임 곶)');
+  await closeDlg();
 
   // 안개 섬(메아리 동굴, sea [12,-14] × 2.2) 접근 → A는 거부된다.
   await tp(26.4, -27.2, 0, -1);
@@ -372,8 +377,13 @@ try {
   await tp(-3.4, 10.2, 0, 1);
   await p.waitForTimeout(1000);
   await A(800);
-  const backToSea = await p.evaluate(() => ({ mode: window.__ethicsGame.mode, isle: Boolean(window.__ethicsGame.isle) }));
+  const backToSea = await p.evaluate(() => ({
+    mode: window.__ethicsGame.mode,
+    isle: Boolean(window.__ethicsGame.isle),
+    dest: window.__ethicsGame.voyage?.dest?.id
+  }));
   check(backToSea.mode === 'voyage' && !backToSea.isle, '뗏목으로 바다 복귀(곶 dispose)');
+  check(backToSea.dest === 'echo-cave', '가이드 목적지 전이(곶 완료 → 메아리 동굴)');
 
   // ── 메아리 동굴: 속삭임 곶 완료로 항로 개방 → 상륙 → 고래 정령 ──
   await tp(26.4, -25.6, 0, -1);
