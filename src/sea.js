@@ -48,8 +48,9 @@ function buildIsland(stage, open, makeLabel) {
   shore.position.y = -0.05;
   group.add(shore);
 
+  let connectRing = null;
   if (open) {
-    // 귀항 지점 표시: 따뜻한 등불 + 물 위 안내 링.
+    // 귀항 지점 표시: 따뜻한 등불 + 물 위 접속 링(정보의 바다에 연결된 섬 — 맥동은 main이 구동).
     const lantern = new THREE.Mesh(
       new THREE.SphereGeometry(0.3, 10, 10),
       new THREE.MeshBasicMaterial({ color: 0xffd88a })
@@ -63,6 +64,7 @@ function buildIsland(stage, open, makeLabel) {
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.24;
     group.add(ring);
+    connectRing = ring;
   }
 
   const label = makeLabel(
@@ -72,7 +74,7 @@ function buildIsland(stage, open, makeLabel) {
   label.position.set(0, 4.6 * size, 0);
   group.add(label);
 
-  return group;
+  return { group, connectRing };
 }
 
 // 뗏목 — 판자 4장 + 돛대 + 돛. 플레이어가 위에 올라선다.
@@ -141,11 +143,72 @@ export function buildSeaScene({ makeLabel, isOpen }) {
   root.add(moonlight);
 
   const islands = [];
+  const connectRings = [];
   for (const stage of STAGES) {
     const open = isOpen(stage);
-    const group = buildIsland(stage, open, makeLabel);
+    const { group, connectRing } = buildIsland(stage, open, makeLabel);
     root.add(group);
     islands.push({ stage, open, group });
+    if (connectRing) {
+      connectRings.push(connectRing);
+    }
+  }
+
+  // 데이터 해류(Z3) — 열린 항로(연속으로 열린 두 섬 사이)를 따라 흐르는 빛 입자 스트림.
+  // "정보는 바다를 흘러다닌다"는 컨셉의 시각화. 입자 위치는 main의 updateVoyage가
+  // elapsed 기반으로 결정적으로 구동한다.
+  const currentSegments = [];
+  for (let i = 0; i < islands.length - 1; i += 1) {
+    if (islands[i].open && islands[i + 1].open) {
+      const a = seaWorldPosition(islands[i].stage);
+      const b = seaWorldPosition(islands[i + 1].stage);
+      currentSegments.push({ ax: a.x, az: a.z, bx: b.x, bz: b.z });
+    }
+  }
+  const PARTICLES_PER_SEGMENT = 14;
+  let currents = null;
+  if (currentSegments.length > 0) {
+    const count = currentSegments.length * PARTICLES_PER_SEGMENT;
+    const positions = new Float32Array(count * 3);
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const points = new THREE.Points(
+      geometry,
+      new THREE.PointsMaterial({
+        color: 0x8fe0ff,
+        size: 1.05,
+        transparent: true,
+        opacity: 0.85,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      })
+    );
+    points.frustumCulled = false; // 입자가 전 바다에 퍼져 있어 컬링 계산이 오히려 손해
+    root.add(points);
+    currents = { points, segments: currentSegments, perSegment: PARTICLES_PER_SEGMENT };
+  }
+
+  // 해류 줄무늬 — 수면을 따라 흐르는 가늘고 긴 빛줄기(바람의 지휘봉식 바다 표정).
+  const streaks = [];
+  for (let i = 0; i < 12; i += 1) {
+    const streak = new THREE.Mesh(
+      new THREE.PlaneGeometry(7.5, 0.16),
+      new THREE.MeshBasicMaterial({ color: 0xa8d8ef, transparent: true, opacity: 0.14, depthWrite: false })
+    );
+    streak.rotation.x = -Math.PI / 2;
+    const angle = i * 2.4;
+    const radius = 12 + ((i * 0.618) % 1) * 66;
+    streak.userData = {
+      baseX: Math.cos(angle) * radius,
+      baseZ: Math.sin(angle) * radius,
+      dirX: Math.cos(angle + 1.2),
+      dirZ: Math.sin(angle + 1.2),
+      phase: i * 1.31
+    };
+    streak.rotation.z = -(angle + 1.2); // 흐르는 방향으로 눕힌다
+    streak.position.y = 0.06;
+    root.add(streak);
+    streaks.push(streak);
   }
 
   const raft = buildRaft();
@@ -165,5 +228,5 @@ export function buildSeaScene({ makeLabel, isOpen }) {
   guideArrow.visible = false;
   root.add(guideArrow);
 
-  return { root, islands, raft, waterMat, guideArrow };
+  return { root, islands, raft, waterMat, guideArrow, currents, streaks, connectRings };
 }

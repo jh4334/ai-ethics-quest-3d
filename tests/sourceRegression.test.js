@@ -77,6 +77,20 @@ test('ceremony(Z2): 획득 의식 + 팡파레 + 오버월드 멜로디가 결정
   assert.match(mainSource, /audio\?\.tickMusic\?\.\(\)/);
 });
 
+test('data currents(Z3): 열린 항로 입자 해류·줄무늬·접속 링이 항해 씬에 존재한다', () => {
+  const seaSrc = readFileSync(new URL('../src/sea.js', import.meta.url), 'utf8');
+  // 해류는 '연속으로 열린 두 섬' 사이에만 — 안개 섬으로는 정보가 흐르지 않는다(컨셉 규칙).
+  assert.match(seaSrc, /islands\[i\]\.open && islands\[i \+ 1\]\.open/);
+  assert.match(seaSrc, /THREE\.Points\(/);
+  assert.match(seaSrc, /streaks/);
+  assert.match(seaSrc, /connectRings/);
+  assert.doesNotMatch(seaSrc, /Math\.random/);
+  // 구동은 updateVoyage에서 elapsed 기반(결정적).
+  assert.match(mainSource, /vg\.built\.currents/);
+  assert.match(mainSource, /vg\.built\.streaks/);
+  assert.match(mainSource, /vg\.built\.connectRings/);
+});
+
 test('concept: 「정보의 바다」 언어가 타이틀·출항 브리지에 정착돼 있다', () => {
   // 공간 컨셉(기획서 7장) — 세계의 바다 이름. 지역명 「잡음의 군도」와 공존한다.
   assert.match(mainSource, /정보의 바다에 떠 있는 섬/);

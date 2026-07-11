@@ -4005,6 +4005,39 @@ function updateVoyage(delta, game, ui) {
   // 달빛 물결 일렁임.
   vg.built.waterMat.emissiveIntensity = 0.55 + Math.sin(elapsed * 0.8) * 0.08;
 
+  // 데이터 해류(Z3) — 열린 항로를 따라 빛 입자가 흐른다(결정적: elapsed + 인덱스 위상).
+  const currents = vg.built.currents;
+  if (currents) {
+    const pos = currents.points.geometry.attributes.position;
+    currents.segments.forEach((seg, s) => {
+      for (let j = 0; j < currents.perSegment; j += 1) {
+        const t = (elapsed * 0.055 + j / currents.perSegment + s * 0.37) % 1;
+        const idx = s * currents.perSegment + j;
+        pos.setXYZ(
+          idx,
+          seg.ax + (seg.bx - seg.ax) * t,
+          0.4 + Math.sin(elapsed * 2.1 + j * 1.7) * 0.14,
+          seg.az + (seg.bz - seg.az) * t
+        );
+      }
+    });
+    pos.needsUpdate = true;
+  }
+  // 해류 줄무늬 — 자기 방향으로 흘러가며 사인 페이드로 나타났다 사라진다.
+  for (const streak of vg.built.streaks ?? []) {
+    const { baseX, baseZ, dirX, dirZ, phase } = streak.userData;
+    const drift = ((elapsed * 1.15 + phase * 9) % 30) - 15;
+    streak.position.x = baseX + dirX * drift;
+    streak.position.z = baseZ + dirZ * drift;
+    streak.material.opacity = 0.07 + 0.09 * (1 + Math.sin(elapsed * 0.55 + phase)) * 0.5;
+  }
+  // 접속 링 — 연결된 섬이 숨 쉬듯 맥동.
+  (vg.built.connectRings ?? []).forEach((ring, i) => {
+    const s = 1 + Math.sin(elapsed * 1.6 + i * 1.1) * 0.05;
+    ring.scale.set(s, s, 1);
+    ring.material.opacity = 0.42 + (1 + Math.sin(elapsed * 1.6 + i * 1.1)) * 0.11;
+  });
+
   // 조망 중엔 안개를 밀어 군도 전체가 보이게 한다(복귀하면 원래 실루엣 무드로).
   const fog = game.renderState.scene.fog;
   if (fog) {
