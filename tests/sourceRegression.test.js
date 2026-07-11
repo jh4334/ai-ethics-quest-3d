@@ -59,6 +59,24 @@ test('living world(Z1): 풀 흔들림·앰비언트 생물·블롭 그림자가 
   assert.match(charSrc, /g\.add\(makeBlobShadow\(0\.52\)\)/);
 });
 
+test('ceremony(Z2): 획득 의식 + 팡파레 + 오버월드 멜로디가 결정적으로 존재한다', () => {
+  const audioSrc = readFileSync(new URL('../src/audio.js', import.meta.url), 'utf8');
+  const cssSrc = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
+  // 획득 의식 — 던전 제단·관문 조각·사당 통과 세 경로에서 호출.
+  assert.match(mainSource, /function showItemCeremony/);
+  const ceremonyCalls = mainSource.match(/showItemCeremony\(game, ui, \{/g) ?? [];
+  assert.ok(ceremonyCalls.length >= 3, `획득 의식 호출 ${ceremonyCalls.length}곳(최소 3)`);
+  // 순수 연출 — 입력을 가로채면 안 된다.
+  assert.match(cssSrc, /\.ceremony \{[\s\S]*?pointer-events: none;/);
+  // 팡파레 + 멜로디: 악보는 고정 배열(결정적), 오디오 파일 0.
+  assert.match(audioSrc, /playFanfare\(\)/);
+  assert.match(audioSrc, /function startOverworldMelody/);
+  assert.doesNotMatch(audioSrc, /Math\.random/);
+  // 멜로디 큐는 타이머가 아니라 게임 루프가 채운다(오디오 클록 예약 = 샘플 정확 박자).
+  assert.match(audioSrc, /tickMusic/);
+  assert.match(mainSource, /audio\?\.tickMusic\?\.\(\)/);
+});
+
 test('concept: 「정보의 바다」 언어가 타이틀·출항 브리지에 정착돼 있다', () => {
   // 공간 컨셉(기획서 7장) — 세계의 바다 이름. 지역명 「잡음의 군도」와 공존한다.
   assert.match(mainSource, /정보의 바다에 떠 있는 섬/);

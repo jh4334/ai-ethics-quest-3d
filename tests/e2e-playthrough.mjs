@@ -150,6 +150,10 @@ try {
   for (const d of ['E', 'E', 'N', 'N']) await push('p2', d);
   check(await solved(), '개인정보: 상자 11수 해결');
   await collect();
+  const ceremonyShown = await p.evaluate(() =>
+    !window.__ethicsUi.ceremony.hidden && (window.__ethicsUi.ceremonyTitle.textContent ?? '').includes('획득')
+  );
+  check(ceremonyShown, '도구 획득 의식(데이터 캡슐·팡파레) 표시');
 
   // ② 편향(잡기·프리셋 중복 교정)
   check(await enterDungeon('bias'), '편향 던전 진입');
