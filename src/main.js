@@ -480,6 +480,7 @@ function createGameState(ui) {
     touchStick: { x: 0, z: 0 },
     idleT: 0,
     overviewT: 0,
+    skyGazeT: 0,
     lastCameraMode: 'overworld',
     mode: 'overworld',
     finaleResolving: false,
@@ -2017,11 +2018,18 @@ function updateGame(delta, game, renderState, ui) {
     game.overviewT = 0;
   }
   game.idleT = game.player.moving ? 0 : game.idleT + delta;
-  const overviewBlocked = game.combat?.active || (game.isle?.challenge && !game.isle.challenge.cleared);
+  // 에필로그 별똥별 동안은 시선을 하늘로 들어올린다("하늘을 봐!") — 조망과는 배타.
+  const skyGazing = game.renderState?.starShower?.active === true;
+  const overviewBlocked = game.combat?.active || (game.isle?.challenge && !game.isle.challenge.cleared) || skyGazing;
   if (!overviewBlocked && game.idleT > 3) {
     game.overviewT = Math.min(1, game.overviewT + delta * 0.7);
   } else {
     game.overviewT = Math.max(0, game.overviewT - delta * 2.2);
+  }
+  if (skyGazing) {
+    game.skyGazeT = Math.min(1, game.skyGazeT + delta * 1.1);
+  } else {
+    game.skyGazeT = Math.max(0, game.skyGazeT - delta * 1.5);
   }
   updateCamera(renderState.camera, game);
   updateCompanion(delta, game, renderState);
@@ -2141,6 +2149,13 @@ function updateCamera(camera, game) {
     desired.lerp(new THREE.Vector3(...ovView.pos), blend);
     look.lerp(new THREE.Vector3(...ovView.look), blend);
   }
+  // 에필로그 별똥별: 시선만 하늘로 들어올린다(카메라 위치는 그대로 — 복귀가 부드럽다).
+  const sgRaw = game.skyGazeT ?? 0;
+  if (sgRaw > 0) {
+    const sg = sgRaw * sgRaw * (3 - 2 * sgRaw);
+    look.y += sg * 15;
+    look.z -= sg * 26;
+  }
   camera.position.lerp(desired, 0.08);
   // 화면 흔들림(타격·피격 순간): 카메라를 잠깐 떨어 손맛을 준다.
   if (shake > 0) {
@@ -2178,6 +2193,33 @@ function flashCombatPopup(ui, text, kind) {
 
 function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates, zoneAuras, novaMailGlow }, game) {
   const elapsed = clock.elapsedTime;
+  // 에필로그 별똥별: 결정적 경로로 하늘을 가로지르고 스스로 정리된다.
+  const shower = game.renderState?.starShower;
+  if (shower?.active) {
+    shower.t += delta;
+    let alive = false;
+    for (const star of shower.stars) {
+      const lt = shower.t - star.userData.delay;
+      if (lt < 0) {
+        continue;
+      }
+      if (lt > 4.5) {
+        star.visible = false;
+        continue;
+      }
+      alive = true;
+      star.visible = true;
+      const s0 = star.userData.start;
+      star.position.set(s0.x - lt * 7.5, s0.y - lt * 0.9, s0.z + lt * 0.6);
+      star.material.opacity = Math.max(0, 1 - lt / 4.5);
+      star.rotation.z = -0.12; // 낙하 방향으로 살짝 기운 꼬리
+    }
+    if (!alive && shower.t > 1) {
+      disposeDungeonRoom(shower.group, game.renderState.overworld);
+      game.renderState.starShower = { active: false };
+    }
+  }
+
   // 노바의 우편병: 안 읽은 편지가 있으면 별 조각이 떠서 반짝인다.
   if (novaMailGlow) {
     const unreadCount = getUnreadNovaLetters(game.progress).length;
@@ -2877,6 +2919,12 @@ function interact(game, ui) {
       ui.dialogTitle.textContent = '⭐ 노바';
       ui.dialogBody.innerHTML = speechHtml(NOVA_LETTERS[stageId]);
       openDialog(game, ui);
+      if (stageId === 'memory-core') {
+        // 마지막 편지 — 대화를 닫으면 하늘에서 노바의 별똥별 인사가 보인다.
+        game.audio?.playNovaChime();
+        triggerStarShower(game);
+        updateHud(game, ui); // 탐험 노트의 완결 기록 갱신
+      }
     }
   } else if (game.nearest.type === 'dock') {
     // 바다는 노이즈를 가르친 뒤에 열린다 — 그 전엔 도트가 말린다(기록 없음).
@@ -3864,9 +3912,36 @@ const NOVA_LETTERS = {
   'memory-core': [
     '군도의 모든 정령이 건강해졌어. 내 어두운 기억들까지 별로 만들어 줘서… 이제 나, 진짜로 반짝여.',
     '언젠가 밤하늘을 올려다보면, 제일 신나게 깜박이는 별이 나야. 약속!',
-    '— 너의 친구, 노바 ⭐'
+    '— 너의 친구, 노바 ⭐',
+    '✨ 도트: "수호자, 하늘을 봐! 노바가 인사하고 있어!"'
   ]
 };
+
+// 에필로그 별똥별 — 마지막 편지를 읽으면 노바가 하늘을 가로지르며 인사한다.
+// 경로·시차 전부 인덱스 기반 상수(결정적). 1회성 메시 6개, 끝나면 dispose.
+function triggerStarShower(game) {
+  const rs = game.renderState;
+  if (!rs || rs.starShower?.active) {
+    return;
+  }
+  const group = new THREE.Group();
+  const stars = [];
+  for (let i = 0; i < 6; i += 1) {
+    const star = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.5, 0),
+      new THREE.MeshBasicMaterial({ color: 0xffb648, transparent: true, opacity: 1 })
+    );
+    star.scale.set(2.4, 0.8, 0.8); // 진행 방향(-x)으로 길게 — 별똥별 꼬리 느낌
+
+    star.userData.start = new THREE.Vector3(18 - i * 4.8, 21 + (i % 3) * 2.2, -34 + i * 3);
+    star.userData.delay = i * 0.55;
+    star.visible = false;
+    group.add(star);
+    stars.push(star);
+  }
+  rs.overworld.add(group);
+  rs.starShower = { active: true, t: 0, group, stars };
+}
 
 // 치유는 끝났는데 아직 안 읽은 편지(항로 순서).
 function getUnreadNovaLetters(progress) {
@@ -5526,9 +5601,11 @@ function renderJournal(game, ui) {
           )
           .join('')}
       </ol>
-      <p class="voyage-note">${voyage.every((stage) => stage.state === 'completed')
-        ? '🌊 군도의 모든 정령이 건강해요 — 완전 치유! 네 가지 약속이 바다를 지킵니다.'
-        : '노이즈가 바다 건너로 도망쳤어요. 새 항로가 하나씩 열립니다.'}</p>
+      <p class="voyage-note">${getUnreadNovaLetters(game.progress).length === 0 && (game.progress.novaLettersRead ?? []).length >= 4
+        ? '💌 노바와의 편지 교환까지 모두 마쳤어요 — 수호자의 여정 완결! 다음 여정은 3부 「AI 윤리 패스파인더」에서 나의 역량을 진단해 보세요.'
+        : voyage.every((stage) => stage.state === 'completed')
+          ? '🌊 군도의 모든 정령이 건강해요 — 완전 치유! 부두 우편병의 마지막 편지를 확인해 보세요.'
+          : '노이즈가 바다 건너로 도망쳤어요. 새 항로가 하나씩 열립니다.'}</p>
     </section>
     ${deeds.length > 0
       ? `<section class="learning-report">

@@ -661,6 +661,26 @@ try {
   }));
   check(home.mode === 'overworld' && home.overworldVisible && !home.voyage, '시작의 섬 귀항(오버월드 복원)');
 
+  // ── 에필로그: 노바의 편지 4통 완독 → 별똥별 인사 + 완결 기록 ──
+  await tp(0.4, 17.2, 0, -1);
+  await p.waitForTimeout(1000);
+  for (let i = 0; i < 4; i += 1) {
+    await A(700);
+    await closeDlg();
+  }
+  const epilogue = await p.evaluate(() => ({
+    read: window.__ethicsGame.progress.novaLettersRead.length,
+    shower: window.__ethicsGame.renderState.starShower?.active === true
+      || window.__ethicsGame.renderState.starShower?.stars?.length > 0
+  }));
+  check(epilogue.read === 4 && epilogue.shower, `노바 편지 4통 완독 → 별똥별 에필로그(읽음 ${epilogue.read})`);
+  await p.evaluate(() => window.__ethicsUi.journalToggle?.click());
+  await p.waitForTimeout(600);
+  const finaleNote = await p.evaluate(() => (window.__ethicsUi.journalContent?.innerText ?? '').includes('패스파인더'));
+  check(finaleNote, '항로 지도 완결 기록 + 3부 패스파인더 연결 안내');
+  await p.evaluate(() => window.__ethicsUi.journalClose?.click());
+  await p.waitForTimeout(300);
+
   check(errs.length === 0, `콘솔·페이지 에러 0 (실제 ${errs.length}${errs.length ? ': ' + errs[0] : ''})`);
 } catch (e) {
   failures.push('예외: ' + e.message);
