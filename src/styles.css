@@ -1856,6 +1856,12 @@ button:disabled {
     font-size: 0.95rem;
   }
 
+  .cine-skip {
+    min-height: 46px;
+    padding: 10px 18px;
+    font-size: 1rem;
+  }
+
   .choice-button {
     min-height: 54px;
     padding: 13px 15px;

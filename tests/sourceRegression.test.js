@@ -62,10 +62,11 @@ test('living world(Z1): 풀 흔들림·앰비언트 생물·블롭 그림자가 
 test('ceremony(Z2): 획득 의식 + 팡파레 + 오버월드 멜로디가 결정적으로 존재한다', () => {
   const audioSrc = readFileSync(new URL('../src/audio.js', import.meta.url), 'utf8');
   const cssSrc = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
-  // 획득 의식 — 던전 제단·관문 조각·사당 통과 세 경로에서 호출.
+  // 획득 의식 — 도구(공통 헬퍼: 던전 제단·사당 통과)와 관문 조각 경로에서 호출.
   assert.match(mainSource, /function showItemCeremony/);
-  const ceremonyCalls = mainSource.match(/showItemCeremony\(game, ui, \{/g) ?? [];
-  assert.ok(ceremonyCalls.length >= 3, `획득 의식 호출 ${ceremonyCalls.length}곳(최소 3)`);
+  assert.match(mainSource, /function showToolCeremony/);
+  const toolCalls = mainSource.match(/showToolCeremony\(game, ui, /g) ?? [];
+  assert.ok(toolCalls.length >= 2, `도구 의식 호출 ${toolCalls.length}곳(던전 제단·사당)`);
   // 순수 연출 — 입력을 가로채면 안 된다.
   assert.match(cssSrc, /\.ceremony \{[\s\S]*?pointer-events: none;/);
   // 팡파레 + 멜로디: 악보는 고정 배열(결정적), 오디오 파일 0.
