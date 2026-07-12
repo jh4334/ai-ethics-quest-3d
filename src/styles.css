@@ -1840,6 +1840,32 @@ button:disabled {
   .puzzle-hud [data-puzzle-hint] {
     font-size: 0.9rem;
   }
+
+  /* 대화창을 살짝 위로 + 높이 캡: 하단 이동 스틱·A 버튼과 겹치지 않게(루프1 실측 보정). */
+  .dialog-panel {
+    top: 40%;
+    max-height: min(60vh, 560px);
+  }
+}
+
+/* 터치 기기 공통(폰 포함): 대화 UI 터치 타깃 확대 — 수업 중 가장 많이 누르는 버튼들. */
+@media (pointer: coarse) {
+  .panel-heading button {
+    min-width: 72px;
+    min-height: 46px;
+    font-size: 0.95rem;
+  }
+
+  .choice-button {
+    min-height: 54px;
+    padding: 13px 15px;
+    font-size: 1rem;
+  }
+
+  .finale-next {
+    min-height: 52px;
+    font-size: 1.02rem;
+  }
 }
 
 .reflection[data-tool="true"] {

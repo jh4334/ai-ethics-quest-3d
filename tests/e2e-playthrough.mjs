@@ -103,15 +103,21 @@ try {
     return it ? { x: it.position.x, z: it.position.z } : null;
   });
   check(Boolean(bottlePos), '지식의 유리병 12개 배치(kb-ad 존재)');
-  await tp(bottlePos.x, bottlePos.z + 0.5, 0, -1);
-  await p.waitForTimeout(1100);
-  await A(600);
-  const bottleGot = await p.evaluate(() => ({
-    dialog: !window.__ethicsUi.dialog.hidden,
-    text: window.__ethicsUi.dialogBody?.innerText ?? '',
-    saved: window.__ethicsGame.progress.knowledgeBottles.includes('kb-ad'),
-    meshGone: !window.__ethicsGame.renderState.bottleMeshes.has('kb-ad')
-  }));
+  // 저속 프레임에서 nearest 갱신이 늦을 수 있어 재시도(다른 상호작용 섹션과 동일 패턴).
+  let bottleGot = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await tp(bottlePos.x, bottlePos.z + 0.5, 0, -1);
+    await p.waitForTimeout(1100);
+    await A(600);
+    bottleGot = await p.evaluate(() => ({
+      dialog: !window.__ethicsUi.dialog.hidden,
+      text: window.__ethicsUi.dialogBody?.innerText ?? '',
+      saved: window.__ethicsGame.progress.knowledgeBottles.includes('kb-ad'),
+      meshGone: !window.__ethicsGame.renderState.bottleMeshes.has('kb-ad')
+    }));
+    if (bottleGot.saved) break;
+    await closeDlg();
+  }
   check(bottleGot.dialog && bottleGot.saved && bottleGot.meshGone && bottleGot.text.includes('광고'), '유리병 수집 → 꿀팁 대화·세이브·메시 정리');
   await closeDlg();
 
