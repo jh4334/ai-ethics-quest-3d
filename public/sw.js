@@ -30,9 +30,35 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))))
-      .then(() => self.clients.claim())
+    (async () => {
+      // 구버전 캐시 통째 정리.
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)));
+      // 같은 캐시 안에 남은 스테일 해시 에셋 정리: 현재 index.html이 참조하지 않는
+      // /assets/ 항목을 지운다(배포가 거듭돼도 캐시가 무한히 불지 않게 — 루프5 리뷰 반영).
+      try {
+        const cache = await caches.open(CACHE);
+        const response = await fetch('./index.html', { cache: 'no-cache' });
+        const html = await response.text();
+        const live = new Set(
+          [...html.matchAll(/(?:src|href)="(\.?\/?assets\/[^"]+)"/g)]
+            .map((match) => match[1].replace(/^\.?\//, ''))
+        );
+        const entries = await cache.keys();
+        await Promise.all(
+          entries
+            .filter((request) => {
+              const path = new URL(request.url).pathname;
+              const assetIdx = path.indexOf('assets/');
+              return assetIdx >= 0 && !live.has(path.slice(assetIdx));
+            })
+            .map((request) => cache.delete(request))
+        );
+      } catch (error) {
+        // 오프라인 중 activate면 정리를 건너뛴다 — 다음 온라인 activate에서 처리된다.
+      }
+      await self.clients.claim();
+    })()
   );
 });
 
