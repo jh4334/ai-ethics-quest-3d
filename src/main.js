@@ -4584,7 +4584,10 @@ function enterIsle(game, ui, stageId) {
   ui.puzzleHud.hidden = false;
   ui.puzzleTitle.textContent = `${stage.emoji} ${stage.nameKo}`;
   ui.puzzleGoal.textContent = healed ? content.healedGoalKo : content.goalKo;
-  ui.puzzleHint.textContent = '뗏목으로 돌아가면 다시 바다로';
+  // 막 상륙한 학생에게는 '나가는 법'보다 목표(정령에게 말 걸기)를 먼저 안내한다.
+  ui.puzzleHint.textContent = healed
+    ? '뗏목으로 돌아가면 다시 바다로'
+    : '정령에게 다가가 A로 말을 걸어요 · 뗏목으로 돌아가면 바다로';
   game.updateRotateHint?.();
 
   // 심부: 잔영이 남아 있으면 도착과 동시에 리매치가 시작된다(패배 연출 단계).
