@@ -1,0 +1,19 @@
+{
+  "name": "AI 윤리의 섬 3D — 정보의 바다",
+  "short_name": "AI 윤리의 섬",
+  "description": "정보의 바다에 떠 있는 섬을 탐험하며 AI 윤리를 배우는 초등 5–6학년 교육 게임 (2부)",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#66b8f0",
+  "theme_color": "#2f6bd8",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
