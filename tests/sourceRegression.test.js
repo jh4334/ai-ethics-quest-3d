@@ -70,7 +70,12 @@ test('ceremony(Z2): 획득 의식 + 팡파레 + 오버월드 멜로디가 결정
   assert.match(cssSrc, /\.ceremony \{[\s\S]*?pointer-events: none;/);
   // 팡파레 + 멜로디: 악보는 고정 배열(결정적), 오디오 파일 0.
   assert.match(audioSrc, /playFanfare\(\)/);
-  assert.match(audioSrc, /function startOverworldMelody/);
+  // 멜로디는 씬별 고정 악보 레이어(오버월드·항해·보스)로 일반화(루프4).
+  assert.match(audioSrc, /function startMelodyLayers/);
+  assert.match(audioSrc, /layer: musicLayers\.voyage/);
+  assert.match(audioSrc, /layer: musicLayers\.boss/);
+  assert.match(audioSrc, /voyage: 0\.06/);
+  assert.match(mainSource, /setMusicMode\?\.\('voyage'\)/);
   assert.doesNotMatch(audioSrc, /Math\.random/);
   // 멜로디 큐는 타이머가 아니라 게임 루프가 채운다(오디오 클록 예약 = 샘플 정확 박자).
   assert.match(audioSrc, /tickMusic/);

@@ -13,7 +13,7 @@ export function createAudioEngine() {
   // (오실레이터 소수 + LFO 게이팅이라 저사양에도 부담 없고, 타이머가 없어 결정적이다.)
   let musicLayers = null;
   let musicMode = 'overworld';
-  const MUSIC_LEVEL = { overworld: 0.06, dungeon: 0.055, boss: 0.075 };
+  const MUSIC_LEVEL = { overworld: 0.06, dungeon: 0.055, boss: 0.075, voyage: 0.06 };
 
   function ensureContext() {
     if (!AudioContextClass) {
@@ -88,7 +88,7 @@ export function createAudioEngine() {
       return;
     }
     musicLayers = {};
-    for (const name of ['overworld', 'dungeon', 'boss']) {
+    for (const name of ['overworld', 'dungeon', 'boss', 'voyage']) {
       const gain = ctx.createGain();
       gain.gain.value = 0;
       gain.connect(master);
@@ -97,7 +97,11 @@ export function createAudioEngine() {
     // 오버월드 — 낮은 두 음의 은은한 섬 패드(기존 분위기 유지).
     voice(musicLayers.overworld, { freq: 110, vibratoHz: 0.08, vibratoDepth: 3 });
     voice(musicLayers.overworld, { freq: 164.81, vibratoHz: 0.08, vibratoDepth: 3 });
-    startOverworldMelody();
+    // 항해(정보의 바다) — 밤바다 패드: 낮은 5도 + 아주 느리게 반짝이는 높은 별빛 음.
+    voice(musicLayers.voyage, { freq: 98, vibratoHz: 0.06, vibratoDepth: 2.5 });
+    voice(musicLayers.voyage, { freq: 146.83, vibratoHz: 0.05, vibratoDepth: 2 });
+    voice(musicLayers.voyage, { freq: 659.25, type: 'sine', level: 0.1, gateHz: 0.09 });
+    startMelodyLayers();
     // 던전 — 단3도 저음 드론 + 아주 느리게 반짝이는 높은 물방울(신비·수수께끼).
     voice(musicLayers.dungeon, { freq: 87.31, vibratoHz: 0.05, vibratoDepth: 2 });
     voice(musicLayers.dungeon, { freq: 103.83, vibratoHz: 0.07, vibratoDepth: 2 });
@@ -109,46 +113,77 @@ export function createAudioEngine() {
     applyMusicMode(2.5);
   }
 
-  // 오버월드 멜로디(Z2) — 패드 위에 얹히는 16박 펜타토닉 프레이즈. 악보는 고정 배열(결정적)이고,
-  // 오디오 클록에 예약하므로 박자는 샘플 정확도. 타이머 없이 게임 루프(tickMusic)가 큐를 채운다.
-  // 게인이 overworld 레이어를 통과해서 씬 크로스페이드에 자동으로 따라간다.
+  // 멜로디 레이어(Z2·루프4) — 패드 위에 얹히는 고정 악보 프레이즈(결정적). 오디오 클록에
+  // 예약하므로 박자는 샘플 정확도이고, 타이머 없이 게임 루프(tickMusic)가 큐를 채운다.
+  // 각 멜로디의 게인이 자기 씬 레이어를 통과해서 크로스페이드에 자동으로 따라간다.
+  // 들리지 않는 씬의 예약(레이어 게인 0)은 무음 오실레이터 소수라 비용이 무시할 수준.
   let melodyTick = null;
-  function startOverworldMelody() {
-    // 주법: 잔잔한 뱃노래풍 — C 펜타토닉, 0은 쉼표. 한 프레이즈 16박 × 0.72s ≈ 11.5s 루프.
-    const PHRASE = [
-      523.25, 0, 659.25, 783.99, 880, 0, 783.99, 659.25,
-      523.25, 0, 440, 523.25, 659.25, 587.33, 523.25, 0
-    ];
-    const STEP = 0.72;
-    const melodyGain = ctx.createGain();
-    melodyGain.gain.value = 2.4; // 레이어 게인(≈0.06)과 곱해져 최종 ≈0.14
-    melodyGain.connect(musicLayers.overworld);
-    let nextStart = ctx.currentTime + 1.5;
-    melodyTick = () => {
-      // 탭 정지 등으로 클록이 앞서갔으면 과거 음 폭주 없이 따라잡는다.
-      if (nextStart < ctx.currentTime) {
-        nextStart = ctx.currentTime + 0.5;
+  function startMelodyLayers() {
+    const MELODIES = [
+      {
+        // 오버월드: 잔잔한 뱃노래풍 — C 펜타토닉, 0은 쉼표. 16박 × 0.72s ≈ 11.5s 루프.
+        layer: musicLayers.overworld,
+        type: 'triangle',
+        gainMul: 2.4, // 레이어 게인(≈0.06)과 곱해져 최종 ≈0.14
+        step: 0.72,
+        phrase: [
+          523.25, 0, 659.25, 783.99, 880, 0, 783.99, 659.25,
+          523.25, 0, 440, 523.25, 659.25, 587.33, 523.25, 0
+        ]
+      },
+      {
+        // 항해: 느리고 아득한 A단조 펜타토닉 — 밤바다 위 별빛 선율.
+        layer: musicLayers.voyage,
+        type: 'sine',
+        gainMul: 2.2,
+        step: 0.95,
+        phrase: [
+          440, 0, 523.25, 587.33, 0, 659.25, 0, 587.33,
+          523.25, 0, 440, 0, 392, 0, 440, 0
+        ]
+      },
+      {
+        // 보스: 낮게 반복되는 긴장 오스티나토 — 위협적이지 않게 작고 단단하게.
+        layer: musicLayers.boss,
+        type: 'triangle',
+        gainMul: 1.6,
+        step: 0.42,
+        phrase: [220, 220, 261.63, 220, 311.13, 0, 261.63, 0]
       }
-      // 다음 4초 안에 시작할 프레이즈만 예약(룩어헤드).
-      while (nextStart < ctx.currentTime + 4) {
-        PHRASE.forEach((freq, i) => {
-          if (!freq) {
-            return;
-          }
-          const t = nextStart + i * STEP;
-          const osc = ctx.createOscillator();
-          const env = ctx.createGain();
-          osc.type = 'triangle';
-          osc.frequency.value = freq;
-          env.gain.setValueAtTime(0.0001, t);
-          env.gain.exponentialRampToValueAtTime(0.09, t + 0.04);
-          env.gain.exponentialRampToValueAtTime(0.0001, t + STEP * 0.92);
-          osc.connect(env);
-          env.connect(melodyGain);
-          osc.start(t);
-          osc.stop(t + STEP);
-        });
-        nextStart += PHRASE.length * STEP;
+    ];
+    for (const melody of MELODIES) {
+      melody.gain = ctx.createGain();
+      melody.gain.gain.value = melody.gainMul;
+      melody.gain.connect(melody.layer);
+      melody.nextStart = ctx.currentTime + 1.5;
+    }
+    melodyTick = () => {
+      for (const melody of MELODIES) {
+        // 탭 정지 등으로 클록이 앞서갔으면 과거 음 폭주 없이 따라잡는다.
+        if (melody.nextStart < ctx.currentTime) {
+          melody.nextStart = ctx.currentTime + 0.5;
+        }
+        // 다음 4초 안에 시작할 프레이즈만 예약(룩어헤드).
+        while (melody.nextStart < ctx.currentTime + 4) {
+          melody.phrase.forEach((freq, i) => {
+            if (!freq) {
+              return;
+            }
+            const t = melody.nextStart + i * melody.step;
+            const osc = ctx.createOscillator();
+            const env = ctx.createGain();
+            osc.type = melody.type;
+            osc.frequency.value = freq;
+            env.gain.setValueAtTime(0.0001, t);
+            env.gain.exponentialRampToValueAtTime(0.09, t + 0.04);
+            env.gain.exponentialRampToValueAtTime(0.0001, t + melody.step * 0.92);
+            osc.connect(env);
+            env.connect(melody.gain);
+            osc.start(t);
+            osc.stop(t + melody.step);
+          });
+          melody.nextStart += melody.phrase.length * melody.step;
+        }
       }
     };
     melodyTick();
@@ -210,7 +245,7 @@ export function createAudioEngine() {
         melodyTick();
       }
     },
-    // 장면 전환 BGM: 'overworld' | 'dungeon' | 'boss'. 컨텍스트가 아직 없으면 모드만 기억해 둔다.
+    // 장면 전환 BGM: 'overworld' | 'dungeon' | 'boss' | 'voyage'. 컨텍스트가 없으면 모드만 기억.
     setMusicMode(mode) {
       if (!MUSIC_LEVEL[mode] || mode === musicMode) {
         return;
@@ -218,6 +253,8 @@ export function createAudioEngine() {
       musicMode = mode;
       applyMusicMode();
     },
+    // 현재 BGM 모드(검증·디버그용 읽기 전용).
+    musicModeName: () => musicMode,
     isMuted: () => muted,
     toggleMute() {
       muted = !muted;
