@@ -353,7 +353,7 @@ function createShell() {
         </div>
       </div>
 
-      <section class="dialog-panel" data-dialog hidden aria-live="polite">
+      <section class="dialog-panel" data-dialog hidden role="dialog" aria-modal="false" aria-live="polite" aria-label="대화">
         <div class="panel-heading">
           <div>
             <p class="eyebrow" data-dialog-kicker>학습</p>
@@ -6151,6 +6151,11 @@ function renderJournal(game, ui) {
     clearStoredProgress();
     game.progress = createInitialProgress();
     updateHud(game, ui);
+    // 공유 기기 재사용: HUD만 갱신하면 이미 주운 유리병·치유한 섬 등 3D 상태가
+    // 이전 학생 것으로 남는다 — 재로드로 월드를 처음부터 다시 세워 진짜 새 출발을 보장.
+    if (typeof window !== 'undefined' && window.location?.reload) {
+      window.location.reload();
+    }
   });
 }
 
