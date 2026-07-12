@@ -123,3 +123,16 @@ test('normalizeStoryState repairs garbage and rejects bad fields', () => {
   assert.equal(repaired.privacy.badTries, 0);
   assert.deepEqual(repaired.privacy.deeds, []);
 });
+
+test('josaWaGwa(루프A): 받침 유무로 와/과를 고른다 — 목표 문구 조사 오류 방지', async () => {
+  const { josaWaGwa, getStoryObjective } = await import('../src/story.js');
+  assert.equal(josaWaGwa('담'), '과');
+  assert.equal(josaWaGwa('모리'), '와');
+  assert.equal(josaWaGwa('무로'), '와');
+  assert.equal(josaWaGwa('에코'), '와');
+  assert.equal(josaWaGwa('Nova'), '와'); // 비한글은 안전 기본값
+  // 실제 목표 문구에서 '담와' 같은 오류가 나오지 않는다.
+  const { createInitialProgress } = await import('../src/worldData.js');
+  const objective = getStoryObjective(createInitialProgress());
+  assert.doesNotMatch(objective, /담와/);
+});

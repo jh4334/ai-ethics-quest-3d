@@ -64,7 +64,8 @@ import {
   getNpcDialog,
   getStoryDeeds,
   getStoryObjective,
-  getStoryVisualFlags
+  getStoryVisualFlags,
+  josaWaGwa
 } from './story.js';
 import {
   ETHICS_TOPICS,
@@ -1466,7 +1467,7 @@ function createNpc(scene, zone, zonePosition, interactables) {
     topicId: zone.topicId,
     zoneId: zone.id,
     position: npc.position.clone(),
-    labelKo: `${zone.npc.nameKo}와 대화`
+    labelKo: `${zone.npc.nameKo}${josaWaGwa(zone.npc.nameKo)} 대화`
   });
 }
 
@@ -2540,6 +2541,16 @@ function showItemCeremony(game, ui, { emoji, title, subtitle = '', color = '#ffd
     ui.ceremony.classList.remove('is-on');
     ui.ceremony.hidden = true;
   }, 2600);
+}
+
+// 도구 획득 의식 공통 호출 — 던전 제단·사당 통과 두 경로가 같은 연출을 쓴다.
+function showToolCeremony(game, ui, tool, topic) {
+  showItemCeremony(game, ui, {
+    emoji: tool.emoji,
+    title: `「${tool.nameKo}」 획득!`,
+    subtitle: tool.powerKo,
+    color: topic?.color ?? '#ffd76a'
+  });
 }
 
 // 전투 팝업 텍스트("일치!", "튕김!", "회피 실패!") — 잠깐 크게 떴다 사라진다.
@@ -3957,12 +3968,7 @@ function winShrinePuzzle(game, ui) {
     `;
     ui.dialogBody.querySelector('[data-dialog-ok]').addEventListener('click', () => closeDialog(game, ui));
     openDialog(game, ui);
-    showItemCeremony(game, ui, {
-      emoji: tool.emoji,
-      title: `「${tool.nameKo}」 획득!`,
-      subtitle: tool.powerKo,
-      color: topic?.color ?? '#ffd76a'
-    });
+    showToolCeremony(game, ui, tool, topic);
   }
 }
 
@@ -5286,13 +5292,7 @@ function awardDungeonItem(game, ui) {
   updateHud(game, ui);
   // 획득 의식 — 데이터 캡슐이 열리듯 도구가 떠오르고 팡파레(젤다식 의례화).
   if (toolId) {
-    const tool = getToolById(toolId);
-    showItemCeremony(game, ui, {
-      emoji: tool.emoji,
-      title: `「${tool.nameKo}」 획득!`,
-      subtitle: tool.powerKo,
-      color: topic?.color ?? '#ffd76a'
-    });
+    showToolCeremony(game, ui, getToolById(toolId), topic);
   }
 }
 

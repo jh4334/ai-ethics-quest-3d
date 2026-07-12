@@ -193,6 +193,15 @@ export function getQuest(topicId) {
   return QUESTS[topicId] ?? null;
 }
 
+// 받침 유무로 '와/과'를 고른다 — 이름 조사 오류 방지(예: 담과, 모리와).
+export function josaWaGwa(nameKo) {
+  const code = nameKo.charCodeAt(nameKo.length - 1);
+  if (code < 0xac00 || code > 0xd7a3) {
+    return '와';
+  }
+  return (code - 0xac00) % 28 === 0 ? '와' : '과';
+}
+
 // 구역별 진행 상태.
 export function createStoryState() {
   const state = {};
@@ -355,7 +364,7 @@ export function getStoryObjective(progress) {
       continue;
     }
     if (status === 'need-intro') {
-      return `「${quest.questTitleKo}」 — ${quest.npcNameKo}와 이야기하세요.`;
+      return `「${quest.questTitleKo}」 — ${quest.npcNameKo}${josaWaGwa(quest.npcNameKo)} 이야기하세요.`;
     }
     if (status === 'need-tool') {
       return `「${quest.questTitleKo}」 — 사당에서 도구를 얻어 「${quest.gateLabelKo}」를 해결하세요.`;
