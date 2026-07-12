@@ -4,10 +4,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="AI Ethics Quest 3D classroom game prototype" />
+  <meta name="theme-color" content="#2f6bd8" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
   <title>AI Ethics Quest 3D</title>
 </head>
 <body>
   <div id="app" data-app-marker="AI Ethics Quest 3D"></div>
   <script type="module" src="/src/main.js"></script>
+  <script>
+    // PWA 오프라인: 한 번 연 태블릿은 와이파이 없이도 동작(무설치·오프라인 주장 충족).
+    // vite dev(5173)에선 등록하지 않는다 — 개발 중 소스가 캐시에 붙잡히는 사고 방지.
+    if ('serviceWorker' in navigator && window.location.port !== '5173') {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
 </body>
 </html>
