@@ -4190,7 +4190,7 @@ function enterVoyage(game, ui, spawn) {
 
   triggerFlash(ui, '#bcd8ff');
   game.audio?.playClick();
-  game.audio?.setMusicMode?.('dungeon'); // 신비로운 밤바다 무드
+  game.audio?.setMusicMode?.('voyage'); // 밤바다 패드 + 별빛 선율(루프4)
   ui.prompt.hidden = true;
   ui.puzzleHud.hidden = false;
   ui.puzzleTitle.textContent = '🌊 잡음의 군도 — 항해';

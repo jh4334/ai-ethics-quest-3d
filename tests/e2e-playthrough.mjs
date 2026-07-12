@@ -318,6 +318,8 @@ try {
   }));
   check(sail.mode === 'voyage' && sail.overworldHidden && sail.islands === 6, `항해 진입(섬 실루엣 ${sail.islands}개, 오버월드 숨김)`);
   check(sail.bridge && sail.introSeen && sail.dest === 'whisper-cape', '첫 출항 브리지 서사 + 가이드 목적지(속삭임 곶)');
+  const voyageMusic = await p.evaluate(() => window.__ethicsGame.audio?.musicModeName?.() ?? 'none');
+  check(voyageMusic === 'voyage', `항해 BGM 모드 전환(실제 ${voyageMusic})`);
   await closeDlg();
 
   // 안개 섬(메아리 동굴, sea [12,-14] × 2.2) 접근 → A는 거부된다.
