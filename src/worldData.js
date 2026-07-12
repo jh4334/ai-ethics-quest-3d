@@ -772,6 +772,16 @@ export function getLearningReport(progress) {
     core: {
       attempts: coreAttempts.length,
       completed: progress.aiCoreCompleted
+    },
+    // 심화 2막(잡음의 군도) 참여 신호 — 필드 추가만(기존 신호 불변, 증명서·본편 리포트 무영향).
+    expansion: {
+      healedIsles: ['whisper-cape', 'echo-cave', 'hourglass-port', 'memory-outer']
+        .filter((id) => progress.stages?.[id]?.completed === true).length,
+      totalIsles: 4,
+      remnantCleared: progress.stages?.['memory-core']?.completed === true,
+      lettersRead: (progress.novaLettersRead ?? []).length,
+      bottlesFound: (progress.knowledgeBottles ?? []).length,
+      bottlesTotal: KNOWLEDGE_BOTTLES.length
     }
   };
 }

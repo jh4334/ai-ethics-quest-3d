@@ -6114,6 +6114,7 @@ function renderJournal(game, ui) {
     <section class="learning-report" data-learning-report>
       <h3>학습 리포트</h3>
       <p>사당(퍼즐) 통과 ${report.solvedCount}/4 · 관문 윤리 선택 — 현명하게 ${report.gateSolvedCount}개, 실수 후 회복 ${report.gateRecoveredCount}개 · AI 코어 ${report.core.completed ? '완료' : '미완료'}</p>
+      <p>심화 2막(보너스 여정 — 본편 기록·증명서 무영향) — 치유한 섬 ${report.expansion.healedIsles}/${report.expansion.totalIsles} · 잔영 재대결 ${report.expansion.remnantCleared ? '완료' : '미완'} · 노바 편지 ${report.expansion.lettersRead}/4 · 지식의 유리병 ${report.expansion.bottlesFound}/${report.expansion.bottlesTotal}</p>
       <ul class="report-list">
         ${report.topics
           .map((topic) => {
