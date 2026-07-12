@@ -133,3 +133,25 @@ test('normalizeProgress restores legacy saves and rejects malformed data', () =>
   });
   assert.equal(withLog.choiceLog.length, 1);
 });
+
+test('report expansion(루프3): 심화 2막·유리병 신호는 필드 추가만 — 기존 신호 불변', async () => {
+  const { getLearningReport, createInitialProgress, collectKnowledgeBottle } = await import('../src/worldData.js');
+  const { markStageCompleted } = await import('../src/stageData.js');
+  // 새 세이브: 심화 신호는 전부 0/false, 기존 신호 형태는 그대로.
+  const fresh = getLearningReport(createInitialProgress());
+  assert.deepEqual(fresh.expansion, {
+    healedIsles: 0, totalIsles: 4, remnantCleared: false, lettersRead: 0, bottlesFound: 0, bottlesTotal: 12
+  });
+  assert.equal(typeof fresh.solvedCount, 'number');
+  assert.equal(typeof fresh.core.completed, 'boolean');
+  // 진행 반영: 섬 2개 치유 + 심부 완료 + 유리병 1개.
+  let p = createInitialProgress();
+  p = markStageCompleted(p, 'whisper-cape');
+  p = markStageCompleted(p, 'echo-cave');
+  p = markStageCompleted(p, 'memory-core');
+  p = collectKnowledgeBottle(p, 'kb-source');
+  const report = getLearningReport(p);
+  assert.equal(report.expansion.healedIsles, 2);
+  assert.equal(report.expansion.remnantCleared, true);
+  assert.equal(report.expansion.bottlesFound, 1);
+});
