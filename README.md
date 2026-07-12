@@ -33,6 +33,12 @@ npm run smoke
   islands — 악플·혐오표현 (🛡️ shield deflection), 가짜뉴스·출처 (🔔 bell reveal),
   스크린타임·디지털 웰빙 (🧭 compass timing), and a final rematch combining all four
   "promise verbs" (bonus journey — does not affect the certificate or learning report)
+- 공간 컨셉 「정보의 바다」: the world itself is the metaphor — 진실의 등대 (trusted
+  sources; one beam per healed stage), 안개 (unverified information), 데이터 해류
+  (particle currents that flow only along opened routes), and 12 hidden 지식의 유리병
+  (digital-literacy tips collected into an in-game logbook)
+- PWA: installable to the home screen and fully playable offline after first load
+  (service worker precaches the hashed bundle; navigation stays network-first)
 - No accounts, backend, secrets, payments, analytics, or student data storage
 - Class documents in `docs/` — trilogy program (기획서·성취기준 매핑·지도안) in `docs/trilogy/`
 
