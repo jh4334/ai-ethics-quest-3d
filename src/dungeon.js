@@ -424,8 +424,8 @@ export function disposeDungeonRoom(root, scene) {
     return;
   }
   root.traverse((child) => {
-    // GridHelper는 LineSegments(isLine)이라 mesh/sprite 검사만으론 누수된다.
-    if (child.isMesh || child.isSprite || child.isLine) {
+    // GridHelper는 LineSegments(isLine), 데이터 해류는 Points라 mesh/sprite 검사만으론 누수된다.
+    if (child.isMesh || child.isSprite || child.isLine || child.isPoints) {
       if (child.geometry && !SHARED.has(child.geometry)) {
         child.geometry.dispose?.();
       }

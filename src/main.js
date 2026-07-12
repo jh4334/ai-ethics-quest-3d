@@ -3978,10 +3978,10 @@ function endShrinePuzzle(game, ui) {
     return;
   }
   for (const ped of pz.pedestals) {
-    game.renderState.scene.remove(ped.group);
+    disposeDungeonRoom(ped.group, game.renderState.scene); // remove만 하면 지오메트리가 누수된다
   }
   if (pz.bellGroup) {
-    game.renderState.scene.remove(pz.bellGroup);
+    disposeDungeonRoom(pz.bellGroup, game.renderState.scene);
   }
   game.puzzle = null;
   ui.root.classList.remove('is-combat');
@@ -4078,7 +4078,8 @@ function enterDungeon(game, ui, topicId, shrineId) {
   ui.root.classList.add('is-combat'); // A 버튼 강조
   const ACTION_LABEL = { push: '밀기', carry: '잡기', beam: '돌리기' };
   const FIRST_HINT = {
-    push: '상자 앞에 서서 A로 밀어요 · 남쪽 빛 문으로 나가요',
+    // 밀기 퍼즐은 상자가 구석에 끼면 못 풀 수 있다 — 재입장 리셋을 학생이 알게 명시.
+    push: '상자 앞에 서서 A로 밀어요 · 상자가 끼었다면 빛 문으로 나갔다 오면 처음부터!',
     carry: '물건 앞에서 A로 집고, 놓을 곳에서 다시 A · 남쪽 빛 문으로 나가요',
     beam: '거울 앞에서 A로 돌려 빛의 길을 바꿔요 · 남쪽 빛 문으로 나가요'
   };
