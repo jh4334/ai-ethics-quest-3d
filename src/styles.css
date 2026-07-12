@@ -42,6 +42,14 @@ button {
   transition: transform 120ms ease, border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
 }
 
+/* 키보드 포커스 링 — 커스텀 버튼셋에 저대비 기본 링 대신 고대비·일관 링을 보장(접근성). */
+button:focus-visible,
+[data-title-actions] button:focus-visible,
+.choice-button:focus-visible {
+  outline: 3px solid #1a4bd8;
+  outline-offset: 2px;
+}
+
 button:hover {
   transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--accent) 55%, white);
