@@ -59,7 +59,8 @@ export const ETHICS_TOPICS = [
     classroomQuestion: 'AI 앱에 사진이나 글을 넣기 전에 무엇을 먼저 확인해야 할까요?',
     safeRule: '필요한 정보만, 허락받고, 목적을 알고 사용하기',
     realCaseKo: '실제로 한 앱이 필요 이상으로 많은 개인정보를 모았다가 유출되어 많은 사람이 피해를 본 일이 있어요. 그래서 ‘꼭 필요한 정보만’ 모으는 것이 중요해요.',
-    vocabularyKo: ['개인정보', '동의', '목적']
+    vocabularyKo: ['개인정보', '동의', '목적'],
+    teaserKo: '숲 쪽에서 누군가 "이건 공평하지 않아…" 하고 웅얼거려. 편향의 숲엔 무슨 일이?'
   },
   {
     id: 'bias',
@@ -70,7 +71,8 @@ export const ETHICS_TOPICS = [
     classroomQuestion: 'AI의 대답이 모든 사람에게 공평한지 어떻게 살펴볼 수 있을까요?',
     safeRule: '한 가지 결과만 믿지 말고 빠진 사람과 다른 관점 확인하기',
     realCaseKo: '예전에 어떤 AI 채용 프로그램이 남성 지원자를 더 높게 평가한 적이 있어요. 사람이 만든 과거 자료가 한쪽으로 치우쳐 있었기 때문이에요.',
-    vocabularyKo: ['편향', '공정성', '자료']
+    vocabularyKo: ['편향', '공정성', '자료'],
+    teaserKo: '낡은 기둥 사이로 붓 자국이 보여. 저작권 유적엔 누구의 작품이 잠들어 있을까?'
   },
   {
     id: 'copyright',
@@ -81,7 +83,8 @@ export const ETHICS_TOPICS = [
     classroomQuestion: 'AI가 만든 이미지나 글을 발표에 쓸 때 어떤 표시가 필요할까요?',
     safeRule: '출처 확인, 허락 확인, 내 생각과 수정한 부분 밝히기',
     realCaseKo: 'AI로 만든 그림이 실제 화가의 그림과 너무 비슷해 문제가 된 일이 있어요. AI가 다른 사람의 작품을 배워 만들기 때문에 출처와 허락이 중요해요.',
-    vocabularyKo: ['저작권', '출처', '허락']
+    vocabularyKo: ['저작권', '출처', '허락'],
+    teaserKo: '동굴 깊은 곳에서 진짜 같은 가짜 목소리가 새어 나와. 딥페이크 동굴의 정체는?'
   },
   {
     id: 'deepfake',
@@ -92,7 +95,8 @@ export const ETHICS_TOPICS = [
     classroomQuestion: '믿기 어려운 영상이나 음성을 보았을 때 바로 공유하지 말아야 하는 이유는 무엇일까요?',
     safeRule: '멈추기, 출처 확인하기, 믿을 수 있는 어른이나 자료와 비교하기',
     realCaseKo: '유명한 사람의 얼굴과 목소리를 AI로 합성한 가짜 영상이 퍼져 사람들을 속인 일이 있어요. 그래서 놀라운 영상일수록 먼저 사실인지 확인해야 해요.',
-    vocabularyKo: ['딥페이크', '사실 확인', '공유 책임']
+    vocabularyKo: ['딥페이크', '사실 확인', '공유 책임'],
+    teaserKo: '섬 중앙의 AI 코어가 희미하게 두근거려. 네 조각이 모이면 무엇이 깨어날까?'
   }
 ];
 

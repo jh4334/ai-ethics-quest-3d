@@ -370,6 +370,7 @@ function createShell() {
           <p class="title-eyebrow">AI 윤리 어드벤처 · 2부</p>
           <h1 class="title-name">AI 윤리의 섬</h1>
           <p class="title-desc">정보의 바다에 떠 있는 섬을 탐험하며 네 가지 윤리 조각을 모아 AI 코어를 깨우는 수호자가 되어 보세요.</p>
+          <p class="title-hook">섬 어딘가에 잠든 낡은 AI가 자꾸만 실수를 해요 — 지울까요, 가르칠까요?</p>
           <div class="title-actions" data-title-actions></div>
           <p class="title-controls">${IS_TOUCH ? '왼쪽 스틱으로 이동 · 오른쪽 A 버튼으로 확인·공격' : '이동 WASD·방향키 · 확인/공격 E·Space·Enter · 기록 J'}</p>
         </div>
@@ -3525,7 +3526,8 @@ function openGateDialog(game, ui, topicId) {
             color: topic?.color ?? '#7cf0ff'
           });
           window.setTimeout(() => {
-            ui.dialogBody.innerHTML += `<div class="gate-resolve">${speechHtml(outcome.resolveKo)}<p class="quest-hint">${getStoryObjective(game.progress)}</p></div>`;
+            const teaser = topic?.teaserKo ? `<p class="quest-teaser">🔮 ${topic.teaserKo}</p>` : '';
+            ui.dialogBody.innerHTML += `<div class="gate-resolve">${speechHtml(outcome.resolveKo)}<p class="quest-hint">${getStoryObjective(game.progress)}</p>${teaser}</div>`;
           }, 500);
           if (!before && canUnlockFinalCore(game.progress.collectedFragments)) {
             window.setTimeout(() => celebrate(game, new THREE.Vector3(0, 1.6, 0), '#7cf0ff', 'core'), 900);

@@ -7,6 +7,8 @@ test('world includes the four required AI ethics topics for elementary students'
   for (const topic of ETHICS_TOPICS) {
     assert.ok(topic.titleKo.length > 0);
     assert.ok(topic.studentTakeaway.length >= 12);
+    // 호기심 갭(R-루프4): 각 주제에 다음을 궁금하게 만드는 예고 훅.
+    assert.ok(typeof topic.teaserKo === 'string' && topic.teaserKo.length >= 12, `${topic.id} teaserKo`);
   }
 });
 
