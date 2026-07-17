@@ -1184,6 +1184,19 @@ button:disabled {
   line-height: 1.55;
 }
 
+/* 복귀 리캡(R-루프9) — 돌아온 학생에게 지금까지의 성취를 반갑게 되짚어 준다. */
+.title-recap {
+  margin: 0 0 12px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: rgba(47, 143, 127, 0.1);
+  border-left: 4px solid var(--accent);
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #1c6b5d;
+  line-height: 1.5;
+}
+
 /* 콜드오픈 호기심 훅(R-루프4) — 타이틀에 '지울까 가르칠까?' 질문을 심어 당김을 만든다. */
 .title-hook {
   margin: 0 0 20px;
