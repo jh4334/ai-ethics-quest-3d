@@ -4059,6 +4059,13 @@ function endShrinePuzzle(game, ui) {
 
 // ===== 사당 던전: 문으로 들어가면 별도 퍼즐 맵이 로드되는 젤다식 방 =====
 const DUNGEON_EXIT_RANGE = 0.8; // 셀 크기(1.2)보다 작아야 입장 스폰(한 칸 안)에서 즉시 퇴장되지 않는다
+// 던전 진입 고유 한 줄(R-루프6) — 구역마다 다른 첫인상으로 반복감 제거.
+const DUNGEON_ENTRY_LINE = {
+  privacy: '🔒 비밀지기의 방 — 함부로 열린 상자들이 웅성인다',
+  bias: '⚖️ 편향의 온실 — 한쪽으로만 기운 화분이 시들어 간다',
+  copyright: '🎨 잊힌 아틀리에 — 이름표를 잃은 작품들이 떠돈다',
+  deepfake: '🪞 거울의 방 — 진짜와 가짜가 뒤섞여 어른거린다'
+};
 const DUNGEON_PEDESTAL_RANGE = 1.6;
 const DUNGEON_PUSH_COOLDOWN = 0.2;
 
@@ -4137,10 +4144,16 @@ function enterDungeon(game, ui, topicId, shrineId) {
   rs.companion.position.copy(game.player.position).add(new THREE.Vector3(0.8, 1.2, 0));
   snapCamera(rs.camera, game.player.position);
 
-  triggerFlash(ui, '#ffffff');
+  // 진입 훅 차별화(R-루프6): 구역마다 다른 색 플래시 + 고유 한 줄로 '같은 던전' 느낌을 지운다.
+  const topic = getTopicById(topicId);
+  triggerFlash(ui, topic?.color ?? '#ffffff');
   game.audio?.playClick();
   game.audio?.setMusicMode?.('dungeon'); // 신비로운 던전 BGM으로 크로스페이드
   ui.root.classList.add('is-combat'); // A 버튼 강조
+  const entryLine = DUNGEON_ENTRY_LINE[topicId];
+  if (entryLine) {
+    window.setTimeout(() => flashCombatPopup(ui, entryLine, 'hit'), 260);
+  }
   const ACTION_LABEL = { push: '밀기', carry: '잡기', beam: '돌리기' };
   const FIRST_HINT = {
     // 밀기 퍼즐은 상자가 구석에 끼면 못 풀 수 있다 — 재입장 리셋을 학생이 알게 명시.
