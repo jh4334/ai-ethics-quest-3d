@@ -266,7 +266,7 @@ function createShell() {
     <main class="quest-shell" data-app-marker="${APP_MARKER}">
       <canvas class="quest-canvas" data-game-canvas aria-label="AI 윤리의 섬 3D 게임 화면"></canvas>
 
-      <section class="objective-chip" aria-live="polite">
+      <section class="objective-chip" data-objective-chip aria-live="polite">
         <p class="eyebrow">AI 윤리의 섬</p>
         <h1>알고리즘의 신전</h1>
         <p data-objective>사당을 찾아 윤리 조각을 모으세요.</p>
@@ -385,6 +385,7 @@ function bindUi(root) {
   return {
     root,
     objective: root.querySelector('[data-objective]'),
+    objectiveChip: root.querySelector('[data-objective-chip]'),
     fragmentCount: root.querySelector('[data-fragment-count]'),
     coreStatus: root.querySelector('[data-core-status]'),
     fragmentRow: root.querySelector('[data-fragment-row]'),
@@ -2281,6 +2282,31 @@ function finishPrologueCinematic(game, ui) {
   }, 720);
   // 다음 프레임부터 플레이어 추종이 이어받도록 즉시 스냅(활공 방지).
   snapCamera(game.renderState.camera, game.player.position);
+  playFirstControlBeat(game, ui);
+}
+
+// 첫 조작 넘겨받기 비트(R-루프1) — 수동 시네마틱이 끝나고 '이제 네 차례'가
+// 밋밋하지 않게, 도트가 반짝이며 첫 목표로 시선을 끄는 보상 순간을 만든다.
+// 첫 플레이(prologueSeen 전환 직후)에만 한 번 — 재방문 세이브에서는 뜨지 않는다.
+let firstControlBeatDone = false;
+function playFirstControlBeat(game, ui) {
+  if (firstControlBeatDone) {
+    return;
+  }
+  firstControlBeatDone = true;
+  game.audio?.playCollect();
+  // 동행 도트 위치에 반짝임 버스트.
+  const dot = game.renderState?.companion;
+  if (dot) {
+    celebrate(game, dot.position.clone(), '#ffe08a', 'collect');
+  }
+  // 목표 칩에 한 번짜리 주의 펄스 — 첫 목표(가까운 사당/NPC)로 눈이 가게.
+  if (ui.objectiveChip) {
+    ui.objectiveChip.classList.remove('pulse-attn');
+    void ui.objectiveChip.offsetWidth; // 리플로우로 애니메이션 재시작
+    ui.objectiveChip.classList.add('pulse-attn');
+  }
+  flashCombatPopup(ui, '✨ 이제 네 차례야, 수호자!', 'match');
 }
 
 // AI 코어를 완성하면 수료증(엔딩)을 띄운다.
