@@ -2149,6 +2149,25 @@ function setupTitleScreen(game, ui) {
   const summary = getProgressSummary(game.progress.collectedFragments);
   const hasProgress = summary.collected > 0 || game.progress.visitedTopics.length > 0;
 
+  // 복귀 훅(R-루프9) — 진행 중인 세이브가 있으면 지금까지의 성취를 짧게 되짚어 준다.
+  // 스트릭 압박이 아니라 '내가 쌓은 것'을 반갑게 상기시키는 재참여(정보형).
+  if (hasProgress) {
+    const bottles = (game.progress.knowledgeBottles ?? []).length;
+    const isles = ['whisper-cape', 'echo-cave', 'hourglass-port', 'memory-outer', 'memory-core']
+      .filter((id) => game.progress.stages?.[id]?.completed === true).length;
+    const bits = [`💠 윤리 조각 ${summary.collected}/${summary.total}`];
+    if (bottles > 0) {
+      bits.push(`🍾 유리병 ${bottles}/${KNOWLEDGE_BOTTLES.length}`);
+    }
+    if (isles > 0) {
+      bits.push(`🌊 치유한 섬 ${isles}`);
+    }
+    const recap = document.createElement('p');
+    recap.className = 'title-recap';
+    recap.innerHTML = `<strong>다시 온 걸 환영해, 수호자!</strong> 지금까지 — ${bits.join(' · ')}`;
+    ui.titleActions.appendChild(recap);
+  }
+
   const startButton = document.createElement('button');
   startButton.type = 'button';
   startButton.className = 'title-start';
