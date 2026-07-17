@@ -893,6 +893,8 @@ function createKnowledgeBottles(renderState, progress) {
     note.position.y = 0.36;
     g.add(glass, cork, note);
     g.position.set(bottle.pos[0], 0, bottle.pos[1]);
+    g.userData.glass = glass; // 근접 반짝임에 쓰는 발광 유리 참조(R-루프8)
+    g.userData.note = note;
     scene.add(g);
     meshes.set(bottle.id, g);
     renderState.interactables.push({
@@ -905,10 +907,24 @@ function createKnowledgeBottles(renderState, progress) {
   renderState.bottleMeshes = meshes;
   renderState.animated.push({
     update: (elapsed) => {
+      // 근접 반짝임(R-루프8) — 플레이어가 가까울수록 유리가 밝아지고 빠르게 반짝인다.
+      // '찾는 재미'(getting-warmer)를 결정적으로 준다(위치 기반, 랜덤 없음).
+      const player = renderState.game?.player?.position;
       let i = 0;
       for (const mesh of meshes.values()) {
-        mesh.position.y = Math.sin(elapsed * 1.9 + i * 1.3) * 0.06;
-        mesh.rotation.y = elapsed * 0.8 + i;
+        const near = player ? Math.max(0, 1 - Math.hypot(mesh.position.x - player.x, mesh.position.z - player.z) / 6) : 0;
+        const bobHz = 1.9 + near * 3.4;
+        mesh.position.y = Math.sin(elapsed * bobHz + i * 1.3) * (0.06 + near * 0.05);
+        mesh.rotation.y = elapsed * (0.8 + near * 1.6) + i;
+        const glass = mesh.userData.glass;
+        if (glass) {
+          const pulse = 0.5 + near * (1.2 + Math.sin(elapsed * 8) * 0.5 * near);
+          glass.material.emissiveIntensity = pulse;
+        }
+        if (mesh.userData.note) {
+          const s = 1 + near * 0.5;
+          mesh.userData.note.scale.setScalar(s);
+        }
         i += 1;
       }
     }
@@ -3415,6 +3431,8 @@ function interact(game, ui) {
       game.audio?.playCollect();
       celebrate(game, new THREE.Vector3(bottle.pos[0], 1.0, bottle.pos[1]), '#8fe0ff', 'collect');
       const count = game.progress.knowledgeBottles.length;
+      // 수집 카운터 주스(R-루프8) — 진행이 쌓이는 손맛을 화면에 크게 띄운다.
+      flashCombatPopup(ui, `🍾 지식의 유리병 ${count}/${KNOWLEDGE_BOTTLES.length}`, count === KNOWLEDGE_BOTTLES.length ? 'win' : 'match');
       ui.dialogKicker.textContent = `🍾 지식의 유리병 ${count}/${KNOWLEDGE_BOTTLES.length}`;
       ui.dialogTitle.textContent = '유리병 속 쪽지';
       ui.dialogBody.innerHTML = speechHtml([
