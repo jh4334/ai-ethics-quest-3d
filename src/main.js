@@ -433,6 +433,18 @@ function bindUi(root) {
   };
 }
 
+// 햅틱(R-루프3) — 터치 기기에서 보상 순간에 짧은 진동으로 손맛을 더한다.
+// 소리와 별개 채널이라 음소거와 무관하고, 미지원 기기에선 조용히 무시(게임플레이 무영향).
+function triggerHaptic(pattern) {
+  if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+    try {
+      navigator.vibrate(pattern);
+    } catch {
+      // 일부 브라우저는 사용자 제스처 밖 호출을 막는다 — 무시.
+    }
+  }
+}
+
 function triggerFlash(ui, colorHex) {
   if (!ui.flash) {
     return;
@@ -1868,9 +1880,17 @@ function createSmallTree(scene, position, variant, animated) {
   return leaves;
 }
 
-function createPlayer({ playerGroup }) {
-  playerGroup.add(createPlayerCharacter());
+function createPlayer(renderState) {
+  const { playerGroup } = renderState;
+  const character = createPlayerCharacter();
+  playerGroup.add(character);
   playerGroup.position.copy(PLAYER_START);
+  // 발밑 블롭 그림자 참조 저장 — 착지 스쿼시(지면 접촉감)에 쓴다(신규 오브젝트 0).
+  character.traverse((child) => {
+    if (child.geometry?.type === 'CircleGeometry') {
+      renderState.playerShadow = child;
+    }
+  });
 }
 
 function createLabelSprite(text, color) {
@@ -2359,8 +2379,10 @@ function celebrate(game, worldPosition, colorHex, kind) {
   triggerFlash(game.ui, colorHex);
   if (kind === 'core') {
     game.audio?.playCoreAwaken();
+    triggerHaptic([30, 40, 60]); // 코어 각성 — 리듬감 있는 강한 진동
   } else {
     game.audio?.playCollect();
+    triggerHaptic(25); // 획득 — 짧고 경쾌하게
   }
 }
 
@@ -2469,6 +2491,15 @@ function updatePlayer(delta, game, playerGroup) {
   playerGroup.position.lerp(game.player.position, 0.82);
   const hop = moving ? Math.abs(Math.sin(game.player.bob)) * 0.12 : Math.sin(game.player.bob) * 0.03;
   playerGroup.position.y = game.player.position.y + hop;
+  // 발밑 그림자 착지 스쿼시(R-루프3) — 발이 뜨면 작고 옅게, 디디면 크고 진하게.
+  // 지면 접촉감을 신규 오브젝트 없이 준다(hop이 클수록 발이 떠 있음).
+  const shadow = game.renderState?.playerShadow;
+  if (shadow) {
+    const lift = moving ? Math.abs(Math.sin(game.player.bob)) : 0;
+    const s = 1.12 - lift * 0.34;
+    shadow.scale.set(s, s, 1);
+    shadow.material.opacity = 0.26 - lift * 0.12;
+  }
 }
 
 function clampToIsland(position) {
@@ -2564,6 +2595,7 @@ function showItemCeremony(game, ui, { emoji, title, subtitle = '', color = '#ffd
   void ui.ceremony.offsetWidth; // 리플로우로 애니메이션 재시작
   ui.ceremony.classList.add('is-on');
   game.audio?.playFanfare?.();
+  triggerHaptic([20, 30, 20, 30, 50]); // 획득 의식 — 팡파레에 맞춘 상승 진동
   ceremonyTimer = window.setTimeout(() => {
     ui.ceremony.classList.remove('is-on');
     ui.ceremony.hidden = true;
@@ -2590,6 +2622,10 @@ function flashCombatPopup(ui, text, kind) {
   ui.combatPopup.classList.remove('pop');
   void ui.combatPopup.offsetWidth; // 리플로우로 애니메이션 재시작
   ui.combatPopup.classList.add('pop');
+  // 성공(일치·튕김·명중)엔 가벼운 진동, 실패엔 무진동(무처벌 원칙 — 실수를 벌하지 않는다).
+  if (kind === 'match' || kind === 'hit' || kind === 'win') {
+    triggerHaptic(kind === 'win' ? [40, 40, 80] : 18);
+  }
 }
 
 function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates, zoneAuras, novaMailGlow, lighthouseBeams }, game) {
