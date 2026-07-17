@@ -963,8 +963,16 @@ button:disabled {
     flex: 0 0 auto;
   }
 
+  /* 좁은 화면에선 코어 상태를 평소 숨기되, 목표 구배가 살아나는 순간
+     (하나 남음·열림)엔 되살려 기대를 끌어올린다(R-루프2). */
   .status-strip [data-core-status] {
     display: none;
+  }
+
+  .status-strip [data-core-status][data-core-state="close"],
+  .status-strip [data-core-status][data-core-state="open"] {
+    display: inline;
+    font-weight: 800;
   }
 
   .status-strip strong {

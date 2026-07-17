@@ -246,6 +246,7 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
   if (typeof window !== 'undefined' && window.__ETHICS_TEST_HOOK__) {
     window.__ethicsGame = game;
     window.__ethicsUi = ui;
+    window.__ethicsRefreshHud = () => updateHud(game, ui); // 테스트: 진행 주입 후 HUD 재계산
   }
 
   return {
@@ -6050,11 +6051,27 @@ function updateHud(game, ui) {
   game.beaconCount = getStageStates(game.progress).filter((s) => s.state === 'completed').length;
   ui.objective.textContent = getStoryObjective(game.progress);
   ui.fragmentCount.textContent = `조각 ${summary.collected}/${summary.total}`;
-  ui.coreStatus.textContent = game.progress.aiCoreCompleted
-    ? 'AI 코어 완료'
-    : summary.finalCoreUnlocked
-      ? 'AI 코어 열림'
-      : 'AI 코어 잠김';
+  // 목표 구배 가시화(R-루프2): 코어 개방 임계(3조각)까지 남은 거리를 생생하게 —
+  // 하나 남았을 땐 '하나면 열려!'로 기대를 끌어올리고, 열리면 '중앙으로!'로 다음 행동을 가리킨다.
+  const remainingToUnlock = Math.max(0, 3 - summary.collected);
+  let coreState = 'locked';
+  let coreText = 'AI 코어 잠김';
+  if (game.progress.aiCoreCompleted) {
+    coreState = 'done';
+    coreText = 'AI 코어 완료 ✓';
+  } else if (summary.finalCoreUnlocked) {
+    coreState = 'open';
+    coreText = '🔓 AI 코어 열림 — 중앙으로!';
+  } else if (remainingToUnlock === 1) {
+    coreState = 'close';
+    coreText = '✨ 조각 하나면 코어가 열려!';
+  } else {
+    coreText = `AI 코어 잠김 · 조각 ${remainingToUnlock}개 더`;
+  }
+  ui.coreStatus.textContent = coreText;
+  if (ui.coreStatus) {
+    ui.coreStatus.dataset.coreState = coreState;
+  }
   ui.fragmentRow.innerHTML = ETHICS_TOPICS.map((topic) => {
     const collected = summary.collectedTopicIds.includes(topic.id);
     return `<span class="fragment-dot" style="--topic-color:${topic.color}" data-collected="${collected}" title="${topic.fragmentKo}">${topic.titleKo}</span>`;
