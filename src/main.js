@@ -2375,6 +2375,27 @@ function showCertificate(game, ui) {
 }
 
 // 조각을 얻거나 코어가 각성할 때: 파티클·빛기둥·화면 반짝·효과음을 한 번에.
+// 코어 각성 에스컬레이션(R-루프7) — 마지막 조각으로 코어가 열리는 절정을 스펙터클로 착지.
+// 파티클 한 번 대신 점증하는 버스트·플래시·흔들림·진동으로 '큰 순간'을 만든다.
+function triggerCoreAwakening(game, ui) {
+  const corePos = new THREE.Vector3(0, 1.7, 0);
+  const palette = ['#7cf0ff', '#bff6ff', '#ffffff', '#8fe0ff'];
+  celebrate(game, corePos, '#7cf0ff', 'core');
+  addShake(game, 0.3);
+  triggerHaptic([40, 60, 40, 80, 120]);
+  // 점점 커지는 3연속 버스트 — 절정을 향해 쌓아 올린다.
+  [340, 640, 980].forEach((ms, i) => {
+    window.setTimeout(() => {
+      if (!game.renderState) {
+        return;
+      }
+      celebrate(game, corePos.clone().setY(1.7 + i * 0.7), palette[i % palette.length], i === 2 ? 'core' : 'collect');
+      addShake(game, 0.18 + i * 0.08);
+    }, ms);
+  });
+  window.setTimeout(() => flashCombatPopup(ui, '✨ AI 코어가 깨어난다!', 'win'), 1000);
+}
+
 function celebrate(game, worldPosition, colorHex, kind) {
   game.renderState?.burst?.spawn(worldPosition, colorHex);
   triggerFlash(game.ui, colorHex);
@@ -3530,7 +3551,8 @@ function openGateDialog(game, ui, topicId) {
             ui.dialogBody.innerHTML += `<div class="gate-resolve">${speechHtml(outcome.resolveKo)}<p class="quest-hint">${getStoryObjective(game.progress)}</p>${teaser}</div>`;
           }, 500);
           if (!before && canUnlockFinalCore(game.progress.collectedFragments)) {
-            window.setTimeout(() => celebrate(game, new THREE.Vector3(0, 1.6, 0), '#7cf0ff', 'core'), 900);
+            // 마지막 조각으로 코어가 열리는 절정 — 점증 스펙터클로 착지(R-루프7).
+            window.setTimeout(() => triggerCoreAwakening(game, ui), 900);
           }
         } else {
           game.audio?.playWrong();
