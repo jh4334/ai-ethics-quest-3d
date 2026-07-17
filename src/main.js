@@ -4796,7 +4796,18 @@ function updateIsle(delta, game, ui) {
     for (const event of events) {
       if (event === 'fired') {
         game.audio?.playNoiseGroan();
+      } else if (event === 'deflected-perfect') {
+        // 완벽 반사(숙련 보상) — 더 밝은 연출·강한 진동·연속 카운트.
+        isle.perfectStreak = (isle.perfectStreak ?? 0) + 1;
+        game.audio?.playCorrect();
+        game.audio?.playCollect();
+        celebrate(game, new THREE.Vector3(game.player.position.x, 1.4, game.player.position.z), '#ffe066', 'collect');
+        addShake(game, 0.18);
+        triggerHaptic([15, 25, 40]);
+        const streak = isle.perfectStreak > 1 ? ` (${isle.perfectStreak}연속!)` : '';
+        flashCombatPopup(ui, `🌟 완벽 반사!${streak}`, 'win');
       } else if (event === 'deflected') {
+        isle.perfectStreak = 0;
         game.audio?.playCorrect();
         flashCombatPopup(ui, '🛡️ 반사! 화살이 주인에게 돌아간다', 'match');
       } else if (event === 'hit') {
