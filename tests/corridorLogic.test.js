@@ -40,6 +40,26 @@ test('가드 반사: 화살이 주인에게 돌아가 발사대를 부순다', (
   assert.equal(state.broken.e1, true);
 });
 
+test('완벽 반사(숙련 보상): 마지막 순간(perfectRange 안)에 되받으면 deflected-perfect', () => {
+  // 가드를 항상 켜면 deflectRange(1.35)에서 바로 되받아 일반 'deflected'가 난다.
+  const early = createCorridorState();
+  const earlyEvents = run(early, 8, PLAYER, true);
+  assert.ok(earlyEvents.includes('deflected'));
+  assert.ok(!earlyEvents.includes('deflected-perfect'), '넉넉한 거리 반사는 완벽이 아니다');
+
+  // 화살이 perfectRange(0.78) 안에 들어왔을 때만 가드 → 완벽 반사.
+  const late = createCorridorState();
+  const events = [];
+  for (let i = 0; i < Math.round(8 / DT); i += 1) {
+    const arrow = late.arrow;
+    const dist = arrow ? Math.hypot(arrow.x - PLAYER.x, arrow.z - PLAYER.z) : Infinity;
+    const guardNow = dist < CORRIDOR.perfectRange;
+    events.push(...stepCorridor(late, DT, PLAYER, guardNow));
+    if (events.includes('deflected-perfect')) break;
+  }
+  assert.ok(events.includes('deflected-perfect'), '마지막 순간 반사는 완벽');
+});
+
 test('세 발사대를 모두 부수면 cleared', () => {
   const state = createCorridorState();
   const events = run(state, 40, PLAYER, true);

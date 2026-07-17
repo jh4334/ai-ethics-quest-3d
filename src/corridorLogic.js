@@ -12,6 +12,7 @@ export const CORRIDOR = {
   fireDelay: 1.6, // 도전 시작·재장전 대기(초)
   arrowSpeed: 6.0, // 화살 속도(유닛/초)
   deflectRange: 1.35, // 가드 성공 판정 거리
+  perfectRange: 0.78, // 이보다 가까이서 되받으면 '완벽 반사'(마지막 순간 타이밍 — 숙련 보상)
   hitRange: 0.6, // 놓침(스침) 판정 거리
   fieldRadius: 22 // 이 밖으로 날아간 화살은 빗나감 처리
 };
@@ -88,7 +89,8 @@ export function stepCorridor(state, dt, player, guardActive) {
     arrow.returning = true;
     arrow.dx = -arrow.dx;
     arrow.dz = -arrow.dz;
-    events.push('deflected');
+    // 마지막 순간(아주 가까이)에 되받으면 '완벽' — 숙련 보상(둘 다 성공, 벌점 없음).
+    events.push(playerDistance < CORRIDOR.perfectRange ? 'deflected-perfect' : 'deflected');
     return events;
   }
   if (playerDistance < CORRIDOR.hitRange) {
