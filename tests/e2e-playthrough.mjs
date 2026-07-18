@@ -359,7 +359,7 @@ try {
     overworldHidden: !window.__ethicsGame.renderState.overworld.visible,
     islands: window.__ethicsGame.voyage?.built.islands.length ?? 0,
     dest: window.__ethicsGame.voyage?.dest?.id,
-    bridge: !window.__ethicsUi.dialog.hidden && (window.__ethicsUi.dialogBody?.innerText ?? '').includes('찌꺼기'),
+    bridge: !window.__ethicsUi.dialog.hidden && (window.__ethicsUi.dialogBody?.innerText ?? '').includes('네 친구가 남긴 잡음'),
     introSeen: window.__ethicsGame.progress.voyageIntroSeen === true
   }));
   check(sail.mode === 'voyage' && sail.overworldHidden && sail.islands === 6, `항해 진입(섬 실루엣 ${sail.islands}개, 오버월드 숨김)`);

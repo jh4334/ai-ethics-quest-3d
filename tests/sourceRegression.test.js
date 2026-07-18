@@ -784,3 +784,11 @@ test('twist(N4): 반전 공개·선택 재무게·보스 파편 강탈이 배선
   assert.match(mainSource, /빼앗긴 기억 파편을 되찾았다/);
   assert.match(cssSource, /\.finale-revelation/);
 });
+
+test('coherence(N5): 항해 브리지·노바 편지가 반전과 정합한다', () => {
+  // 출항 브리지: 잡음의 소유가 '내 친구가 남긴 것'으로 연결된다(3줄 압축).
+  assert.match(mainSource, /네 친구가 남긴 잡음이니까/);
+  // 노바 편지: 첫 편지의 수신인이 재회 관계("첫 선생님")로, 마지막 편지에 반전 회고.
+  assert.match(mainSource, /나의 첫 선생님에게/);
+  assert.match(mainSource, /다시 만난 날 네가 보여준 것들로, 나는 별이 됐어/);
+});
