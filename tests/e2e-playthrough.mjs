@@ -207,6 +207,22 @@ try {
   check(await solved(), '편향: 프리셋 중복을 되집어 4색 완성');
   await collect();
 
+  // ── N3-1: 가짜 도트 유인(도구 정확히 2개 · 미해결 사당 접근) ──
+  const shrine3 = await interactable('shrine', 'shrineId', 'copyright-shrine');
+  await tp(shrine3.x, shrine3.z + 1.4); await p.waitForTimeout(1300);
+  const lureShown = await p.evaluate(() =>
+    !window.__ethicsUi.dialog.hidden && window.__ethicsUi.dialogBody.textContent.includes('등대 뒤에'));
+  check(lureShown, '가짜 도트 유인 조우 발동(도구 2개 시점)');
+  await p.evaluate(() => { window.__ethicsUi.dialogBody.querySelector('[data-fakedot-choice="verify"]')?.click(); });
+  await p.waitForTimeout(400);
+  const lureResult = await p.evaluate(() => ({
+    txt: window.__ethicsUi.dialogBody.textContent,
+    rec: window.__ethicsGame.progress.fakeDotEvents
+  }));
+  check(lureResult.txt.includes('가짜였다') && lureResult.rec.includes('fake-dot-lure:verify'),
+    '되묻기(말버릇 단서)로 가짜 판별 + 선택 기록');
+  await closeDlg();
+
   // ③ 저작권(이름표)
   check(await enterDungeon('copyright'), '저작권 던전 진입');
   const putPlate = async (plate, exhibit) => { await at(plate); await at(exhibit, 0, 0.7); };
@@ -257,8 +273,17 @@ try {
   }
   check((await st()).frags.length === 4, '윤리 조각 4개(관문 4곳 해결)');
 
-  // ── 보스 4페이즈 → 가르침 → 증명서 ─────────────────
+  // ── N3-2: 가짜 도트 만류(도구 4개 · 코어 앞) ──
   await closeDlg();
+  await tp(0, 2.2); await p.waitForTimeout(1300);
+  const pleaShown = await p.evaluate(() =>
+    !window.__ethicsUi.dialog.hidden && window.__ethicsUi.dialogBody.textContent.includes('코어를 열면 안 돼'));
+  check(pleaShown, '가짜 도트 만류 조우 발동(코어 앞)');
+  await p.evaluate(() => { window.__ethicsUi.dialogBody.querySelector('[data-fakedot-choice="verify"]')?.click(); });
+  await p.waitForTimeout(400);
+  await closeDlg();
+
+  // ── 보스 4페이즈 → 가르침 → 증명서 ─────────────────
   let bossStarted = false;
   for (let i = 0; i < 4 && !bossStarted; i += 1) {
     await tp(0, 2.2); await p.waitForTimeout(1000); await A(800);

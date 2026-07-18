@@ -58,6 +58,96 @@ export const MEMORY_FRAGMENTS = {
 // 네 번째 파편까지 모이면 붙는 예고 — 반전의 완성은 코어에서.
 export const FINAL_MEMORY_TEASE = '…파편들이 서로를 끌어당긴다. 나머지 기억은, 섬 중앙의 코어가 쥐고 있다.';
 
+// 가짜 도트(N3) — 딥페이크를 '지식'이 아니라 '당해보는 경험'으로.
+// 결정적 스크립트 2회. 어떤 선택이든 벌점 없이 진행되지만(무처벌),
+// 속으면 '속았다'는 경험 자체가 남는다. 판별 단서는 말버릇(간식·막지 않는 성격).
+export const FAKE_DOT_EVENTS = {
+  'fake-dot-lure': {
+    titleKo: '도트…?',
+    kickerKo: '✨ 도트…?',
+    linesKo: [
+      '"찾았다! 이쪽이야!" — 도트가 저만치서 손짓한다. 그런데… 방금까지 내 옆에 있지 않았나?',
+      '"사당은 나중에! 등대 뒤에 네 기억 조각이 통째로 떨어져 있는 걸 봤어! 빨리!"'
+    ],
+    options: [
+      {
+        id: 'follow',
+        textKo: '말대로 등대 뒤로 달려간다',
+        fooled: true,
+        resultKo: [
+          '등대 뒤엔 아무것도 없다. 파도 소리 사이로 웃음이 잡음처럼 번진다 — "낄낄. 목소리 하나면, 다들 믿는구나."'
+        ]
+      },
+      {
+        id: 'verify',
+        textKo: '되묻는다 — "…너 아까부터 간식 얘기를 한 번도 안 하네?"',
+        fooled: false,
+        resultKo: [
+          '"간식…? 그, 그건…" 목소리가 지지직 일그러지더니 회색 안개로 흩어진다. 가짜였다!'
+        ]
+      }
+    ],
+    epilogueKo: [
+      '"난 그런 말 한 적 없어! 방금 그건 내 목소리를 훔친 잡음이야."',
+      '"진짜 같은 목소리일수록 한 번 되물어 봐. 진짜 나는… 간식 얘기를 못 참거든."'
+    ]
+  },
+  'fake-dot-plea': {
+    titleKo: '길을 막는 도트',
+    kickerKo: '✨ 도트…?',
+    linesKo: [
+      '코어 앞. 도트가 길을 막아선다. "멈춰!! 코어를 열면 안 돼!"',
+      '"기억이 널 해칠 거야. 전부 잊은 채로… 그냥 여기서 같이 살자. 응?"',
+      '…목소리는 도트인데, 픽셀 날개가 회색으로 깜빡인다.'
+    ],
+    options: [
+      {
+        id: 'stop',
+        textKo: '걸음을 멈춘다',
+        fooled: true,
+        resultKo: [
+          '멈춰 선 사이, 진짜 도트가 날아와 소리친다. "속지 마! 그건 네 목소리 도둑이야!" 가짜가 안개로 흩어진다.'
+        ]
+      },
+      {
+        id: 'verify',
+        textKo: '"넌 누구야. 진짜 도트는 내 기억을 막지 않아."',
+        fooled: false,
+        resultKo: [
+          '가짜가 조용히 웃는다. "……눈치챘구나. 그래도, 마지막 부탁이야. …오지 마." 안개로 흩어진다.'
+        ]
+      }
+    ],
+    epilogueKo: [
+      '도트: "괜찮아? …방금 그 목소리, 잡음이 낸 거야. 왜 저렇게까지 널 막으려는 걸까."',
+      '"코어에 남은 마지막 기억… 이제 정말 코앞이야."'
+    ]
+  }
+};
+
+// 지금 발동해야 할 가짜 도트 조우(없으면 null). 도구 2개 = 유인, 4개 = 만류(코어 앞).
+export function pendingFakeDotEvent(progress) {
+  const seen = progress.fakeDotEvents ?? [];
+  const tools = (progress.tools ?? []).length;
+  const has = (id) => seen.some((entry) => entry === id || entry.startsWith(`${id}:`));
+  if (tools === 2 && !has('fake-dot-lure')) {
+    return 'fake-dot-lure';
+  }
+  if (tools >= 4 && !progress.aiCoreCompleted && !has('fake-dot-plea')) {
+    return 'fake-dot-plea';
+  }
+  return null;
+}
+
+// 조우 결과 기록(선택 포함) — 스키마는 필드 추가만(fakeDotEvents).
+export function recordFakeDotEvent(progress, eventId, choiceId) {
+  const entry = `${eventId}:${choiceId}`;
+  return {
+    ...progress,
+    fakeDotEvents: [...new Set([...(progress.fakeDotEvents ?? []), entry])]
+  };
+}
+
 export const QUESTS = {
   privacy: {
     topicId: 'privacy',

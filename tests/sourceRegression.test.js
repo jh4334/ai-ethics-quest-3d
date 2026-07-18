@@ -752,3 +752,18 @@ test('erosion-pushback(N2): 안개 압력 — 미해결 구역 안개 심화 + N
   assert.match(mainSource, /Math\.min\(0\.58, 0\.36 \+ fogPressure \* 0\.055\)/);
   assert.match(mainSource, /14 \+ fogPressure \* 3/);
 });
+
+test('fake-dot(N3): 가짜 도트 조우 — 결정적 트리거·선택 기록·무한 재발동 방지', () => {
+  const storySource = readFileSync(new URL('../src/story.js', import.meta.url), 'utf8');
+  const worldSrc = readFileSync(new URL('../src/worldData.js', import.meta.url), 'utf8');
+  // 순수 데이터·로직은 story.js에(테스트 가능), 스키마는 필드 추가만.
+  assert.match(storySource, /export const FAKE_DOT_EVENTS/);
+  assert.match(storySource, /export function pendingFakeDotEvent/);
+  assert.match(worldSrc, /fakeDotEvents: \[\.\.\.new Set\(stringArray\(candidate\.fakeDotEvents\)\)\]/);
+  // 표현: 오버월드 업데이트에서 위치 트리거, 열리는 즉시 seen 기록(재발동 방지).
+  assert.match(mainSource, /function maybeTriggerFakeDot/);
+  assert.match(mainSource, /maybeTriggerFakeDot\(game, ui\);/);
+  assert.match(mainSource, /recordFakeDotEvent\(game\.progress, eventId, 'seen'\)/);
+  // 판별 단서는 말버릇(간식) — 딥페이크 판별법이 경험으로 남는다.
+  assert.match(storySource, /간식 얘기를 못 참거든/);
+});

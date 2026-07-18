@@ -67,7 +67,10 @@ import {
   getStoryVisualFlags,
   josaWaGwa,
   MEMORY_FRAGMENTS,
-  FINAL_MEMORY_TEASE
+  FINAL_MEMORY_TEASE,
+  FAKE_DOT_EVENTS,
+  pendingFakeDotEvent,
+  recordFakeDotEvent
 } from './story.js';
 import {
   ETHICS_TOPICS,
@@ -2495,6 +2498,7 @@ function updateGame(delta, game, renderState, ui) {
   updatePuzzle(delta, game, ui);
   updateInteractionIcons(game, renderState);
   updateNearestInteractable(game, renderState.interactables, ui);
+  maybeTriggerFakeDot(game, ui);
 }
 
 function updateCompanion(delta, game, renderState) {
@@ -2711,6 +2715,59 @@ function showMemoryFragment(game, ui, topicId) {
   if (whisper) {
     window.setTimeout(() => showNoiseWhisper(game, ui, whisper), 2400);
   }
+}
+
+// 가짜 도트(N3) — 결정적 위치 트리거. 유인(도구 2개): 미해결 사당 접근, 만류(도구 4개): 코어 접근.
+function maybeTriggerFakeDot(game, ui) {
+  if (!ui.dialog.hidden || game.paused || game.cinematic || game.combat?.active || game.puzzle?.active) {
+    return;
+  }
+  const eventId = pendingFakeDotEvent(game.progress);
+  if (!eventId) {
+    return;
+  }
+  if (eventId === 'fake-dot-lure') {
+    const solvedShrines = new Set(game.progress.completedShrines);
+    const nearUnsolved = game.renderState.interactables.some(
+      (it) => it.type === 'shrine' && !solvedShrines.has(it.shrineId) && game.player.position.distanceTo(it.position) < 6
+    );
+    if (!nearUnsolved) {
+      return;
+    }
+  } else if (Math.hypot(game.player.position.x, game.player.position.z) > CORE_RADIUS + 2) {
+    return;
+  }
+  openFakeDotDialog(game, ui, eventId);
+}
+
+// 가짜 도트 대화 — 어느 선택이든 진행은 계속된다(무처벌). 속으면 '속은 경험'이 남는다.
+function openFakeDotDialog(game, ui, eventId) {
+  const event = FAKE_DOT_EVENTS[eventId];
+  // 열리는 즉시 'seen' 기록 — 선택 없이 닫아도 같은 조우가 무한 재발동하지 않는다.
+  game.progress = recordFakeDotEvent(game.progress, eventId, 'seen');
+  persistProgress(game.progress);
+  ui.dialogKicker.textContent = event.kickerKo;
+  ui.dialogTitle.textContent = event.titleKo;
+  const options = event.options
+    .map((o) => `<button type="button" class="choice-button" data-fakedot-choice="${o.id}">${o.textKo}</button>`)
+    .join('');
+  ui.dialogBody.innerHTML = `${speechHtml(event.linesKo)}<div class="choice-list">${options}</div>`;
+  for (const button of ui.dialogBody.querySelectorAll('[data-fakedot-choice]')) {
+    button.addEventListener('click', () => {
+      const choice = event.options.find((o) => o.id === button.dataset.fakedotChoice);
+      game.progress = recordFakeDotEvent(game.progress, eventId, choice.id);
+      persistProgress(game.progress);
+      game.audio?.playNoiseGroan(); // 정체가 드러나는 순간 — 잡음이 신음하며 흩어진다.
+      const outcome = choice.fooled
+        ? `<p class="quest-hint">😵 진짜 같은 목소리에 속았다 — 다음엔 되물어 보자.</p>`
+        : `<p class="quest-hint">🔍 멈추고 확인해서 가짜를 꿰뚫어 봤다!</p>`;
+      ui.dialogBody.innerHTML = `${speechHtml(choice.resultKo)}${outcome}<div class="gate-resolve">${speechHtml(event.epilogueKo)}</div>`;
+      if (!choice.fooled) {
+        triggerHaptic('match');
+      }
+    });
+  }
+  openDialog(game, ui);
 }
 
 // 도구 획득 의식 공통 호출 — 던전 제단·사당 통과 두 경로가 같은 연출을 쓴다.
