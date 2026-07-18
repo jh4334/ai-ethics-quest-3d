@@ -2818,13 +2818,15 @@ function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates, zon
   // 구역 세계 상태: 미해결이면 구역별 오염, 해결되면 구역별 치유로 부드럽게 전환.
   if (zoneAuras) {
     const flags = getStoryVisualFlags(game.progress);
+    // 침식 반격(N2): 기억을 되찾을수록 안개가 저항한다 — 남은 구역의 안개가 짙어지고 더 사납게 지지직댄다.
+    const fogPressure = (game.progress.tools ?? []).length;
     for (const [topicId, aura] of zoneAuras.entries()) {
       const solved = flags.has(`${topicId}:solved`);
       aura.t += ((solved ? 1 : 0) - aura.t) * Math.min(1, delta * 2.5);
       const t = aura.t;
       const ease = t * t * (3 - 2 * t); // smoothstep
-      // 공유 노이즈 안개는 걷힌다.
-      aura.hazeDisc.material.opacity = 0.36 * (1 - ease);
+      // 공유 노이즈 안개는 걷힌다(해결 구역) — 미해결 구역은 압력만큼 무거워진다.
+      aura.hazeDisc.material.opacity = Math.min(0.58, 0.36 + fogPressure * 0.055) * (1 - ease);
       aura.haze.visible = aura.hazeDisc.material.opacity > 0.02;
       if (aura.haze.visible) {
         aura.pixels.forEach((cube, i) => {
@@ -2832,7 +2834,7 @@ function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates, zon
           const r = 1.4 + (i % 4) * 0.35;
           cube.position.set(Math.cos(a) * r, 1.2 + Math.sin(elapsed * 3 + i) * 0.5, Math.sin(a) * r);
           cube.rotation.x += delta * 2;
-          cube.visible = Math.sin(elapsed * 14 + i * 1.9) > -0.6; // 지지직 깜빡임
+          cube.visible = Math.sin(elapsed * (14 + fogPressure * 3) + i * 1.9) > -0.6; // 지지직 깜빡임(압력만큼 빠르게)
         });
       }
       if (aura.corruption) {
