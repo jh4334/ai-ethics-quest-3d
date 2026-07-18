@@ -287,6 +287,19 @@ export function getGateStatus(progress, topicId) {
   return 'ready';
 }
 
+// 침식 반격(N2) — 기억을 되찾을수록 안개가 저항한다. 도구 수가 곧 안개의 '압력'.
+export function fogPressure(progress) {
+  return (progress.tools ?? []).length;
+}
+
+// 압력 2 이상이면 미해결 구역 NPC의 망각이 눈에 띄게 깊어진다(각자의 말투로).
+const FOG_FORGET_LINES = {
+  privacy: '…이런. 오늘은 자네 얼굴까지 흐릿하구먼. 안개가 어제보다 무거워졌어.',
+  bias: '이상하군. 어제 읽어 준 책 제목이 재계산되지 않아… 안개 농도가, 계산 밖이야.',
+  copyright: '밤새 명판이 또 몇 개 지워졌네. 안개가… 서두르는 것 같아.',
+  deepfake: '방금 네 목소리를 떠올리려다… 잊었어. 안개는 목소리부터 가져가.'
+};
+
 // NPC와 대화했을 때 보여줄 내용.
 export function getNpcDialog(progress, topicId) {
   const quest = getQuest(topicId);
@@ -294,11 +307,13 @@ export function getNpcDialog(progress, topicId) {
   if (state.solved) {
     return { kind: 'closing', titleKo: quest.questTitleKo, linesKo: [quest.closingKo] };
   }
+  // 미해결 구역은 안개 압력이 오르면 망각의 말이 먼저 새어 나온다(세계가 시간 압박을 증언).
+  const forget = fogPressure(progress) >= 2 ? [FOG_FORGET_LINES[topicId]] : [];
   if (!state.talkedIntro) {
-    return { kind: 'intro', titleKo: quest.questTitleKo, linesKo: quest.introKo };
+    return { kind: 'intro', titleKo: quest.questTitleKo, linesKo: [...forget, ...quest.introKo] };
   }
   if (!hasTool(progress, quest.toolId)) {
-    return { kind: 'seek-tool', titleKo: quest.questTitleKo, linesKo: [quest.seekToolKo] };
+    return { kind: 'seek-tool', titleKo: quest.questTitleKo, linesKo: [...forget, quest.seekToolKo] };
   }
   return { kind: 'go-gate', titleKo: quest.questTitleKo, linesKo: [`이제 「${quest.gateLabelKo}」로 가서 도구를 써 보렴.`] };
 }
