@@ -153,7 +153,20 @@ try {
     return false;
   };
   const solved = () => p.evaluate(() => window.__ethicsGame.dungeon?.solved === true);
-  const collect = async () => { const ped = cw(4, 0); await tp(ped.x, ped.z + 0.4); await A(700); };
+  const collect = async () => {
+    const ped = cw(4, 0); await tp(ped.x, ped.z + 0.4); await A(700);
+    // 획득 의식(2.6초)은 회상보다 먼저 뜬다 — 사라지기 전에 여기서 잡아 둔다.
+    const ceremony = await p.evaluate(() =>
+      !window.__ethicsUi.ceremony.hidden && (window.__ethicsUi.ceremonyTitle.textContent ?? '').includes('획득')
+    );
+    // N1: 제단 획득 2.9초 뒤(의식이 걷힌 뒤) '기억 파편' 회상 대화가 자동으로 열린다.
+    const memory = await p
+      .waitForFunction(() => !window.__ethicsUi.dialog.hidden && window.__ethicsUi.dialog.classList.contains('memory-dialog'), { timeout: 6000 })
+      .then(() => true)
+      .catch(() => false);
+    await closeDlg();
+    return { ceremony, memory };
+  };
   const push = async (crateId, dirKey) => {
     const [dx, dz] = DIR[dirKey];
     await p.evaluate(([crateId, dx, dz]) => {
@@ -173,11 +186,15 @@ try {
   for (const d of ['W', 'W', 'W', 'N', 'N']) await push('p3', d);
   for (const d of ['E', 'E', 'N', 'N']) await push('p2', d);
   check(await solved(), '개인정보: 상자 11수 해결');
-  await collect();
-  const ceremonyShown = await p.evaluate(() =>
-    !window.__ethicsUi.ceremony.hidden && (window.__ethicsUi.ceremonyTitle.textContent ?? '').includes('획득')
-  );
-  check(ceremonyShown, '도구 획득 의식(데이터 캡슐·팡파레) 표시');
+  const firstCollect = await collect();
+  check(firstCollect.memory, '기억 파편 회상 자동 재생(잊혀진 수호자)');
+  check(firstCollect.ceremony, '도구 획득 의식(데이터 캡슐·팡파레) 표시');
+  // 회상 2.4초 뒤 노이즈의 속삭임 자막이 글리치로 스며든다(반전 복선).
+  const whispered = await p
+    .waitForFunction(() => { const w = window.__ethicsUi.noiseWhisper; return w && !w.hidden && w.textContent.length > 0; }, { timeout: 5000 })
+    .then(() => true)
+    .catch(() => false);
+  check(whispered, '노이즈 속삭임 자막 표시(도구 1개 시점)');
 
   // ② 편향(잡기·프리셋 중복 교정)
   check(await enterDungeon('bias'), '편향 던전 진입');
