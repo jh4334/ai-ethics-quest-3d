@@ -299,6 +299,10 @@ try {
     });
     await p.keyboard.press('e'); await p.waitForTimeout(300);
   }
+  // N4: 제압 직후 반전 공개(회상 완성)가 선택보다 먼저 나온다.
+  await p.waitForTimeout(1400);
+  const revelation = await p.evaluate(() => window.__ethicsUi.dialogBody.textContent.includes('그 아이는, 나였다'));
+  check(revelation, '반전 공개 — 회상 완성(아이=나, 빛=노이즈)');
   for (let i = 0; i < 25; i += 1) {
     if (await p.evaluate(() => window.__ethicsUi.certificate && !window.__ethicsUi.certificate.hidden)) break;
     await p.evaluate(() => {

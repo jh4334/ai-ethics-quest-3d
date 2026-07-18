@@ -35,6 +35,10 @@ test('finale offers exactly one wise (teach) and one unwise (erase) choice with 
   assert.equal(teach[0].id, 'teach');
   assert.ok(FINALE.eraseKo.length >= 1, 'erase branch gently refuses and re-asks');
   assert.ok(FINALE.rebirthKo.length >= 1 && FINALE.introKo.length >= 1);
+  // 반전 공개(N4): 회상 완성 비트가 존재하고, 지우기의 무게가 '내 친구·내 시간'으로 개인화된다.
+  assert.ok(FINALE.revelationKo.length >= 3, 'revelation completes the memory');
+  assert.match(FINALE.revelationKo.join(' '), /나였다/);
+  assert.match(FINALE.eraseKo.join(' '), /네 친구/);
 });
 
 test('tool steps follow story order and only include owned promise tools', () => {
