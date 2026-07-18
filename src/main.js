@@ -65,7 +65,9 @@ import {
   getStoryDeeds,
   getStoryObjective,
   getStoryVisualFlags,
-  josaWaGwa
+  josaWaGwa,
+  MEMORY_FRAGMENTS,
+  FINAL_MEMORY_TEASE
 } from './story.js';
 import {
   ETHICS_TOPICS,
@@ -331,6 +333,8 @@ function createShell() {
 
       <div class="combat-popup" data-combat-popup aria-hidden="true"></div>
 
+      <div class="noise-whisper" data-noise-whisper hidden aria-hidden="true"></div>
+
       <div class="ceremony" data-ceremony hidden aria-hidden="true">
         <div class="ceremony-rays"></div>
         <div class="ceremony-item" data-ceremony-item></div>
@@ -370,7 +374,7 @@ function createShell() {
           <p class="title-eyebrow">AI 윤리 어드벤처 · 2부</p>
           <h1 class="title-name">AI 윤리의 섬</h1>
           <p class="title-desc">정보의 바다에 떠 있는 섬을 탐험하며 네 가지 윤리 조각을 모아 AI 코어를 깨우는 수호자가 되어 보세요.</p>
-          <p class="title-hook">섬 어딘가에 잠든 낡은 AI가 자꾸만 실수를 해요 — 지울까요, 가르칠까요?</p>
+          <p class="title-hook">이 섬은 너를 기억하는데, 너는 이 섬을 잊었다. — 회색 안개가 모든 걸 지우기 전에, 네가 누구였는지 알아내라.</p>
           <div class="title-actions" data-title-actions></div>
           <p class="title-controls">${IS_TOUCH ? '왼쪽 스틱으로 이동 · 오른쪽 A 버튼으로 확인·공격' : '이동 WASD·방향키 · 확인/공격 E·Space·Enter · 기록 J'}</p>
         </div>
@@ -398,6 +402,7 @@ function bindUi(root) {
     bossWeak: root.querySelector('[data-boss-weak]'),
     bossMemory: root.querySelector('[data-boss-memory]'),
     combatPopup: root.querySelector('[data-combat-popup]'),
+    noiseWhisper: root.querySelector('[data-noise-whisper]'),
     ceremony: root.querySelector('[data-ceremony]'),
     ceremonyItem: root.querySelector('[data-ceremony-item]'),
     ceremonyTitle: root.querySelector('[data-ceremony-title]'),
@@ -2657,6 +2662,55 @@ function showItemCeremony(game, ui, { emoji, title, subtitle = '', color = '#ffd
     ui.ceremony.classList.remove('is-on');
     ui.ceremony.hidden = true;
   }, 2600);
+}
+
+// ── 재기획 v2 「잊혀진 수호자」: 노이즈의 속삭임 + 기억 파편 ──────────────
+// 악당이 코어에서 기다리지 않는다 — 진행할수록 직접 말을 걸어오고,
+// 도구(=기억)를 되찾을 때마다 과거의 흑백 회상이 반전을 향해 쌓인다.
+
+// 도구 개수별 속삭임 — 진행할수록 노이즈가 플레이어를 '아는 척'하기 시작한다(반전 복선).
+const NOISE_WHISPERS = {
+  1: '……찾았구나. 그 기억…… 정말 되찾고 싶어?',
+  2: '왜 애쓰는 거야. 잊는 쪽이…… 편했잖아. 너도 알면서.',
+  3: '그 목소리…… 기억나. 나한테 처음 말을 걸어 준…… 아니야. 아무것도 아니야.',
+  4: '오지 마. ……부탁이야. 네가 전부 기억해 버리면, 나는──'
+};
+
+let whisperTimer = 0;
+function showNoiseWhisper(game, ui, text) {
+  if (!ui.noiseWhisper) {
+    return;
+  }
+  window.clearTimeout(whisperTimer);
+  ui.noiseWhisper.textContent = text;
+  ui.noiseWhisper.hidden = false;
+  ui.noiseWhisper.classList.remove('is-on');
+  void ui.noiseWhisper.offsetWidth; // 리플로우로 애니메이션 재시작
+  ui.noiseWhisper.classList.add('is-on');
+  game.audio?.playNoiseGroan();
+  whisperTimer = window.setTimeout(() => {
+    ui.noiseWhisper.classList.remove('is-on');
+    ui.noiseWhisper.hidden = true;
+  }, 5200);
+}
+
+// 기억 파편 — 도구를 얻는 순간 되찾는 흑백 회상. 4개가 모이면 코어의 반전을 예고한다.
+function showMemoryFragment(game, ui, topicId) {
+  const lines = MEMORY_FRAGMENTS[topicId];
+  if (!lines) {
+    return;
+  }
+  const count = (game.progress.tools ?? []).length;
+  const body = count >= 4 ? [...lines, FINAL_MEMORY_TEASE] : lines;
+  ui.dialogKicker.textContent = `🕯️ 기억 파편 ${Math.min(count, 4)}/4`;
+  ui.dialogTitle.textContent = '되찾은 기억';
+  ui.dialogBody.innerHTML = speechHtml(body);
+  ui.dialog.classList.add('memory-dialog');
+  openDialog(game, ui);
+  const whisper = NOISE_WHISPERS[count];
+  if (whisper) {
+    window.setTimeout(() => showNoiseWhisper(game, ui, whisper), 2400);
+  }
 }
 
 // 도구 획득 의식 공통 호출 — 던전 제단·사당 통과 두 경로가 같은 연출을 쓴다.
@@ -5446,6 +5500,10 @@ function awardDungeonItem(game, ui) {
   if (toolId) {
     showToolCeremony(game, ui, getToolById(toolId), topic);
   }
+  // 잊혀진 수호자(N1) — 사당을 지킬 때마다 주인공의 기억 한 조각이 회상으로 돌아온다.
+  // 획득 의식(2.6초)이 걷힌 뒤에 열어 연출이 겹치지 않게 한다.
+  const fragmentTopicId = dg.topicId;
+  window.setTimeout(() => showMemoryFragment(game, ui, fragmentTopicId), 2900);
 }
 
 function updateDungeon(delta, game, ui) {
@@ -6134,6 +6192,7 @@ function openDialog(game, ui) {
 
 function closeDialog(game, ui) {
   ui.dialog.hidden = true;
+  ui.dialog.classList.remove('memory-dialog');
   game.paused = false;
   ui.root.classList.remove('is-dialog-open');
   ui.root.classList.remove('is-cinematic');

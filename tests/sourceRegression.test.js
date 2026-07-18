@@ -172,9 +172,9 @@ test('mastery(R-루프5): 완벽 반사 등급은 보너스만 — 실패 처벌
 
 test('curiosity(R-루프4): 콜드오픈 훅 + 조각 획득 뒤 다음 구역 예고', () => {
   const worldSrc = readFileSync(new URL('../src/worldData.js', import.meta.url), 'utf8');
-  // 타이틀 콜드오픈: 핵심 갈등('지울까 가르칠까')을 질문으로 심는다.
+  // 타이틀 콜드오픈: 잊혀진 수호자의 미스터리('네가 누구였는지')를 심는다.
   assert.match(mainSource, /title-hook/);
-  assert.match(mainSource, /지울까요, 가르칠까요/);
+  assert.match(mainSource, /네가 누구였는지 알아내라/);
   // 조각 획득 결말에 다음 구역 예고 훅 노출.
   assert.match(mainSource, /quest-teaser/);
   assert.match(mainSource, /topic\?\.teaserKo/);
@@ -719,4 +719,26 @@ test('mobile interaction prompt is positioned beside rather than under touch con
   const mobilePromptRule = cssSource.match(/@media \(pointer: coarse\), \(max-width: 760px\) \{[\s\S]*?\.interaction-prompt \{[\s\S]*?\}/)?.[0] ?? '';
   assert.match(mobilePromptRule, /right:\s*172px/);
   assert.match(mobilePromptRule, /transform:\s*none/);
+});
+
+test('story-v2(N1): 잊혀진 수호자 — 콜드오픈·기억 파편·잡음의 속삭임이 배선돼 있다', () => {
+  const storySource = readFileSync(new URL('../src/story.js', import.meta.url), 'utf8');
+  // 프롤로그 콜드오픈: 기억을 잃은 주인공(미스터리 훅)으로 시작한다.
+  assert.match(storySource, /내가 누구인지조차 기억나지 않는다/);
+  assert.match(storySource, /잊혀진 수호자/);
+  // 기억 파편: 사당 4주제 각각의 흑백 회상 + 마지막 파편의 코어 예고.
+  assert.match(storySource, /export const MEMORY_FRAGMENTS = \{/);
+  for (const key of ['privacy', 'bias', 'copyright', 'deepfake']) {
+    assert.match(storySource, new RegExp(`${key}: \\[`), `기억 파편 누락: ${key}`);
+  }
+  assert.match(storySource, /export const FINAL_MEMORY_TEASE/);
+  // 표현 계층: 제단 획득 → 기억 파편 회상 → 진행도별 노이즈 속삭임(반전 복선).
+  assert.match(mainSource, /const NOISE_WHISPERS = \{/);
+  assert.match(mainSource, /function showNoiseWhisper/);
+  assert.match(mainSource, /function showMemoryFragment/);
+  assert.match(mainSource, /showMemoryFragment\(game, ui, fragmentTopicId\)/);
+  // 회상 대화창 스타일은 닫을 때 반드시 벗겨야 다음 일반 대화가 오염되지 않는다.
+  assert.match(mainSource, /ui\.dialog\.classList\.remove\('memory-dialog'\)/);
+  assert.match(cssSource, /\.noise-whisper/);
+  assert.match(cssSource, /\.dialog-panel\.memory-dialog/);
 });
