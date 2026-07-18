@@ -5744,7 +5744,9 @@ function startBossFight(game, ui) {
     stun: 0,
     guard: 0, // 🛡️ 가드 자세 남은 시간(그 사이 파도가 닿으면 반사)
     guardCd: 0,
-    bellCd: 0 // 🔔 충격파 쿨다운
+    bellCd: 0, // 🔔 충격파 쿨다운
+    staggers: 0, // 피격 누적 — 3회면 노이즈가 기억 파편을 일시 강탈한다(N4)
+    fragmentStolen: false // 강탈 상태(진짜 세이브는 건드리지 않는다 — 승리 시 반환)
   };
   syncBossWeakColor(game);
   ui.root.classList.add('is-combat');
@@ -5931,6 +5933,16 @@ function staggerPlayer(game, ui) {
   game.audio?.playWrong();
   triggerFlash(ui, '#ff5f7e');
   addShake(game, 0.5);
+  // 파편 강탈(N4): 피격 3회 누적이면 노이즈가 기억 파편 하나를 움켜쥔다.
+  // 진짜 세이브(progress)는 건드리지 않는다 — 승리하면 그 자리에서 돌려받는다(무처벌 유지).
+  c.staggers += 1;
+  if (c.staggers >= 3 && !c.fragmentStolen) {
+    c.fragmentStolen = true;
+    flashCombatPopup(ui, '💔 기억 파편을 빼앗겼다!', 'stagger');
+    ui.bossHint.textContent = '노이즈가 기억 파편 하나를 움켜쥐었다 — 이겨서 되찾자!';
+    showNoiseWhisper(game, ui, '하나쯤은…… 돌려받아도 되잖아. 원래, 내 거였는데.');
+    return;
+  }
   flashCombatPopup(ui, '회피 실패!', 'stagger');
   ui.bossHint.textContent = '잡음에 맞았다! 잠깐 정신 차리는 중…';
 }
@@ -6074,6 +6086,10 @@ function winBossFight(game, ui) {
   addShake(game, 0.55);
   game.hitStop = 0.09;
   flashCombatPopup(ui, '제압!', 'win');
+  // 파편 강탈(N4) 반환 — 강탈은 전투 안의 일시 상태였고, 이기면 그 자리에서 돌려받는다.
+  if (c.fragmentStolen) {
+    window.setTimeout(() => flashCombatPopup(ui, '💠 빼앗긴 기억 파편을 되찾았다!', 'win'), 650);
+  }
   // 제압됨: 이후 대화를 닫아도 재전투가 아니라 선택 재개가 되도록 표시.
   game.finaleResolving = true;
   // 잡음을 다 걷어낸 뒤: 지울지 가르칠지 고르는 윤리적 선택으로 마무리(가르침→노바→증명서).
@@ -6126,6 +6142,16 @@ function runFinale(game, ui, opts = {}) {
     const topicColor = getTopicById(getToolById(step.toolId)?.topicId)?.color ?? '#7cf0ff';
     celebrate(game, new THREE.Vector3(0, 4.3, 0), topicColor, 'collect');
     game.audio?.playNoiseGroan(); // 노이즈가 도구에 밀려 신음하며 작아진다.
+    bindNav();
+  }
+
+  // 반전 공개(N4) — 제압 직후 마지막 파편이 회상을 완성한다: 아이=나, 빛=노이즈.
+  function renderRevelation() {
+    game.audio?.playNovaChime(); // 파편이 이어지는 맑은 울림
+    ui.dialogBody.innerHTML = `
+      <div class="finale-scene finale-revelation" data-noise="small">${lines(FINALE.revelationKo)}</div>
+      ${nav('그리고 —', 'data-finale="choice"')}
+    `;
     bindNav();
   }
 
@@ -6232,9 +6258,14 @@ function runFinale(game, ui, opts = {}) {
     });
   }
 
-  // 전투를 거쳐 왔으면 노이즈는 이미 등장·제압됐으니 바로 [지운다/가르친다] 선택부터.
+  // 전투를 거쳐 왔으면: 첫 진입엔 반전 공개(회상 완성) → 선택. 대화를 닫았다 다시 열면 선택부터.
   if (opts.fromCombat) {
-    renderChoice();
+    if (game.finaleRevealed) {
+      renderChoice();
+    } else {
+      game.finaleRevealed = true;
+      renderRevelation();
+    }
   } else {
     renderIntro();
   }

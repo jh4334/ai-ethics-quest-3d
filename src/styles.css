@@ -1527,6 +1527,18 @@ button:disabled {
   line-height: 1.6;
 }
 
+/* 반전 공개(N4) — 회상이 완성되는 장면은 기억 파편과 같은 세피아빛으로 물든다. */
+.finale-revelation {
+  padding: 10px 12px;
+  border-left: 3px solid rgba(232, 195, 122, 0.8);
+  background: linear-gradient(165deg, rgba(56, 44, 28, 0.55), rgba(28, 20, 14, 0.55));
+  border-radius: 8px;
+}
+
+.finale-revelation .finale-line {
+  color: #f0e2c8;
+}
+
 .finale-result {
   font-weight: 800;
   color: #21705f;
