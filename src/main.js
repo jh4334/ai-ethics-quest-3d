@@ -130,7 +130,7 @@ const STORAGE_KEY = 'ai-ethics-quest-3d/progress/h17-v4';
 const IS_TOUCH = typeof window !== 'undefined'
   && typeof window.matchMedia === 'function'
   && window.matchMedia('(pointer: coarse)').matches;
-const TOPIC_NAMES_KO = { privacy: '개인정보 마을', bias: '편향의 숲', copyright: '저작권 유적', deepfake: '딥페이크 동굴' };
+const TOPIC_NAMES_KO = { privacy: '빈 교실', bias: '지문 운동장', copyright: '기록 보관소', deepfake: '미디어 검증실' };
 
 const MOVE_HINT = IS_TOUCH
   ? '왼쪽 스틱 이동 · 오른쪽 A로 확인·공격'
@@ -642,8 +642,8 @@ function updateAmbient(delta, renderState) {
 
 function createWorld(renderState) {
   const { scene, interactables, shrineCrystals, animated } = renderState;
-  // 달빛 안개가 먼 지형을 층층이 감싸 군도의 깊이를 만든다.
-  scene.fog = new THREE.Fog(0x18213d, 44, 118);
+  // 1장 리뉴얼: 구름 위 학교를 감싸는 맑고 푸른 원근 안개.
+  scene.fog = new THREE.Fog(0xa9c8dd, 48, 128);
   renderState.overworldFog = scene.fog;
 
   // 사당 던전 진입 시 오버월드 전체를 한 번에 숨기려고 Group으로 감싼다.
@@ -653,11 +653,11 @@ function createWorld(renderState) {
 
   createSky(world, animated);
 
-  const hemiLight = new THREE.HemisphereLight(0x7086c4, 0x17172c, 1.25);
+  const hemiLight = new THREE.HemisphereLight(0xd8edff, 0x5e6655, 1.7);
   world.add(hemiLight);
 
-  const sun = new THREE.DirectionalLight(0xf4b860, 1.85);
-  sun.position.set(-16, 24, 11);
+  const sun = new THREE.DirectionalLight(0xffe2a8, 2.45);
+  sun.position.set(-21, 31, 18);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
   sun.shadow.camera.left = -31;
@@ -667,31 +667,32 @@ function createWorld(renderState) {
   sun.shadow.bias = -0.0004;
   world.add(sun);
 
-  // 반대쪽의 민트 림 라이트는 회복 가능한 오브젝트의 실루엣을 분리한다.
-  const rim = new THREE.DirectionalLight(0x7ad7b2, 0.62);
+  // 청색 림 라이트가 유리 행정동과 캠퍼스 가장자리를 하늘에서 분리한다.
+  const rim = new THREE.DirectionalLight(0x9ed8ff, 0.72);
   rim.position.set(11, 7, -12);
   world.add(rim);
 
   createStylizedWater(world, animated);
 
   const island = new THREE.Mesh(
-    new THREE.CylinderGeometry(22.9, 20.1, 0.92, 96),
-    new THREE.MeshStandardMaterial({ color: 0x86c26a, roughness: 0.92 })
+    new THREE.CylinderGeometry(22.9, 19.3, 1.35, 28),
+    new THREE.MeshStandardMaterial({ color: 0xc9c2a5, roughness: 0.96 })
   );
-  island.position.y = -0.18;
+  island.position.y = -0.48;
   island.receiveShadow = true;
   island.castShadow = true;
   world.add(island);
 
-  const beach = new THREE.Mesh(
-    new THREE.TorusGeometry(21.8, 0.5, 12, 144),
-    new THREE.MeshStandardMaterial({ color: 0xf0dc98, roughness: 0.85 })
+  const campusTop = new THREE.Mesh(
+    new THREE.CylinderGeometry(22.2, 22.7, 0.28, 28),
+    new THREE.MeshStandardMaterial({ color: 0xd8d0b6, roughness: 0.9 })
   );
-  beach.rotation.x = Math.PI / 2;
-  beach.position.y = 0.08;
-  world.add(beach);
+  campusTop.position.y = 0.08;
+  campusTop.receiveShadow = true;
+  world.add(campusTop);
 
-  createGrassField(world, animated);
+  createFloatingCampusBase(world);
+  createCampusGround(world);
 
   createAmbientLife(world, animated);
 
@@ -714,12 +715,12 @@ function createWorld(renderState) {
     createZoneAura(world, zone, zonePosition, renderState.zoneAuras, landmark);
   }
 
-  for (let i = 0; i < 48; i += 1) {
-    const angle = (i / 48) * Math.PI * 2;
-    const radius = 17.4 + (i % 4) * 0.95;
+  for (let i = 0; i < 22; i += 1) {
+    const angle = (i / 22) * Math.PI * 2;
+    const radius = 18.2 + (i % 3) * 1.15;
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
-    if (Math.abs(x) < 3.0 || Math.abs(z) < 3.0) {
+    if (z > 13 || (x > 8 && z < -8) || (x < -7 && z > -1 && z < 8)) {
       continue;
     }
     createSmallTree(world, new THREE.Vector3(x, 0, z), i % 3, animated);
@@ -727,16 +728,16 @@ function createWorld(renderState) {
 }
 
 function createSky(scene, animated) {
-  // 짙은 남색에서 안개 보라, 희미한 호박빛 수평선으로 이어지는 밤하늘.
+  // 참고 이미지의 맑은 오후: 짙은 하늘색에서 크림빛 구름 수평선으로 이어진다.
   const canvas = document.createElement('canvas');
   canvas.width = 16;
   canvas.height = 256;
   const ctx = canvas.getContext('2d');
   const gradient = ctx.createLinearGradient(0, 0, 0, 256);
-  gradient.addColorStop(0, '#070b17');
-  gradient.addColorStop(0.45, '#18264d');
-  gradient.addColorStop(0.75, '#4f4a78');
-  gradient.addColorStop(1, '#c68b62');
+  gradient.addColorStop(0, '#315e86');
+  gradient.addColorStop(0.45, '#6f9fbe');
+  gradient.addColorStop(0.76, '#b9d5df');
+  gradient.addColorStop(1, '#f4dfbd');
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, 16, 256);
   const skyTexture = new THREE.CanvasTexture(canvas);
@@ -750,19 +751,19 @@ function createSky(scene, animated) {
 
   // 태양 글로우 스프라이트 (블룸이 잡아 반짝인다).
   const sun = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xfff4d0, transparent: true, opacity: 0.9, depthWrite: false, fog: false }));
-  sun.scale.set(14, 14, 1);
-  sun.position.set(-34, 26, -46);
+  sun.scale.set(18, 18, 1);
+  sun.position.set(-38, 31, -52);
   scene.add(sun);
 
   // 부드럽게 흐르는 구름 스프라이트들.
   const cloudTexture = createCloudTexture();
   const cloudGroup = new THREE.Group();
-  for (let i = 0; i < 9; i += 1) {
+  for (let i = 0; i < 13; i += 1) {
     const cloud = new THREE.Sprite(new THREE.SpriteMaterial({ map: cloudTexture, transparent: true, opacity: 0.72, depthWrite: false, fog: false }));
-    const angle = (i / 9) * Math.PI * 2;
-    const radius = 48 + (i % 3) * 8;
-    cloud.position.set(Math.cos(angle) * radius, 20 + (i % 4) * 4, Math.sin(angle) * radius);
-    const scale = 16 + (i % 3) * 7;
+    const angle = (i / 13) * Math.PI * 2;
+    const radius = 45 + (i % 3) * 9;
+    cloud.position.set(Math.cos(angle) * radius, 11 + (i % 4) * 4, Math.sin(angle) * radius);
+    const scale = 18 + (i % 3) * 8;
     cloud.scale.set(scale, scale * 0.55, 1);
     cloudGroup.add(cloud);
   }
@@ -793,11 +794,11 @@ function createCloudTexture() {
 function createStylizedWater(scene, animated) {
   const geometry = new THREE.PlaneGeometry(120, 120, 48, 48);
   const material = new THREE.MeshStandardMaterial({
-    color: 0x2fa7d8,
-    roughness: 0.35,
-    metalness: 0.1,
+    color: 0xc9e3ec,
+    roughness: 0.78,
+    metalness: 0,
     transparent: true,
-    opacity: 0.94
+    opacity: 0.72
   });
   // 시간에 따라 물결이 출렁이도록 정점 셰이더에 파동을 주입한다.
   material.onBeforeCompile = (shader) => {
@@ -816,7 +817,7 @@ function createStylizedWater(scene, animated) {
 
   const water = new THREE.Mesh(geometry, material);
   water.rotation.x = -Math.PI / 2;
-  water.position.y = -0.55;
+  water.position.y = -7.4;
   water.receiveShadow = true;
   scene.add(water);
 
@@ -828,6 +829,86 @@ function createStylizedWater(scene, animated) {
       }
     }
   });
+}
+
+function createFloatingCampusBase(scene) {
+  const cliffMat = new THREE.MeshStandardMaterial({ color: 0xa9a58f, roughness: 0.98 });
+  const shadowMat = new THREE.MeshStandardMaterial({ color: 0x6f7368, roughness: 1 });
+  const rockGeo = new THREE.DodecahedronGeometry(1, 0);
+
+  // 섬 아래로 층층이 꺾이는 암반을 만들어 '공중 캠퍼스' 실루엣을 고정한다.
+  for (let i = 0; i < 34; i += 1) {
+    const angle = (i / 34) * Math.PI * 2;
+    const radius = 18.8 + (i % 4) * 0.62;
+    const rock = new THREE.Mesh(rockGeo, i % 3 === 0 ? shadowMat : cliffMat);
+    rock.position.set(
+      Math.cos(angle) * radius,
+      -1.3 - (i % 5) * 0.42,
+      Math.sin(angle) * radius
+    );
+    rock.scale.set(2.2 + (i % 3) * 0.5, 1.9 + (i % 4) * 0.48, 2.0 + ((i + 1) % 3) * 0.55);
+    rock.rotation.set(i * 0.19, angle, i * 0.11);
+    rock.castShadow = true;
+    rock.receiveShadow = true;
+    scene.add(rock);
+  }
+
+  // 먼 곳의 작은 부유 암반은 참고 이미지의 깊이를 만든다.
+  for (const [x, y, z, s] of [
+    [-29, 8, -25, 2.5],
+    [-24, 14, -42, 1.8],
+    [29, 12, -31, 2.2],
+    [36, 5, -8, 1.6],
+    [24, 17, -49, 1.3]
+  ]) {
+    const island = new THREE.Group();
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(s, s * 0.72, 0.55, 7), new THREE.MeshStandardMaterial({ color: 0xc9c3a8, roughness: 0.94 }));
+    const root = new THREE.Mesh(new THREE.ConeGeometry(s * 0.82, s * 2.4, 7), cliffMat);
+    cap.position.y = 0.2;
+    root.position.y = -s * 1.15;
+    root.rotation.x = Math.PI;
+    island.add(cap, root);
+    island.position.set(x, y, z);
+    island.rotation.y = x * 0.1;
+    scene.add(island);
+  }
+}
+
+function createCampusGround(scene) {
+  const pathMat = new THREE.MeshStandardMaterial({ color: 0xbab39d, roughness: 0.95 });
+  const lawnMat = new THREE.MeshStandardMaterial({ color: 0x647e55, roughness: 0.98 });
+
+  // 중앙 광장과 네 개 학습 구역을 잇는 넓은 석재 보행축.
+  const plaza = new THREE.Mesh(new THREE.CylinderGeometry(4.25, 4.35, 0.16, 32), pathMat);
+  plaza.position.y = 0.23;
+  plaza.receiveShadow = true;
+  scene.add(plaza);
+  for (const [x, z, sx, sz, rotation] of [
+    [-10, 4.8, 11, 3.4, -0.14],
+    [9.4, -1.5, 11.5, 3.8, 0.08],
+    [-4.2, -9.3, 4.2, 12, -0.18],
+    [7.6, -9.2, 4.0, 12, 0.18],
+    [2.7, 14.2, 4.1, 16, -0.16]
+  ]) {
+    const walk = new THREE.Mesh(new THREE.BoxGeometry(sx, 0.12, sz), pathMat);
+    walk.position.set(x, 0.22, z);
+    walk.rotation.y = rotation;
+    walk.receiveShadow = true;
+    scene.add(walk);
+  }
+
+  // 건물 사이의 제한된 녹지. 포장 중심의 학교 풍경을 유지한다.
+  for (const [x, z, sx, sz] of [
+    [-17, -7, 5.2, 7],
+    [16.2, 5.5, 6, 8],
+    [-13.8, 13.5, 6.5, 5.5],
+    [14.5, -14.8, 5.8, 4.3]
+  ]) {
+    const lawn = new THREE.Mesh(new THREE.BoxGeometry(sx, 0.1, sz), lawnMat);
+    lawn.position.set(x, 0.25, z);
+    lawn.receiveShadow = true;
+    scene.add(lawn);
+  }
 }
 
 function createGrassField(scene, animated) {
@@ -1137,34 +1218,56 @@ function updateInteractionIcons(game, renderState) {
 }
 
 function createCenterCore(scene, animated) {
-  const pedestal = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.35, 1.65, 0.55, 8),
-    new THREE.MeshStandardMaterial({ color: 0x8b93b8, roughness: 0.7 })
-  );
-  pedestal.position.set(0, 0.28, 0);
-  pedestal.castShadow = true;
-  pedestal.receiveShadow = true;
-  scene.add(pedestal);
+  const registry = new THREE.Group();
+  const stone = new THREE.MeshStandardMaterial({ color: 0xb2aa91, roughness: 0.9 });
+  const paper = new THREE.MeshStandardMaterial({ color: 0xe9e2ca, roughness: 0.84 });
+  const frame = new THREE.MeshStandardMaterial({ color: 0x3c4a43, roughness: 0.68, metalness: 0.18 });
 
-  const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(1.95, 0.08, 10, 48),
-    new THREE.MeshStandardMaterial({ color: 0xffd76a, emissive: 0xffb032, emissiveIntensity: 0.6, roughness: 0.32, metalness: 0.3 })
-  );
-  ring.rotation.x = Math.PI / 2;
-  ring.position.y = 0.64;
-  scene.add(ring);
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.75, 0.55, 16), stone);
+  base.position.y = 0.34;
+  registry.add(base);
+  const canopy = new THREE.Mesh(new THREE.CylinderGeometry(2.15, 2.15, 0.34, 16), frame);
+  canopy.position.y = 3.7;
+  registry.add(canopy);
 
-  // 코어를 감싸고 천천히 도는 두 번째 마법 고리.
-  const orbitRing = new THREE.Mesh(
-    new THREE.TorusGeometry(1.4, 0.05, 8, 40),
-    new THREE.MeshStandardMaterial({ color: 0x7cf0ff, emissive: 0x39d6ff, emissiveIntensity: 0.9, roughness: 0.3 })
-  );
-  orbitRing.position.y = 1.4;
-  scene.add(orbitRing);
-  animated.push({ update: (elapsed) => { orbitRing.rotation.x = elapsed * 0.6; orbitRing.rotation.y = elapsed * 0.4; } });
+  const panels = new THREE.Group();
+  for (let i = 0; i < 12; i += 1) {
+    const angle = (i / 12) * Math.PI * 2;
+    const panel = new THREE.Group();
+    const sheet = new THREE.Mesh(new THREE.BoxGeometry(1.05, 2.55, 0.12), paper);
+    const border = new THREE.Mesh(new THREE.BoxGeometry(1.18, 2.72, 0.08), frame);
+    border.position.z = 0.07;
+    sheet.position.z = 0.13;
+    panel.add(border, sheet);
+    for (let row = 0; row < 7; row += 1) {
+      const line = new THREE.Mesh(
+        new THREE.BoxGeometry(0.68, 0.035, 0.025),
+        new THREE.MeshBasicMaterial({ color: row === 4 && i === 1 ? 0xd69b36 : 0x777563 })
+      );
+      line.position.set(0, 0.88 - row * 0.28, 0.21);
+      panel.add(line);
+    }
+    panel.position.set(Math.sin(angle) * 1.5, 2.15, Math.cos(angle) * 1.5);
+    panel.rotation.y = angle;
+    panels.add(panel);
+  }
+  registry.add(panels);
 
+  const title = createLabelSprite('오늘의 명단 · H-17 없음', '#d9a33f');
+  title.scale.set(3.7, 0.72, 1);
+  title.position.set(0, 4.38, 0);
+  registry.add(title);
+  registry.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
+  scene.add(registry);
+
+  // 중앙의 비어 있는 한 칸은 기존 AI 코어 진행 로직을 이어받는다.
   const crystal = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(0.72, 0),
+    new THREE.BoxGeometry(0.52, 1.05, 0.22),
     new THREE.MeshStandardMaterial({
       color: 0x9aa6b2,
       emissive: 0x2a3440,
@@ -1177,24 +1280,46 @@ function createCenterCore(scene, animated) {
   crystal.castShadow = true;
   scene.add(crystal);
 
-  const coreLight = new THREE.PointLight(0x8fb4c9, 0.8, 10);
+  const coreLight = new THREE.PointLight(0xd69b36, 1.2, 11);
   coreLight.position.set(0, 1.7, 0);
   scene.add(coreLight);
+  animated.push({ update: (elapsed) => { panels.rotation.y = elapsed * 0.08; } });
 
   activeQuest = { coreCrystal: crystal, coreGlow: coreLight };
 }
 
 function createPath(scene, target) {
-  const distance = Math.max(target.length() - 1.8, 1);
-  const midpoint = target.clone().multiplyScalar(0.5);
+  const side = Math.sign(target.x || 1) * 1.35;
+  const curve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, 0.36, 0),
+    new THREE.Vector3(target.x * 0.32 + side, 0.36, target.z * 0.28),
+    new THREE.Vector3(target.x * 0.72 - side * 0.45, 0.36, target.z * 0.72),
+    new THREE.Vector3(target.x * 0.88, 0.36, target.z * 0.88)
+  ]);
   const path = new THREE.Mesh(
-    new THREE.BoxGeometry(1.25, 0.045, distance),
-    new THREE.MeshStandardMaterial({ color: 0xd7c785, roughness: 0.88 })
+    new THREE.TubeGeometry(curve, 34, 0.1, 7, false),
+    new THREE.MeshStandardMaterial({
+      color: 0xffc34f,
+      emissive: 0xc77818,
+      emissiveIntensity: 1.35,
+      roughness: 0.45
+    })
   );
-  path.position.set(midpoint.x, 0.11, midpoint.z);
-  path.rotation.y = Math.atan2(target.x, target.z);
+  path.position.y = 0.02;
   path.receiveShadow = true;
   scene.add(path);
+
+  for (let i = 1; i < 9; i += 1) {
+    const dot = new THREE.Mesh(
+      new THREE.CircleGeometry(i % 2 === 0 ? 0.17 : 0.11, 10),
+      new THREE.MeshBasicMaterial({ color: 0xffdd79, transparent: true, opacity: 0.82, depthWrite: false })
+    );
+    const point = curve.getPoint(i / 10);
+    dot.rotation.x = -Math.PI / 2;
+    dot.position.copy(point);
+    dot.position.y += 0.04;
+    scene.add(dot);
+  }
 }
 
 function createZone(scene, zone, position) {
@@ -1202,13 +1327,13 @@ function createZone(scene, zone, position) {
   const color = new THREE.Color(topic.color);
   let landmark = {};
   const disc = new THREE.Mesh(
-    new THREE.CircleGeometry(2.85, 42),
+    new THREE.RingGeometry(2.72, 2.84, 42),
     new THREE.MeshStandardMaterial({
       color,
       emissive: color,
-      emissiveIntensity: 0.25,
+      emissiveIntensity: 0.4,
       transparent: true,
-      opacity: 0.32,
+      opacity: 0.38,
       roughness: 0.9,
       side: THREE.DoubleSide
     })
@@ -1217,162 +1342,308 @@ function createZone(scene, zone, position) {
   disc.position.set(position.x, 0.13, position.z);
   scene.add(disc);
 
-  const marker = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.16, 0.22, 1.7, 12),
-    new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.55, roughness: 0.4, metalness: 0.15 })
-  );
-  marker.position.set(position.x, 0.95, position.z);
-  marker.castShadow = true;
-  scene.add(marker);
-
-  // 표식 위에 떠서 반짝이는 작은 구슬 — 블룸으로 빛난다.
-  const beacon = new THREE.Mesh(
-    new THREE.SphereGeometry(0.16, 16, 12),
-    new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: color, emissiveIntensity: 1.4, roughness: 0.2 })
-  );
-  beacon.position.set(position.x, 1.95, position.z);
-  scene.add(beacon);
-
   const label = createLabelSprite(zone.nameKo, topic.color);
-  label.position.set(position.x, 2.35, position.z);
+  label.scale.set(2.8, 0.62, 1);
+  label.position.set(position.x, 4.7, position.z);
   scene.add(label);
 
   if (zone.topicId === 'privacy') {
-    createPrivacyVillage(scene, position);
+    landmark = createEmptyClassroom(scene, position);
   } else if (zone.topicId === 'bias') {
-    landmark = createFairnessForest(scene, position);
+    landmark = createFingerprintPlayground(scene, position);
   } else if (zone.topicId === 'copyright') {
-    createCopyrightRuins(scene, position);
+    landmark = createArchiveLibrary(scene, position);
   } else {
-    landmark = createDeepfakeCave(scene, position);
+    landmark = createMediaLab(scene, position);
   }
   return landmark;
 }
 
-function createPrivacyVillage(scene, position) {
-  for (const offset of [
-    [-1.5, -0.7],
-    [1.3, -0.5],
-    [-0.2, 1.2]
-  ]) {
-    const house = new THREE.Group();
-    const base = new THREE.Mesh(
-      new THREE.BoxGeometry(0.88, 0.7, 0.88),
-      new THREE.MeshStandardMaterial({ color: 0xf3d6a4, roughness: 0.88 })
-    );
-    const roof = new THREE.Mesh(
-      new THREE.ConeGeometry(0.72, 0.58, 4),
-      new THREE.MeshStandardMaterial({ color: 0xa75b4f, roughness: 0.82 })
-    );
-    base.position.y = 0.48;
-    roof.position.y = 1.1;
-    roof.rotation.y = Math.PI / 4;
-    house.add(base, roof);
-    house.position.set(position.x + offset[0], 0, position.z + offset[1]);
-    house.traverse((child) => {
+function createEmptyClassroom(scene, position) {
+  const room = new THREE.Group();
+  const concrete = new THREE.MeshStandardMaterial({ color: 0xc8c1a7, roughness: 0.95 });
+  const plaster = new THREE.MeshStandardMaterial({ color: 0xe4ddc7, roughness: 0.9 });
+  const wood = new THREE.MeshStandardMaterial({ color: 0xa97943, roughness: 0.84 });
+  const green = new THREE.MeshStandardMaterial({ color: 0x314f3c, roughness: 0.78 });
+  const metal = new THREE.MeshStandardMaterial({ color: 0x3f4b43, roughness: 0.72, metalness: 0.18 });
+
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(7.2, 0.24, 5.6), concrete);
+  floor.position.set(0, 0.34, -0.8);
+  const back = new THREE.Mesh(new THREE.BoxGeometry(7.2, 3.5, 0.24), plaster);
+  back.position.set(0, 2.05, -3.48);
+  const side = new THREE.Mesh(new THREE.BoxGeometry(0.24, 3.5, 5.6), plaster);
+  side.position.set(-3.48, 2.05, -0.8);
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(7.6, 0.26, 6.0), concrete);
+  roof.position.set(0, 3.92, -0.8);
+  const board = new THREE.Mesh(new THREE.BoxGeometry(4.5, 1.45, 0.16), green);
+  board.position.set(0.45, 2.15, -3.28);
+  room.add(floor, back, side, roof, board);
+
+  // 다섯 책상 중 H-17 자리는 사라진 채 바닥의 호박빛 윤곽만 남는다.
+  for (const [x, z] of [[-1.7, -1.9], [0.2, -1.9], [1.9, -1.9], [-1.7, 0], [1.9, 0]]) {
+    const desk = new THREE.Group();
+    const top = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.15, 0.72), wood);
+    top.position.y = 1.03;
+    desk.add(top);
+    for (const lx of [-0.47, 0.47]) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.85, 0.09), metal);
+      leg.position.set(lx, 0.57, 0);
+      desk.add(leg);
+    }
+    desk.position.set(x, 0, z);
+    room.add(desk);
+  }
+  const missingSeat = new THREE.Mesh(
+    new THREE.RingGeometry(0.46, 0.58, 4),
+    new THREE.MeshBasicMaterial({ color: 0xffc95c, transparent: true, opacity: 0.95, side: THREE.DoubleSide })
+  );
+  missingSeat.rotation.x = -Math.PI / 2;
+  missingSeat.rotation.z = Math.PI / 4;
+  missingSeat.position.set(0.2, 0.51, 0);
+  room.add(missingSeat);
+
+  // 출석 사물함: 17번 칸만 비어 있고 테두리가 빛난다.
+  for (let i = 0; i < 7; i += 1) {
+    const locker = new THREE.Mesh(new THREE.BoxGeometry(0.68, 1.35, 0.42), i === 3 ? metal : plaster);
+    locker.position.set(-2.5 + i * 0.78, 1.15, -2.97);
+    room.add(locker);
+  }
+  const blank = new THREE.Mesh(
+    new THREE.BoxGeometry(0.78, 1.46, 0.08),
+    new THREE.MeshStandardMaterial({ color: 0xffc559, emissive: 0xc77d18, emissiveIntensity: 1.2, roughness: 0.4 })
+  );
+  blank.position.set(-2.5 + 3 * 0.78, 1.15, -2.7);
+  room.add(blank);
+
+  const roomSign = createLabelSprite('1-3반 · H-17 기록 없음', '#d7a13a');
+  roomSign.scale.set(3.1, 0.56, 1);
+  roomSign.position.set(-1.0, 3.25, -3.15);
+  room.add(roomSign);
+  room.position.set(position.x, 0, position.z);
+  room.traverse((child) => {
+    if (child.isMesh && !child.material.transparent) {
       child.castShadow = true;
       child.receiveShadow = true;
-    });
-    scene.add(house);
-  }
+    }
+  });
+  scene.add(room);
+  return { room };
 }
 
-function createFairnessForest(scene, position) {
+function createFingerprintPlayground(scene, position) {
+  const field = new THREE.Group();
+  const red = new THREE.MeshStandardMaterial({ color: 0xa9503b, roughness: 0.92 });
+  const white = new THREE.MeshBasicMaterial({ color: 0xf1e6ce });
+  const turf = new THREE.MeshStandardMaterial({ color: 0x496e4c, roughness: 0.98 });
+
+  const track = new THREE.Mesh(new THREE.TorusGeometry(2.45, 0.72, 16, 72), red);
+  track.rotation.x = Math.PI / 2;
+  track.scale.set(1.42, 0.9, 1);
+  track.position.y = 0.35;
+  field.add(track);
+  const infield = new THREE.Mesh(new THREE.CircleGeometry(2.18, 48), turf);
+  infield.rotation.x = -Math.PI / 2;
+  infield.scale.set(1.42, 0.9, 1);
+  infield.position.y = 0.38;
+  field.add(infield);
+  for (const radius of [1.95, 2.22, 2.48]) {
+    const lane = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.025, 5, 72), white);
+    lane.rotation.x = Math.PI / 2;
+    lane.scale.set(1.42, 0.9, 1);
+    lane.position.y = 0.41;
+    field.add(lane);
+  }
+
   const leafMeshes = [];
   for (let i = 0; i < 6; i += 1) {
-    const angle = (i / 6) * Math.PI * 2;
-    const radius = i % 2 === 0 ? 1.5 : 2.2;
-    const leaves = createSmallTree(
-      scene,
-      new THREE.Vector3(position.x + Math.cos(angle) * radius, 0, position.z + Math.sin(angle) * radius),
-      i
+    const radius = 0.34 + i * 0.25;
+    const printLine = new THREE.Mesh(
+      new THREE.TorusGeometry(radius, 0.035, 5, 54, Math.PI * 1.54),
+      new THREE.MeshStandardMaterial({ color: 0xdbc892, roughness: 0.75 })
     );
-    // 편향 치유 때 색이 돌아오도록 원래 색을 기억해 둔다.
-    leaves.userData.naturalColor = leaves.material.color.clone();
-    leafMeshes.push(leaves);
+    printLine.rotation.x = Math.PI / 2;
+    printLine.rotation.z = -0.48 + i * 0.08;
+    printLine.scale.set(1.18, 0.82, 1);
+    printLine.position.set(0.15, 0.45, 0.1);
+    printLine.userData.naturalColor = printLine.material.color.clone();
+    field.add(printLine);
+    leafMeshes.push(printLine);
   }
+  const scoreFrame = new THREE.Mesh(new THREE.BoxGeometry(2.3, 1.35, 0.2), new THREE.MeshStandardMaterial({ color: 0x333c38, roughness: 0.65 }));
+  scoreFrame.position.set(3.75, 1.65, -1.4);
+  field.add(scoreFrame);
+  const score = createLabelSprite('위험 점수 · 기준 불명', '#db9e35');
+  score.scale.set(2.3, 0.48, 1);
+  score.position.set(3.75, 1.65, -1.26);
+  field.add(score);
+
+  field.position.set(position.x, 0, position.z);
+  field.traverse((child) => {
+    if (child.isMesh && !child.material.transparent) {
+      child.receiveShadow = true;
+      child.castShadow = child.geometry?.type !== 'CircleGeometry';
+    }
+  });
+  scene.add(field);
   return { leafMeshes };
 }
 
-function createCopyrightRuins(scene, position) {
-  for (const offset of [-1.5, 0, 1.5]) {
-    const column = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.22, 0.28, 1.45, 12),
-      new THREE.MeshStandardMaterial({ color: 0xc7bea2, roughness: 0.78 })
-    );
-    column.position.set(position.x + offset, 0.78, position.z - 1.4);
-    column.castShadow = true;
-    scene.add(column);
+function createArchiveLibrary(scene, position) {
+  const archive = new THREE.Group();
+  const stone = new THREE.MeshStandardMaterial({ color: 0xb8ae92, roughness: 0.93 });
+  const darkWood = new THREE.MeshStandardMaterial({ color: 0x594735, roughness: 0.84 });
+  const brass = new THREE.MeshStandardMaterial({ color: 0xb98a38, roughness: 0.48, metalness: 0.38 });
+  const bookPalette = [0x74483a, 0x435d54, 0x8c7040, 0x4e526b, 0x8d5d58];
+
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(7.2, 0.22, 5.8), stone);
+  floor.position.y = 0.34;
+  archive.add(floor);
+  for (const [x, z, rotation] of [[-2.65, -0.7, 0], [2.65, -0.7, 0], [0, -2.55, Math.PI / 2]]) {
+    const shelf = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.1, 3.15, 4.2), darkWood);
+    body.position.y = 1.95;
+    shelf.add(body);
+    for (let row = 0; row < 4; row += 1) {
+      for (let col = 0; col < 6; col += 1) {
+        const book = new THREE.Mesh(
+          new THREE.BoxGeometry(0.13, 0.48 + ((row + col) % 2) * 0.12, 0.34),
+          new THREE.MeshStandardMaterial({ color: bookPalette[(row * 2 + col) % bookPalette.length], roughness: 0.8 })
+        );
+        book.position.set(0.57, 0.77 + row * 0.7, -1.55 + col * 0.58);
+        shelf.add(book);
+      }
+    }
+    shelf.position.set(x, 0, z);
+    shelf.rotation.y = rotation;
+    archive.add(shelf);
   }
+  const arch = new THREE.Mesh(new THREE.TorusGeometry(2.0, 0.22, 10, 36, Math.PI), stone);
+  arch.position.set(0, 2.4, 1.95);
+  archive.add(arch);
+  for (const x of [-2, 2]) {
+    const column = new THREE.Mesh(new THREE.BoxGeometry(0.45, 3.2, 0.45), stone);
+    column.position.set(x, 1.85, 1.95);
+    archive.add(column);
+  }
+  const plate = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.55, 0.12), brass);
+  plate.position.set(0, 2.9, 2.16);
+  archive.add(plate);
+  const sign = createLabelSprite('기록 보관소 · 제작 로그', '#c89133');
+  sign.scale.set(2.8, 0.52, 1);
+  sign.position.set(0, 2.95, 2.25);
+  archive.add(sign);
 
-  const tablet = new THREE.Mesh(
-    new THREE.BoxGeometry(1.35, 0.9, 0.18),
-    new THREE.MeshStandardMaterial({ color: 0x9d927b, roughness: 0.86 })
-  );
-  tablet.position.set(position.x, 0.68, position.z + 1.25);
-  tablet.castShadow = true;
-  scene.add(tablet);
+  archive.position.set(position.x, 0, position.z);
+  archive.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
+  scene.add(archive);
+  return { archive };
 }
 
-function createDeepfakeCave(scene, position) {
-  const cave = new THREE.Mesh(
-    new THREE.DodecahedronGeometry(1.9, 0),
-    new THREE.MeshStandardMaterial({ color: 0x514464, roughness: 0.92 })
+function createMediaLab(scene, position) {
+  const lab = new THREE.Group();
+  const frame = new THREE.MeshStandardMaterial({ color: 0x334846, roughness: 0.58, metalness: 0.35 });
+  const glass = new THREE.MeshStandardMaterial({
+    color: 0x9dcbd2,
+    emissive: 0x315b61,
+    emissiveIntensity: 0.2,
+    transparent: true,
+    opacity: 0.42,
+    roughness: 0.16,
+    metalness: 0.12
+  });
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(6.4, 0.22, 5.4), new THREE.MeshStandardMaterial({ color: 0x8f9990, roughness: 0.84 }));
+  floor.position.y = 0.34;
+  lab.add(floor);
+  for (const [x, z, sx, sz] of [[-3.05, 0, 0.18, 5.4], [3.05, 0, 0.18, 5.4], [0, -2.6, 6.2, 0.18]]) {
+    const panel = new THREE.Mesh(new THREE.BoxGeometry(sx, 3.8, sz), glass);
+    panel.position.set(x, 2.2, z);
+    lab.add(panel);
+  }
+  for (const [x, z] of [[-3.05, -2.6], [3.05, -2.6], [-3.05, 2.6], [3.05, 2.6]]) {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.2, 4.3, 0.2), frame);
+    post.position.set(x, 2.35, z);
+    lab.add(post);
+  }
+  const screens = new THREE.Group();
+  const screenMats = [
+    new THREE.MeshBasicMaterial({ color: 0x5b374d }),
+    new THREE.MeshBasicMaterial({ color: 0x1c1826 }),
+    new THREE.MeshBasicMaterial({ color: 0x405c61 })
+  ];
+  for (let i = 0; i < 3; i += 1) {
+    const screen = new THREE.Mesh(new THREE.BoxGeometry(1.45, 1.25, 0.12), screenMats[i]);
+    screen.position.set((i - 1) * 1.65, 2.05, -2.42);
+    screens.add(screen);
+  }
+  lab.add(screens);
+  const scan = new THREE.Mesh(
+    new THREE.TorusGeometry(1.08, 0.07, 8, 48),
+    new THREE.MeshStandardMaterial({ color: 0x9ef5ff, emissive: 0x4ac8da, emissiveIntensity: 1.35, roughness: 0.28 })
   );
-  cave.scale.set(1.35, 0.82, 0.88);
-  cave.position.set(position.x, 0.78, position.z - 0.35);
-  cave.castShadow = true;
-  scene.add(cave);
-
-  const opening = new THREE.Mesh(
-    new THREE.CircleGeometry(0.82, 24),
-    new THREE.MeshBasicMaterial({ color: 0x1c1826 })
-  );
-  opening.position.set(position.x, 0.72, position.z - 1.86);
-  opening.rotation.x = 0;
-  scene.add(opening);
-  return { opening };
+  scan.position.set(0, 2.0, -2.22);
+  lab.add(scan);
+  const sign = createLabelSprite('원본 없음 · 생성 시각 불일치', '#8bdde8');
+  sign.scale.set(3.1, 0.55, 1);
+  sign.position.set(0, 3.85, -2.34);
+  lab.add(sign);
+  lab.position.set(position.x, 0, position.z);
+  lab.traverse((child) => {
+    if (child.isMesh && !child.material.transparent) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
+  scene.add(lab);
+  return { opening: screenMats[1] && screens.children[1] };
 }
 
-// 뗏목 선착장 — 남쪽 해변에서 「잡음의 군도」 항해 씬으로 나가는 문.
-const DOCK_POS = { x: 3.4, z: 19.6 };
+// 등교용 페리 터미널 — 남쪽 절벽에서 「잡음의 군도」 항해 씬으로 나가는 문.
+const DOCK_POS = { x: 3.4, z: 19.1 };
 
 function createDock(scene, interactables, renderStateRef) {
   const dock = new THREE.Group();
-  const plankMat = new THREE.MeshStandardMaterial({ color: 0x9a7648, roughness: 0.9 });
-  // 물 위로 뻗은 판자 통로.
-  const walkway = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.16, 3.6), plankMat);
-  walkway.position.set(0, 0.42, 1.2);
+  const concrete = new THREE.MeshStandardMaterial({ color: 0xb8b39f, roughness: 0.9 });
+  const metal = new THREE.MeshStandardMaterial({ color: 0x3e4947, roughness: 0.65, metalness: 0.22 });
+  const ferryMat = new THREE.MeshStandardMaterial({ color: 0xd5a84d, roughness: 0.72 });
+  const walkway = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.24, 4.2), concrete);
+  walkway.position.set(0, 0.4, 1.35);
   dock.add(walkway);
-  for (const [px, pz] of [[-0.6, 0.2], [0.6, 0.2], [-0.6, 2.6], [0.6, 2.6]]) {
-    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.9, 8), plankMat);
-    post.position.set(px, 0.12, pz);
+  for (const [px, pz] of [[-0.9, -0.2], [0.9, -0.2], [-0.9, 2.9], [0.9, 2.9]]) {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.9, 0.1), metal);
+    post.position.set(px, 0.78, pz);
     dock.add(post);
   }
-  // 정박한 작은 뗏목 + 등불(라이트 없이 발광 재질만).
-  const raft = new THREE.Mesh(
-    new THREE.BoxGeometry(1.5, 0.14, 1.9),
-    new THREE.MeshStandardMaterial({ color: 0x8a6a3f, roughness: 0.9 })
-  );
-  raft.position.set(0.2, 0.1, 3.6);
-  dock.add(raft);
-  const lantern = new THREE.Mesh(
-    new THREE.SphereGeometry(0.16, 10, 10),
-    new THREE.MeshBasicMaterial({ color: 0xffd88a })
-  );
-  lantern.position.set(0.6, 1.0, 2.6);
-  dock.add(lantern);
+  const ferry = new THREE.Group();
+  const hull = new THREE.Mesh(new THREE.BoxGeometry(2.35, 0.58, 3.2), ferryMat);
+  hull.position.y = 0.3;
+  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.9, 1.35), concrete);
+  cabin.position.set(0, 1.0, 0.25);
+  const window = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.38, 0.08), new THREE.MeshBasicMaterial({ color: 0x527982 }));
+  window.position.set(0, 1.05, -0.47);
+  ferry.add(hull, cabin, window);
+  ferry.position.set(2.3, -0.15, 3.3);
+  ferry.rotation.y = -0.16;
+  dock.add(ferry);
+  const sign = createLabelSprite('등교용 페리 탑승구', '#d1a13e');
+  sign.scale.set(2.4, 0.48, 1);
+  sign.position.set(-0.25, 1.72, -0.35);
+  dock.add(sign);
   dock.position.set(DOCK_POS.x, 0, DOCK_POS.z);
   scene.add(dock);
 
   interactables.push({
     type: 'dock',
     position: new THREE.Vector3(DOCK_POS.x, 0, DOCK_POS.z + 0.6),
-    labelKo: '뗏목 선착장 — 군도로 항해'
+    labelKo: '등교용 페리 터미널 — 군도로 항해'
   });
 
   // 하루의 증거 수신기 — 새 감사 신호가 있으면 빛난다(animateWorld가 구동).
-  const mailPost = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 1.0, 8), plankMat);
+  const mailPost = new THREE.Mesh(new THREE.BoxGeometry(0.16, 1.0, 0.16), metal);
   mailPost.position.set(DOCK_POS.x - 3.0, 0.5, DOCK_POS.z - 2.0);
   scene.add(mailPost);
   const bottle = new THREE.Mesh(
@@ -1397,71 +1668,79 @@ function createDock(scene, interactables, renderStateRef) {
   });
 }
 
-// 진실의 등대(Z4) — 섬 어디서든 보이는 세로 랜드마크이자 "신뢰할 수 있는 출처"의 은유.
-// 광선은 치유한 스테이지 수만큼 늘어난다(진행도가 풍경에 기록된다 — 뉴럴 가든 이식).
-const LIGHTHOUSE_POS = { x: 8.2, z: 15.6 };
+// 학생 기록 행정동 — 섬 어디서든 보이는 세로 랜드마크이자 삭제 명령의 발신지.
+// 유리탑의 복구 광선은 치유한 스테이지 수만큼 늘어난다.
+const LIGHTHOUSE_POS = { x: 14, z: -14 };
 function createLighthouse(scene, interactables, animated, renderStateRef) {
   const g = new THREE.Group();
-  const stone = new THREE.MeshStandardMaterial({ color: 0xcfd6da, roughness: 0.85 });
-  const white = new THREE.MeshStandardMaterial({ color: 0xf4f1e6, roughness: 0.7 });
-  const red = new THREE.MeshStandardMaterial({ color: 0xd95f4e, roughness: 0.7 });
+  const stone = new THREE.MeshStandardMaterial({ color: 0xbab7a7, roughness: 0.84 });
+  const frame = new THREE.MeshStandardMaterial({ color: 0x344744, roughness: 0.55, metalness: 0.32 });
+  const glass = new THREE.MeshStandardMaterial({
+    color: 0x8fbfc9,
+    emissive: 0x264d54,
+    emissiveIntensity: 0.22,
+    transparent: true,
+    opacity: 0.46,
+    roughness: 0.14,
+    metalness: 0.16
+  });
 
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.75, 1.1, 12), stone);
-  base.position.y = 0.55;
+  const base = new THREE.Mesh(new THREE.BoxGeometry(5.4, 0.75, 4.8), stone);
+  base.position.y = 0.48;
   g.add(base);
-  const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.78, 1.05, 6.4, 12), white);
-  tower.position.y = 4.2;
-  g.add(tower);
-  // 빨간 줄무늬 두 단 — 멀리서도 등대로 읽히는 실루엣 문법. 탑 반지름보다 살짝 크게(묻힘 방지).
-  for (const y of [2.6, 4.9]) {
-    const towerR = 1.05 + ((y - 1.0) / 6.4) * (0.78 - 1.05);
-    const stripe = new THREE.Mesh(new THREE.CylinderGeometry(towerR + 0.05, towerR + 0.07, 0.7, 12), red);
-    stripe.position.y = y;
-    g.add(stripe);
+  for (let floor = 0; floor < 5; floor += 1) {
+    const y = 1.35 + floor * 1.55;
+    const glassFloor = new THREE.Mesh(new THREE.BoxGeometry(4.65, 1.35, 4.0), glass);
+    glassFloor.position.y = y;
+    g.add(glassFloor);
+    const slab = new THREE.Mesh(new THREE.BoxGeometry(5.0, 0.18, 4.3), floor === 4 ? stone : frame);
+    slab.position.y = y + 0.76;
+    g.add(slab);
+    for (const x of [-2.1, 0, 2.1]) {
+      const mullion = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.35, 0.16), frame);
+      mullion.position.set(x, y, 2.05);
+      g.add(mullion);
+    }
   }
-  const gallery = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.05, 0.28, 12), stone);
-  gallery.position.y = 7.5;
-  g.add(gallery);
-  const lampRoom = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.62, 0.62, 0.9, 10),
-    new THREE.MeshStandardMaterial({
-      color: 0xbfeaff,
-      emissive: 0x7fd4ff,
-      emissiveIntensity: 0.5,
+  const annex = new THREE.Mesh(new THREE.BoxGeometry(2.7, 4.4, 3.4), stone);
+  annex.position.set(-3.2, 2.55, 0.2);
+  g.add(annex);
+  const h17Panel = createLabelSprite('학생 정보 · H-17 · 기록 삭제됨', '#d9a13d');
+  h17Panel.scale.set(3.6, 0.62, 1);
+  h17Panel.position.set(0.2, 5.65, 2.2);
+  g.add(h17Panel);
+
+  // 삭제 광선은 기본 1줄, 복구가 진행되면 주변에 6개의 확인 광선이 차례로 켜진다.
+  const deletionBeam = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.22, 0.5, 17, 12, 1, true),
+    new THREE.MeshBasicMaterial({
+      color: 0xeafcff,
       transparent: true,
-      opacity: 0.55,
-      roughness: 0.2
+      opacity: 0.34,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide
     })
   );
-  lampRoom.position.y = 8.1;
-  g.add(lampRoom);
-  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 12), new THREE.MeshBasicMaterial({ color: 0xfff2b8 }));
-  lamp.position.y = 8.1;
-  g.add(lamp);
-  const roof = new THREE.Mesh(new THREE.ConeGeometry(0.85, 0.9, 10), red);
-  roof.position.y = 9.0;
-  g.add(roof);
-
-  // 진행도 광선 — 최대 6줄기, animateWorld가 beaconCount만큼 켠다. 느리게 회전.
+  deletionBeam.position.set(0.5, 15.5, 0);
+  g.add(deletionBeam);
   const beamGroup = new THREE.Group();
-  beamGroup.position.y = 8.1;
+  beamGroup.position.y = 8.3;
   const beams = [];
   for (let i = 0; i < 6; i += 1) {
     const beam = new THREE.Mesh(
-      new THREE.ConeGeometry(0.34, 7.0, 8, 1, true),
+      new THREE.CylinderGeometry(0.055, 0.14, 9.5, 6, 1, true),
       new THREE.MeshBasicMaterial({
-        color: 0xfff0b0,
+        color: 0xffd26a,
         transparent: true,
-        opacity: 0.12,
+        opacity: 0.28,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
         side: THREE.DoubleSide
       })
     );
-    // 원뿔 꼭짓점이 등실에 — 낮 배경에 씻기지 않게 가늘게, 하늘 쪽으로 들어 올린다.
-    beam.rotation.z = Math.PI / 2 - 0.3;
-    beam.position.x = 3.35;
-    beam.position.y = 1.05;
+    beam.position.set(1.25, 4.6, 0);
+    beam.rotation.z = 0.08;
     const arm = new THREE.Group();
     arm.rotation.y = (i / 6) * Math.PI * 2;
     arm.add(beam);
@@ -1483,15 +1762,15 @@ function createLighthouse(scene, interactables, animated, renderStateRef) {
 
   interactables.push({
     type: 'lighthouse',
-    position: new THREE.Vector3(LIGHTHOUSE_POS.x, 0, LIGHTHOUSE_POS.z + 1.6),
-    labelKo: '진실의 등대'
+    position: new THREE.Vector3(LIGHTHOUSE_POS.x, 0, LIGHTHOUSE_POS.z + 2.8),
+    labelKo: '학생 기록 행정동'
   });
 
-  // 부두 → 등대 → 중앙 코어를 잇는 해류 유도등 — 빛이 순서대로 흘러 길을 가리킨다.
+  // 페리 → 행정동 → 명단탑을 잇는 H-17 마지막 동선.
   const guideLights = [];
   const waypoints = [
     [DOCK_POS.x, DOCK_POS.z - 1.6],
-    [LIGHTHOUSE_POS.x - 2.4, LIGHTHOUSE_POS.z - 0.6],
+    [LIGHTHOUSE_POS.x - 3.4, LIGHTHOUSE_POS.z + 1.2],
     [0, 0]
   ];
   let idx = 0;
@@ -1503,7 +1782,7 @@ function createLighthouse(scene, interactables, animated, renderStateRef) {
       const t = i / (steps + 1);
       const dot = new THREE.Mesh(
         new THREE.CircleGeometry(0.2, 10),
-        new THREE.MeshBasicMaterial({ color: 0x8fe0ff, transparent: true, opacity: 0.3, depthWrite: false })
+        new THREE.MeshBasicMaterial({ color: 0xffcf61, transparent: true, opacity: 0.3, depthWrite: false })
       );
       dot.rotation.x = -Math.PI / 2;
       dot.position.set(ax + (bx - ax) * t, 0.06, az + (bz - az) * t);
@@ -2612,12 +2891,12 @@ function updatePlayer(delta, game, playerGroup) {
 }
 
 function clampToIsland(position) {
-  // 진실의 등대는 유일하게 통과 불가한 대형 구조물 — 밑동 반경 밖으로 밀어낸다.
+  // 학생 기록 행정동은 유일하게 통과 불가한 대형 구조물 — 건물 외벽 밖으로 밀어낸다.
   const ldx = position.x - LIGHTHOUSE_POS.x;
   const ldz = position.z - LIGHTHOUSE_POS.z;
   const lightDist = Math.hypot(ldx, ldz);
-  if (lightDist < 1.9 && lightDist > 0.0001) {
-    const push = 1.9 / lightDist;
+  if (lightDist < 2.8 && lightDist > 0.0001) {
+    const push = 2.8 / lightDist;
     position = new THREE.Vector3(LIGHTHOUSE_POS.x + ldx * push, position.y, LIGHTHOUSE_POS.z + ldz * push);
   }
   const flatLength = Math.hypot(position.x, position.z);
@@ -2838,7 +3117,7 @@ function flashCombatPopup(ui, text, kind) {
 
 function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates, zoneAuras, novaMailGlow, lighthouseBeams }, game) {
   const elapsed = clock.elapsedTime;
-  // 진실의 등대 — 광선이 느리게 돌고, 치유한 스테이지 수(beaconCount)만큼 줄기가 켜진다.
+  // 학생 기록 행정동 — 복구 광선이 느리게 돌고, 치유한 스테이지 수만큼 켜진다.
   if (lighthouseBeams) {
     lighthouseBeams.group.rotation.y = elapsed * 0.22;
     const count = game.beaconCount ?? 0;
@@ -3688,15 +3967,15 @@ function interact(game, ui) {
       updateHud(game, ui);
     }
   } else if (game.nearest.type === 'lighthouse') {
-    // 진실의 등대 — 광선 수 = 치유한 스테이지 수. 컨셉(출처 확인)을 대사로 심는다.
+    // 학생 기록 행정동 — 삭제 광선과 복구 광선이 사건 진행도를 풍경에 기록한다.
     const lit = game.beaconCount ?? 0;
-    ui.dialogKicker.textContent = '💡 진실의 등대';
+    ui.dialogKicker.textContent = '학생 기록 행정동';
     ui.dialogTitle.textContent = '✨ 도트';
     ui.dialogBody.innerHTML = speechHtml([
-      '"이 등대는 확인된 이야기의 불빛으로 정보의 바다를 비춰. 출처가 분명한 빛만 항해자를 지켜 주거든."',
+      '"저 흰 광선이 학생 기록을 지우는 WHITEOUT 신호야. 우리가 확인한 증거는 호박빛 복구 광선으로 남아."',
       lit === 0
-        ? '"아직 광선이 하나도 없네… 섬의 시련을 통과하면 불빛이 하나씩 켜질 거야!"'
-        : `"지금 광선이 ${lit}줄기야 — 네가 치유한 이야기의 수만큼 바다가 밝아지고 있어!"`,
+        ? '"아직 복구 광선이 하나도 없어… 교내 네 장소에서 H-17의 흔적을 먼저 찾아야 해."'
+        : `"복구 광선 ${lit}줄기 — 네가 검증한 기록의 수만큼 삭제 명령이 약해지고 있어."`,
       lit >= 6 ? '"여섯 줄기 전부! 이제 어떤 자동 결정도 근거 없이 사람을 지울 수 없어. 고마워, 감사관!"' : ''
     ].filter(Boolean));
     openDialog(game, ui);
@@ -3705,7 +3984,7 @@ function interact(game, ui) {
     if (game.progress.aiCoreCompleted) {
       enterVoyage(game, ui);
     } else {
-      ui.dialogKicker.textContent = '뗏목 선착장';
+      ui.dialogKicker.textContent = '등교용 페리 터미널';
       ui.dialogTitle.textContent = '✨ 도트';
       ui.dialogBody.innerHTML = speechHtml([
         '"바다 건너 보관소에도 H-17 삭제 명령의 조각이 있어. 하지만 먼저 이 섬의 네 증거를 확보해야 해."',
