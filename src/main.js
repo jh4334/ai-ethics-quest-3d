@@ -2926,8 +2926,10 @@ function updateCamera(camera, game) {
   // 살짝 낮고 뒤로 물러난 각도. 시선은 항상 플레이어를 향한다 —
   // 예전 중심 편향(x*0.6·시선 x*0.4)은 넓은 바다·확장 섬에서 캐릭터를 화면 밖으로 밀어냈다.
   // x*0.9의 약한 편향만 남겨 이동 방향의 앞이 살짝 더 보이게 한다.
-  const desired = new THREE.Vector3(target.x * 0.9, target.y + 8.7, target.z + 13.8);
-  const look = new THREE.Vector3(target.x, target.y + 1.35, target.z - 1.2);
+  // 학교 전경이 캐릭터 뒤로 넓게 펼쳐지도록 기존보다 높고 멀리 둔다.
+  // 플레이어는 참고 이미지처럼 화면 하단 중앙에 남고, 다음 목적지는 한 시야에 읽힌다.
+  const desired = new THREE.Vector3(target.x * 0.9, target.y + 11.5, target.z + 18.6);
+  const look = new THREE.Vector3(target.x, target.y + 1.35, target.z - 2.8);
   // 유휴 조망 뷰(씬별 고정 좌표)와 스무스스텝 블렌드.
   const ovView = OVERVIEW_VIEWS[game.mode] ?? OVERVIEW_VIEWS.overworld;
   const raw = game.overviewT;
@@ -4646,8 +4648,8 @@ function enterShrineChallenge(game, ui, shrineId, topicId) {
 
 // 카메라를 목표 추종 위치로 즉시 스냅(섬→방 활공 방지). updateCamera의 상수와 반드시 일치.
 function snapCamera(camera, target) {
-  camera.position.set(target.x * 0.9, target.y + 8.7, target.z + 13.8);
-  camera.lookAt(target.x, target.y + 1.35, target.z - 1.2);
+  camera.position.set(target.x * 0.9, target.y + 11.5, target.z + 18.6);
+  camera.lookAt(target.x, target.y + 1.35, target.z - 2.8);
 }
 
 function enterDungeon(game, ui, topicId, shrineId) {
