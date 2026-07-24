@@ -840,7 +840,7 @@ export function buildHourglassPortScene({ makeLabel, healed = false }) {
   return built;
 }
 
-// 4호: 기억의 심장 외곽 (종합 + 인간-AI 협업 — "함께 살아가기").
+// 4호: 감사 기록 보관소 (종합 + 인간-AI 협업).
 // 보랏빛 결정 섬 — 맥동하는 심장 결정을 네 개의 동사 봉인이 지키고 있다.
 export function buildMemoryOuterScene({ makeLabel, healed = false }) {
   const root = new THREE.Group();
@@ -865,7 +865,7 @@ export function buildMemoryOuterScene({ makeLabel, healed = false }) {
   water.position.y = -0.32;
   root.add(water);
 
-  // 기억의 심장 — 섬 전체가 이 박동에 맞춰 산다.
+  // 중앙 감사 인덱스 — 섬 전체 기록의 갱신 신호.
   const heartMat = new THREE.MeshStandardMaterial({
     color: 0xa84a6c,
     emissive: 0x7c2846,
@@ -884,7 +884,7 @@ export function buildMemoryOuterScene({ makeLabel, healed = false }) {
     root.add(shard);
     shards.push(shard);
   }
-  const heartLabel = makeLabel('💠 기억의 심장', '#e8b8d8');
+  const heartLabel = makeLabel('💠 중앙 감사 인덱스', '#e8b8d8');
   heartLabel.position.set(0.4, 6.0, -5.2);
   root.add(heartLabel);
 
@@ -934,8 +934,8 @@ export function buildMemoryOuterScene({ makeLabel, healed = false }) {
   root.add(raftLabel);
 
   const interactables = [
-    { id: 'spirit', x: 0.4, z: -3.0, labelKo: '기억의 심장에 다가간다' },
-    { id: 'portal', x: 0.4, z: -8.0, labelKo: '심부 관문' },
+    { id: 'spirit', x: 0.4, z: -3.0, labelKo: '중앙 감사 인덱스를 확인한다' },
+    { id: 'portal', x: 0.4, z: -8.0, labelKo: '공개 심리실 관문' },
     { id: 'raft', x: -3.4, z: 10.4, labelKo: '뗏목 — 바다로 돌아간다' }
   ];
 
@@ -973,7 +973,7 @@ export function buildMemoryOuterScene({ makeLabel, healed = false }) {
   return built;
 }
 
-// 5호: 기억의 심장 심부 (최종 재대결) — 심연 위의 아레나, 노이즈의 잔영이 기다린다.
+// 5호: 공개 심리실 — 심연 위의 아레나, 화이트아웃 프로토콜이 기다린다.
 export function buildMemoryCoreScene({ makeLabel, healed = false }) {
   const root = new THREE.Group();
 
@@ -997,7 +997,7 @@ export function buildMemoryCoreScene({ makeLabel, healed = false }) {
   rim.position.y = 0.34;
   root.add(rim);
 
-  // 노이즈의 잔영 — 검은 결정 덩어리. 4껍질(동사 색 고리)이 지키고 있다.
+  // 화이트아웃 코어 — 검은 결정 덩어리. 4껍질(동사 색 고리)이 지키고 있다.
   const bossMat = new THREE.MeshStandardMaterial({
     color: 0x2a2438,
     emissive: 0x4a1a2c,
@@ -1008,7 +1008,7 @@ export function buildMemoryCoreScene({ makeLabel, healed = false }) {
   const boss = new THREE.Mesh(new THREE.IcosahedronGeometry(1.5, 0), bossMat);
   boss.position.set(RESIDUE.boss.x, 2.3, RESIDUE.boss.z);
   root.add(boss);
-  const bossLabel = makeLabel('⚡ 노이즈의 잔영', '#d8a8c8');
+  const bossLabel = makeLabel('⬜ 화이트아웃 코어', '#d8a8c8');
   bossLabel.position.set(RESIDUE.boss.x, 5.2, RESIDUE.boss.z);
   root.add(bossLabel);
   // 페이즈 껍질 고리 — 바깥부터 깨져 나간다.

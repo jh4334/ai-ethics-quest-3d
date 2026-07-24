@@ -461,9 +461,9 @@ export function createInitialProgress() {
     tools: [],
     story: createStoryState(),
     prologueSeen: false,
-    // 1-2장(안개의 섬) 중간 관문. 노이즈는 여기서 사라지지 않고 군도로 도망친다.
+    // 1-2장 중간 관문. H-17 삭제 명령이 다섯 보관소로 흩어진다.
     aiCoreCompleted: false,
-    // 6장 기억의 심장까지 마치고 노이즈를 다시 가르친 최종 완료 신호.
+    // 6장 공개 심리를 마치고 H-17 사건을 바로잡은 최종 완료 신호.
     campaignCompleted: false,
     voyageIntroSeen: false,
     novaLettersRead: [],
@@ -818,7 +818,7 @@ export function getNextObjective(progress) {
   }
 
   if (progress.aiCoreCompleted) {
-    return '선착장에서 군도로 출항해 노이즈가 남긴 기억을 따라가세요.';
+    return '선착장에서 증거 항로로 출항해 H-17 삭제 명령의 나머지 기록을 찾으세요.';
   }
 
   if (summary.finalCoreUnlocked) {

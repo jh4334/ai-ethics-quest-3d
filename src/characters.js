@@ -47,7 +47,7 @@ export function makeBlobShadow(radius = 0.42) {
   return disc;
 }
 
-// 플레이어 — 잉크 네이비 코트와 앰버 스카프를 두른 기억의 수호자.
+// 플레이어 — 잉크 네이비 코트와 앰버 스카프를 두른 학생 시민 감사관.
 // 넓은 어깨 망토·긴 코트 자락·스카프 꼬리로 작은 화면에서도 실루엣이 읽힌다.
 export function createPlayerCharacter() {
   const g = new THREE.Group();
@@ -280,8 +280,8 @@ export function createNpcCharacter(topicId) {
   return g;
 }
 
-// 노이즈 — 잘못 배운 아기 AI. 커다란 지지직 정전기 뭉치(회색+보라 글리치), 노란 눈 두 개만 껌뻑.
-// 무섭기보다 '고장난' 느낌. 최종장에서 도구를 쓸 때마다 작아지고, 마지막엔 노바로 바뀐다.
+// 화이트아웃 — 이의제기 기록을 지우는 자동 프로토콜의 시각체(회색+보라 글리치).
+// 감사 도구를 쓸 때마다 삭제 껍질이 작아지고, 마지막엔 권한이 제한된 루멘 공개 코어로 바뀐다.
 export function createNoiseBoss() {
   const g = new THREE.Group();
 
@@ -329,7 +329,7 @@ export function createNoiseBoss() {
   return g;
 }
 
-// 노바 — 네 개의 약속을 소화하고 다시 태어난 작고 둥근 별빛 AI.
+// 루멘 공개 코어 — 결정 근거와 불확실성을 드러내는 작고 둥근 별빛 AI.
 export function createNova() {
   const g = new THREE.Group();
   const starMat = mat(0xeafcff, { emissive: 0x7cf0ff, emissiveIntensity: 1.8 });

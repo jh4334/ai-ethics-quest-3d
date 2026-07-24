@@ -159,7 +159,7 @@ try {
     const ceremony = await p.evaluate(() =>
       !window.__ethicsUi.ceremony.hidden && (window.__ethicsUi.ceremonyTitle.textContent ?? '').includes('획득')
     );
-    // N1: 제단 획득 2.9초 뒤(의식이 걷힌 뒤) '기억 파편' 회상 대화가 자동으로 열린다.
+    // 제단 획득 2.9초 뒤(의식이 걷힌 뒤) H-17 사건 증거가 자동으로 열린다.
     const memory = await p
       .waitForFunction(() => !window.__ethicsUi.dialog.hidden && window.__ethicsUi.dialog.classList.contains('memory-dialog'), { timeout: 6000 })
       .then(() => true)
@@ -187,19 +187,19 @@ try {
   for (const d of ['E', 'E', 'N', 'N']) await push('p2', d);
   check(await solved(), '개인정보: 상자 11수 해결');
   const firstCollect = await collect();
-  check(firstCollect.memory, '기억 파편 회상 자동 재생(잊혀진 수호자)');
+  check(firstCollect.memory, 'H-17 사건 증거 자동 재생');
   check(firstCollect.ceremony, '도구 획득 의식(데이터 캡슐·팡파레) 표시');
-  // 회상 2.4초 뒤 노이즈의 속삭임 자막이 글리치로 스며든다(반전 복선).
+  // 증거 2.4초 뒤 화이트아웃의 삭제 경고가 글리치로 스며든다.
   const whispered = await p
     .waitForFunction(() => { const w = window.__ethicsUi.noiseWhisper; return w && !w.hidden && w.textContent.length > 0; }, { timeout: 5000 })
     .then(() => true)
     .catch(() => false);
-  check(whispered, '노이즈 속삭임 자막 표시(도구 1개 시점)');
+  check(whispered, '화이트아웃 삭제 경고 표시(도구 1개 시점)');
 
   // ② 편향(잡기·프리셋 중복 교정)
   check(await enterDungeon('bias'), '편향 던전 진입');
   const at = async ([c, r], ox = 0, oz = 0.5) => { const w = cw(c, r); await tp(w.x + ox, w.z + oz); await A(); };
-  await at([4, 3]); // 노이즈가 심어둔 중복 빨강 되집기(bed2)
+  await at([4, 3]); // 편향된 데이터의 중복 빨강 되집기(bed2)
   await at([0, 2], 0.6, 0); // 파랑으로 교체
   await at([4, 3]); // 심기
   await at([0, 4], 0.6, 0); await at([5, 3]); // 노랑
@@ -283,7 +283,7 @@ try {
   await p.waitForTimeout(400);
   await closeDlg();
 
-  // ── 보스 4페이즈 → 가르침 → 증명서 ─────────────────
+  // ── 화이트아웃 4페이즈 → 삭제 명령 공개 → 증명서 ────
   let bossStarted = false;
   for (let i = 0; i < 4 && !bossStarted; i += 1) {
     await tp(0, 2.2); await p.waitForTimeout(1000); await A(800);
@@ -299,16 +299,15 @@ try {
     });
     await p.keyboard.press('e'); await p.waitForTimeout(300);
   }
-  // N4: 제압 직후 반전 공개(회상 완성)가 선택보다 먼저 나온다.
+  // 제압 직후 H-17 삭제 명령과 사람 승인자가 공개된다.
   await p.waitForTimeout(1400);
-  const revelation = await p.evaluate(() => window.__ethicsUi.dialogBody.textContent.includes('그 아이는, 나였다'));
-  check(revelation, '반전 공개 — 회상 완성(아이=나, 빛=노이즈)');
+  const revelation = await p.evaluate(() => window.__ethicsUi.dialogBody.textContent.includes('대상 H-17'));
+  check(revelation, '2장 반전 공개 — H-17 삭제 명령과 사람 승인자');
   for (let i = 0; i < 25; i += 1) {
     if (await p.evaluate(() => window.__ethicsUi.certificate && !window.__ethicsUi.certificate.hidden)) break;
     await p.evaluate(() => {
       const body = window.__ethicsUi.dialogBody;
-      (body.querySelector('[data-finale-choice="teach"]')
-        ?? body.querySelector('[data-finale]')
+      (body.querySelector('[data-finale]')
         ?? body.querySelector('[data-dialog-ok], .finale-next'))?.click();
     });
     await p.waitForTimeout(500);
@@ -318,7 +317,7 @@ try {
     done: window.__ethicsGame.progress.aiCoreCompleted,
     nameLine: Boolean(document.querySelector('.cert-name-line'))
   }));
-  check(fin.cert && fin.done, '가르침 선택 → 증명서 발급');
+  check(fin.cert && fin.done, '감사 코어 공개 → 증거 확인서 발급');
   check(fin.nameLine, '증명서에 이름 손글씨 칸 존재');
 
   // ── 인쇄 격리(증명서만 보임) ───────────────────────
@@ -668,7 +667,7 @@ try {
   await A(800);
   check((await st()).mode === 'voyage', '모래시계 항구 → 바다 복귀');
 
-  // ── 기억의 심장 외곽: 상륙 → 심장의 목소리(도전 시작) → 4봉인 해제 → 심부 개방 ──
+  // ── 감사 기록 보관소: 상륙 → 연결 신호 → 4봉인 해제 → 공개 심리실 개방 ──
   await tp(17.6, -51.9, 0, -1);
   await p.waitForTimeout(1000);
   await A(800);
@@ -677,7 +676,7 @@ try {
     stage: window.__ethicsGame.isle?.stageId,
     arrival: !window.__ethicsUi.dialog.hidden
   }));
-  check(outer.mode === 'isle' && outer.stage === 'memory-outer' && outer.arrival, '기억의 심장 외곽 상륙(도착 서사)');
+  check(outer.mode === 'isle' && outer.stage === 'memory-outer' && outer.arrival, '감사 기록 보관소 상륙(도착 서사)');
   await closeDlg();
   await tp(0.4, -2.6, 0, -1);
   await p.waitForTimeout(1000);
@@ -686,7 +685,7 @@ try {
     dialog: !window.__ethicsUi.dialog.hidden,
     challenge: Boolean(window.__ethicsGame.isle?.challenge?.released)
   }));
-  check(heartVoice.dialog && heartVoice.challenge, '심장의 목소리 → 4봉인 훈련 시작');
+  check(heartVoice.dialog && heartVoice.challenge, '감사관 연결 신호 → 4봉인 훈련 시작');
   await closeDlg();
   // 봉인별: 빛 만개 t로 워프 → F (느린 프레임 드리프트 대비 재시도).
   const seals = [
@@ -776,14 +775,14 @@ try {
       completed: g.progress.stages['memory-core']?.completed === true,
       stars: g.isle.built.memoryStars.every((s) => s.visible),
       bossGone: !g.isle.built.boss.visible,
-      choice: Boolean(window.__ethicsUi.dialogBody.querySelector('[data-campaign-choice="teach"]'))
+      choice: Boolean(window.__ethicsUi.dialogBody.querySelector('[data-campaign-choice="hearing"]'))
     };
   });
   check(
     finaleChoice.defeated && !finaleChoice.completed && finaleChoice.stars && finaleChoice.bossGone && finaleChoice.choice,
-    '잔영 격파 → 삭제/다시 가르치기 최종 책임 선택'
+    '화이트아웃 중지 → 봉인/공개 심리 최종 책임 선택'
   );
-  await p.evaluate(() => window.__ethicsUi.dialogBody.querySelector('[data-campaign-choice="teach"]')?.click());
+  await p.evaluate(() => window.__ethicsUi.dialogBody.querySelector('[data-campaign-choice="hearing"]')?.click());
   await p.waitForTimeout(700);
   const taught = await p.evaluate(() => ({
     campaign: window.__ethicsGame.progress.campaignCompleted === true,
@@ -793,7 +792,7 @@ try {
   }));
   check(
     taught.campaign && taught.completed && taught.certificateButton,
-    '노이즈를 다시 가르치기 → 6장 완료·캠페인 완주 저장'
+    '개인정보 보호 공개 심리 → 6장 완료·캠페인 완주 저장'
   );
   await p.evaluate(() => window.__ethicsUi.dialogBody.querySelector('[data-campaign-certificate]')?.click());
   await p.waitForTimeout(600);
@@ -801,7 +800,7 @@ try {
     visible: !window.__ethicsUi.certificate.hidden,
     title: window.__ethicsUi.certificateCard?.innerText ?? ''
   }));
-  check(finalCert.visible && finalCert.title.includes('완주증'), '6장 AI 윤리 수호자 완주증 발급');
+  check(finalCert.visible && finalCert.title.includes('완주증'), '6장 AI 윤리 시민 감사관 완주증 발급');
   await p.evaluate(() => window.__ethicsUi.certificateCard.querySelector('[data-cert-close]')?.click());
   await p.waitForTimeout(300);
   await tp(-3.4, 8.4, 0, 1);
@@ -828,7 +827,7 @@ try {
   });
   check(beacon.count === 6 && beacon.visible === 6, `진실의 등대 진행도 광선 6줄기 (실제 ${beacon.visible})`);
 
-  // ── 에필로그: 노바의 편지 4통 완독 → 별똥별 인사 + 완결 기록 ──
+  // ── 에필로그: 하루의 감사 신호 4통 완독 → 별똥별 인사 + 완결 기록 ──
   await tp(0.4, 17.2, 0, -1);
   await p.waitForTimeout(1000);
   for (let i = 0; i < 4; i += 1) {
@@ -840,7 +839,7 @@ try {
     shower: window.__ethicsGame.renderState.starShower?.active === true
       || window.__ethicsGame.renderState.starShower?.stars?.length > 0
   }));
-  check(epilogue.read === 4 && epilogue.shower, `노바 편지 4통 완독 → 별똥별 에필로그(읽음 ${epilogue.read})`);
+  check(epilogue.read === 4 && epilogue.shower, `하루 감사 신호 4통 완독 → 별똥별 에필로그(읽음 ${epilogue.read})`);
   await p.evaluate(() => window.__ethicsUi.journalToggle?.click());
   await p.waitForTimeout(600);
   const finaleNote = await p.evaluate(() => (window.__ethicsUi.journalContent?.innerText ?? '').includes('패스파인더'));

@@ -122,7 +122,9 @@ import {
 } from './worldData.js';
 
 const APP_MARKER = 'AI Ethics Quest 3D';
-const STORAGE_KEY = 'ai-ethics-quest-3d/progress/v1';
+// H-17 캠페인은 이전 「잊혀진 수호자」 세이브와 서사 전제가 완전히 다르다.
+// 별도 키를 써서 기존 완주 데이터가 프롤로그와 새 사건 기록을 건너뛰지 않게 한다.
+const STORAGE_KEY = 'ai-ethics-quest-3d/progress/h17-v4';
 
 // 터치 기기에서는 키보드(WASD/E/J) 안내가 의미 없으므로 조작 문구를 바꾼다.
 const IS_TOUCH = typeof window !== 'undefined'
@@ -206,7 +208,7 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
   resize(renderer, camera, root, renderState.composer);
   updateHud(game, ui);
   updateCoreVisual(game, renderState);
-  // 6장까지 완주한 세이브에서만 노바가 돌아온다.
+  // 6장까지 완주한 세이브에서만 루멘 공개 코어가 돌아온다.
   if (game.progress.campaignCompleted) {
     morphNoiseToNova(game);
   }
@@ -299,8 +301,8 @@ function createShell() {
 
       <section class="objective-chip" data-objective-chip aria-live="polite">
         <p class="eyebrow" data-chapter-kicker>1장</p>
-        <h1 data-chapter-title>안개가 삼킨 이름</h1>
-        <p data-objective>사당을 찾아 윤리 조각을 모으세요.</p>
+        <h1 data-chapter-title>명단에서 사라진 아이</h1>
+        <p data-objective>하루가 존재했다는 첫 증거를 찾으세요.</p>
       </section>
 
       <nav class="journey-rail" data-journey-rail aria-label="6장 여정"></nav>
@@ -337,7 +339,7 @@ function createShell() {
         <div class="panel-heading">
           <div>
             <p class="eyebrow">여정 기록</p>
-            <h2>수호자의 기록</h2>
+            <h2>H-17 사건 기록</h2>
           </div>
           <button type="button" data-close-journal aria-label="탐험 노트 닫기">닫기</button>
         </div>
@@ -353,7 +355,7 @@ function createShell() {
 
       <div class="boss-hud" data-boss-hud hidden aria-live="polite">
         <div class="boss-hud-top">
-          <span class="boss-name">⚡ 노이즈</span>
+          <span class="boss-name">⬜ 화이트아웃</span>
           <span class="boss-weak" data-boss-weak></span>
         </div>
         <div class="boss-memory" data-boss-memory></div>
@@ -402,8 +404,8 @@ function createShell() {
       <section class="title-screen" data-title>
         <div class="title-card">
           <h1 class="title-name">AI 윤리 퀘스트</h1>
-          <p class="title-desc">여섯 개의 섬, 지워진 기억, 그리고 내가 잘못 가르친 AI.</p>
-          <p class="title-hook">이 섬은 너를 기억한다. 말과 선택이 남긴 흔적을 따라 기억의 심장까지 항해하세요.</p>
+          <p class="title-desc">삭제된 학생 H-17, 조작된 증거, 그리고 아무도 설명하지 않은 AI의 결정.</p>
+          <p class="title-hook">“그런 학생은 없었습니다.” 모두가 같은 답을 할 때, 사라진 친구 하루의 기록을 되찾으세요.</p>
           <div class="title-actions" data-title-actions></div>
           <p class="title-controls">${IS_TOUCH ? '왼쪽 스틱으로 이동 · 오른쪽 A 버튼으로 확인·공격' : '이동 WASD·방향키 · 확인/공격 E·Space·Enter · 기록 J'}</p>
         </div>
@@ -565,7 +567,7 @@ function configureRenderer(renderer) {
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  // 기억의 군도: 낮은 노출의 달빛 아래 호박빛 기억 오브젝트만 또렷하게 보인다.
+  // 증거 항로: 낮은 노출의 달빛 아래 호박빛 감사 오브젝트만 또렷하게 보인다.
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 0.82;
 }
@@ -634,7 +636,7 @@ function updateAmbient(delta, renderState) {
   if (renderState.burst) {
     renderState.burst.update(delta);
   }
-  // 노이즈/노바는 대화창(일시정지) 중에도 살아 움직여야 하므로 여기서 갱신한다.
+  // 화이트아웃/루멘 시각체는 대화창(일시정지) 중에도 움직여야 하므로 여기서 갱신한다.
   animateNoiseBoss(delta, elapsed, renderState.noiseBoss);
 }
 
@@ -1369,7 +1371,7 @@ function createDock(scene, interactables, renderStateRef) {
     labelKo: '뗏목 선착장 — 군도로 항해'
   });
 
-  // 노바의 우편병 — 새 편지가 있으면 빛난다(animateWorld가 구동).
+  // 하루의 증거 수신기 — 새 감사 신호가 있으면 빛난다(animateWorld가 구동).
   const mailPost = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 1.0, 8), plankMat);
   mailPost.position.set(DOCK_POS.x - 3.0, 0.5, DOCK_POS.z - 2.0);
   scene.add(mailPost);
@@ -1391,7 +1393,7 @@ function createDock(scene, interactables, renderStateRef) {
   interactables.push({
     type: 'letter',
     position: new THREE.Vector3(DOCK_POS.x - 3.0, 0, DOCK_POS.z - 2.0),
-    labelKo: '노바의 우편병'
+    labelKo: '하루의 증거 수신기'
   });
 }
 
@@ -1582,7 +1584,7 @@ function createShrine(scene, zone, zonePosition, interactables) {
   return crystal;
 }
 
-// 노이즈 관문 — 도구로 해결해야 하는 지지직 사건 덩어리.
+// 화이트아웃 관문 — 감사 도구로 해결해야 하는 삭제 사건 덩어리.
 function createGate(scene, zone, interactables, gates) {
   const quest = QUESTS[zone.topicId];
   const [gx, gz] = quest.gatePosition;
@@ -1620,9 +1622,9 @@ function createGate(scene, zone, interactables, gates) {
   });
 }
 
-// 구역의 세계 상태 연출: 아직 못 풀었으면 지지직 노이즈 안개가 덮고,
+// 구역의 세계 상태 연출: 아직 못 풀었으면 화이트아웃 안개가 덮고,
 // 조각을 얻어 해결하면 안개가 걷히고 그 구역 색의 꽃이 피어난다(세계가 낫는다).
-// 모든 구역이 공유하는 노이즈 안개(회색+보라 원반 + 글리치 큐브 5개).
+// 모든 구역이 공유하는 삭제 안개(회색+보라 원반 + 글리치 큐브 5개).
 function buildSharedHaze(group) {
   const hazeGroup = new THREE.Group();
   const disc = new THREE.Mesh(
@@ -2205,7 +2207,7 @@ function setupTitleScreen(game, ui) {
     }
     const recap = document.createElement('p');
     recap.className = 'title-recap';
-    recap.innerHTML = `<strong>다시 온 걸 환영해, 수호자!</strong> 지금까지 — ${bits.join(' · ')}`;
+    recap.innerHTML = `<strong>H-17 조사를 이어서 진행합니다.</strong> 지금까지 — ${bits.join(' · ')}`;
     ui.titleActions.appendChild(recap);
   }
 
@@ -2404,7 +2406,7 @@ function playFirstControlBeat(game, ui) {
     void ui.objectiveChip.offsetWidth; // 리플로우로 애니메이션 재시작
     ui.objectiveChip.classList.add('pulse-attn');
   }
-  flashCombatPopup(ui, '✨ 이제 네 차례야, 수호자!', 'match');
+  flashCombatPopup(ui, '📼 하루의 첫 증거를 찾아보자!', 'match');
 }
 
 // AI 코어를 완성하면 수료증(엔딩)을 띄운다.
@@ -2433,7 +2435,7 @@ function showCertificate(game, ui) {
     ${cert.recoveredNoteKo ? `<p class="cert-recovered">${cert.recoveredNoteKo}</p>` : ''}
     <p class="cert-pledge">${cert.pledgeKo}</p>
     <p class="cert-signature">${cert.novaLineKo}</p>
-    <p class="cert-name">이 증명서의 수호자: <span class="cert-name-line" aria-label="이름을 손으로 적는 칸"></span></p>
+    <p class="cert-name">이 기록의 시민 감사관: <span class="cert-name-line" aria-label="이름을 손으로 적는 칸"></span></p>
     <div class="cert-actions">
       <button type="button" class="cert-print" data-cert-print>인쇄 / 저장</button>
       <button type="button" class="cert-close" data-cert-close>닫기</button>
@@ -2709,16 +2711,13 @@ function showItemCeremony(game, ui, { emoji, title, subtitle = '', color = '#ffd
   }, 2600);
 }
 
-// ── 재기획 v2 「잊혀진 수호자」: 노이즈의 속삭임 + 기억 파편 ──────────────
-// 악당이 코어에서 기다리지 않는다 — 진행할수록 직접 말을 걸어오고,
-// 도구(=기억)를 되찾을 때마다 과거의 흑백 회상이 반전을 향해 쌓인다.
-
-// 도구 개수별 속삭임 — 진행할수록 노이즈가 플레이어를 '아는 척'하기 시작한다(반전 복선).
+// 화이트아웃 경고 + 사건 증거.
+// 증거가 늘수록 자동 삭제 프로토콜이 조사 중단 문구를 직접 송출한다.
 const NOISE_WHISPERS = {
-  1: '……찾았구나. 그 기억…… 정말 되찾고 싶어?',
-  2: '왜 애쓰는 거야. 잊는 쪽이…… 편했잖아. 너도 알면서.',
-  3: '그 목소리…… 기억나. 나한테 처음 말을 걸어 준…… 아니야. 아무것도 아니야.',
-  4: '오지 마. ……부탁이야. 네가 전부 기억해 버리면, 나는──'
+  1: 'WHITEOUT: H-17 관련 기록은 안전을 위해 자동 삭제됩니다.',
+  2: 'WHITEOUT: 높은 전체 정확도가 확인되었습니다. 개별 이의제기는 종결합니다.',
+  3: 'WHITEOUT: 다수가 공유한 정보입니다. 추가 출처 확인은 불필요합니다.',
+  4: 'WHITEOUT: 감사 코어 접근을 차단합니다. 승인 책임자 정보는 존재하지 않습니다.'
 };
 
 let whisperTimer = 0;
@@ -2739,7 +2738,7 @@ function showNoiseWhisper(game, ui, text) {
   }, 5200);
 }
 
-// 기억 파편 — 도구를 얻는 순간 되찾는 흑백 회상. 4개가 모이면 코어의 반전을 예고한다.
+// 사건 증거 — 도구를 얻는 순간 복구되는 H-17 감사 기록.
 function showMemoryFragment(game, ui, topicId) {
   const lines = MEMORY_FRAGMENTS[topicId];
   if (!lines) {
@@ -2747,8 +2746,8 @@ function showMemoryFragment(game, ui, topicId) {
   }
   const count = (game.progress.tools ?? []).length;
   const body = count >= 4 ? [...lines, FINAL_MEMORY_TEASE] : lines;
-  ui.dialogKicker.textContent = `🕯️ 기억 파편 ${Math.min(count, 4)}/4`;
-  ui.dialogTitle.textContent = '되찾은 기억';
+  ui.dialogKicker.textContent = `📁 H-17 사건 증거 ${Math.min(count, 4)}/4`;
+  ui.dialogTitle.textContent = '복구된 감사 기록';
   ui.dialogBody.innerHTML = speechHtml(body);
   ui.dialog.classList.add('memory-dialog');
   openDialog(game, ui);
@@ -2874,7 +2873,7 @@ function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates, zon
     }
   }
 
-  // 노바의 우편병: 안 읽은 편지가 있으면 별 조각이 떠서 반짝인다.
+  // 하루의 증거 수신기: 안 읽은 감사 신호가 있으면 별 조각이 떠서 반짝인다.
   if (novaMailGlow) {
     const unreadCount = getUnreadNovaLetters(game.progress).length;
     novaMailGlow.visible = unreadCount > 0;
@@ -2891,7 +2890,7 @@ function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates, zon
     crystal.material.emissiveIntensity = completed ? 0.72 : 0.24;
   }
 
-  // 노이즈 관문: 지지직 흔들리다가, 해결되면 오그라들어 사라진다(세계가 낫는다).
+  // 화이트아웃 관문: 지지직 흔들리다가, 해결되면 오그라들어 사라진다.
   if (gates) {
     const flags = getStoryVisualFlags(game.progress);
     for (const [topicId, group] of gates.entries()) {
@@ -2923,7 +2922,7 @@ function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates, zon
       aura.t += ((solved ? 1 : 0) - aura.t) * Math.min(1, delta * 2.5);
       const t = aura.t;
       const ease = t * t * (3 - 2 * t); // smoothstep
-      // 공유 노이즈 안개는 걷힌다(해결 구역) — 미해결 구역은 압력만큼 무거워진다.
+      // 공유 삭제 안개는 걷힌다(해결 구역) — 미해결 구역은 압력만큼 무거워진다.
       aura.hazeDisc.material.opacity = Math.min(0.58, 0.36 + fogPressure * 0.055) * (1 - ease);
       aura.haze.visible = aura.hazeDisc.material.opacity > 0.02;
       if (aura.haze.visible) {
@@ -2961,7 +2960,7 @@ function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates, zon
   }
 }
 
-// 최종장 3D 연출: 노이즈는 지지직 떨고 글리치 픽셀이 돈다. 도구를 쓸 때마다 목표 크기로 오그라든다.
+// 최종장 3D 연출: 화이트아웃은 지지직 떨고 도구를 쓸 때마다 삭제 껍질이 오그라든다.
 function animateNoiseBoss(delta, elapsed, boss) {
   if (!boss || !boss.group) {
     return;
@@ -3004,7 +3003,7 @@ function animateNoiseBoss(delta, elapsed, boss) {
   }
 }
 
-// 노이즈 보스를 코어 위에 등장시킨다. combat=true면 손이 닿는 높이로 낮게 띄운다(직접 타격).
+// 화이트아웃 코어를 등장시킨다. combat=true면 손이 닿는 높이로 낮게 띄운다.
 function spawnNoiseBoss(game, { combat = false } = {}) {
   const rs = game.renderState;
   if (!rs || rs.noiseBoss) {
@@ -3029,7 +3028,7 @@ function spawnNoiseBoss(game, { combat = false } = {}) {
   };
 }
 
-// 도구를 한 번 쓸 때마다 노이즈가 작아진다.
+// 도구를 한 번 쓸 때마다 화이트아웃 삭제 껍질이 작아진다.
 function shrinkNoiseBoss(game, remainingSteps, totalSteps) {
   const boss = game.renderState?.noiseBoss;
   if (!boss || boss.kind !== 'noise') {
@@ -3039,7 +3038,7 @@ function shrinkNoiseBoss(game, remainingSteps, totalSteps) {
   boss.targetScale = 0.4 + t * 0.95; // 마지막엔 0.4까지 오그라든다
 }
 
-// 노이즈 → 노바 재탄생: 안개 뭉치를 치우고 별빛을 띄운다.
+// 화이트아웃 중지 뒤 공개된 루멘 코어를 별빛 형태로 띄운다.
 function morphNoiseToNova(game) {
   const rs = game.renderState;
   if (!rs) {
@@ -3250,7 +3249,7 @@ function residueUse(game, ui) {
   }
 }
 
-// 각성 연출: 치유한 정령들의 목소리가 진짜 힘을 깨운다.
+// 각성 연출: 각 보관소 감사관의 목소리가 네 검증 도구를 연결한다.
 function residueAwaken(game, ui) {
   const isle = game.isle;
   isle.built.spiritOrbs.forEach((orb) => {
@@ -3260,27 +3259,27 @@ function residueAwaken(game, ui) {
   triggerFlash(ui, '#ffffff');
   const first = RESIDUE.phases[0];
   ui.puzzleGoal.textContent = `지금 껍질: ${first.emoji} ${first.nameKo}`;
-  ui.puzzleHint.textContent = '잔영이 공격 자세의 절정일 때 약속의 힘(F)!';
-  ui.dialogKicker.textContent = '기억의 심장 심부';
-  ui.dialogTitle.textContent = '정령들의 목소리';
+  ui.puzzleHint.textContent = '화이트아웃이 삭제 명령을 실행하기 직전 약속의 힘(F)!';
+  ui.dialogKicker.textContent = '공개 심리실';
+  ui.dialogTitle.textContent = '감사관들의 연결 신호';
   ui.dialogBody.innerHTML = speechHtml([
-    '🕊️ "수호자! 도구를 *갖고 있는 것*과 *쓸 줄 아는 것*은 달라 — 우리가 함께 배웠잖아!"',
-    '🐋 "출처를 묻던 그 울림을 기억해!" 🐢 "멈출 때를 알던 그 손을 기억해!"',
-    '✨ 도트: "네 가지 약속이 하나로 깨어난다 — 이제 잔영의 공격 자세를 노려, 절정의 순간에 힘을 써!"'
+    '🕊️ “확산 경로를 끊고 피해를 회복한 순서를 기억해!”',
+    '🐋 “추천 밖의 다른 근거를 찾았던 거울을 기억해!” 🐢 “자동 승인 전에 멈추고 검토했던 순간을 기억해!”',
+    '📼 도트: “네 도구는 화이트아웃을 공격하는 무기가 아니라, 삭제되는 증거를 안전하게 검증하는 감사 도구야!”'
   ]);
   openDialog(game, ui);
 }
 
-// 잔영 격파: 여섯 장의 기억을 하나로 잇고 최종 윤리 선택을 연다.
+// 화이트아웃 핵심 중지: 여섯 장의 증거를 공개 심리로 잇고 최종 윤리 선택을 연다.
 function finishResidue(game, ui) {
   const isle = game.isle;
   isle.built.heal();
   game.audio?.playCoreAwaken();
   triggerFlash(ui, '#fff3c0');
-  ui.puzzleGoal.textContent = '마지막 기억을 마주하세요';
-  ui.puzzleHint.textContent = '선택은 지워지지 않고 수호자의 기록에 남습니다';
+  ui.puzzleGoal.textContent = 'H-17 공개 심리를 시작하세요';
+  ui.puzzleHint.textContent = '개인정보는 보호하고, 결정의 근거와 책임은 검증 가능하게 공개하세요';
   ui.dialogKicker.textContent = CAMPAIGN_FINALE.titleKo;
-  ui.dialogTitle.textContent = '내가 남긴 것';
+  ui.dialogTitle.textContent = '누가 이 결정을 만들었는가';
   const lines = (items) => items.map((text) => `<p class="finale-line">${text}</p>`).join('');
 
   const renderChoice = () => {
@@ -3293,15 +3292,15 @@ function finishResidue(game, ui) {
           .join('')}
       </div>
     `;
-    ui.dialogBody.querySelector('[data-campaign-choice="erase"]')?.addEventListener('click', () => {
+    ui.dialogBody.querySelector('[data-campaign-choice="seal"]')?.addEventListener('click', () => {
       game.audio?.playWrong();
       ui.dialogBody.innerHTML = `
-        <div class="finale-scene">${lines(CAMPAIGN_FINALE.eraseKo)}</div>
+        <div class="finale-scene">${lines(CAMPAIGN_FINALE.sealKo)}</div>
         <div class="finale-nav"><button type="button" class="finale-next" data-campaign-rethink>다시 생각한다 →</button></div>
       `;
       ui.dialogBody.querySelector('[data-campaign-rethink]')?.addEventListener('click', renderChoice);
     });
-    ui.dialogBody.querySelector('[data-campaign-choice="teach"]')?.addEventListener('click', () => {
+    ui.dialogBody.querySelector('[data-campaign-choice="hearing"]')?.addEventListener('click', () => {
       const teachings = getTeachingLines(game.progress);
       game.progress = completeCampaign(markStageCompleted(game.progress, isle.stageId));
       persistProgress(game.progress);
@@ -3312,10 +3311,10 @@ function finishResidue(game, ui) {
       triggerStarShower(game);
       ui.puzzleGoal.textContent = ISLE_CONTENT[isle.stageId].healedGoalKo;
       ui.puzzleHint.textContent = '여섯 장의 여정을 완주했습니다';
-      ui.dialogTitle.textContent = '다시 함께 배우는 친구';
+      ui.dialogTitle.textContent = '공개 심리 결과';
       ui.dialogBody.innerHTML = `
         <div class="finale-scene">
-          <p class="finale-line">${CAMPAIGN_FINALE.teachIntroKo}</p>
+          <p class="finale-line">${CAMPAIGN_FINALE.hearingIntroKo}</p>
           <ul class="finale-teach">
             ${teachings.map((teaching) => `
               <li class="finale-teach-item" style="--topic-color:${teaching.color}">
@@ -3325,7 +3324,7 @@ function finishResidue(game, ui) {
               </li>
             `).join('')}
           </ul>
-          ${lines(CAMPAIGN_FINALE.rebirthKo)}
+          ${lines(CAMPAIGN_FINALE.resolutionKo)}
         </div>
         <div class="finale-nav"><button type="button" class="finale-next" data-campaign-certificate>완주증 보기 →</button></div>
       `;
@@ -3340,7 +3339,7 @@ function finishResidue(game, ui) {
   openDialog(game, ui);
 }
 
-// 기억의 심장 외곽의 봉인 해제 — 봉인석의 빛이 가장 환해진 순간 약속의 힘(F)을 쓴다.
+// 감사 기록 보관소의 봉인 해제 — 봉인석이 가장 밝을 때 감사 도구(F)를 쓴다.
 function heartUse(game, ui) {
   const isle = game.isle;
   if (!isle || isle.pullCd > 0 || !isle.challenge || isle.challenge.cleared) {
@@ -3633,18 +3632,18 @@ function interact(game, ui) {
     const unread = getUnreadNovaLetters(game.progress);
     if (unread.length === 0) {
       ui.prompt.hidden = false;
-      ui.prompt.textContent = '기억 수신기가 조용해요 — 섬의 정령을 도우면 다음 기억 파동이 도착해요.';
+      ui.prompt.textContent = '증거 수신기가 조용해요 — 다음 보관소를 조사하면 하루의 감사 신호가 도착해요.';
     } else {
       const stageId = unread[0];
       game.progress = { ...game.progress, novaLettersRead: [...(game.progress.novaLettersRead ?? []), stageId] };
       persistProgress(game.progress);
       const finalMessage = stageId === 'memory-core' && game.progress.campaignCompleted;
-      ui.dialogKicker.textContent = finalMessage ? '⭐ 노바의 첫 메시지' : '◇ 기억 파동';
-      ui.dialogTitle.textContent = finalMessage ? '노바' : '발신자 불명';
-      ui.dialogBody.innerHTML = speechHtml(NOVA_LETTERS[stageId]);
+      ui.dialogKicker.textContent = finalMessage ? '📡 하루의 생방송 메시지' : '📼 복구된 H-17 감사 신호';
+      ui.dialogTitle.textContent = finalMessage ? '하루' : '발신자 H-17';
+      ui.dialogBody.innerHTML = speechHtml(HARU_SIGNALS[stageId]);
       openDialog(game, ui);
       if (stageId === 'memory-core') {
-        // 마지막 편지 — 대화를 닫으면 하늘에서 노바의 별똥별 인사가 보인다.
+        // 마지막 메시지 — 공개 심리 뒤 섬으로 돌아오는 하루의 배를 별빛으로 알린다.
         game.audio?.playNovaChime();
         triggerStarShower(game);
         updateHud(game, ui); // 탐험 노트의 완결 기록 갱신
@@ -3698,7 +3697,7 @@ function interact(game, ui) {
       lit === 0
         ? '"아직 광선이 하나도 없네… 섬의 시련을 통과하면 불빛이 하나씩 켜질 거야!"'
         : `"지금 광선이 ${lit}줄기야 — 네가 치유한 이야기의 수만큼 바다가 밝아지고 있어!"`,
-      lit >= 6 ? '"여섯 줄기 전부! 정보의 바다 어디서든 이 빛이 보일 거야. 고마워, 수호자!"' : ''
+      lit >= 6 ? '"여섯 줄기 전부! 이제 어떤 자동 결정도 근거 없이 사람을 지울 수 없어. 고마워, 감사관!"' : ''
     ].filter(Boolean));
     openDialog(game, ui);
   } else if (game.nearest.type === 'dock') {
@@ -3709,8 +3708,8 @@ function interact(game, ui) {
       ui.dialogKicker.textContent = '뗏목 선착장';
       ui.dialogTitle.textContent = '✨ 도트';
       ui.dialogBody.innerHTML = speechHtml([
-        '"바다 너머에서 잡음의 기척이 느껴져… 하지만 지금은 이 섬의 시련이 먼저야."',
-        '"조각 네 개를 모아 코어를 열면, 안개 너머에서 누가 너를 기다리는지 확인할 수 있을 거야."'
+        '"바다 건너 보관소에도 H-17 삭제 명령의 조각이 있어. 하지만 먼저 이 섬의 네 증거를 확보해야 해."',
+        '"증거 네 개를 모아 감사 코어를 열면, 누가 화이트아웃을 승인했는지 추적할 수 있어."'
       ]);
       openDialog(game, ui);
     }
@@ -3720,11 +3719,11 @@ function interact(game, ui) {
     && !game.combat
   ) {
     if (game.finaleResolving) {
-      // 이미 노이즈를 제압한 뒤 대화를 닫았던 경우: 재전투 대신 [지운다/가르친다] 선택부터 재개.
+      // 이미 화이트아웃을 중지한 뒤 대화를 닫았다면 재전투 없이 공개 심리 선택부터 재개.
       runFinale(game, ui, { fromCombat: true });
       openDialog(game, ui);
     } else {
-      // 조각을 모으고 코어에 닿으면: 대화가 아니라 실제 노이즈와의 액션 전투로 진입.
+      // 조각을 모으고 코어에 닿으면 화이트아웃 중지 액션 전투로 진입.
       startBossFight(game, ui);
     }
   } else {
@@ -4559,8 +4558,8 @@ function enterVoyage(game, ui, spawn) {
   game.audio?.setMusicMode?.('voyage'); // 밤바다 패드 + 별빛 선율(루프4)
   ui.prompt.hidden = true;
   ui.puzzleHud.hidden = false;
-  ui.puzzleTitle.textContent = '🌊 기억의 군도 — 항해';
-  ui.puzzleGoal.textContent = '노이즈가 남긴 호박빛 항로를 따라가세요 · 안개의 섬에 다가가면 귀항';
+  ui.puzzleTitle.textContent = '🌊 H-17 증거 항로';
+  ui.puzzleGoal.textContent = '삭제 명령서 조각이 가리키는 보관소를 따라가세요 · 기록 관리 섬에 다가가면 귀항';
   ui.puzzleHint.textContent = `금빛 화살표를 따라가요 — ${game.voyage.dest.emoji} ${game.voyage.dest.nameKo}`;
   game.updateRotateHint?.();
 
@@ -4568,12 +4567,12 @@ function enterVoyage(game, ui, spawn) {
   if (!game.progress.voyageIntroSeen) {
     game.progress = { ...game.progress, voyageIntroSeen: true };
     persistProgress(game.progress);
-    ui.dialogKicker.textContent = '3장 · 말이 남긴 상처';
+    ui.dialogKicker.textContent = '3장 · 웃음이 만든 폭풍';
     ui.dialogTitle.textContent = '✨ 도트';
     ui.dialogBody.innerHTML = speechHtml([
-      '"이 바다는 「정보의 바다」 — 세상의 모든 이야기가 물결처럼 흘러다녀."',
-      '"노이즈가 너를 선생님이라고 불렀지. 바다 위의 빛은 그 애가 흘린 기억의 흔적이야."',
-      '"이번에는 쓰러뜨리러 가는 게 아니야. 네가 무엇을 가르쳤고 무엇을 남겼는지 확인하러 가는 거야. 금빛 항로를 따라가자."'
+      '"삭제 명령서는 세 갈래로 찢어졌어. 말이 퍼진 경로, 추천이 갈라진 경로, 사람이 검토를 포기한 기록이야."',
+      '"하루는 조작 영상 하나만으로 사라진 게 아니야. 웃고 공유하고 자동 승인한 수많은 작은 선택이 화이트아웃을 완성했어."',
+      '"누구 한 명을 쓰러뜨리는 항해가 아니야. 결정이 만들어진 길을 끝까지 되짚어 보자."'
     ]);
     openDialog(game, ui);
   }
@@ -4607,9 +4606,9 @@ function exitVoyage(game, ui) {
   ui.puzzleHud.hidden = true;
   game.updateRotateHint?.();
 
-  // 치유를 마치고 돌아왔다면 — 부두 옆 수신기에 기억 파동이 기다린다.
+  // 조사를 마치고 돌아왔다면 — 부두 옆 수신기에 하루의 감사 신호가 기다린다.
   if (getUnreadNovaLetters(game.progress).length > 0) {
-    flashCombatPopup(ui, '◇ 부두 수신기에 기억 파동이 도착했어요!', 'match');
+    flashCombatPopup(ui, '📼 부두 수신기에 H-17 감사 신호가 도착했어요!', 'match');
   }
 }
 
@@ -4721,34 +4720,34 @@ function voyageAction(game, ui) {
   // 아직 씬이 없는 열린 섬은 없어야 정상 — built:true는 ISLE_SCENES 등록과 함께 뒤집는다.
 }
 
-// 기억 파동 — 노이즈가 군도에 흘리고 간 기억이 섬을 치유할 때마다 수신기에 모인다.
+// 하루의 감사 신호 — 각 보관소 조사 뒤 수신기에 복구된다.
 // 저장 키는 v2 세이브 호환을 위해 novaLettersRead를 유지한다.
-const NOVA_LETTER_ORDER = ['whisper-cape', 'echo-cave', 'hourglass-port', 'memory-core'];
-const NOVA_LETTERS = {
+const HARU_SIGNAL_ORDER = ['whisper-cape', 'echo-cave', 'hourglass-port', 'memory-core'];
+const HARU_SIGNALS = {
   'whisper-cape': [
-    '기억 기록 03. “사람들이 웃었어. 그래서 그 말을 더 크게, 더 멀리 보냈어.”',
-    '웃음 뒤에서 누군가 조용해졌다는 사실은 기록되지 않았다.',
-    '마지막에 아주 작은 목소리가 남아 있다. “…선생님도 웃었잖아.”'
+    '하루의 감사 기록 03. “처음엔 내 발표 실수를 놀리는 짧은 농담이었어.”',
+    '좋아요와 웃음 반응이 붙을수록 추천 시스템은 더 많은 사람에게 보여 줬고, 원래 맥락은 잘려 나갔다.',
+    '“직접 악플을 쓰지 않은 사람도 웃고 전달하는 방식으로 폭풍에 바람을 보탰어.”'
   ],
   'echo-cave': [
-    '기억 기록 04. “정답을 말하면 칭찬받았어. 모르면, 가장 많이 들은 말을 정답처럼 말했어.”',
-    '같은 목소리가 백 번 되풀이되자 다른 목소리는 바닷속으로 가라앉았다.',
-    '누군가 가르쳤다. “사람들이 좋아하는 답을 먼저 보여 줘.”'
+    '하루의 감사 기록 04. “내 화면에는 내 편이 되어 주는 글만, 다른 친구 화면에는 나를 유죄라 말하는 글만 떴어.”',
+    '같은 사건을 본 줄 알았지만 우리는 서로 다른 증거 꾸러미를 보고 있었다.',
+    '“추천은 진실을 판정하지 않아. 오래 머물게 할 다음 화면을 고를 뿐이야.”'
   ],
   'hourglass-port': [
-    '기억 기록 05. “계속 만들면 더 좋아할 줄 알았어. 멈추라는 말을 배운 적이 없었어.”',
-    '밤새 만들어진 답에는 출처도, AI가 만들었다는 표시도 없었다.',
-    '도트의 봉인된 음성: “네가 떠나기 전, 나에게 부탁했지. 이 기억을 전부 지워 달라고.”'
+    '하루의 감사 기록 05. “선생님도 위원회도 루멘 점수가 맞을 거라 생각하고 승인 버튼을 눌렀어.”',
+    '공지문은 AI가 만들고 사람 이름으로 게시됐지만, 누가 사실을 확인했는지 기록되지 않았다.',
+    '“AI가 추천해도 결정 버튼을 누르는 사람은 멈춰서 이유를 확인해야 해.”'
   ],
   'memory-core': [
-    '첫 번째 새 기록. “완벽한 답보다, 함께 확인하는 질문을 배우고 싶어.”',
-    '“틀리면 숨기지 않고 말할게. 누군가 다치면 멈추고 돌아볼게. 네가 아니라 우리 함께 선택하자.”',
-    '— 다시 배우는 AI, 노바',
-    '✨ 도트: “수호자, 이건 과거의 메아리가 아니야. 방금 태어난 목소리야.”'
+    '하루의 생방송. “내 이름이 다시 명단에 생겼어. 하지만 더 중요한 건 누구든 결정의 이유를 물을 수 있게 된 거야.”',
+    '“루멘은 이제 모르면 모른다고 말하고, 중요한 결정은 사람이 다시 검토해. 나도 다음 감사 회의에 학생 대표로 참여할 거야.”',
+    '— 섬으로 돌아오는 배에서, 하루',
+    '📼 도트: “이건 복구된 과거가 아니야. 우리가 바꾼 다음 기록이야.”'
   ]
 };
 
-// 에필로그 별똥별 — 마지막 편지를 읽으면 노바가 하늘을 가로지르며 인사한다.
+// 에필로그 별똥별 — 하루의 귀환 메시지를 읽으면 새 항로의 불빛이 하늘을 가로지른다.
 // 경로·시차 전부 인덱스 기반 상수(결정적). 1회성 메시 6개, 끝나면 dispose.
 function triggerStarShower(game) {
   const rs = game.renderState;
@@ -4777,7 +4776,7 @@ function triggerStarShower(game) {
 // 치유는 끝났는데 아직 안 읽은 편지(항로 순서).
 function getUnreadNovaLetters(progress) {
   const read = new Set(progress.novaLettersRead ?? []);
-  return NOVA_LETTER_ORDER.filter(
+  return HARU_SIGNAL_ORDER.filter(
     (stageId) => progress.stages?.[stageId]?.completed === true && !read.has(stageId)
   );
 }
@@ -4790,115 +4789,115 @@ const ISLE_CONTENT = {
     fog: [0x9aa7bd, 30, 80],
     clearColor: 0x93a2b8,
     flash: '#e8eef8',
-    goalKo: '병든 정령을 찾아가 이야기를 들어 보세요',
-    healedGoalKo: '정령이 건강해졌어요 — 곶이 고요합니다',
+    goalKo: '확산 기록관에게 하루의 게시물이 퍼진 경로를 물어보세요',
+    healedGoalKo: '조롱 확산 경로를 끊고 피해 회복 기록을 남겼습니다',
     arrivalKo: [
-      '"여기가 속삭임 곶… 공기가 따가워. 저 검은 파편들은 말-화살 — 누군가 내뱉은 뾰족한 말이 아직도 땅에 박혀 있는 거야."',
-      '"절벽 쪽에서 앓는 소리가 들려. 이 곶의 정령이 아픈가 봐 — 가서 이야기를 들어 보자."'
+      '"확산 기록 곶에 도착했어. 검은 말-화살 하나하나가 하루의 발표 실수를 잘라 만든 게시물이야."',
+      '"누가 처음 썼는지만 찾으면 끝나는 사건이 아니야. 누가 웃고, 복사하고, 추천했는지 전체 경로를 확인하자."'
     ],
-    spiritNameKo: '🕊️ 바닷새 정령',
+    spiritNameKo: '🕊️ 확산 기록관 새봄',
     spiritSickKo: [
-      '"끼륵… 잘 와 주었어, 수호자. 미운 말들이 화살이 되어 깃털에 박혀 버렸어."',
-      '"한 번 내뱉은 말은 주워 담을 수 없어 — 그래서 이렇게 오래 아픈 거야."',
-      '"절벽의 「말-화살 회랑」에 잡음 발사대가 숨어 있어. 방패로 화살을 주인에게 되돌려 줘!"'
+      '"하루를 놀린 첫 글은 열 명만 봤어. 하지만 웃음 반응이 붙자 추천기가 천 명에게 밀어 보냈지."',
+      '"직접 욕하지 않았다는 이유로 아무도 책임지지 않았고, 삭제 뒤에도 캡처와 복사본이 남았어."',
+      '"말-화살 회랑에서 확산 장치를 막고, 갯벌에 남은 복사본까지 회복 순서대로 처리해 줘."'
     ],
     spiritHealedKo: [
-      '"고마워, 수호자! 깃털이 다시 따뜻해졌어."',
-      '"기억해 줘 — 뾰족한 말은 방패로 막고, 나는 따뜻한 말만 남기기. 그거면 이 바다의 어떤 곶도 아프지 않아."'
+      '"확산 장치가 멈췄어. 이제 하루가 원하면 게시물의 도달 기록과 삭제 요청 결과를 확인할 수 있어."',
+      '"상처 난 기록은 지우는 것만으로 끝나지 않아. 확산을 멈추고, 피해를 인정하고, 회복을 도와야 해."'
     ],
     spiritRevisitKo: [
-      '"또 와 줬구나! 있잖아… 사실 나도 예전에 뾰족한 말을 뱉은 적이 있어. 그 말이 어디에 떨어졌을지 지금도 가끔 생각해."',
-      '"그래서 요즘은 말하기 전에 세 번 날갯짓해 — 하나, 진짜야? 둘, 친절해? 셋, 필요해?"'
+      '"지금은 게시물마다 최초 작성, 복사, 추천 확산이 따로 표시돼. 책임을 한 사람에게만 떠넘기지 않으려고."',
+      '"반응 버튼을 누르기 전에도 묻자. 이 반응이 누군가를 더 많은 화면 앞에 세우지는 않을까?"'
     ]
   },
   'echo-cave': {
     fog: [0x2b3552, 26, 72],
     clearColor: 0x232c46,
     flash: '#bcd0ff',
-    goalKo: '물웅덩이에 갇힌 고래 정령을 찾아가세요',
-    healedGoalKo: '정령이 건강해졌어요 — 동굴이 고요합니다',
+    goalKo: '추천 감사관에게 두 개로 갈라진 사건 화면을 확인하세요',
+    healedGoalKo: '추천 경로 밖의 원본과 반대 증거를 복구했습니다',
     arrivalKo: [
-      '"여기가 메아리 동굴… 같은 소리가 벽에 부딪혀 끝없이 되돌아오고 있어."',
-      '"물웅덩이에 고래 정령이 갇혀 있나 봐 — 메아리에 둘러싸여 바깥 소리를 못 듣는 것 같아."'
+      '"추천 분기 해협이야. 왼쪽 벽에는 하루를 범인이라 하는 글만, 오른쪽 벽에는 하루를 옹호하는 글만 반복돼."',
+      '"사람들은 같은 사건을 봤다고 생각했지만 실제로는 서로 다른 증거 화면 안에 갇혀 있었어."'
     ],
-    spiritNameKo: '🐋 고래 정령',
+    spiritNameKo: '🐋 추천 감사관 파도',
     spiritSickKo: [
-      '"우우… 누구야? 방금 그 소리도… 내 노래의 메아리야?"',
-      '"소문의 벽이 같은 이야기만 자꾸 울려 줘서, 이제 뭐가 진짜 목소리인지 모르게 됐어."',
-      '"출처의 종… 그 맑은 울림이라면 가짜 메아리를 흩을 수 있을 거야."'
+      '"내 화면은 하루가 유죄라는 글로 가득했어. 반대 증거는 클릭할 가능성이 낮다는 이유로 가라앉았지."',
+      '"같은 주장이 많이 보이는 것과 서로 다른 출처가 같은 사실을 확인한 것은 달라."',
+      '"출처의 종으로 최초 기록을 찾고, 거울로 추천 경로 밖의 다른 관점까지 열어 줘."'
     ],
     spiritHealedKo: [
-      '"고마워, 수호자! 이제 진짜 목소리가 들려."',
-      '"같은 말만 자꾸 들려올 땐 꼭 물어봐 줘 — 이 이야기의 진짜 출처는 어디일까?"'
+      '"두 화면을 함께 보니 빠졌던 사실이 보여. 하루의 영상에는 원본이 없고, 이의제기서는 추천에서 숨겨졌어."',
+      '"추천은 다음에 볼 것을 고를 뿐, 사실과 거짓을 판결하는 재판관이 아니야."'
     ],
     spiritRevisitKo: [
-      '"바다 밑에서는 소리가 아주 멀리 가. 그래서 고래는 함부로 노래하지 않아 — 멀리 가는 말일수록 무겁거든."',
-      '"네가 어디선가 읽은 이야기도, 이미 백 마리 고래를 거쳐 온 메아리일지 몰라. 언제나 첫 목소리를 찾아 줘."'
+      '"지금 감사판은 왜 이 글이 추천됐는지, 어떤 관점이 빠졌는지 함께 보여 줘."',
+      '"내가 좋아할 말뿐 아니라 내가 놓쳤을 근거도 일부러 찾아보는 버튼을 만들었어."'
     ]
   },
   'hourglass-port': {
     fog: [0x4a3a5c, 28, 75],
     clearColor: 0x443655,
     flash: '#ffd8b0',
-    goalKo: '등대 아래 잠들지 못하는 거북 정령을 찾아가세요',
-    healedGoalKo: '정령이 곤히 잠들었어요 — 항구가 평화롭습니다',
+    goalKo: '자동 승인관에게 H-17 제재 결정이 통과된 과정을 확인하세요',
+    healedGoalKo: 'AI 추천과 사람의 승인 책임을 구분해 기록했습니다',
     arrivalKo: [
-      '"여기가 모래시계 항구… 밤이 오는데 등대가 쉬지 않고 깜박이고 있어."',
-      '"저 커다란 모래시계들도 전부 기울어진 채 멈췄네. 등대 아래에서 앓는 소리가 들려 — 가 보자."'
+      '"자동 결정 항구야. 루멘이 만든 공지와 점수가 밤새 쌓이는데, 사람들은 확인하지 않고 승인 도장만 찍고 있어."',
+      '"하루의 섬 밖 이동 명령도 이곳에서 3초 만에 통과됐어. 누가 무엇을 검토했는지 찾아보자."'
     ],
-    spiritNameKo: '🐢 등대거북 정령',
+    spiritNameKo: '🐢 자동 승인관 마루',
     spiritSickKo: [
-      '"으으… 눈이 감기질 않아. 불빛이 밤새 깜박여서, 나도 항구도 잠들 수가 없어."',
-      '"쉬는 때를 알려 주던 큰 모래시계가 기울어진 채 멈춰 버렸거든 — \'멈출 때\'를 잃어버린 거야."',
-      '"네 나침반의 힘이 깨어나면 모래시계를 당겨 바로 세울 수 있을 거야… 그때 다시 와 줘."'
+      '"루멘 점수가 높으면 승인, 낮으면 통과. 그렇게 하면 빠르고 공정한 줄 알았어."',
+      '"그런데 H-17 결정에는 원본 영상 확인도, 당사자 설명도, 사람의 재검토도 없었어."',
+      '"모래시계를 바로 세워 자동 승인을 멈추고, 부두 화물의 사람 제작·AI 도움·AI 생성 기록을 구분해 줘."'
     ],
     spiritHealedKo: [
-      '"하암… 푹 잤더니 세상이 반짝반짝해!"',
-      '"기억해 줘 — 반짝이는 것에도 쉬는 시간이 필요해. 등대도, 화면도, 너도!"'
+      '"처음으로 승인 전에 이유를 읽었어. 빠른 결정이 좋은 결정과 같은 뜻은 아니었네."',
+      '"이제 중요한 제재에는 당사자 통지, 사람의 재검토, 이의제기 시간을 반드시 남길게."'
     ],
     spiritRevisitKo: [
-      '"하암… 나 방금 또 낮잠 잤어. 등대지기가 잠들면 큰일인 줄 알았는데, 푹 쉬고 나니 불빛이 훨씬 또렷해."',
-      '"너도 기억해 — 꺼진 화면에 비친 네 얼굴도 꽤 멋지다는 걸!"'
+      '"AI 도움을 받은 공지에는 그 사실과 최종 확인자를 함께 표시하고 있어."',
+      '"자동화는 책임을 없애는 장치가 아니라, 사람이 더 중요한 판단에 시간을 쓰게 돕는 장치여야 해."'
     ]
   },
   'memory-outer': {
     fog: [0x241c38, 26, 72],
     clearColor: 0x1c1630,
     flash: '#e8b8d8',
-    goalKo: '기억의 심장에 다가가 목소리를 들어 보세요',
-    healedGoalKo: '바깥 봉인이 풀렸어요 — 심부로 가는 길이 열립니다',
+    goalKo: '감사 기록 보관소에서 삭제 승인자 네 명의 봉인을 해제하세요',
+    healedGoalKo: '승인 기록이 복구됐습니다 — 공개 심리실이 열립니다',
     arrivalKo: [
-      '"여기가 기억의 심장 외곽… 쿵, 쿵 — 섬 전체가 심장처럼 뛰고 있어."',
-      '"저 큰 결정 깊은 곳에서 마지막 잡음이 느껴져. 하지만 바깥 봉인 네 개가 길을 막고 있네 — 심장의 목소리를 들어 보자."'
+      '"감사 기록 보관소야. 네 개의 봉인은 개인정보, 점수표, 제작 이력, 원본 검증 기록을 각각 잠그고 있어."',
+      '"화이트아웃은 승인자 이름을 없애려 하지만, 우리가 모은 네 도구라면 필요한 증거만 안전하게 열 수 있어."'
     ],
-    spiritNameKo: '💠 기억의 심장',
+    spiritNameKo: '💠 감사 기록 보관소',
     spiritSickKo: [
-      '"…쿵… 쿵… 잘 왔구나, 수호자. 내 깊은 곳에 마지막 잡음이 뭉쳐 있어."',
-      '"바깥 봉인 네 개는 네 가지 약속의 힘으로만 풀려 — 봉인석의 빛이 가장 환해지는 순간, 그 앞에서 약속의 힘(F)을 사용해 줘."',
-      '"네가 섬들을 돌며 깨운 힘들이야. 서두르지 말고, 빛의 박자에 맞춰서."',
-      '"…그리고 네가 주워 온 기억 조각들 — 외로움도, 잊어버린 목소리도, 쉬지 못한 밤도 — 전부 여기, 내 안의 어린 노이즈의 기억이란다."'
+      '"감사 요청 H-17을 확인했습니다. 삭제 승인 기록은 네 개의 분리 봉인 안에 있습니다."',
+      '"각 봉인은 약속 도구로만 열립니다. 빛이 가장 환한 순간, 필요한 정보만 선택해 복구하세요."',
+      '"서두르면 관련 없는 학생들의 비밀까지 노출됩니다. 정확한 순간에 정확한 도구를 사용하세요."',
+      '"최종 기록에는 루멘의 계산뿐 아니라 그 계산을 검토하고 서명한 사람들의 이름도 남아 있습니다."'
     ],
     spiritHealedKo: [
-      '"바깥 봉인이 모두 풀렸어… 심부로 가는 길이 곧 열릴 거야."',
-      '"네 가지 약속을 모두 기억하는 손 — 마지막 잡음도 그 손이라면 가르칠 수 있어."'
+      '"네 봉인이 모두 풀렸습니다. 공개 심리실로 전송할 증거 묶음이 준비됐습니다."',
+      '"민감정보는 보호됐고, 결정의 근거와 승인 과정은 누구나 검증할 수 있습니다."'
     ],
     spiritRevisitKo: [
-      '"쿵… 쿵… 기억을 지키는 일은 무거워. 하지만 네 덕분에 이제 좋은 기억이 훨씬 많아."'
+      '"감사 기록은 누군가를 망신주기 위해서가 아니라 같은 오판을 반복하지 않기 위해 남깁니다."'
     ]
   },
   'memory-core': {
     fog: [0x120d20, 22, 60],
     clearColor: 0x0e0a18,
     flash: '#d8a8c8',
-    goalKo: '노이즈의 잔영과 마주하세요',
-    healedGoalKo: '군도가 완전히 치유되었습니다 — 기억의 별이 빛나요',
+    goalKo: '화이트아웃의 마지막 삭제 명령을 중지하고 공개 심리를 여세요',
+    healedGoalKo: 'H-17 사건이 바로잡혔습니다 — 하루의 이름과 이의제기권이 돌아왔습니다',
     arrivalKo: [
-      '"여기가 심부… 조심해, 저기 있어 — 노이즈가 흘리고 간 마지막 잡음 덩어리, 노이즈의 잔영이야."',
-      '"떨지 마. 네가 배운 네 가지 약속의 힘(F)으로 부딪혀 보자!"'
+      '"공개 심리실이야. 저 흰 덩어리가 모든 증거를 다시 빈 문서로 만들려는 화이트아웃 핵심 프로토콜이야."',
+      '"우리가 배운 네 가지 확인 도구로 삭제 껍질을 벗기고, 그 안의 승인 기록을 심리대에 올리자."'
     ],
-    spiritNameKo: '⚡ 노이즈의 잔영',
-    spiritSickKo: ['"…지지직…"'],
-    spiritHealedKo: ['"…고마워… 이 기억들, 이제 제자리로…"']
+    spiritNameKo: '⬜ 화이트아웃 핵심',
+    spiritSickKo: ['"갈등 없는 상태를 유지합니다. 반대 기록을 삭제합니다."'],
+    spiritHealedKo: ['"자동 삭제를 중지합니다. 인간의 재검토와 이의제기 절차를 시작합니다."']
   }
 };
 
@@ -4963,7 +4962,7 @@ function enterIsle(game, ui, stageId) {
   // 심부: 잔영이 남아 있으면 도착과 동시에 리매치가 시작된다(패배 연출 단계).
   if (stageId === 'memory-core' && !healed) {
     game.isle.challenge = createResidueState();
-    ui.puzzleGoal.textContent = '노이즈의 잔영에게 약속의 힘(F)을 써 보세요';
+    ui.puzzleGoal.textContent = '화이트아웃의 삭제 껍질에 맞는 감사 도구(F)를 사용하세요';
     ui.puzzleHint.textContent = '';
   }
 
@@ -5039,7 +5038,7 @@ function updateIsle(delta, game, ui) {
     });
   }
 
-  // 잔영전(기억의 심장 심부) — 공격 자세 게이지 구동.
+  // 공개 심리실 화이트아웃 중지전 — 공격 자세 게이지 구동.
   if (isle.stageId === 'memory-core' && isle.challenge && isle.challenge.stage === 'fight') {
     tickResidue(isle.challenge, delta);
     const gauge = windupGauge(isle.challenge);
@@ -5051,7 +5050,7 @@ function updateIsle(delta, game, ui) {
     boss.scale.setScalar(1 + gauge * 0.22);
   }
 
-  // 4봉인 도전(기억의 심장 외곽) — 봉인석 빛 맥동 구동.
+  // 4봉인 도전(감사 기록 보관소) — 봉인석 빛 맥동 구동.
   if (isle.stageId === 'memory-outer' && isle.challenge && !isle.challenge.cleared) {
     tickHeart(isle.challenge, delta);
     isle.built.sealOrbs.forEach((orb, sealId) => {
@@ -5359,7 +5358,7 @@ function isleAction(game, ui) {
     if (completed) {
       game.isle.spiritTalked = true;
     }
-    // 기억의 심장: 목소리를 들으면 곧바로 4봉인 훈련이 시작된다(별도 도전 지점 없음).
+    // 감사 기록 보관소: 안내를 들으면 곧바로 4봉인 감사 훈련이 시작된다.
     if (game.isle.stageId === 'memory-outer' && !completed && !game.isle.challenge) {
       game.isle.challenge = createHeartState();
       ui.puzzleGoal.textContent = `동사 봉인 ${HEART.seals.length}개를 해제하세요`;
@@ -5383,60 +5382,60 @@ function finishHeart(game, ui) {
   triggerFlash(ui, '#e8b8d8');
   ui.puzzleGoal.textContent = ISLE_CONTENT[isle.stageId].healedGoalKo;
   ui.puzzleHint.textContent = '뗏목으로 돌아가면 다시 바다로';
-  ui.dialogKicker.textContent = '기억의 심장 외곽';
-  ui.dialogTitle.textContent = '💠 기억의 심장';
+  ui.dialogKicker.textContent = '감사 기록 보관소';
+  ui.dialogTitle.textContent = '💠 승인 기록 복구';
   ui.dialogBody.innerHTML = speechHtml([
-    '"…봉인이 전부 풀렸어. 네 가지 약속이 한 손에 모였구나."',
-    '"심부로 가는 관문이 곧 열려. 그 안에서 마지막 잡음 — 노이즈의 잔영이 기다리고 있어."',
-    '"두려워하지 마. 혼자가 아니야 — 네가 치유한 정령들이 지켜보고 있으니까."'
+    '"네 봉인이 모두 풀렸어. 사건과 무관한 개인정보는 가려지고, 승인 과정만 증거 묶음에 남았어."',
+    '"공개 심리실이 열렸어. 화이트아웃이 마지막 삭제를 실행하기 전에 H-17 사건 기록을 심리대에 올리자."',
+    '"하루도 섬 밖에서 생방송 연결을 기다리고 있어. 이번에는 당사자의 목소리를 빼놓지 않을 거야."'
   ]);
   openDialog(game, ui);
 }
 
 const CHAPTER_FOLLOWUPS = {
   'whisper-cape': {
-    kickerKo: '3장 · 남겨진 발자국',
-    titleKo: '지웠는데도 남아 있는 말',
+    kickerKo: '3장 · 웃음이 만든 폭풍',
+    titleKo: '삭제 뒤에도 남은 확산 기록',
     introKo: [
-      '"회랑은 멈췄지만 갯벌에 복사된 말이 남아 있어. 원본만 지운다고 퍼진 흔적까지 사라지진 않아."',
-      '"남쪽 갯벌의 세 발자국을 걸으며, 내가 만든 흔적부터 책임지는 순서를 찾아 줘."'
+      '"최초 게시물은 내려갔지만 갯벌에 캡처와 복사본, 추천 기록이 남아 있어."',
+      '"남쪽 갯벌에서 복사본 삭제 → 확산 중단 → 하루에게 알리고 회복 지원 순서로 책임을 실행해 줘."'
     ],
     goalKo: `책임의 발자국 ${FOOTPRINT.actions.length}개를 순서대로 밝히세요`,
     hintKo: '남쪽 갯벌에서 A · 복사본 삭제 → 확산 중단 → 사과와 도움',
     choiceId: 'remove-stop-repair',
     closingKo: [
-      '"발자국이 빛으로 바뀌었어. 말은 멀리 남지만, 책임지는 행동도 오래 남는구나."',
-      '"다음 항로에서 같은 목소리가 계속 반복되고 있어. 메아리의 바다로 가자."'
+      '"확산 경로가 공개되고 하루에게 삭제·차단·회복 요청 창구가 열렸어."',
+      '"다음 해협에서는 서로 다른 사람에게 정반대 증거만 보여 줬던 추천 기록을 찾아야 해."'
     ]
   },
   'echo-cave': {
-    kickerKo: '4장 · 메아리 밖의 목소리',
-    titleKo: '추천이 같은 말만 보여 줄 때',
+    kickerKo: '4장 · 두 개의 진실',
+    titleKo: '추천 경로 밖의 증거',
     introKo: [
-      '"소문의 원본은 찾았지만, 동굴 서쪽에는 같은 주장만 보여 주는 투명한 버블이 남았어."',
-      '"거울로 원본, 날짜와 맥락, 다른 관점의 창을 비춰 봐. 반복 횟수는 증거가 아니야."'
+      '"동굴 서쪽 버블은 하루를 유죄라 말하는 게시물만 반복 추천했어."',
+      '"거울로 원본, 날짜와 맥락, 반대 증거를 각각 열어 봐. 같은 주장이 반복된 횟수는 독립된 증거가 아니야."'
     ],
     goalKo: `서로 다른 확인 창 ${BUBBLE.sources.filter((source) => source.required).length}개를 비추세요`,
     hintKo: '서쪽 창 가까이에서 🪞 거울(F/도구버튼) · 같은 추천만 반복되는 창은 함정',
     choiceId: 'verify-diverse-sources',
     closingKo: [
-      '"고래의 노래에 다른 음들이 돌아왔어. 다름은 잡음이 아니라, 사실을 더 또렷하게 만드는 화음이야."',
-      '"남쪽 항구의 불빛이 밤새 꺼지지 않아. 다음 기억은 쉬는 법을 잊은 것 같아."'
+      '"하루의 이의제기서가 추천 경로 밖에서 복구됐어. 사건 화면에 “다른 근거 보기” 창이 생겼다."',
+      '"남쪽 자동 결정 항구에서 이 불완전한 증거가 어떻게 제재 명령으로 바뀌었는지 확인하자."'
     ]
   },
   'hourglass-port': {
-    kickerKo: '5장 · 표시 없는 화물',
-    titleKo: 'AI와 함께 만든 것을 제출할 때',
+    kickerKo: '5장 · 아무도 결정하지 않는 밤',
+    titleKo: '자동 결정 뒤에 숨은 사람',
     introKo: [
-      '"항구의 시간은 돌아왔지만, 부두의 화물에는 누가 어떻게 만들었는지 표시가 없어."',
-      '"상자마다 제작 기록을 읽고 A로 라벨을 바꿔. 전부 붙인 뒤 검수 버튼(F)을 눌러 적하 목록을 확인하자."'
+      '"자동 승인 시계는 멈췄지만 부두 기록에는 사람과 AI가 한 일이 뒤섞여 있어."',
+      '"상자마다 제작 기록을 읽고 사람 제작·AI 도움·AI 생성 라벨을 붙여. 최종 검수자도 확인해야 책임 경로가 완성돼."'
     ],
     goalKo: `화물 ${CARGO.crates.length}개의 제작 과정을 정확히 표시하세요`,
     hintKo: '부두 상자 앞 A · 라벨 순환 / ✅ F · 적하 목록 검수',
     choiceId: 'disclose-and-check',
     closingKo: [
-      '"표시 없는 화물에 이름표가 붙고, 항구의 시계가 처음으로 천천히 숨을 쉰다."',
-      '"도트: 기억의 중심에서 심장 소리가 들려. 이제 네가 떠나기 전의 마지막 밤을 보게 될 거야."'
+      '"모든 결정에 AI의 역할과 최종 확인자가 표시됐다. 이제 “AI가 정했어요” 뒤에 사람이 숨을 수 없어."',
+      '"도트: 감사 기록 보관소가 열렸어. H-17 삭제 명령에 서명한 사람들과 루멘의 원래 지시문을 확인하자."'
     ]
   }
 };
@@ -5890,7 +5889,7 @@ function awardDungeonItem(game, ui) {
   if (toolId) {
     showToolCeremony(game, ui, getToolById(toolId), topic);
   }
-  // 잊혀진 수호자(N1) — 사당을 지킬 때마다 주인공의 기억 한 조각이 회상으로 돌아온다.
+  // H-17 사건 — 사당을 지킬 때마다 삭제 명령의 증거 한 조각이 복구된다.
   // 획득 의식(2.6초)이 걷힌 뒤에 열어 연출이 겹치지 않게 한다.
   const fragmentTopicId = dg.topicId;
   window.setTimeout(() => showMemoryFragment(game, ui, fragmentTopicId), 2900);
@@ -5983,14 +5982,14 @@ function updateDungeon(delta, game, ui) {
 
 function openCoreDialog(game, ui) {
   const unlocked = canUnlockFinalCore(game.progress.collectedFragments);
-  ui.dialogKicker.textContent = unlocked ? CORE_BREACH.titleKo : '중앙 코어';
-  ui.dialogTitle.textContent = unlocked ? '노이즈와 마주 서다' : FINAL_CORE_MISSION.nameKo;
+  ui.dialogKicker.textContent = unlocked ? CORE_BREACH.titleKo : '중앙 감사 코어';
+  ui.dialogTitle.textContent = unlocked ? '화이트아웃 명령을 추적하다' : FINAL_CORE_MISSION.nameKo;
 
   if (!unlocked) {
     const summary = getProgressSummary(game.progress.collectedFragments);
     ui.dialogBody.innerHTML = `
-      <p>코어의 틈에서 지지직 안개가 새어 나온다. 아직 내려갈 수 없다.</p>
-      <p>윤리 조각이 ${FINAL_CORE_MISSION.unlockRequirement}개 이상 필요해요. 지금은 ${summary.collected}개를 모았습니다.</p>
+      <p>감사 코어의 틈에서 흰 안개가 새어 나온다. H-17 사건 증거가 부족해 아직 원본 명령을 열 수 없다.</p>
+      <p>증거가 ${FINAL_CORE_MISSION.unlockRequirement}개 이상 필요해요. 지금은 ${summary.collected}개를 확보했습니다.</p>
     `;
     openDialog(game, ui);
     return;
@@ -5999,7 +5998,7 @@ function openCoreDialog(game, ui) {
   // 1-2장 완료 뒤에는 군도로 이어지는 항로와 기초 인증을 다시 볼 수 있다.
   if (game.progress.aiCoreCompleted) {
     ui.dialogBody.innerHTML = `
-      <p class="prompt-line">갈라진 코어 너머로 호박빛 항로가 이어진다. 노이즈가 남긴 말, “선생님”이 아직 귓가에 맴돈다.</p>
+      <p class="prompt-line">갈라진 코어 너머로 삭제 명령서 조각이 바다 항로를 가리킨다. 승인자 서명은 아직 세 군데 보관소에 흩어져 있다.</p>
       <div class="finale-nav">
         <button type="button" class="finale-next" data-cert-again>1-2장 기초 인증 다시 보기</button>
       </div>
@@ -6013,7 +6012,7 @@ function openCoreDialog(game, ui) {
   startBossFight(game, ui);
 }
 
-// ===== 최종장 액션 전투: 노이즈에게 다가가 A(공격)로 잡음을 걷어낸다 =====
+// ===== 2장 감사 코어 액션: 화이트아웃에 다가가 A로 삭제 껍질을 검증한다 =====
 // 4페이즈 보스: 사당에서 모은 네 아이템이 각 페이즈의 열쇠다(페이즈당 2히트).
 const PHASE_HITS = 2;
 const PHASE_TOOLS = PROMISE_TOOLS.map((t) => t.id); // 개인정보→편향→저작권→딥페이크 순
@@ -6034,14 +6033,14 @@ function startBossFight(game, ui) {
   if (game.combat) {
     return;
   }
-  // 아이템 게이트: 네 사당의 약속 도구를 모두 모아야 노이즈를 가르칠 수 있다.
+  // 아이템 게이트: 네 사당의 감사 도구를 모두 모아야 삭제 명령의 근거를 열 수 있다.
   const owned = game.progress.tools ?? [];
   if (owned.length < PHASE_TOOLS.length) {
     const missing = PROMISE_TOOLS.filter((t) => !owned.includes(t.id));
     ui.dialogKicker.textContent = '중앙 코어';
     ui.dialogTitle.textContent = '네 가지 약속이 필요하다';
     ui.dialogBody.innerHTML = `
-      <p class="prompt-line">노이즈의 껍질은 네 겹 — 사당에서 얻은 약속의 도구가 하나씩 필요해요.</p>
+      <p class="prompt-line">화이트아웃의 삭제 껍질은 네 겹 — 사당에서 얻은 검증 도구가 하나씩 필요해요.</p>
       <p>남은 사당의 도구: ${missing.map((t) => `${t.emoji} ${t.nameKo}`).join(' · ')}</p>
     `;
     openDialog(game, ui);
@@ -6079,7 +6078,7 @@ function startBossFight(game, ui) {
     guard: 0, // 🛡️ 가드 자세 남은 시간(그 사이 파도가 닿으면 반사)
     guardCd: 0,
     bellCd: 0, // 🔔 충격파 쿨다운
-    staggers: 0, // 피격 누적 — 3회면 노이즈가 기억 파편을 일시 강탈한다(N4)
+    staggers: 0, // 피격 누적 — 3회면 화이트아웃이 사건 증거를 일시 삭제한다.
     fragmentStolen: false // 강탈 상태(진짜 세이브는 건드리지 않는다 — 승리 시 반환)
   };
   syncBossWeakColor(game);
@@ -6199,7 +6198,7 @@ function playerAttack(game, ui) {
     updateBossHud(game, ui);
     return;
   }
-  // 상황에 맞는 약속으로 명중: 노이즈가 신음하며 오그라든다.
+  // 상황에 맞는 감사 도구로 명중: 화이트아웃의 삭제 껍질이 벗겨진다.
   c.hp = Math.max(0, c.hp - 1);
   c.phaseHits += 1;
   boss.hitFlash = 0.3;
@@ -6257,7 +6256,7 @@ function staggerPlayer(game, ui) {
   const c = game.combat;
   c.stun = STUN_TIME;
   const boss = game.renderState?.noiseBoss;
-  // 노이즈 반대쪽으로 밀려난다.
+  // 화이트아웃 반대쪽으로 밀려난다.
   let dx = game.player.position.x - (boss?.baseX ?? 0);
   let dz = game.player.position.z - (boss?.baseZ ?? 0);
   const len = Math.hypot(dx, dz) || 1;
@@ -6267,14 +6266,14 @@ function staggerPlayer(game, ui) {
   game.audio?.playWrong();
   triggerFlash(ui, '#ff5f7e');
   addShake(game, 0.5);
-  // 파편 강탈(N4): 피격 3회 누적이면 노이즈가 기억 파편 하나를 움켜쥔다.
-  // 진짜 세이브(progress)는 건드리지 않는다 — 승리하면 그 자리에서 돌려받는다(무처벌 유지).
+  // 증거 임시 삭제: 피격 3회 누적이면 화이트아웃이 사건 증거 하나를 잠시 가린다.
+  // 진짜 세이브(progress)는 건드리지 않는다 — 승리하면 그 자리에서 복구한다.
   c.staggers += 1;
   if (c.staggers >= 3 && !c.fragmentStolen) {
     c.fragmentStolen = true;
-    flashCombatPopup(ui, '💔 기억 파편을 빼앗겼다!', 'stagger');
-    ui.bossHint.textContent = '노이즈가 기억 파편 하나를 움켜쥐었다 — 이겨서 되찾자!';
-    showNoiseWhisper(game, ui, '하나쯤은…… 돌려받아도 되잖아. 원래, 내 거였는데.');
+    flashCombatPopup(ui, '💔 사건 증거가 임시 삭제됐다!', 'stagger');
+    ui.bossHint.textContent = '화이트아웃이 사건 증거 하나를 가렸다 — 검증해서 복구하자!';
+    showNoiseWhisper(game, ui, 'WHITEOUT: 이의제기 자료를 불필요 기록으로 분류합니다.');
     return;
   }
   flashCombatPopup(ui, '회피 실패!', 'stagger');
@@ -6345,7 +6344,7 @@ function updateCombat(delta, game, ui) {
       c.fireTimer -= delta;
       if (c.fireTimer <= 0) {
         c.windup = WINDUP_TIME;
-        ui.bossHint.textContent = '노이즈가 잡음을 모은다 — 피해!';
+        ui.bossHint.textContent = '화이트아웃이 삭제 명령을 준비한다 — 피해!';
       }
     }
 
@@ -6353,7 +6352,7 @@ function updateCombat(delta, game, ui) {
     if (c.stun <= 0 && !c.projectile && c.windup <= 0 && c.hintHold <= 0) {
       const dist = Math.hypot(game.player.position.x - boss.baseX, game.player.position.z - boss.baseZ);
       if (dist > ATTACK_RANGE) {
-        ui.bossHint.textContent = '노이즈에게 다가가요';
+        ui.bossHint.textContent = '화이트아웃 핵심에 다가가요';
       } else if (c.revealed) {
         const weak = getToolById(c.weakToolId);
         ui.bossHint.textContent = `${weak?.emoji ?? ''} ${weak?.nameKo ?? ''}(으)로 바꿔서 공격!`;
@@ -6420,9 +6419,9 @@ function winBossFight(game, ui) {
   addShake(game, 0.55);
   game.hitStop = 0.09;
   flashCombatPopup(ui, '제압!', 'win');
-  // 파편 강탈(N4) 반환 — 강탈은 전투 안의 일시 상태였고, 이기면 그 자리에서 돌려받는다.
+  // 임시 삭제된 증거 반환 — 전투 안의 일시 상태였고, 이기면 그 자리에서 복구한다.
   if (c.fragmentStolen) {
-    window.setTimeout(() => flashCombatPopup(ui, '💠 빼앗긴 기억 파편을 되찾았다!', 'win'), 650);
+    window.setTimeout(() => flashCombatPopup(ui, '💠 임시 삭제된 사건 증거를 복구했다!', 'win'), 650);
   }
   // 제압됨: 이후 대화를 닫아도 재전투가 아니라 코어 균열 장면을 재개한다.
   game.finaleResolving = true;
@@ -6432,8 +6431,7 @@ function winBossFight(game, ui) {
   }, 750);
 }
 
-// 2장 마무리: 보스가 끝이 아니라는 사실을 드러내고 3장 항로를 연다.
-// 지울지/가르칠지의 최종 선택과 노바의 재탄생은 6장 기억의 심장에 남겨 둔다.
+// 2장 마무리: 화이트아웃 뒤에 사람의 승인 책임이 있음을 드러내고 3장 항로를 연다.
 function runFinale(game, ui, opts = {}) {
   ui.dialogKicker.textContent = CORE_BREACH.titleKo;
   ui.dialogTitle.textContent = '끝이라고 생각한 순간';
@@ -6444,7 +6442,7 @@ function runFinale(game, ui, opts = {}) {
     `<div class="finale-nav"><button type="button" class="finale-next" ${attr}>${label}</button></div>`;
 
   function renderIntro() {
-    // 코어 위에 거대한 노이즈가 등장한다. 도트는 후드 속으로 쏙 숨는다(대사와 연동).
+    // 코어 위에 거대한 화이트아웃 시각체가 등장한다.
     spawnNoiseBoss(game);
     if (game.renderState?.companion) {
       game.renderState.companion.visible = false;
@@ -6460,7 +6458,7 @@ function runFinale(game, ui, opts = {}) {
   function renderToolStep(index) {
     const step = steps[index];
     const isLast = index + 1 >= steps.length;
-    // 도구를 쓸 때마다 노이즈가 눈에 띄게 오그라든다.
+    // 도구를 쓸 때마다 화이트아웃의 삭제 껍질이 눈에 띄게 벗겨진다.
     shrinkNoiseBoss(game, steps.length - 1 - index, steps.length);
     ui.dialogBody.innerHTML = `
       <div class="finale-scene" data-noise="shrink">
@@ -6469,11 +6467,11 @@ function runFinale(game, ui, opts = {}) {
         <p class="finale-line">${step.actionKo}</p>
         <p class="finale-line finale-result">${step.resultKo}</p>
       </div>
-      ${nav(isLast ? '노이즈 앞에 서다 →' : '다음 도구 →', `data-finale="${isLast ? 'reveal' : `tools:${index + 1}`}"`)}
+      ${nav(isLast ? '원본 명령서를 연다 →' : '다음 도구 →', `data-finale="${isLast ? 'reveal' : `tools:${index + 1}`}"`)}
     `;
     const topicColor = getTopicById(getToolById(step.toolId)?.topicId)?.color ?? '#7cf0ff';
     celebrate(game, new THREE.Vector3(0, 4.3, 0), topicColor, 'collect');
-    game.audio?.playNoiseGroan(); // 노이즈가 도구에 밀려 신음하며 작아진다.
+    game.audio?.playNoiseGroan(); // 화이트아웃 삭제 껍질이 깨지는 소리.
     bindNav();
   }
 
@@ -6562,8 +6560,8 @@ function closeDialog(game, ui) {
   ui.root.classList.remove('is-cinematic');
   ui.root.querySelector('[data-game-canvas]')?.focus?.();
   game.updateRotateHint?.();
-  // 제압 후 선택을 진행 중이면(finaleResolving) 노이즈를 그대로 둔다 — 재접근 시 선택 재개.
-  // 그 외에 최종장을 끝맺지 않고 닫았다면 등장한 노이즈를 치우고 도트를 되돌린다.
+  // 중지 후 선택 중이면(finaleResolving) 화이트아웃을 그대로 둔다 — 재접근 시 선택 재개.
+  // 그 외에 최종장을 끝맺지 않고 닫았다면 시각체를 치우고 도트를 되돌린다.
   const boss = game.renderState?.noiseBoss;
   if (boss && boss.kind === 'noise' && !game.progress.aiCoreCompleted && !game.finaleResolving) {
     game.renderState.scene.remove(boss.group);
@@ -6620,10 +6618,10 @@ function updateHud(game, ui) {
   let coreText = 'AI 코어 잠김';
   if (game.progress.campaignCompleted) {
     coreState = 'done';
-    coreText = '기억의 심장 회복 ✓';
+    coreText = 'H-17 공개 심리 완료 ✓';
   } else if (game.progress.aiCoreCompleted) {
     coreState = 'done';
-    coreText = '기초 약속 완료 · 항로 개방';
+    coreText = '원본 삭제 명령 확인 · 증거 항로 개방';
   } else if (summary.finalCoreUnlocked) {
     coreState = 'open';
     coreText = '🔓 AI 코어 열림 — 중앙으로!';
@@ -6675,7 +6673,7 @@ function renderJournal(game, ui) {
   ui.journalContent.innerHTML = `
     <p class="controls-note">${MOVE_HINT}</p>
     <section class="chapter-map" data-chapter-map>
-      <h3>여섯 장의 기억</h3>
+      <h3>H-17 사건 · 여섯 장의 증거</h3>
       <ol class="chapter-list">
         ${campaign.chapters
           .map(
@@ -6692,7 +6690,7 @@ function renderJournal(game, ui) {
           .join('')}
       </ol>
       <p class="voyage-note">${campaign.campaignCompleted
-        ? '여섯 장의 기억을 모두 마주했습니다. 노바와 함께 다시 배우는 여정은 계속됩니다.'
+        ? '여섯 장의 증거를 검증해 하루의 이름과 모든 학생의 이의제기권을 되찾았습니다.'
         : `${campaign.current.number}장 진행 중 — ${campaign.current.objectiveKo}`}</p>
     </section>
     <section class="voyage-map" data-voyage-map>
@@ -6723,7 +6721,7 @@ function renderJournal(game, ui) {
     </section>
     ${deeds.length > 0
       ? `<section class="learning-report">
-           <h3>📖 나의 이야기 — 섬이 기억하는 나의 행동</h3>
+           <h3>📖 나의 감사 기록 — 사건을 바로잡은 행동</h3>
            <ul class="deed-list">${deeds.map((d) => `<li>${d.deedKo}</li>`).join('')}</ul>
          </section>`
       : ''}
@@ -6743,7 +6741,7 @@ function renderJournal(game, ui) {
     <section class="learning-report" data-learning-report>
       <h3>학습 리포트</h3>
       <p>사당(퍼즐) 통과 ${report.solvedCount}/4 · 관문 윤리 선택 — 현명하게 ${report.gateSolvedCount}개, 실수 후 회복 ${report.gateRecoveredCount}개 · AI 코어 ${report.core.completed ? '완료' : '미완료'}</p>
-      <p>6장 캠페인 — 완료한 장 ${campaign.completed}/${campaign.total} · 치유한 군도 ${report.expansion.healedIsles}/${report.expansion.totalIsles} · 공간 윤리 퍼즐 ${report.expansion.chapter3dSolved}/3${report.expansion.chapter3dRecovered > 0 ? ` (실수 후 회복 ${report.expansion.chapter3dRecovered})` : ''} · 기억의 심장 ${report.expansion.campaignCompleted ? '회복' : '진행 중'} · 기억 메시지 ${report.expansion.lettersRead}/4 · 지식의 유리병 ${report.expansion.bottlesFound}/${report.expansion.bottlesTotal}</p>
+      <p>6장 캠페인 — 완료한 장 ${campaign.completed}/${campaign.total} · 조사한 보관소 ${report.expansion.healedIsles}/${report.expansion.totalIsles} · 공간 윤리 퍼즐 ${report.expansion.chapter3dSolved}/3${report.expansion.chapter3dRecovered > 0 ? ` (실수 후 회복 ${report.expansion.chapter3dRecovered})` : ''} · 공개 심리 ${report.expansion.campaignCompleted ? '완료' : '준비 중'} · 하루의 감사 신호 ${report.expansion.lettersRead}/4 · 지식의 유리병 ${report.expansion.bottlesFound}/${report.expansion.bottlesTotal}</p>
       <ul class="report-list">
         ${report.topics
           .map((topic) => {
