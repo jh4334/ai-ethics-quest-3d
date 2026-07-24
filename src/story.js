@@ -154,8 +154,8 @@ export const QUESTS = {
     toolId: 'shield',
     questTitleKo: '삭제 요청 17번',
     npcNameKo: '비밀지기 담',
-    gatePosition: [-10.9, -6.2],
-    gateLabelKo: '잡음 덩굴',
+    gatePosition: [-8, 5],
+    gateLabelKo: '잠긴 H-17 사물함',
     introKo: [
       '비밀지기 담이 금고에서 구겨진 신청서를 꺼낸다. 신청인 이름은 지워졌지만 번호는 H-17이다.',
       '“이 학생은 사진과 비공개 대화의 삭제를 요구했어. 그런데 안내 시스템이 오히려 위험 신호로 기록했지.”',
@@ -195,8 +195,8 @@ export const QUESTS = {
     toolId: 'mirror',
     questTitleKo: '기울어진 위험 점수',
     npcNameKo: '외알안경 모리',
-    gatePosition: [8.8, -4.7], // NPC(부엉이)와 상호작용 반경이 겹치지 않게 길목 쪽으로 (간격 ≥3)
-    gateLabelKo: '색이 빠진 꽃밭',
+    gatePosition: [7, -5], // NPC·사당과 상호작용 반경이 겹치지 않게 중앙 길목 쪽으로 (간격 ≥3)
+    gateLabelKo: '편향된 위험 점수판',
     introKo: [
       '모리가 위험 점수표를 펼친다. 같은 행동인데도 전학 온 학생과 말이 느린 학생의 점수만 유난히 높다.',
       '“전체 정확도만 봤을 땐 몰랐네. 누구의 사례가 빠졌는지 「모두의 거울」로 비춰 줘.”'
@@ -235,8 +235,8 @@ export const QUESTS = {
     toolId: 'bell',
     questTitleKo: '사라진 제작자들',
     npcNameKo: '조각가 무로',
-    gatePosition: [-8.1, 4.9], // 사당(-8.85,6.75)과 상호작용 반경이 겹치지 않게 길목 쪽으로 (간격 ≥3)
-    gateLabelKo: '이름 잃은 조각상',
+    gatePosition: [-8, -14], // NPC·사당과 상호작용 반경이 겹치지 않게 보관소 끝쪽으로 (간격 ≥3)
+    gateLabelKo: '지워진 제작 기록',
     introKo: [
       '축제 포스터 아래에는 “루멘 제작”만 적혀 있다. 무로와 학생들이 그린 원본 스케치는 회색으로 굳어 간다.',
       '“하루가 제작 기록을 공개하자고 했어. 「이름의 종」으로 지워진 원작자와 AI 사용 기록을 되찾아 주게.”'
@@ -275,8 +275,8 @@ export const QUESTS = {
     toolId: 'compass',
     questTitleKo: '원본 없는 고발 영상',
     npcNameKo: '메아리 에코',
-    gatePosition: [10.9, 6.9],
-    gateLabelKo: '가짜 목소리들',
+    gatePosition: [11, -7],
+    gateLabelKo: '원본 없는 고발 영상',
     introKo: [
       '에코가 떨리는 화면을 보여 준다. 하루가 서버를 망가뜨리겠다고 말하지만 원본도 촬영자도 없다.',
       '“이 영상 때문에 하루가 H-17이 됐어. 「진실의 나침반」으로 공유 횟수 말고 최초 파일과 생성 흔적을 찾아 줘.”'

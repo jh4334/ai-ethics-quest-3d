@@ -60,7 +60,7 @@ export const ETHICS_TOPICS = [
     safeRule: '필요한 정보만, 허락받고, 목적을 알고 사용하기',
     realCaseKo: '실제로 한 앱이 필요 이상으로 많은 개인정보를 모았다가 유출되어 많은 사람이 피해를 본 일이 있어요. 그래서 ‘꼭 필요한 정보만’ 모으는 것이 중요해요.',
     vocabularyKo: ['개인정보', '동의', '목적'],
-    teaserKo: '숲 쪽에서 누군가 "이건 공평하지 않아…" 하고 웅얼거려. 편향의 숲엔 무슨 일이?'
+    teaserKo: '운동장 점수판에서 누군가 "이건 공평하지 않아…" 하고 웅얼거려. 지문 운동장엔 무슨 일이?'
   },
   {
     id: 'bias',
@@ -72,7 +72,7 @@ export const ETHICS_TOPICS = [
     safeRule: '한 가지 결과만 믿지 말고 빠진 사람과 다른 관점 확인하기',
     realCaseKo: '예전에 어떤 AI 채용 프로그램이 남성 지원자를 더 높게 평가한 적이 있어요. 사람이 만든 과거 자료가 한쪽으로 치우쳐 있었기 때문이에요.',
     vocabularyKo: ['편향', '공정성', '자료'],
-    teaserKo: '낡은 기둥 사이로 붓 자국이 보여. 저작권 유적엔 누구의 작품이 잠들어 있을까?'
+    teaserKo: '기록 보관소의 서가 사이로 지워진 이름표가 보여. 누구의 작품이 사라진 걸까?'
   },
   {
     id: 'copyright',
@@ -84,7 +84,7 @@ export const ETHICS_TOPICS = [
     safeRule: '출처 확인, 허락 확인, 내 생각과 수정한 부분 밝히기',
     realCaseKo: 'AI로 만든 그림이 실제 화가의 그림과 너무 비슷해 문제가 된 일이 있어요. AI가 다른 사람의 작품을 배워 만들기 때문에 출처와 허락이 중요해요.',
     vocabularyKo: ['저작권', '출처', '허락'],
-    teaserKo: '동굴 깊은 곳에서 진짜 같은 가짜 목소리가 새어 나와. 딥페이크 동굴의 정체는?'
+    teaserKo: '미디어 검증실에서 원본 없는 목소리가 반복돼. 누가 이 영상을 만든 걸까?'
   },
   {
     id: 'deepfake',
@@ -104,10 +104,10 @@ export const WORLD_ZONES = [
   {
     id: 'privacy-village',
     topicId: 'privacy',
-    nameKo: '개인정보 마을',
-    shortNameKo: '정보 마을',
-    descriptionKo: '작은 집과 우체통이 모인 마을입니다. AI 도우미에게 어떤 정보를 알려도 되는지 배우는 곳입니다.',
-    position: [-13.7, 0, -9.5],
+    nameKo: '빈 교실',
+    shortNameKo: '빈 교실',
+    descriptionKo: 'H-17의 자리만 도려낸 듯 비어 있는 1-3반입니다. 삭제 신청서와 사라진 사물함 기록을 추적합니다.',
+    position: [-12, 0, 3],
     npc: {
       id: 'privacy-keeper',
       nameKo: '비밀지기 담',
@@ -120,10 +120,10 @@ export const WORLD_ZONES = [
   {
     id: 'bias-forest',
     topicId: 'bias',
-    nameKo: '편향의 숲',
-    shortNameKo: '공정 숲',
-    descriptionKo: '서로 다른 나무가 자라는 숲입니다. AI가 한쪽 자료만 배우면 결과가 치우칠 수 있음을 살펴봅니다.',
-    position: [13.8, 0, -9.2],
+    nameKo: '지문 운동장',
+    shortNameKo: '지문 운동장',
+    descriptionKo: '학생들의 행동을 하나의 위험 점수로 바꾼 운동장입니다. 누구에게 불리한 기준인지 비교합니다.',
+    position: [10, 0, -2],
     npc: {
       id: 'fairness-ranger',
       nameKo: '외알안경 모리',
@@ -136,10 +136,10 @@ export const WORLD_ZONES = [
   {
     id: 'copyright-ruins',
     topicId: 'copyright',
-    nameKo: '저작권 유적',
-    shortNameKo: '창작 유적',
-    descriptionKo: '책 조각과 무대가 놓인 유적입니다. AI 결과를 사용할 때 창작자와 출처를 존중하는 법을 배웁니다.',
-    position: [-13.3, 0, 10.1],
+    nameKo: '기록 보관소',
+    shortNameKo: '기록 보관소',
+    descriptionKo: '책과 제작 로그가 층층이 쌓인 보관소입니다. 지워진 창작자 이름과 출처를 복구합니다.',
+    position: [-5, 0, -11],
     npc: {
       id: 'credit-archivist',
       nameKo: '조각가 무로',
@@ -152,10 +152,10 @@ export const WORLD_ZONES = [
   {
     id: 'deepfake-cave',
     topicId: 'deepfake',
-    nameKo: '딥페이크 동굴',
-    shortNameKo: '진실 동굴',
-    descriptionKo: '빛과 그림자가 흔들리는 동굴입니다. AI로 만든 사진, 목소리, 영상의 진짜 여부를 확인하는 법을 익힙니다.',
-    position: [12.9, 0, 10.4],
+    nameKo: '미디어 검증실',
+    shortNameKo: '검증실',
+    descriptionKo: '영상의 원본·시간·출처를 대조하는 유리 실험실입니다. H-17 고발 영상의 조작 흔적을 확인합니다.',
+    position: [8, 0, -10],
     npc: {
       id: 'truth-guide',
       nameKo: '메아리 에코',
