@@ -1,4 +1,4 @@
-// 「잡음의 군도」 스테이지 프레임 — 순수 데이터 + 순수 로직 (THREE 무의존, node 테스트 가능).
+// 6장 캠페인의 월드 스테이지 프레임 — 순수 데이터 + 순수 로직 (THREE 무의존, node 테스트 가능).
 // 기획서(docs/design/2막-잡음의-군도-기획서.md)의 프롤로그 + 5스테이지 골격을 데이터로 승격한다.
 // 3D 표현·항해 씬은 이 데이터를 읽기만 한다 (DUNGEON_ROOMS ↔ dungeon.js 패턴).
 
@@ -8,8 +8,8 @@
 export const STAGES = [
   {
     id: 'prologue',
-    nameKo: '시작의 섬',
-    frameKo: 'AI 윤리의 네 약속',
+    nameKo: '안개의 섬',
+    frameKo: '1장 안개가 삼킨 이름 · 2장 가짜 얼굴의 신전',
     themeKo: '개인정보 · 편향 · 저작권 · 딥페이크',
     verbKo: '약속의 도구 4종',
     emoji: '🏝️',
@@ -19,8 +19,8 @@ export const STAGES = [
   },
   {
     id: 'whisper-cape',
-    nameKo: '속삭임 곶',
-    frameKo: '내가 남기는 것',
+    nameKo: '말의 흔적 군도',
+    frameKo: '3장 말이 남긴 상처',
     themeKo: '악플·혐오표현 + 디지털 발자국',
     verbKo: '🛡️ 막기·밀쳐내기',
     emoji: '🌊',
@@ -30,8 +30,8 @@ export const STAGES = [
   },
   {
     id: 'echo-cave',
-    nameKo: '메아리 동굴',
-    frameKo: '내게 들어오는 것',
+    nameKo: '메아리의 바다',
+    frameKo: '4장 같은 목소리의 바다',
     themeKo: '가짜뉴스·출처 + 필터버블',
     verbKo: '🔔 울림 충격파 · 🪞 정체 드러내기',
     emoji: '🕳️',
@@ -41,8 +41,8 @@ export const STAGES = [
   },
   {
     id: 'hourglass-port',
-    nameKo: '모래시계 항구',
-    frameKo: 'AI와 나의 습관',
+    nameKo: '멈추지 않는 항구',
+    frameKo: '5장 멈추지 않는 밤',
     themeKo: '스크린타임·디지털 웰빙 + 생성물 표시',
     verbKo: '🧭 끌어당기기',
     emoji: '⏳',
@@ -52,8 +52,8 @@ export const STAGES = [
   },
   {
     id: 'memory-outer',
-    nameKo: '기억의 심장 · 외곽',
-    frameKo: '함께 살아가기',
+    nameKo: '기억의 성문',
+    frameKo: '6장 기억의 심장 · 성문',
     themeKo: '종합 + 인간-AI 협업',
     verbKo: '4동사 조합',
     emoji: '💠',
@@ -63,8 +63,8 @@ export const STAGES = [
   },
   {
     id: 'memory-core',
-    nameKo: '기억의 심장 · 심부',
-    frameKo: '최종 재대결',
+    nameKo: '기억의 심장',
+    frameKo: '6장 기억의 심장 · 최종 선택',
     themeKo: '노이즈 리매치 — 페이즈마다 다른 동사',
     verbKo: '4동사 총동원',
     emoji: '⚡',

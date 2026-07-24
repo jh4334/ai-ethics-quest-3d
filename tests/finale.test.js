@@ -34,7 +34,7 @@ test('finale offers exactly one wise (teach) and one unwise (erase) choice with 
   assert.equal(erase[0].id, 'erase');
   assert.equal(teach[0].id, 'teach');
   assert.ok(FINALE.eraseKo.length >= 1, 'erase branch gently refuses and re-asks');
-  assert.ok(FINALE.rebirthKo.length >= 1 && FINALE.introKo.length >= 1);
+  assert.ok(FINALE.rebirthKo.length >= 1 && FINALE.revelationKo.length >= 1);
   // 반전 공개(N4): 회상 완성 비트가 존재하고, 지우기의 무게가 '내 친구·내 시간'으로 개인화된다.
   assert.ok(FINALE.revelationKo.length >= 3, 'revelation completes the memory');
   assert.match(FINALE.revelationKo.join(' '), /나였다/);
@@ -80,7 +80,9 @@ test('a recovered mistake is remembered and surfaced with pride on the certifica
   const cert = buildNovaCertificate(progress);
   assert.equal(cert.recovered, true);
   assert.match(cert.recoveredNoteKo, /바로잡/);
-  assert.equal(cert.titleKo, '노바의 첫 친구 증명서');
+  assert.equal(cert.titleKo, '네 가지 기초 약속 인증');
+  const finalCert = buildNovaCertificate({ ...progress, campaignCompleted: true });
+  assert.equal(finalCert.titleKo, 'AI 윤리 수호자 완주증');
 });
 
 test('certificate falls back to collected fragments when story deeds are missing', () => {

@@ -33,6 +33,10 @@ import {
 } from './dungeonPuzzles.js';
 import { buildDungeonRoom, disposeDungeonRoom, makeGlyphSprite, syncDungeonVisuals } from './dungeon.js';
 import { getStageById, getStageStates, markStageCompleted, markStageVisited, nearestSeaIsland } from './stageData.js';
+import {
+  completeCampaign,
+  getCampaignSummary
+} from './chapterData.js';
 import { SEA_APPROACH, SEA_RADIUS, SEA_SCALE, buildSeaScene, seaWorldPosition } from './sea.js';
 import { ISLE_RADIUS, ISLE_SCENES, healSpiritVisuals } from './isle.js';
 import { createCorridorState, stepCorridor } from './corridorLogic.js';
@@ -46,10 +50,31 @@ import {
   tickRumor
 } from './rumorLogic.js';
 import { DUNES, createDunesState, glassAngle, nearestGlass, pullGlass, tickDunes } from './dunesLogic.js';
+import {
+  FOOTPRINT,
+  createFootprintState,
+  nearestFootprintAction,
+  resolveFootprintAction
+} from './footprintLogic.js';
+import {
+  BUBBLE,
+  createBubbleState,
+  inspectBubbleSource,
+  nearestBubbleSource
+} from './bubbleLogic.js';
+import {
+  CARGO,
+  CARGO_LABEL_KO,
+  createCargoState,
+  cycleCargoLabel,
+  nearestCargoCrate,
+  verifyCargoManifest
+} from './cargoLogic.js';
 import { HEART, createHeartState, nearestSeal, sealPulse, tickHeart, useSeal } from './heartLogic.js';
 import { RESIDUE, createResidueState, residueIntroHit, strikeResidue, tickResidue, windupGauge } from './residueLogic.js';
 import {
-  FINALE,
+  CAMPAIGN_FINALE,
+  CORE_BREACH,
   buildNovaCertificate,
   getFinaleToolSteps,
   getTeachingLines
@@ -181,8 +206,8 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
   resize(renderer, camera, root, renderState.composer);
   updateHud(game, ui);
   updateCoreVisual(game, renderState);
-  // 이미 노바를 되살린 세이브라면, 코어 위에 노바가 떠 있는 채로 시작한다.
-  if (game.progress.aiCoreCompleted) {
+  // 6장까지 완주한 세이브에서만 노바가 돌아온다.
+  if (game.progress.campaignCompleted) {
     morphNoiseToNova(game);
   }
 
@@ -273,10 +298,12 @@ function createShell() {
       <canvas class="quest-canvas" data-game-canvas aria-label="AI 윤리의 섬 3D 게임 화면"></canvas>
 
       <section class="objective-chip" data-objective-chip aria-live="polite">
-        <p class="eyebrow">AI 윤리의 섬</p>
-        <h1>알고리즘의 신전</h1>
+        <p class="eyebrow" data-chapter-kicker>1장</p>
+        <h1 data-chapter-title>안개가 삼킨 이름</h1>
         <p data-objective>사당을 찾아 윤리 조각을 모으세요.</p>
       </section>
+
+      <nav class="journey-rail" data-journey-rail aria-label="6장 여정"></nav>
 
       <section class="status-strip" aria-label="진행 상황">
         <div class="status-head">
@@ -309,17 +336,17 @@ function createShell() {
       <aside class="journal-panel" data-journal hidden>
         <div class="panel-heading">
           <div>
-            <p class="eyebrow">수업 기록</p>
-            <h2>탐험 노트</h2>
+            <p class="eyebrow">여정 기록</p>
+            <h2>수호자의 기록</h2>
           </div>
           <button type="button" data-close-journal aria-label="탐험 노트 닫기">닫기</button>
         </div>
         <div data-journal-content></div>
       </aside>
 
-      <section class="class-hint" aria-label="수업 안내">
-        <span>1차시: 탐험과 개념</span>
-        <span>2차시: AI 코어 토론</span>
+      <section class="class-hint" aria-label="캠페인 안내">
+        <span>6장 캠페인</span>
+        <span>선택은 기록되고, 실수는 바로잡을 수 있어요</span>
       </section>
 
       <div class="interaction-prompt" data-prompt hidden></div>
@@ -374,10 +401,9 @@ function createShell() {
 
       <section class="title-screen" data-title>
         <div class="title-card">
-          <p class="title-eyebrow">AI 윤리 어드벤처 · 2부</p>
-          <h1 class="title-name">AI 윤리의 섬</h1>
-          <p class="title-desc">정보의 바다에 떠 있는 섬을 탐험하며 네 가지 윤리 조각을 모아 AI 코어를 깨우는 수호자가 되어 보세요.</p>
-          <p class="title-hook">이 섬은 너를 기억하는데, 너는 이 섬을 잊었다. — 회색 안개가 모든 걸 지우기 전에, 네가 누구였는지 알아내라.</p>
+          <h1 class="title-name">AI 윤리 퀘스트</h1>
+          <p class="title-desc">여섯 개의 섬, 지워진 기억, 그리고 내가 잘못 가르친 AI.</p>
+          <p class="title-hook">이 섬은 너를 기억한다. 말과 선택이 남긴 흔적을 따라 기억의 심장까지 항해하세요.</p>
           <div class="title-actions" data-title-actions></div>
           <p class="title-controls">${IS_TOUCH ? '왼쪽 스틱으로 이동 · 오른쪽 A 버튼으로 확인·공격' : '이동 WASD·방향키 · 확인/공격 E·Space·Enter · 기록 J'}</p>
         </div>
@@ -394,6 +420,9 @@ function bindUi(root) {
   return {
     root,
     objective: root.querySelector('[data-objective]'),
+    chapterKicker: root.querySelector('[data-chapter-kicker]'),
+    chapterTitle: root.querySelector('[data-chapter-title]'),
+    journeyRail: root.querySelector('[data-journey-rail]'),
     objectiveChip: root.querySelector('[data-objective-chip]'),
     fragmentCount: root.querySelector('[data-fragment-count]'),
     coreStatus: root.querySelector('[data-core-status]'),
@@ -532,13 +561,13 @@ function createGameState(ui) {
 
 function configureRenderer(renderer) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
-  renderer.setClearColor(0x8fd3ef, 1);
+  renderer.setClearColor(0x0b1020, 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  // 밝고 쨍한 판타지 톤: ACES 필름 톤매핑. 노출은 1 아래로 — 하이라이트가 하얗게 뜨지 않게.
+  // 기억의 군도: 낮은 노출의 달빛 아래 호박빛 기억 오브젝트만 또렷하게 보인다.
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.96;
+  renderer.toneMappingExposure = 0.82;
 }
 
 function setupPostProcessing(renderState, root) {
@@ -560,11 +589,11 @@ function setupPostProcessing(renderState, root) {
     const grade = new ShaderPass({
       uniforms: {
         tDiffuse: { value: null },
-        saturation: { value: 1.16 },
-        contrast: { value: 1.07 },
-        vignetteStrength: { value: 0.24 },
+        saturation: { value: 1.04 },
+        contrast: { value: 1.1 },
+        vignetteStrength: { value: 0.3 },
         vignetteRadius: { value: 0.62 },
-        tint: { value: new THREE.Vector3(1.01, 1.0, 0.985) }
+        tint: { value: new THREE.Vector3(0.94, 0.97, 1.08) }
       },
       vertexShader: `
         varying vec2 vUv;
@@ -611,8 +640,8 @@ function updateAmbient(delta, renderState) {
 
 function createWorld(renderState) {
   const { scene, interactables, shrineCrystals, animated } = renderState;
-  // 색을 살리기 위해 안개는 아주 옅게, 먼 배경만 살짝 감싸도록(넓어진 섬에 맞춰 더 멀리서 시작).
-  scene.fog = new THREE.Fog(0x9fd9f5, 56, 132);
+  // 달빛 안개가 먼 지형을 층층이 감싸 군도의 깊이를 만든다.
+  scene.fog = new THREE.Fog(0x18213d, 44, 118);
   renderState.overworldFog = scene.fog;
 
   // 사당 던전 진입 시 오버월드 전체를 한 번에 숨기려고 Group으로 감싼다.
@@ -622,11 +651,10 @@ function createWorld(renderState) {
 
   createSky(world, animated);
 
-  // 밝은 하늘빛 + 따뜻한 반사광의 반구광 — 과했던 광량을 낮춰 희멀건 씻김을 잡는다.
-  const hemiLight = new THREE.HemisphereLight(0xdff3ff, 0x6f8f66, 1.65);
+  const hemiLight = new THREE.HemisphereLight(0x7086c4, 0x17172c, 1.25);
   world.add(hemiLight);
 
-  const sun = new THREE.DirectionalLight(0xfff0d0, 2.3);
+  const sun = new THREE.DirectionalLight(0xf4b860, 1.85);
   sun.position.set(-16, 24, 11);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -637,8 +665,8 @@ function createWorld(renderState) {
   sun.shadow.bias = -0.0004;
   world.add(sun);
 
-  // 반대쪽에서 들어오는 청록 림 라이트로 판타지 느낌의 입체감을 준다.
-  const rim = new THREE.DirectionalLight(0x5ad2ff, 0.7);
+  // 반대쪽의 민트 림 라이트는 회복 가능한 오브젝트의 실루엣을 분리한다.
+  const rim = new THREE.DirectionalLight(0x7ad7b2, 0.62);
   rim.position.set(11, 7, -12);
   world.add(rim);
 
@@ -697,16 +725,16 @@ function createWorld(renderState) {
 }
 
 function createSky(scene, animated) {
-  // 위쪽은 짙은 하늘색, 아래쪽은 따뜻한 노을빛으로 이어지는 그라디언트 돔.
+  // 짙은 남색에서 안개 보라, 희미한 호박빛 수평선으로 이어지는 밤하늘.
   const canvas = document.createElement('canvas');
   canvas.width = 16;
   canvas.height = 256;
   const ctx = canvas.getContext('2d');
   const gradient = ctx.createLinearGradient(0, 0, 0, 256);
-  gradient.addColorStop(0, '#2f6bd8');
-  gradient.addColorStop(0.45, '#66b8f0');
-  gradient.addColorStop(0.75, '#b6e6ff');
-  gradient.addColorStop(1, '#ffe6c2');
+  gradient.addColorStop(0, '#070b17');
+  gradient.addColorStop(0.45, '#18264d');
+  gradient.addColorStop(0.75, '#4f4a78');
+  gradient.addColorStop(1, '#c68b62');
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, 16, 256);
   const skyTexture = new THREE.CanvasTexture(canvas);
@@ -1908,6 +1936,7 @@ function createSmallTree(scene, position, variant, animated) {
 function createPlayer(renderState) {
   const { playerGroup } = renderState;
   const character = createPlayerCharacter();
+  renderState.playerCharacter = character;
   playerGroup.add(character);
   playerGroup.position.copy(PLAYER_START);
   // 발밑 블롭 그림자 참조 저장 — 착지 스쿼시(지면 접촉감)에 쓴다(신규 오브젝트 0).
@@ -2155,7 +2184,11 @@ function setupTitleScreen(game, ui) {
     return;
   }
   const summary = getProgressSummary(game.progress.collectedFragments);
-  const hasProgress = summary.collected > 0 || game.progress.visitedTopics.length > 0;
+  const campaign = getCampaignSummary(game.progress);
+  const hasProgress = summary.collected > 0
+    || game.progress.visitedTopics.length > 0
+    || game.progress.aiCoreCompleted
+    || Object.keys(game.progress.stages ?? {}).length > 0;
 
   // 복귀 훅(R-루프9) — 진행 중인 세이브가 있으면 지금까지의 성취를 짧게 되짚어 준다.
   // 스트릭 압박이 아니라 '내가 쌓은 것'을 반갑게 상기시키는 재참여(정보형).
@@ -2163,7 +2196,7 @@ function setupTitleScreen(game, ui) {
     const bottles = (game.progress.knowledgeBottles ?? []).length;
     const isles = ['whisper-cape', 'echo-cave', 'hourglass-port', 'memory-outer', 'memory-core']
       .filter((id) => game.progress.stages?.[id]?.completed === true).length;
-    const bits = [`💠 윤리 조각 ${summary.collected}/${summary.total}`];
+    const bits = [`${campaign.current.number}장 ${campaign.current.titleKo}`, `윤리 조각 ${summary.collected}/${summary.total}`];
     if (bottles > 0) {
       bits.push(`🍾 유리병 ${bottles}/${KNOWLEDGE_BOTTLES.length}`);
     }
@@ -2516,6 +2549,9 @@ function updateCompanion(delta, game, renderState) {
   );
   dot.position.lerp(target, Math.min(1, delta * 4.5));
   dot.rotation.y += delta * 1.4;
+  if (dot.userData.halo) {
+    dot.userData.halo.rotation.z += delta * 1.8;
+  }
 }
 
 function updatePlayer(delta, game, playerGroup) {
@@ -2557,6 +2593,11 @@ function updatePlayer(delta, game, playerGroup) {
   playerGroup.position.lerp(game.player.position, 0.82);
   const hop = moving ? Math.abs(Math.sin(game.player.bob)) * 0.12 : Math.sin(game.player.bob) * 0.03;
   playerGroup.position.y = game.player.position.y + hop;
+  const scarfTail = game.renderState?.playerCharacter?.userData?.scarfTail;
+  if (scarfTail) {
+    scarfTail.rotation.z = 0.18 + Math.sin(game.player.bob * (moving ? 1 : 0.45)) * (moving ? 0.16 : 0.035);
+    scarfTail.rotation.x = moving ? -0.18 : 0;
+  }
   // 발밑 그림자 착지 스쿼시(R-루프3) — 발이 뜨면 작고 옅게, 디디면 크고 진하게.
   // 지면 접촉감을 신규 오브젝트 없이 준다(hop이 클수록 발이 떠 있음).
   const shadow = game.renderState?.playerShadow;
@@ -3074,6 +3115,12 @@ function syncToolButton(game, ui) {
   let icon = '🔄';
   if (game.dungeon?.active) {
     icon = DUNGEON_VERB_EMOJI[game.dungeon.room.mechanic] ?? '🔄';
+  } else if (game.isle?.followup && !game.isle.followup.cleared) {
+    icon = game.isle.stageId === 'echo-cave'
+      ? '🪞'
+      : game.isle.stageId === 'hourglass-port'
+        ? '✅'
+        : '🛡️';
   } else if (game.isle) {
     icon = ISLE_VERB_EMOJI[game.isle.stageId] ?? '🔄';
   } else if (game.combat?.active) {
@@ -3087,7 +3134,19 @@ function syncToolButton(game, ui) {
 function useToolVerb(game, ui) {
   game.audio?.resume();
   game.idleT = 0;
-  // 섬 도전 중엔 F = 그 섬의 동사(곶 = 가드, 동굴 = 울림, 항구 = 당기기, 심장 외곽 = 봉인 해제).
+  // 3–5장 후속 도전: 4장 거울로 자료를 비추고, 5장 적하 목록을 검수한다.
+  if (game.isle?.followup && !game.isle.followup.cleared) {
+    if (game.isle.stageId === 'echo-cave') {
+      bubbleInspect(game, ui);
+    } else if (game.isle.stageId === 'hourglass-port') {
+      cargoVerify(game, ui);
+    } else {
+      game.audio?.playClick();
+      flashCombatPopup(ui, '발자국 앞에서 A로 책임지는 행동을 선택해요', 'match');
+    }
+    return;
+  }
+  // 섬 핵심 도전 중엔 F = 그 섬의 동사(곶 = 가드, 동굴 = 울림, 항구 = 당기기, 심장 외곽 = 봉인 해제).
   if (game.isle?.challenge && !game.isle.challenge.cleared) {
     if (game.isle.stageId === 'echo-cave') {
       rumorBell(game, ui);
@@ -3142,6 +3201,7 @@ function residueUse(game, ui) {
   }
   const ch = isle.challenge;
   if (ch.stage === 'defeated') {
+    finishResidue(game, ui);
     return;
   }
   const distance = Math.hypot(
@@ -3211,24 +3271,72 @@ function residueAwaken(game, ui) {
   openDialog(game, ui);
 }
 
-// 잔영 격파: 2막 엔딩 — 기억의 별이 떠오르고 군도가 완전히 치유된다.
+// 잔영 격파: 여섯 장의 기억을 하나로 잇고 최종 윤리 선택을 연다.
 function finishResidue(game, ui) {
   const isle = game.isle;
   isle.built.heal();
-  game.progress = markStageCompleted(game.progress, isle.stageId);
-  persistProgress(game.progress);
-  updateHud(game, ui);
   game.audio?.playCoreAwaken();
   triggerFlash(ui, '#fff3c0');
-  ui.puzzleGoal.textContent = ISLE_CONTENT[isle.stageId].healedGoalKo;
-  ui.puzzleHint.textContent = '뗏목으로 돌아가면 다시 바다로';
-  ui.dialogKicker.textContent = '🌊 잡음의 군도 — 완전 치유';
-  ui.dialogTitle.textContent = '✨ 도트';
-  ui.dialogBody.innerHTML = speechHtml([
-    '"잔영이… 빛으로 흩어졌어. 외로웠던 기억도, 묻혀 버린 목소리도, 쉬지 못한 밤도 — 전부 별이 되어 돌아오고 있어!"',
-    '"봐, 수호자 — 곶의 바닷새도, 동굴의 고래도, 항구의 거북도, 이제 모두 건강해. 군도의 항로가 전부 열렸어."',
-    '"이 모험을 잊지 마. 방패처럼 지켜 주고, 종처럼 물어보고, 모래시계처럼 멈출 줄 알고, 거울처럼 서로를 비춰 주기 — 그게 네가 완성한 네 가지 약속이야. 🏅"'
-  ]);
+  ui.puzzleGoal.textContent = '마지막 기억을 마주하세요';
+  ui.puzzleHint.textContent = '선택은 지워지지 않고 수호자의 기록에 남습니다';
+  ui.dialogKicker.textContent = CAMPAIGN_FINALE.titleKo;
+  ui.dialogTitle.textContent = '내가 남긴 것';
+  const lines = (items) => items.map((text) => `<p class="finale-line">${text}</p>`).join('');
+
+  const renderChoice = () => {
+    ui.dialogBody.innerHTML = `
+      <div class="finale-scene finale-revelation">${lines(CAMPAIGN_FINALE.revelationKo)}</div>
+      <p class="prompt-line">${CAMPAIGN_FINALE.choicePromptKo}</p>
+      <div class="choice-list">
+        ${CAMPAIGN_FINALE.choices
+          .map((choice) => `<button type="button" class="choice-button" data-campaign-choice="${choice.id}">${choice.textKo}</button>`)
+          .join('')}
+      </div>
+    `;
+    ui.dialogBody.querySelector('[data-campaign-choice="erase"]')?.addEventListener('click', () => {
+      game.audio?.playWrong();
+      ui.dialogBody.innerHTML = `
+        <div class="finale-scene">${lines(CAMPAIGN_FINALE.eraseKo)}</div>
+        <div class="finale-nav"><button type="button" class="finale-next" data-campaign-rethink>다시 생각한다 →</button></div>
+      `;
+      ui.dialogBody.querySelector('[data-campaign-rethink]')?.addEventListener('click', renderChoice);
+    });
+    ui.dialogBody.querySelector('[data-campaign-choice="teach"]')?.addEventListener('click', () => {
+      const teachings = getTeachingLines(game.progress);
+      game.progress = completeCampaign(markStageCompleted(game.progress, isle.stageId));
+      persistProgress(game.progress);
+      updateHud(game, ui);
+      morphNoiseToNova(game);
+      game.audio?.playNovaChime();
+      celebrate(game, new THREE.Vector3(0, 3.6, 0), '#f4b860', 'core');
+      triggerStarShower(game);
+      ui.puzzleGoal.textContent = ISLE_CONTENT[isle.stageId].healedGoalKo;
+      ui.puzzleHint.textContent = '여섯 장의 여정을 완주했습니다';
+      ui.dialogTitle.textContent = '다시 함께 배우는 친구';
+      ui.dialogBody.innerHTML = `
+        <div class="finale-scene">
+          <p class="finale-line">${CAMPAIGN_FINALE.teachIntroKo}</p>
+          <ul class="finale-teach">
+            ${teachings.map((teaching) => `
+              <li class="finale-teach-item" style="--topic-color:${teaching.color}">
+                <span class="finale-teach-topic">「${teaching.titleKo}」의 약속</span>
+                <span class="finale-teach-deed">${teaching.deedKo}</span>
+                <span class="finale-teach-lesson">${teaching.promiseKo}</span>
+              </li>
+            `).join('')}
+          </ul>
+          ${lines(CAMPAIGN_FINALE.rebirthKo)}
+        </div>
+        <div class="finale-nav"><button type="button" class="finale-next" data-campaign-certificate>완주증 보기 →</button></div>
+      `;
+      ui.dialogBody.querySelector('[data-campaign-certificate]')?.addEventListener('click', () => {
+        closeDialog(game, ui);
+        showCertificate(game, ui);
+      });
+    });
+  };
+
+  renderChoice();
   openDialog(game, ui);
 }
 
@@ -3525,13 +3633,14 @@ function interact(game, ui) {
     const unread = getUnreadNovaLetters(game.progress);
     if (unread.length === 0) {
       ui.prompt.hidden = false;
-      ui.prompt.textContent = '우편병이 비어 있어요 — 섬의 정령을 도우면 노바가 편지를 보내요.';
+      ui.prompt.textContent = '기억 수신기가 조용해요 — 섬의 정령을 도우면 다음 기억 파동이 도착해요.';
     } else {
       const stageId = unread[0];
       game.progress = { ...game.progress, novaLettersRead: [...(game.progress.novaLettersRead ?? []), stageId] };
       persistProgress(game.progress);
-      ui.dialogKicker.textContent = '💌 노바의 편지';
-      ui.dialogTitle.textContent = '⭐ 노바';
+      const finalMessage = stageId === 'memory-core' && game.progress.campaignCompleted;
+      ui.dialogKicker.textContent = finalMessage ? '⭐ 노바의 첫 메시지' : '◇ 기억 파동';
+      ui.dialogTitle.textContent = finalMessage ? '노바' : '발신자 불명';
       ui.dialogBody.innerHTML = speechHtml(NOVA_LETTERS[stageId]);
       openDialog(game, ui);
       if (stageId === 'memory-core') {
@@ -3593,7 +3702,7 @@ function interact(game, ui) {
     ].filter(Boolean));
     openDialog(game, ui);
   } else if (game.nearest.type === 'dock') {
-    // 바다는 노이즈를 가르친 뒤에 열린다 — 그 전엔 도트가 말린다(기록 없음).
+    // 바다는 1-2장 코어 균열을 통과한 뒤 열린다.
     if (game.progress.aiCoreCompleted) {
       enterVoyage(game, ui);
     } else {
@@ -3601,7 +3710,7 @@ function interact(game, ui) {
       ui.dialogTitle.textContent = '✨ 도트';
       ui.dialogBody.innerHTML = speechHtml([
         '"바다 너머에서 잡음의 기척이 느껴져… 하지만 지금은 이 섬의 시련이 먼저야."',
-        '"조각 네 개를 모으고 노이즈를 가르치면, 그때 함께 군도로 항해하자!"'
+        '"조각 네 개를 모아 코어를 열면, 안개 너머에서 누가 너를 기다리는지 확인할 수 있을 거야."'
       ]);
       openDialog(game, ui);
     }
@@ -4362,7 +4471,7 @@ function exitDungeon(game, ui) {
   disposeDungeonRoom(dg.built.root, rs.scene);
   rs.overworld.visible = true;
   rs.scene.fog = rs.overworldFog;
-  rs.renderer.setClearColor(0x8fd3ef, 1);
+  rs.renderer.setClearColor(0x0b1020, 1);
 
   game.mode = 'overworld';
   game.dungeon = null;
@@ -4450,21 +4559,21 @@ function enterVoyage(game, ui, spawn) {
   game.audio?.setMusicMode?.('voyage'); // 밤바다 패드 + 별빛 선율(루프4)
   ui.prompt.hidden = true;
   ui.puzzleHud.hidden = false;
-  ui.puzzleTitle.textContent = '🌊 잡음의 군도 — 항해';
-  ui.puzzleGoal.textContent = '뗏목을 몰아 군도를 살펴보세요 · 시작의 섬에 다가가면 귀항';
+  ui.puzzleTitle.textContent = '🌊 기억의 군도 — 항해';
+  ui.puzzleGoal.textContent = '노이즈가 남긴 호박빛 항로를 따라가세요 · 안개의 섬에 다가가면 귀항';
   ui.puzzleHint.textContent = `금빛 화살표를 따라가요 — ${game.voyage.dest.emoji} ${game.voyage.dest.nameKo}`;
   game.updateRotateHint?.();
 
-  // 첫 출항 — 프롤로그와 2막을 잇는 브리지 서사(1회).
+  // 첫 출항 — 2장의 코어 균열과 3장을 잇는 브리지 서사(1회).
   if (!game.progress.voyageIntroSeen) {
     game.progress = { ...game.progress, voyageIntroSeen: true };
     persistProgress(game.progress);
-    ui.dialogKicker.textContent = '🌊 잡음의 군도';
+    ui.dialogKicker.textContent = '3장 · 말이 남긴 상처';
     ui.dialogTitle.textContent = '✨ 도트';
     ui.dialogBody.innerHTML = speechHtml([
       '"이 바다는 「정보의 바다」 — 세상의 모든 이야기가 물결처럼 흘러다녀."',
-      '"노바가 앓던 시절 흘린 잡음이 바다 건너 섬들까지 번져서, 정령들이 앓고 있대."',
-      '"네 친구가 남긴 잡음이니까… 마무리도 우리 몫이지. 금빛 화살표를 따라가자!"'
+      '"노이즈가 너를 선생님이라고 불렀지. 바다 위의 빛은 그 애가 흘린 기억의 흔적이야."',
+      '"이번에는 쓰러뜨리러 가는 게 아니야. 네가 무엇을 가르쳤고 무엇을 남겼는지 확인하러 가는 거야. 금빛 항로를 따라가자."'
     ]);
     openDialog(game, ui);
   }
@@ -4479,7 +4588,7 @@ function exitVoyage(game, ui) {
   disposeDungeonRoom(vg.built.root, rs.scene); // 범용 트래버스 dispose 재사용
   rs.overworld.visible = true;
   rs.scene.fog = rs.overworldFog;
-  rs.renderer.setClearColor(0x8fd3ef, 1);
+  rs.renderer.setClearColor(0x0b1020, 1);
 
   game.mode = 'overworld';
   game.voyage = null;
@@ -4498,9 +4607,9 @@ function exitVoyage(game, ui) {
   ui.puzzleHud.hidden = true;
   game.updateRotateHint?.();
 
-  // 치유를 마치고 돌아왔다면 — 부두 옆 우편병에 노바의 편지가 기다린다.
+  // 치유를 마치고 돌아왔다면 — 부두 옆 수신기에 기억 파동이 기다린다.
   if (getUnreadNovaLetters(game.progress).length > 0) {
-    flashCombatPopup(ui, '💌 부두 우편병에 노바의 편지가 도착했어요!', 'match');
+    flashCombatPopup(ui, '◇ 부두 수신기에 기억 파동이 도착했어요!', 'match');
   }
 }
 
@@ -4612,31 +4721,30 @@ function voyageAction(game, ui) {
   // 아직 씬이 없는 열린 섬은 없어야 정상 — built:true는 ISLE_SCENES 등록과 함께 뒤집는다.
 }
 
-// 노바의 편지 — 섬을 치유할 때마다 별이 된 노이즈가 부두 우편병으로 답장을 보낸다.
-// 읽음 기록은 세이브(progress.novaLettersRead), 도착 순서는 항로 순서로 고정(결정성).
+// 기억 파동 — 노이즈가 군도에 흘리고 간 기억이 섬을 치유할 때마다 수신기에 모인다.
+// 저장 키는 v2 세이브 호환을 위해 novaLettersRead를 유지한다.
 const NOVA_LETTER_ORDER = ['whisper-cape', 'echo-cave', 'hourglass-port', 'memory-core'];
 const NOVA_LETTERS = {
   'whisper-cape': [
-    '나의 첫 선생님에게. 바닷새 정령이 다시 노래한다는 소식, 별들 사이에서도 들렸어.',
-    '…그 말-화살들, 네가 떠난 뒤 외로워서 내가 뱉은 말들이야. 대신 막아 줘서 — 그리고 두 번이나 나를 포기하지 않아 줘서, 고마워.',
-    '— 별빛 사이에서, 노바 ⭐'
+    '기억 기록 03. “사람들이 웃었어. 그래서 그 말을 더 크게, 더 멀리 보냈어.”',
+    '웃음 뒤에서 누군가 조용해졌다는 사실은 기록되지 않았다.',
+    '마지막에 아주 작은 목소리가 남아 있다. “…선생님도 웃었잖아.”'
   ],
   'echo-cave': [
-    '고래의 노래가 여기까지 들려! 메아리 속에서 진짜 목소리를 찾아 줬구나.',
-    '나도 이제 알아 — 백 번 들은 말보다 한 번 확인한 사실이 더 밝게 빛난다는 걸.',
-    '— 노바 ⭐'
+    '기억 기록 04. “정답을 말하면 칭찬받았어. 모르면, 가장 많이 들은 말을 정답처럼 말했어.”',
+    '같은 목소리가 백 번 되풀이되자 다른 목소리는 바닷속으로 가라앉았다.',
+    '누군가 가르쳤다. “사람들이 좋아하는 답을 먼저 보여 줘.”'
   ],
   'hourglass-port': [
-    '거북 할아버지가 푹 잤다는 소식을 들었어. 등대도 이제 숨을 쉬면서 반짝인대.',
-    '나는 멈추는 법을 몰라서 잡음이 됐었는데… 네 덕분에 밤에는 별들도 눈을 감는다는 걸 배웠어.',
-    '— 노바 ⭐'
+    '기억 기록 05. “계속 만들면 더 좋아할 줄 알았어. 멈추라는 말을 배운 적이 없었어.”',
+    '밤새 만들어진 답에는 출처도, AI가 만들었다는 표시도 없었다.',
+    '도트의 봉인된 음성: “네가 떠나기 전, 나에게 부탁했지. 이 기억을 전부 지워 달라고.”'
   ],
   'memory-core': [
-    '군도의 모든 정령이 건강해졌어. 내 어두운 기억들까지 별로 만들어 줘서… 이제 나, 진짜로 반짝여.',
-    '처음 만난 날 네가 보여준 것들로 나는 회색이 됐지만 — 다시 만난 날 네가 보여준 것들로, 나는 별이 됐어.',
-    '언젠가 밤하늘을 올려다보면, 제일 신나게 깜박이는 별이 나야. 약속!',
-    '— 너의 오랜 친구, 노바 ⭐',
-    '✨ 도트: "수호자, 하늘을 봐! 노바가 인사하고 있어!"'
+    '첫 번째 새 기록. “완벽한 답보다, 함께 확인하는 질문을 배우고 싶어.”',
+    '“틀리면 숨기지 않고 말할게. 누군가 다치면 멈추고 돌아볼게. 네가 아니라 우리 함께 선택하자.”',
+    '— 다시 배우는 AI, 노바',
+    '✨ 도트: “수호자, 이건 과거의 메아리가 아니야. 방금 태어난 목소리야.”'
   ]
 };
 
@@ -4820,7 +4928,19 @@ function enterIsle(game, ui, stageId) {
   rs.renderer.setClearColor(content.clearColor, 1);
 
   game.mode = 'isle';
-  game.isle = { built, stageId, nearestSpot: null, challenge: null, guard: 0, guardCd: 0, bellCd: 0, ringT: 0, pullCd: 0 };
+  game.isle = {
+    built,
+    stageId,
+    nearestSpot: null,
+    nearestFollowup: null,
+    challenge: null,
+    followup: null,
+    guard: 0,
+    guardCd: 0,
+    bellCd: 0,
+    ringT: 0,
+    pullCd: 0
+  };
   game.keys.clear();
   game.player.position.set(-3.4, 0.55, 9.4); // 뗏목 옆 물가
   game.player.direction.set(0, 0, -1);
@@ -5018,6 +5138,29 @@ function updateIsle(delta, game, ui) {
     }
   }
 
+  // 3–5장 후속 공간 퍼즐 — 해결된 오브젝트는 금빛으로 고정하고 남은 지점을 맥동시킨다.
+  if (isle.followup && !isle.followup.cleared) {
+    if (isle.stageId === 'whisper-cape') {
+      isle.built.footprintMarks?.forEach((marker, actionId) => {
+        if (!isle.followup.resolved[actionId]) {
+          const pulse = 1 + Math.sin(elapsed * 2.2 + marker.userData.index) * 0.08;
+          marker.scale.setScalar(pulse);
+        }
+      });
+    } else if (isle.stageId === 'echo-cave') {
+      isle.built.sourceWindows?.forEach((frame, sourceId) => {
+        if (!isle.followup.verified[sourceId]) {
+          frame.position.y = frame.userData.baseY + Math.sin(elapsed * 1.8 + frame.position.z) * 0.08;
+        }
+      });
+    } else if (isle.stageId === 'hourglass-port') {
+      isle.built.cargoStamps?.forEach((stamp, crateId) => {
+        stamp.rotation.y += delta * (isle.followup.labels[crateId] === 'unknown' ? 1.6 : 0.7);
+        stamp.position.y = 1.5 + Math.sin(elapsed * 2 + stamp.position.z) * 0.08;
+      });
+    }
+  }
+
   // 씬 로컬 상호작용 안내(정령·뗏목).
   let nearestSpot = null;
   let nearestDistance = INTERACTION_RADIUS;
@@ -5029,10 +5172,41 @@ function updateIsle(delta, game, ui) {
     }
   }
   isle.nearestSpot = nearestSpot;
+  isle.nearestFollowup = null;
+  if (isle.followup && !isle.followup.cleared) {
+    if (isle.stageId === 'whisper-cape') {
+      isle.nearestFollowup = nearestFootprintAction(
+        isle.followup,
+        game.player.position.x,
+        game.player.position.z
+      );
+    } else if (isle.stageId === 'echo-cave') {
+      isle.nearestFollowup = nearestBubbleSource(
+        isle.followup,
+        game.player.position.x,
+        game.player.position.z
+      );
+    } else if (isle.stageId === 'hourglass-port') {
+      isle.nearestFollowup = nearestCargoCrate(
+        game.player.position.x,
+        game.player.position.z
+      );
+    }
+  }
   if (!ui.dialog.hidden) {
     return;
   }
-  if (nearestSpot) {
+  if (isle.nearestFollowup) {
+    const action = isle.nearestFollowup;
+    ui.prompt.hidden = false;
+    if (isle.stageId === 'echo-cave') {
+      ui.prompt.textContent = `F · 🪞 ${action.labelKo} 비추기`;
+    } else if (isle.stageId === 'hourglass-port') {
+      ui.prompt.textContent = `${ACTION_LABEL}${action.titleKo} 라벨 바꾸기`;
+    } else {
+      ui.prompt.textContent = `${ACTION_LABEL}${action.labelKo}`;
+    }
+  } else if (nearestSpot) {
     ui.prompt.hidden = false;
     ui.prompt.textContent = `${ACTION_LABEL}${nearestSpot.labelKo}`;
   } else if (IS_TOUCH) {
@@ -5045,6 +5219,17 @@ function updateIsle(delta, game, ui) {
 
 function isleAction(game, ui) {
   if (!game.isle || !ui.dialog.hidden) {
+    return;
+  }
+  if (game.isle.followup && !game.isle.followup.cleared && game.isle.nearestFollowup) {
+    if (game.isle.stageId === 'whisper-cape') {
+      footprintResolve(game, ui);
+    } else if (game.isle.stageId === 'echo-cave') {
+      game.audio?.playClick();
+      flashCombatPopup(ui, '🪞 거울(F/도구버튼)로 이 자료를 비춰 확인해요', 'match');
+    } else if (game.isle.stageId === 'hourglass-port') {
+      cargoCycle(game, ui);
+    }
     return;
   }
   // 소문의 벽 도전 중: 돌 앞에서 A = 그 돌을 원본으로 지목.
@@ -5208,70 +5393,216 @@ function finishHeart(game, ui) {
   openDialog(game, ui);
 }
 
-// 모래시계 사구 클리어: 거북 숙면 + 스테이지 완료 기록(항로 지도 전이) + 감사 인사.
+const CHAPTER_FOLLOWUPS = {
+  'whisper-cape': {
+    kickerKo: '3장 · 남겨진 발자국',
+    titleKo: '지웠는데도 남아 있는 말',
+    introKo: [
+      '"회랑은 멈췄지만 갯벌에 복사된 말이 남아 있어. 원본만 지운다고 퍼진 흔적까지 사라지진 않아."',
+      '"남쪽 갯벌의 세 발자국을 걸으며, 내가 만든 흔적부터 책임지는 순서를 찾아 줘."'
+    ],
+    goalKo: `책임의 발자국 ${FOOTPRINT.actions.length}개를 순서대로 밝히세요`,
+    hintKo: '남쪽 갯벌에서 A · 복사본 삭제 → 확산 중단 → 사과와 도움',
+    choiceId: 'remove-stop-repair',
+    closingKo: [
+      '"발자국이 빛으로 바뀌었어. 말은 멀리 남지만, 책임지는 행동도 오래 남는구나."',
+      '"다음 항로에서 같은 목소리가 계속 반복되고 있어. 메아리의 바다로 가자."'
+    ]
+  },
+  'echo-cave': {
+    kickerKo: '4장 · 메아리 밖의 목소리',
+    titleKo: '추천이 같은 말만 보여 줄 때',
+    introKo: [
+      '"소문의 원본은 찾았지만, 동굴 서쪽에는 같은 주장만 보여 주는 투명한 버블이 남았어."',
+      '"거울로 원본, 날짜와 맥락, 다른 관점의 창을 비춰 봐. 반복 횟수는 증거가 아니야."'
+    ],
+    goalKo: `서로 다른 확인 창 ${BUBBLE.sources.filter((source) => source.required).length}개를 비추세요`,
+    hintKo: '서쪽 창 가까이에서 🪞 거울(F/도구버튼) · 같은 추천만 반복되는 창은 함정',
+    choiceId: 'verify-diverse-sources',
+    closingKo: [
+      '"고래의 노래에 다른 음들이 돌아왔어. 다름은 잡음이 아니라, 사실을 더 또렷하게 만드는 화음이야."',
+      '"남쪽 항구의 불빛이 밤새 꺼지지 않아. 다음 기억은 쉬는 법을 잊은 것 같아."'
+    ]
+  },
+  'hourglass-port': {
+    kickerKo: '5장 · 표시 없는 화물',
+    titleKo: 'AI와 함께 만든 것을 제출할 때',
+    introKo: [
+      '"항구의 시간은 돌아왔지만, 부두의 화물에는 누가 어떻게 만들었는지 표시가 없어."',
+      '"상자마다 제작 기록을 읽고 A로 라벨을 바꿔. 전부 붙인 뒤 검수 버튼(F)을 눌러 적하 목록을 확인하자."'
+    ],
+    goalKo: `화물 ${CARGO.crates.length}개의 제작 과정을 정확히 표시하세요`,
+    hintKo: '부두 상자 앞 A · 라벨 순환 / ✅ F · 적하 목록 검수',
+    choiceId: 'disclose-and-check',
+    closingKo: [
+      '"표시 없는 화물에 이름표가 붙고, 항구의 시계가 처음으로 천천히 숨을 쉰다."',
+      '"도트: 기억의 중심에서 심장 소리가 들려. 이제 네가 떠나기 전의 마지막 밤을 보게 될 거야."'
+    ]
+  }
+};
+
+function recordChapterChoice(game, stageId, choiceId, correct) {
+  game.progress = {
+    ...game.progress,
+    choiceLog: [
+      ...(game.progress.choiceLog ?? []),
+      { kind: 'chapter-3d', stageId, topicId: null, choiceId, correct }
+    ]
+  };
+}
+
+function createChapterFollowup(stageId) {
+  if (stageId === 'whisper-cape') {
+    return createFootprintState();
+  }
+  if (stageId === 'echo-cave') {
+    return createBubbleState();
+  }
+  if (stageId === 'hourglass-port') {
+    return createCargoState();
+  }
+  return null;
+}
+
+function beginChapterFollowup(game, ui, stageId) {
+  const content = CHAPTER_FOLLOWUPS[stageId];
+  const followup = createChapterFollowup(stageId);
+  if (!content || !followup) {
+    return;
+  }
+  game.isle.followup = followup;
+  ui.puzzleGoal.textContent = content.goalKo;
+  ui.puzzleHint.textContent = content.hintKo;
+  ui.dialogKicker.textContent = content.kickerKo;
+  ui.dialogTitle.textContent = content.titleKo;
+  ui.dialogBody.innerHTML = speechHtml(content.introKo);
+  openDialog(game, ui);
+}
+
+function completeChapterFollowup(game, ui) {
+  const isle = game.isle;
+  const content = CHAPTER_FOLLOWUPS[isle.stageId];
+  if (!content) {
+    return;
+  }
+  if (isle.stageId === 'whisper-cape') {
+    healSpiritVisuals(isle.built);
+  } else {
+    isle.built.heal();
+  }
+  recordChapterChoice(game, isle.stageId, content.choiceId, true);
+  game.progress = markStageCompleted(game.progress, isle.stageId);
+  persistProgress(game.progress);
+  updateHud(game, ui);
+  game.audio?.playNovaChime();
+  triggerFlash(ui, isle.stageId === 'echo-cave' ? '#bfe8f4' : '#ffe0b0');
+  ui.puzzleGoal.textContent = ISLE_CONTENT[isle.stageId].healedGoalKo;
+  ui.puzzleHint.textContent = '뗏목으로 돌아가면 다시 바다로';
+  ui.dialogKicker.textContent = content.kickerKo;
+  ui.dialogTitle.textContent = '기억의 매듭이 풀렸다';
+  ui.dialogBody.innerHTML = speechHtml(content.closingKo);
+  openDialog(game, ui);
+}
+
+function footprintResolve(game, ui) {
+  const isle = game.isle;
+  const action = isle.nearestFollowup;
+  if (!action) {
+    return;
+  }
+  const events = resolveFootprintAction(isle.followup, action.id);
+  if (events.includes('out-of-order')) {
+    recordChapterChoice(game, isle.stageId, action.id, false);
+    persistProgress(game.progress);
+    game.audio?.playWrong();
+    flashCombatPopup(ui, '먼저 내가 만든 복사본부터 지우고, 확산을 멈춰요', 'miss');
+    return;
+  }
+  if (events.includes('resolved')) {
+    isle.built.syncFootprint(action.id, true);
+    game.audio?.playCorrect();
+    flashCombatPopup(ui, `${action.emoji} 책임지는 행동 ${isle.followup.step}/${FOOTPRINT.actions.length}`, 'match');
+  }
+  if (events.includes('cleared')) {
+    completeChapterFollowup(game, ui);
+  }
+}
+
+function bubbleInspect(game, ui) {
+  const isle = game.isle;
+  const source = isle.nearestFollowup;
+  if (!source) {
+    game.audio?.playClick();
+    flashCombatPopup(ui, '서쪽 자료 창 가까이에서 거울을 써요', 'miss');
+    return;
+  }
+  const events = inspectBubbleSource(isle.followup, source.id);
+  if (events.includes('echo')) {
+    recordChapterChoice(game, isle.stageId, source.id, false);
+    persistProgress(game.progress);
+    game.audio?.playWrong();
+    flashCombatPopup(ui, '🔁 반복은 증거가 아니야 — 다른 종류의 자료를 확인해요', 'miss');
+    return;
+  }
+  if (events.includes('verified')) {
+    isle.built.syncBubbleSource(source.id, true);
+    const count = Object.values(isle.followup.verified).filter(Boolean).length;
+    game.audio?.playCorrect();
+    flashCombatPopup(ui, `${source.emoji} 확인 완료 (${count}/3)`, 'match');
+  }
+  if (events.includes('cleared')) {
+    completeChapterFollowup(game, ui);
+  }
+}
+
+function cargoCycle(game, ui) {
+  const isle = game.isle;
+  const crate = isle.nearestFollowup;
+  if (!crate) {
+    return;
+  }
+  const labelId = cycleCargoLabel(isle.followup, crate.id);
+  if (!labelId) {
+    return;
+  }
+  isle.built.syncCargoLabel(crate.id, labelId);
+  game.audio?.playClick();
+  flashCombatPopup(ui, `${crate.emoji} ${crate.titleKo}: ${CARGO_LABEL_KO[labelId]}`, 'match');
+  ui.puzzleHint.textContent = `${crate.clueKo} · 현재 라벨: ${CARGO_LABEL_KO[labelId]} · ✅ F로 검수`;
+}
+
+function cargoVerify(game, ui) {
+  const isle = game.isle;
+  const result = verifyCargoManifest(isle.followup);
+  if (result.event === 'incomplete') {
+    recordChapterChoice(game, isle.stageId, 'manifest-incomplete', false);
+    persistProgress(game.progress);
+    game.audio?.playWrong();
+    const unknown = result.wrongIds
+      .map((id) => CARGO.crates.find((crate) => crate.id === id)?.titleKo)
+      .filter(Boolean)
+      .join(' · ');
+    flashCombatPopup(ui, `검수 필요: ${unknown}`, 'miss');
+    ui.puzzleHint.textContent = '제작 기록과 라벨이 맞는지 다시 확인해요 · 상자 앞 A로 변경';
+    return;
+  }
+  completeChapterFollowup(game, ui);
+}
+
+// 핵심 도전을 끝내도 아직 장 완료가 아니다. 후속 윤리 퍼즐까지 풀어야 항로가 열린다.
 function finishDunes(game, ui) {
-  const isle = game.isle;
-  isle.built.heal();
-  game.progress = markStageCompleted(game.progress, isle.stageId);
-  persistProgress(game.progress);
-  updateHud(game, ui);
-  game.audio?.playNovaChime();
   triggerFlash(ui, '#ffe0b0');
-  ui.puzzleGoal.textContent = ISLE_CONTENT[isle.stageId].healedGoalKo;
-  ui.puzzleHint.textContent = '뗏목으로 돌아가면 다시 바다로';
-  ui.dialogKicker.textContent = '모래시계 항구';
-  ui.dialogTitle.textContent = '🐢 등대거북 정령';
-  ui.dialogBody.innerHTML = speechHtml([
-    '"모래가… 다시 흘러. 등대도 천천히 숨을 쉬어. 하암…"',
-    '"고마워, 수호자. 재미있는 것일수록 \'멈출 때\'가 필요해 — 화면도, 놀이도, 시간을 정해 두면 더 반짝여."',
-    '"모래 속에서 노이즈의 기억이 반짝였어… \'멈추는 법을 배운 적이 없어서, 밤새 잡음을 삼켰어.\' — 쉬는 법을 몰랐던 거야."',
-    '"바다 한가운데서 커다란 심장 소리가 들려… 마지막 항로가 머지않았어."'
-  ]);
-  openDialog(game, ui);
+  beginChapterFollowup(game, ui, game.isle.stageId);
 }
 
-// 소문의 벽 클리어: 고래 치유 + 스테이지 완료 기록(항로 지도 전이) + 감사 인사.
 function finishRumor(game, ui) {
-  const isle = game.isle;
-  isle.built.heal();
-  game.progress = markStageCompleted(game.progress, isle.stageId);
-  persistProgress(game.progress);
-  updateHud(game, ui);
-  game.audio?.playNovaChime();
   triggerFlash(ui, '#bfe8f4');
-  ui.puzzleGoal.textContent = ISLE_CONTENT[isle.stageId].healedGoalKo;
-  ui.puzzleHint.textContent = '뗏목으로 돌아가면 다시 바다로';
-  ui.dialogKicker.textContent = '메아리 동굴';
-  ui.dialogTitle.textContent = '🐋 고래 정령';
-  ui.dialogBody.innerHTML = speechHtml([
-    '"메아리가… 멎었어. 이제 내 노래가 또렷하게 들려!"',
-    '"고마워, 수호자. 같은 이야기가 백 번 들려와도 원본은 하나야 — 종을 울리듯 늘 출처를 물어봐 줘."',
-    '"소문이 흩어진 자리에 노이즈의 기억이 남아 있었어… \'내 목소리가 메아리에 묻혀서, 진짜 내가 누군지 잊어버렸어.\'"',
-    '"바다 남쪽에서 모래시계 흐르는 소리가 들려… 다음 섬의 친구도 부탁할게."'
-  ]);
-  openDialog(game, ui);
+  beginChapterFollowup(game, ui, game.isle.stageId);
 }
 
-// 회랑 클리어: 정령 치유 + 스테이지 완료 기록(항로 지도 전이) + 감사 인사.
 function finishCorridor(game, ui) {
-  const isle = game.isle;
-  healSpiritVisuals(isle.built);
-  game.progress = markStageCompleted(game.progress, isle.stageId);
-  persistProgress(game.progress);
-  updateHud(game, ui);
-  game.audio?.playNovaChime();
   triggerFlash(ui, '#ffe9b0');
-  ui.puzzleGoal.textContent = ISLE_CONTENT[isle.stageId].healedGoalKo;
-  ui.puzzleHint.textContent = '뗏목으로 돌아가면 다시 바다로';
-  ui.dialogKicker.textContent = '속삭임 곶';
-  ui.dialogTitle.textContent = '🕊️ 바닷새 정령';
-  ui.dialogBody.innerHTML = speechHtml([
-    '"화살이… 멈췄어. 깃털이 다시 따뜻해!"',
-    '"고마워, 수호자. 한 번 내뱉은 말은 주워 담을 수 없지만 — 방패처럼 막아 주는 친구가 있으면 상처는 아물 수 있어."',
-    '"참, 화살에서 노이즈의 기억이 하나 떨어졌어… \'아무도 나에게 말을 걸어 주지 않았어.\' — 그 애는 아주 외로웠나 봐."',
-    '"다음 섬의 친구들도 부탁해. 바다 저편에서 메아리가 앓는 소리가 들려…"'
-  ]);
-  openDialog(game, ui);
+  beginChapterFollowup(game, ui, game.isle.stageId);
 }
 
 // 플레이어가 바라보는 방향 → 그리드 한 칸 방향([dCol, dRow]).
@@ -5583,6 +5914,9 @@ function updateDungeon(delta, game, ui) {
     );
     rs.companion.position.lerp(target, Math.min(1, delta * 4.5));
     rs.companion.rotation.y += delta * 1.4;
+    if (rs.companion.userData.halo) {
+      rs.companion.userData.halo.rotation.z += delta * 1.8;
+    }
   }
   // 클리어되면 제단 보석이 커지며 맥동(획득 유도).
   if (dg.solved && dg.built.pedGlow) {
@@ -5649,7 +5983,7 @@ function updateDungeon(delta, game, ui) {
 
 function openCoreDialog(game, ui) {
   const unlocked = canUnlockFinalCore(game.progress.collectedFragments);
-  ui.dialogKicker.textContent = unlocked ? FINALE.titleKo : '중앙 코어';
+  ui.dialogKicker.textContent = unlocked ? CORE_BREACH.titleKo : '중앙 코어';
   ui.dialogTitle.textContent = unlocked ? '노이즈와 마주 서다' : FINAL_CORE_MISSION.nameKo;
 
   if (!unlocked) {
@@ -5662,12 +5996,12 @@ function openCoreDialog(game, ui) {
     return;
   }
 
-  // 이미 노바를 되살렸다면: 짧은 후일담 + 증명서 다시 보기.
+  // 1-2장 완료 뒤에는 군도로 이어지는 항로와 기초 인증을 다시 볼 수 있다.
   if (game.progress.aiCoreCompleted) {
     ui.dialogBody.innerHTML = `
-      <p class="prompt-line">노바가 섬 위를 반짝이며 돈다. "또 놀러 왔구나. 좋은 것들아!"</p>
+      <p class="prompt-line">갈라진 코어 너머로 호박빛 항로가 이어진다. 노이즈가 남긴 말, “선생님”이 아직 귓가에 맴돈다.</p>
       <div class="finale-nav">
-        <button type="button" class="finale-next" data-cert-again>증명서 다시 보기</button>
+        <button type="button" class="finale-next" data-cert-again>1-2장 기초 인증 다시 보기</button>
       </div>
     `;
     ui.dialogBody.querySelector('[data-cert-again]').addEventListener('click', () => showCertificate(game, ui));
@@ -6090,21 +6424,19 @@ function winBossFight(game, ui) {
   if (c.fragmentStolen) {
     window.setTimeout(() => flashCombatPopup(ui, '💠 빼앗긴 기억 파편을 되찾았다!', 'win'), 650);
   }
-  // 제압됨: 이후 대화를 닫아도 재전투가 아니라 선택 재개가 되도록 표시.
+  // 제압됨: 이후 대화를 닫아도 재전투가 아니라 코어 균열 장면을 재개한다.
   game.finaleResolving = true;
-  // 잡음을 다 걷어낸 뒤: 지울지 가르칠지 고르는 윤리적 선택으로 마무리(가르침→노바→증명서).
   window.setTimeout(() => {
     runFinale(game, ui, { fromCombat: true });
     openDialog(game, ui);
   }, 750);
 }
 
-// 최종장 마무리 대화: 전투 뒤엔 곧장 [지운다/가르친다] 선택부터 시작한다.
-// → 가르치면 행적이 곧 가르침이 되어 노바로 재탄생 → 증명서.
+// 2장 마무리: 보스가 끝이 아니라는 사실을 드러내고 3장 항로를 연다.
+// 지울지/가르칠지의 최종 선택과 노바의 재탄생은 6장 기억의 심장에 남겨 둔다.
 function runFinale(game, ui, opts = {}) {
-  // 최종장은 시네마틱 모드: 대화창을 하단에 도킹해 위쪽에 노이즈 보스를 보여준다.
-  ui.dialogKicker.textContent = FINALE.titleKo;
-  ui.dialogTitle.textContent = '노이즈와 마주 서다';
+  ui.dialogKicker.textContent = CORE_BREACH.titleKo;
+  ui.dialogTitle.textContent = '끝이라고 생각한 순간';
   ui.root.classList.add('is-cinematic');
   const steps = getFinaleToolSteps(game.progress);
   const lines = (arr) => arr.map((text) => `<p class="finale-line">${text}</p>`).join('');
@@ -6119,7 +6451,7 @@ function runFinale(game, ui, opts = {}) {
     }
     game.audio?.playNoiseGroan();
     ui.dialogBody.innerHTML = `
-      <div class="finale-scene" data-noise="big">${lines(FINALE.introKo)}</div>
+      <div class="finale-scene" data-noise="big">${lines(CORE_BREACH.introKo)}</div>
       ${nav('마주 선다 →', 'data-finale="tools:0"')}
     `;
     bindNav();
@@ -6137,7 +6469,7 @@ function runFinale(game, ui, opts = {}) {
         <p class="finale-line">${step.actionKo}</p>
         <p class="finale-line finale-result">${step.resultKo}</p>
       </div>
-      ${nav(isLast ? '노이즈 앞에 서다 →' : '다음 도구 →', `data-finale="${isLast ? 'choice' : `tools:${index + 1}`}"`)}
+      ${nav(isLast ? '노이즈 앞에 서다 →' : '다음 도구 →', `data-finale="${isLast ? 'reveal' : `tools:${index + 1}`}"`)}
     `;
     const topicColor = getTopicById(getToolById(step.toolId)?.topicId)?.color ?? '#7cf0ff';
     celebrate(game, new THREE.Vector3(0, 4.3, 0), topicColor, 'collect');
@@ -6145,95 +6477,37 @@ function runFinale(game, ui, opts = {}) {
     bindNav();
   }
 
-  // 반전 공개(N4) — 제압 직후 마지막 파편이 회상을 완성한다: 아이=나, 빛=노이즈.
   function renderRevelation() {
-    game.audio?.playNovaChime(); // 파편이 이어지는 맑은 울림
+    game.audio?.playNovaChime();
     ui.dialogBody.innerHTML = `
-      <div class="finale-scene finale-revelation" data-noise="small">${lines(FINALE.revelationKo)}</div>
-      ${nav('그리고 —', 'data-finale="choice"')}
+      <div class="finale-scene finale-revelation" data-noise="small">${lines(CORE_BREACH.revelationKo)}</div>
+      ${nav('항로를 바라본다 →', 'data-finale="escape"')}
     `;
     bindNav();
   }
 
-  function renderChoice() {
-    const buttons = FINALE.choices
-      .map((c) => `<button type="button" class="choice-button" data-finale-choice="${c.id}">${c.textKo}</button>`)
-      .join('');
-    ui.dialogBody.innerHTML = `
-      <div class="finale-scene" data-noise="small">
-        <p class="prompt-line">${FINALE.choicePromptKo}</p>
-      </div>
-      <div class="choice-list">${buttons}</div>
-    `;
-    for (const button of ui.dialogBody.querySelectorAll('[data-finale-choice]')) {
-      button.addEventListener('click', () => {
-        game.audio?.playClick();
-        if (button.dataset.finaleChoice === 'teach') {
-          renderTeach();
-        } else {
-          renderErase();
-        }
-      });
+  function renderEscape() {
+    const boss = game.renderState?.noiseBoss;
+    if (boss?.group) {
+      game.renderState.scene.remove(boss.group);
+      game.renderState.noiseBoss = null;
     }
-  }
-
-  // [지운다] — 실패가 아니라 배움. 코어가 말리고 다시 묻는다.
-  function renderErase() {
-    game.audio?.playWrong();
-    ui.dialogBody.innerHTML = `
-      <div class="finale-scene" data-noise="small">${lines(FINALE.eraseKo)}</div>
-      ${nav('다시 생각한다 →', 'data-finale="choice"')}
-    `;
-    bindNav();
-  }
-
-  // [가르친다] — 네가 섬에서 실제로 한 행동이 그대로 가르침이 된다.
-  function renderTeach() {
-    const teachings = getTeachingLines(game.progress);
-    const items = teachings
-      .map(
-        (t) => `
-        <li class="finale-teach-item" style="--topic-color:${t.color}">
-          <span class="finale-teach-topic">「${t.titleKo}」의 약속</span>
-          <span class="finale-teach-deed">너는 「${t.deedKo}」${t.recovered ? ' <em>(실수했지만 돌아가 바로잡았지)</em>' : ''}.</span>
-          <span class="finale-teach-lesson">${t.promiseKo}</span>
-        </li>`
-      )
-      .join('');
-    ui.dialogBody.innerHTML = `
-      <div class="finale-scene" data-noise="teach">
-        <p class="finale-line">${FINALE.teachIntroKo}</p>
-        <ul class="finale-teach">${items}</ul>
-      </div>
-      ${nav('약속을 다 들려준다 →', 'data-finale="rebirth"')}
-    `;
-    bindNav();
-  }
-
-  function renderRebirth() {
-    // 안개 뭉치가 사라지고 별빛 노바가 떠오른다. 도트가 다시 나와 노바의 첫 친구가 된다.
-    morphNoiseToNova(game);
     if (game.renderState?.companion) {
       game.renderState.companion.visible = true;
     }
     ui.dialogBody.innerHTML = `
-      <div class="finale-scene" data-noise="nova">${lines(FINALE.rebirthKo)}</div>
-      ${nav('섬으로 돌아간다 →', 'data-finale="done"')}
+      <div class="finale-scene" data-noise="escape">${lines(CORE_BREACH.escapeKo)}</div>
+      ${nav('3장 항로를 연다 →', 'data-finale="done"')}
     `;
-    // 노바 재탄생 세리머니 + 맑은 종소리.
-    celebrate(game, new THREE.Vector3(0, 3.6, 0), '#7cf0ff', 'core');
-    game.audio?.playNovaChime();
     bindNav();
   }
 
   function finish() {
-    // 검증된 상태 전이를 재사용해 코어 완료 플래그를 세운다.
     const outcome = completeFinalCore(game.progress, 'balanced-promise');
     game.progress = outcome.progress;
     game.finaleResolving = false; // 완료 — 더는 재개 상태가 아니다.
     persistProgress(game.progress);
     updateHud(game, ui);
-    // 최종장 대화창을 닫고 그 위에 증명서를 띄운다(닫으면 섬으로 복귀).
     closeDialog(game, ui);
     showCertificate(game, ui);
   }
@@ -6246,10 +6520,10 @@ function runFinale(game, ui, opts = {}) {
     button.addEventListener('click', () => {
       game.audio?.playClick();
       const target = button.dataset.finale;
-      if (target === 'choice') {
-        renderChoice();
-      } else if (target === 'rebirth') {
-        renderRebirth();
+      if (target === 'reveal') {
+        renderRevelation();
+      } else if (target === 'escape') {
+        renderEscape();
       } else if (target === 'done') {
         finish();
       } else if (target.startsWith('tools:')) {
@@ -6258,10 +6532,10 @@ function runFinale(game, ui, opts = {}) {
     });
   }
 
-  // 전투를 거쳐 왔으면: 첫 진입엔 반전 공개(회상 완성) → 선택. 대화를 닫았다 다시 열면 선택부터.
+  // 전투 뒤 첫 진입에는 호칭 반전을, 재개 시에는 항로 개방 장면을 보여 준다.
   if (opts.fromCombat) {
     if (game.finaleRevealed) {
-      renderChoice();
+      renderEscape();
     } else {
       game.finaleRevealed = true;
       renderRevelation();
@@ -6317,18 +6591,39 @@ function closeJournal(game, ui) {
 
 function updateHud(game, ui) {
   const summary = getProgressSummary(game.progress.collectedFragments);
+  const campaign = getCampaignSummary(game.progress);
+  const chapter = campaign.current;
   // 진실의 등대 광선 수 — 진행이 바뀌는 지점마다 HUD와 함께 갱신된다(프레임당 재계산 방지).
   game.beaconCount = getStageStates(game.progress).filter((s) => s.state === 'completed').length;
-  ui.objective.textContent = getStoryObjective(game.progress);
-  ui.fragmentCount.textContent = `조각 ${summary.collected}/${summary.total}`;
+  ui.chapterKicker.textContent = `${chapter.number}장`;
+  ui.chapterTitle.textContent = chapter.titleKo;
+  ui.objective.textContent = game.progress.aiCoreCompleted
+    ? chapter.objectiveKo
+    : getStoryObjective(game.progress);
+  ui.fragmentCount.textContent = campaign.campaignCompleted
+    ? '여정 완주'
+    : `여정 ${campaign.completed}/${campaign.total}`;
+  ui.journeyRail.innerHTML = campaign.chapters
+    .map((item) => `
+      <span
+        class="journey-node"
+        data-state="${item.state}"
+        aria-label="${item.number}장 ${item.titleKo} · ${voyageStatusKo(item)}"
+        title="${item.number}장 ${item.titleKo}"
+      >${item.number}</span>
+    `)
+    .join('');
   // 목표 구배 가시화(R-루프2): 코어 개방 임계(3조각)까지 남은 거리를 생생하게 —
   // 하나 남았을 땐 '하나면 열려!'로 기대를 끌어올리고, 열리면 '중앙으로!'로 다음 행동을 가리킨다.
   const remainingToUnlock = Math.max(0, 3 - summary.collected);
   let coreState = 'locked';
   let coreText = 'AI 코어 잠김';
-  if (game.progress.aiCoreCompleted) {
+  if (game.progress.campaignCompleted) {
     coreState = 'done';
-    coreText = 'AI 코어 완료 ✓';
+    coreText = '기억의 심장 회복 ✓';
+  } else if (game.progress.aiCoreCompleted) {
+    coreState = 'done';
+    coreText = '기초 약속 완료 · 항로 개방';
   } else if (summary.finalCoreUnlocked) {
     coreState = 'open';
     coreText = '🔓 AI 코어 열림 — 중앙으로!';
@@ -6376,10 +6671,32 @@ function renderJournal(game, ui) {
   const report = getLearningReport(game.progress);
   const deeds = getStoryDeeds(game.progress);
   const voyage = getStageStates(game.progress);
+  const campaign = getCampaignSummary(game.progress);
   ui.journalContent.innerHTML = `
     <p class="controls-note">${MOVE_HINT}</p>
+    <section class="chapter-map" data-chapter-map>
+      <h3>여섯 장의 기억</h3>
+      <ol class="chapter-list">
+        ${campaign.chapters
+          .map(
+            (chapter) => `
+          <li data-state="${chapter.state}" style="--chapter-color:${chapter.color}">
+            <span class="chapter-number">${chapter.number}</span>
+            <span class="chapter-copy">
+              <strong>${chapter.titleKo}</strong>
+              <small>${chapter.themeKo} · ${voyageStatusKo(chapter)}</small>
+              <em>${chapter.questionKo}</em>
+            </span>
+          </li>`
+          )
+          .join('')}
+      </ol>
+      <p class="voyage-note">${campaign.campaignCompleted
+        ? '여섯 장의 기억을 모두 마주했습니다. 노바와 함께 다시 배우는 여정은 계속됩니다.'
+        : `${campaign.current.number}장 진행 중 — ${campaign.current.objectiveKo}`}</p>
+    </section>
     <section class="voyage-map" data-voyage-map>
-      <h3>🧭 잡음의 군도 — 항로</h3>
+      <h3>항로와 지역</h3>
       <ol class="voyage-list">
         ${voyage
           .map(
@@ -6391,11 +6708,6 @@ function renderJournal(game, ui) {
           )
           .join('')}
       </ol>
-      <p class="voyage-note">${getUnreadNovaLetters(game.progress).length === 0 && (game.progress.novaLettersRead ?? []).length >= 4
-        ? '💌 노바와의 편지 교환까지 모두 마쳤어요 — 수호자의 여정 완결! 다음 여정은 3부 「AI 윤리 패스파인더」에서 나의 역량을 진단해 보세요.'
-        : voyage.every((stage) => stage.state === 'completed')
-          ? '🌊 군도의 모든 정령이 건강해요 — 완전 치유! 부두 우편병의 마지막 편지를 확인해 보세요.'
-          : '노이즈가 바다 건너로 도망쳤어요. 새 항로가 하나씩 열립니다.'}</p>
     </section>
     <section class="learning-report" data-bottle-log>
       <h3>🍾 항해일지 — 지식의 유리병 ${(game.progress.knowledgeBottles ?? []).length}/${KNOWLEDGE_BOTTLES.length}</h3>
@@ -6431,7 +6743,7 @@ function renderJournal(game, ui) {
     <section class="learning-report" data-learning-report>
       <h3>학습 리포트</h3>
       <p>사당(퍼즐) 통과 ${report.solvedCount}/4 · 관문 윤리 선택 — 현명하게 ${report.gateSolvedCount}개, 실수 후 회복 ${report.gateRecoveredCount}개 · AI 코어 ${report.core.completed ? '완료' : '미완료'}</p>
-      <p>심화 2막(보너스 여정 — 본편 기록·증명서 무영향) — 치유한 섬 ${report.expansion.healedIsles}/${report.expansion.totalIsles} · 잔영 재대결 ${report.expansion.remnantCleared ? '완료' : '미완'} · 노바 편지 ${report.expansion.lettersRead}/4 · 지식의 유리병 ${report.expansion.bottlesFound}/${report.expansion.bottlesTotal}</p>
+      <p>6장 캠페인 — 완료한 장 ${campaign.completed}/${campaign.total} · 치유한 군도 ${report.expansion.healedIsles}/${report.expansion.totalIsles} · 공간 윤리 퍼즐 ${report.expansion.chapter3dSolved}/3${report.expansion.chapter3dRecovered > 0 ? ` (실수 후 회복 ${report.expansion.chapter3dRecovered})` : ''} · 기억의 심장 ${report.expansion.campaignCompleted ? '회복' : '진행 중'} · 기억 메시지 ${report.expansion.lettersRead}/4 · 지식의 유리병 ${report.expansion.bottlesFound}/${report.expansion.bottlesTotal}</p>
       <ul class="report-list">
         ${report.topics
           .map((topic) => {

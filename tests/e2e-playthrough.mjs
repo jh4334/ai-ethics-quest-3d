@@ -435,18 +435,37 @@ try {
     arrow.z = -7.5;
   });
   await p.waitForTimeout(1600);
-  const healed = await p.evaluate(() => {
+  const corridorDone = await p.evaluate(() => {
     const g = window.__ethicsGame;
     return {
       completed: g.progress.stages['whisper-cape']?.completed === true,
       cleared: g.isle.challenge?.cleared === true,
-      wispsGone: g.isle.built.wisps.every((w) => !w.visible),
-      thanks: !window.__ethicsUi.dialog.hidden
+      followup: Boolean(g.isle.followup?.resolved),
+      intro: !window.__ethicsUi.dialog.hidden
     };
   });
   check(
-    healed.completed && healed.cleared && healed.wispsGone && healed.thanks,
-    '회랑 클리어 → 정령 치유 + 스테이지 완료 기록 + 감사 대화'
+    corridorDone.cleared && !corridorDone.completed && corridorDone.followup && corridorDone.intro,
+    '회랑 클리어 → 남겨진 발자국 3D 후속 도전 개방(아직 장 미완료)'
+  );
+  await closeDlg();
+  for (const [x, z] of [[-2.2, 7.4], [1.5, 8.8], [5.0, 7.1]]) {
+    await tp(x, z + 0.4, 0, -1);
+    await p.waitForTimeout(700);
+    await A(500);
+  }
+  const healed = await p.evaluate(() => {
+    const g = window.__ethicsGame;
+    return {
+      completed: g.progress.stages['whisper-cape']?.completed === true,
+      footprint: g.isle.followup?.cleared === true,
+      wispsGone: g.isle.built.wisps.every((w) => !w.visible),
+      ending: !window.__ethicsUi.dialog.hidden
+    };
+  });
+  check(
+    healed.completed && healed.footprint && healed.wispsGone && healed.ending,
+    '복사본 삭제 → 확산 중단 → 사과·도움: 정령 치유 + 3장 완료'
   );
   await closeDlg();
 
@@ -505,18 +524,38 @@ try {
     await p.waitForTimeout(1000);
     await A(700);
   }
-  const rumorDone = await p.evaluate(() => {
+  const rumorPrimaryDone = await p.evaluate(() => {
     const g = window.__ethicsGame;
     return {
       cleared: g.isle.challenge?.cleared === true,
       completed: g.progress.stages['echo-cave']?.completed === true,
-      bubblesGone: [...g.isle.built.stoneBubbles.values()].every((b) => !b.visible),
-      thanks: !window.__ethicsUi.dialog.hidden
+      followup: Boolean(g.isle.followup?.verified),
+      intro: !window.__ethicsUi.dialog.hidden
     };
   });
   check(
-    rumorDone.cleared && rumorDone.completed && rumorDone.bubblesGone && rumorDone.thanks,
-    '소문의 벽 클리어 → 고래 치유 + 스테이지 완료 기록 + 감사 대화'
+    rumorPrimaryDone.cleared && !rumorPrimaryDone.completed && rumorPrimaryDone.followup && rumorPrimaryDone.intro,
+    '소문의 벽 클리어 → 필터 버블의 창 3D 후속 도전 개방'
+  );
+  await closeDlg();
+  for (const [x, z] of [[-6.8, -4.7], [-7.8, -0.8], [-6.4, 3.3]]) {
+    await tp(x, z + 0.4, 0, -1);
+    await p.waitForTimeout(700);
+    await p.keyboard.press('f');
+    await p.waitForTimeout(500);
+  }
+  const rumorDone = await p.evaluate(() => {
+    const g = window.__ethicsGame;
+    return {
+      completed: g.progress.stages['echo-cave']?.completed === true,
+      bubble: g.isle.followup?.cleared === true,
+      bubblesGone: [...g.isle.built.stoneBubbles.values()].every((b) => !b.visible),
+      ending: !window.__ethicsUi.dialog.hidden
+    };
+  });
+  check(
+    rumorDone.completed && rumorDone.bubble && rumorDone.bubblesGone && rumorDone.ending,
+    '원본·맥락·다른 관점 확인 → 필터 버블 해제 + 4장 완료'
   );
   await closeDlg();
 
@@ -583,18 +622,44 @@ try {
       if (await p.evaluate((gid) => window.__ethicsGame.isle.challenge?.locked[gid] !== false, gid)) break;
     }
   }
-  const dunesDone = await p.evaluate(() => {
+  const dunesPrimaryDone = await p.evaluate(() => {
     const g = window.__ethicsGame;
     return {
       cleared: g.isle.challenge?.cleared === true,
       completed: g.progress.stages['hourglass-port']?.completed === true,
-      sand: [...g.isle.built.sandCores.values()].every((s) => s.visible),
-      thanks: !window.__ethicsUi.dialog.hidden
+      followup: Boolean(g.isle.followup?.labels),
+      intro: !window.__ethicsUi.dialog.hidden
     };
   });
   check(
-    dunesDone.cleared && dunesDone.completed && dunesDone.sand && dunesDone.thanks,
-    '사구 클리어 → 거북 숙면 + 스테이지 완료 기록 + 감사 대화'
+    dunesPrimaryDone.cleared && !dunesPrimaryDone.completed && dunesPrimaryDone.followup && dunesPrimaryDone.intro,
+    '사구 클리어 → 표시 없는 화물 3D 후속 도전 개방'
+  );
+  await closeDlg();
+  const cargoLabels = [
+    [4.4, 6.7, 1],
+    [5.7, 5.3, 2],
+    [3.8, 4.8, 3]
+  ];
+  for (const [x, z, cycles] of cargoLabels) {
+    await tp(x, z + 0.35, 0, -1);
+    await p.waitForTimeout(700);
+    for (let i = 0; i < cycles; i += 1) await A(300);
+  }
+  await p.keyboard.press('f');
+  await p.waitForTimeout(700);
+  const dunesDone = await p.evaluate(() => {
+    const g = window.__ethicsGame;
+    return {
+      completed: g.progress.stages['hourglass-port']?.completed === true,
+      cargo: g.isle.followup?.cleared === true,
+      sand: [...g.isle.built.sandCores.values()].every((s) => s.visible),
+      ending: !window.__ethicsUi.dialog.hidden
+    };
+  });
+  check(
+    dunesDone.completed && dunesDone.cargo && dunesDone.sand && dunesDone.ending,
+    '사람 제작·AI 도움·AI 생성 라벨 검수 → 거북 숙면 + 5장 완료'
   );
   await closeDlg();
 
@@ -704,23 +769,41 @@ try {
       if (await p.evaluate((idx) => window.__ethicsGame.isle.challenge?.phase > idx || window.__ethicsGame.isle.challenge?.stage === 'defeated', idx)) break;
     }
   }
-  const finale = await p.evaluate(() => {
+  const finaleChoice = await p.evaluate(() => {
     const g = window.__ethicsGame;
-    const stages = g.progress.stages;
     return {
       defeated: g.isle.challenge?.stage === 'defeated',
-      completed: stages['memory-core']?.completed === true,
-      allHealed: ['whisper-cape', 'echo-cave', 'hourglass-port', 'memory-outer', 'memory-core'].every((id) => stages[id]?.completed === true),
+      completed: g.progress.stages['memory-core']?.completed === true,
       stars: g.isle.built.memoryStars.every((s) => s.visible),
       bossGone: !g.isle.built.boss.visible,
-      ending: !window.__ethicsUi.dialog.hidden
+      choice: Boolean(window.__ethicsUi.dialogBody.querySelector('[data-campaign-choice="teach"]'))
     };
   });
   check(
-    finale.defeated && finale.completed && finale.allHealed && finale.stars && finale.bossGone && finale.ending,
-    '잔영 격파 → 2막 엔딩(기억의 별·군도 완전 치유)'
+    finaleChoice.defeated && !finaleChoice.completed && finaleChoice.stars && finaleChoice.bossGone && finaleChoice.choice,
+    '잔영 격파 → 삭제/다시 가르치기 최종 책임 선택'
   );
-  await closeDlg();
+  await p.evaluate(() => window.__ethicsUi.dialogBody.querySelector('[data-campaign-choice="teach"]')?.click());
+  await p.waitForTimeout(700);
+  const taught = await p.evaluate(() => ({
+    campaign: window.__ethicsGame.progress.campaignCompleted === true,
+    completed: window.__ethicsGame.progress.stages['memory-core']?.completed === true,
+    nova: window.__ethicsGame.noiseIsNova === true,
+    certificateButton: Boolean(window.__ethicsUi.dialogBody.querySelector('[data-campaign-certificate]'))
+  }));
+  check(
+    taught.campaign && taught.completed && taught.certificateButton,
+    '노이즈를 다시 가르치기 → 6장 완료·캠페인 완주 저장'
+  );
+  await p.evaluate(() => window.__ethicsUi.dialogBody.querySelector('[data-campaign-certificate]')?.click());
+  await p.waitForTimeout(600);
+  const finalCert = await p.evaluate(() => ({
+    visible: !window.__ethicsUi.certificate.hidden,
+    title: window.__ethicsUi.certificateCard?.innerText ?? ''
+  }));
+  check(finalCert.visible && finalCert.title.includes('완주증'), '6장 AI 윤리 수호자 완주증 발급');
+  await p.evaluate(() => window.__ethicsUi.certificateCard.querySelector('[data-cert-close]')?.click());
+  await p.waitForTimeout(300);
   await tp(-3.4, 8.4, 0, 1);
   await p.waitForTimeout(1000);
   await A(800);
