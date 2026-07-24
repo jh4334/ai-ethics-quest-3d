@@ -1,13 +1,13 @@
 {
-  "name": "AI 윤리의 섬 3D — 정보의 바다",
-  "short_name": "AI 윤리의 섬",
-  "description": "정보의 바다에 떠 있는 섬을 탐험하며 AI 윤리를 배우는 초등 5–6학년 교육 게임 (2부)",
+  "name": "AI 윤리 퀘스트 — 기억의 군도",
+  "short_name": "AI 윤리 퀘스트",
+  "description": "여섯 개의 기억 섬을 항해하며 AI 윤리와 책임을 배우는 3D 스토리 어드벤처",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "landscape",
-  "background_color": "#66b8f0",
-  "theme_color": "#2f6bd8",
+  "background_color": "#0b1020",
+  "theme_color": "#0b1020",
   "icons": [
     {
       "src": "./icon.svg",

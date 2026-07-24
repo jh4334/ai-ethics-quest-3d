@@ -453,7 +453,7 @@ export function getProgressSummary(collectedTopicIds) {
 
 export function createInitialProgress() {
   return {
-    version: 2,
+    version: 3,
     visitedTopics: [],
     completedShrines: [],
     collectedFragments: [],
@@ -461,13 +461,16 @@ export function createInitialProgress() {
     tools: [],
     story: createStoryState(),
     prologueSeen: false,
+    // 1-2장(안개의 섬) 중간 관문. 노이즈는 여기서 사라지지 않고 군도로 도망친다.
     aiCoreCompleted: false,
+    // 6장 기억의 심장까지 마치고 노이즈를 다시 가르친 최종 완료 신호.
+    campaignCompleted: false,
     voyageIntroSeen: false,
     novaLettersRead: [],
     knowledgeBottles: [],
     // 가짜 도트(N3) 조우 기록 — '이벤트ID:선택ID' 형식.
     fakeDotEvents: [],
-    // 세이브 v2: 「잡음의 군도」 섬별 진행 맵. 프롤로그(시작의 섬) 완료는
+    // 세이브 v3: 6장 캠페인의 섬별 진행 맵. 1-2장(안개의 섬) 완료는
     // 기존 신호(aiCoreCompleted)에서 파생하므로 여기 중복 기록하지 않는다.
     stages: {}
   };
@@ -532,8 +535,8 @@ export function normalizeProgress(candidate) {
       : [];
 
   return {
-    // v1 세이브(version 없음)도 필드 손실 없이 v2로 올라온다 — stages만 새로 붙는다.
-    version: 2,
+    // v1/v2 세이브도 필드 손실 없이 v3로 올라온다.
+    version: 3,
     visitedTopics: uniqueValidTopicIds(stringArray(candidate.visitedTopics)),
     completedShrines: stringArray(candidate.completedShrines).filter((id) => Boolean(getShrineById(id))),
     collectedFragments: uniqueValidTopicIds(stringArray(candidate.collectedFragments)),
@@ -542,6 +545,7 @@ export function normalizeProgress(candidate) {
     story: normalizeStoryState(candidate.story),
     prologueSeen: candidate.prologueSeen === true,
     aiCoreCompleted: candidate.aiCoreCompleted === true,
+    campaignCompleted: candidate.campaignCompleted === true,
     voyageIntroSeen: candidate.voyageIntroSeen === true,
     novaLettersRead: [...new Set(stringArray(candidate.novaLettersRead))],
     knowledgeBottles: [...new Set(stringArray(candidate.knowledgeBottles).filter((id) => bottleIdSet.has(id)))],
@@ -764,6 +768,15 @@ export function getLearningReport(progress) {
 
   const coreAttempts = log.filter((entry) => entry.kind === 'core');
   const practiceEntries = log.filter((entry) => entry.kind === 'practice');
+  const chapter3dEntries = log.filter((entry) => entry.kind === 'chapter-3d');
+  const chapter3dSolved = new Set(
+    chapter3dEntries.filter((entry) => entry.correct && typeof entry.stageId === 'string').map((entry) => entry.stageId)
+  );
+  const chapter3dRecovered = new Set(
+    chapter3dEntries
+      .filter((entry) => !entry.correct && chapter3dSolved.has(entry.stageId))
+      .map((entry) => entry.stageId)
+  );
 
   return {
     topics,
@@ -788,7 +801,11 @@ export function getLearningReport(progress) {
       remnantCleared: progress.stages?.['memory-core']?.completed === true,
       lettersRead: (progress.novaLettersRead ?? []).length,
       bottlesFound: (progress.knowledgeBottles ?? []).length,
-      bottlesTotal: KNOWLEDGE_BOTTLES.length
+      bottlesTotal: KNOWLEDGE_BOTTLES.length,
+      campaignCompleted: progress.campaignCompleted === true,
+      chapter3dAttempts: chapter3dEntries.length,
+      chapter3dSolved: chapter3dSolved.size,
+      chapter3dRecovered: chapter3dRecovered.size
     }
   };
 }
@@ -796,8 +813,12 @@ export function getLearningReport(progress) {
 export function getNextObjective(progress) {
   const summary = getProgressSummary(progress.collectedFragments);
 
+  if (progress.campaignCompleted) {
+    return '완주 기록을 돌아보고 우리 반의 AI 윤리 약속을 정리하세요.';
+  }
+
   if (progress.aiCoreCompleted) {
-    return '활동지에 우리 반 AI 윤리 약속을 정리하세요.';
+    return '선착장에서 군도로 출항해 노이즈가 남긴 기억을 따라가세요.';
   }
 
   if (summary.finalCoreUnlocked) {
@@ -811,4 +832,3 @@ export function getNextObjective(progress) {
 
   return `${nextTopic.titleKo} 구역에서 NPC와 대화하고 사당 문제를 해결하세요.`;
 }
-

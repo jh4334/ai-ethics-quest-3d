@@ -16,7 +16,7 @@ const TOON_RAMP = (() => {
 })();
 
 // 셀 셰이딩 머티리얼 생성기 — PBR 전용 속성(roughness/metalness)은 제거하고
-// color·emissive·flatShading 등 툰에서도 유효한 속성만 넘긴다.
+// MeshToonMaterial이 지원하는 속성만 넘긴다(Three r185는 flatShading을 받지 않는다).
 function mat(color, opts = {}) {
   const { roughness, metalness, ...rest } = opts;
   return new THREE.MeshToonMaterial({ color, gradientMap: TOON_RAMP, ...rest });
@@ -47,47 +47,76 @@ export function makeBlobShadow(radius = 0.42) {
   return disc;
 }
 
-// 플레이어 — 노란 우비를 입은 표류자 (원뿔 후드 + 백팩 실루엣)
+// 플레이어 — 잉크 네이비 코트와 앰버 스카프를 두른 기억의 수호자.
+// 넓은 어깨 망토·긴 코트 자락·스카프 꼬리로 작은 화면에서도 실루엣이 읽힌다.
 export function createPlayerCharacter() {
   const g = new THREE.Group();
-  const yellow = mat(0xffcf3f, { roughness: 0.5 });
+  const navy = mat(0x23345f);
+  const navyDark = mat(0x15213f);
+  const amber = mat(0xf4b860, { emissive: 0x8a5418, emissiveIntensity: 0.22 });
+  const ivory = mat(0xf1d2ad);
 
-  const cloak = new THREE.Mesh(new THREE.ConeGeometry(0.44, 0.92, 14), yellow);
-  cloak.position.y = 0.46;
-  const hood = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.42, 12), yellow);
-  hood.position.y = 1.0;
-  const face = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 12), mat(0xffd9ad, { roughness: 0.75 }));
-  face.position.set(0, 0.86, 0.12);
-  const bag = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.44, 0.24), mat(0x9a6a3c));
-  bag.position.set(0, 0.58, -0.3);
-  const strap = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 0.5), mat(0x6d4a2a));
-  strap.position.set(0, 0.66, 0);
-  for (const side of [-0.15, 0.15]) {
-    const boot = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.14, 0.22), mat(0x5a7f8f));
+  const coat = new THREE.Mesh(new THREE.ConeGeometry(0.43, 0.9, 10), navy);
+  coat.position.y = 0.5;
+  const shoulderCape = new THREE.Mesh(new THREE.SphereGeometry(0.48, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), navyDark);
+  shoulderCape.scale.set(1, 0.48, 0.82);
+  shoulderCape.position.y = 0.72;
+  const hood = new THREE.Mesh(new THREE.SphereGeometry(0.31, 12, 10), navyDark);
+  hood.scale.set(1, 1.08, 0.92);
+  hood.position.y = 1.03;
+  const face = new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 10), ivory);
+  face.position.set(0, 1.0, 0.19);
+
+  const scarf = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.055, 7, 16), amber);
+  scarf.rotation.x = Math.PI / 2;
+  scarf.position.set(0, 0.83, 0.03);
+  const scarfTail = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.45, 0.07), amber);
+  scarfTail.position.set(-0.18, 0.61, -0.22);
+  scarfTail.rotation.z = 0.18;
+
+  const satchel = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.4, 0.2), mat(0x78563b));
+  satchel.position.set(0.25, 0.48, -0.29);
+  const clasp = new THREE.Mesh(new THREE.OctahedronGeometry(0.07, 0), amber);
+  clasp.position.set(0.25, 0.49, -0.4);
+  for (const side of [-0.16, 0.16]) {
+    const boot = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.15, 0.25), navyDark);
     boot.position.set(side, 0.07, 0.04);
     g.add(boot);
   }
-  g.add(cloak, hood, face, bag, strap);
+  g.add(coat, shoulderCape, hood, face, scarf, scarfTail, satchel, clasp);
   castAll(g);
   g.add(makeBlobShadow(0.46));
+  g.userData.scarfTail = scarfTail;
   return g;
 }
 
-// 도트 — 겁 많은 픽셀 반딧불 (각진 빛의 별). 발광이라 블룸에 반짝인다.
+// 도트 — 앰버 빛을 품은 작은 별방울. 구형 코어보다 위아래가 길어 동행자 실루엣이 또렷하다.
 export function createCompanion() {
   const g = new THREE.Group();
-  const glow = mat(0xfff4c0, { emissive: 0xffdf6a, emissiveIntensity: 1.6 });
-  const core = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.16), glow);
-  g.add(core);
-  // 십자 별을 이루는 작은 픽셀 팔
-  for (const [x, y] of [[0.15, 0], [-0.15, 0], [0, 0.15], [0, -0.15]]) {
-    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.08), glow);
-    arm.position.set(x, y, 0);
-    g.add(arm);
+  const glow = mat(0xfff1bf, { emissive: 0xf4b860, emissiveIntensity: 1.8 });
+  const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.18, 1), glow);
+  core.scale.set(0.82, 1.25, 0.82);
+  const drop = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.24, 8), glow);
+  drop.position.y = -0.2;
+  drop.rotation.z = Math.PI;
+  g.add(core, drop);
+  // 비대칭 별빛 조각 — 완벽한 기계보다 서툴지만 살아 있는 동행자 인상.
+  for (const [x, y, s] of [[0.25, 0.02, 1], [-0.21, -0.02, 0.76], [0.03, 0.26, 0.82]]) {
+    const ray = new THREE.Mesh(new THREE.OctahedronGeometry(0.055 * s, 0), glow);
+    ray.position.set(x, y, 0);
+    g.add(ray);
   }
+  const halo = new THREE.Mesh(
+    new THREE.TorusGeometry(0.31, 0.015, 6, 20),
+    new THREE.MeshBasicMaterial({ color: 0xffd88a, transparent: true, opacity: 0.5 })
+  );
+  halo.rotation.x = Math.PI / 2;
+  halo.position.y = 0.02;
+  g.add(halo);
   const light = new THREE.PointLight(0xffe08a, 0.5, 3.2);
   g.add(light);
   g.userData.eyes = core;
+  g.userData.halo = halo;
   return g;
 }
 
@@ -259,7 +288,7 @@ export function createNoiseBoss() {
   // 울퉁불퉁한 안개 몸통(저폴리 + 플랫셰이딩으로 지지직 실루엣).
   const body = new THREE.Mesh(
     new THREE.IcosahedronGeometry(1, 1),
-    mat(0x6b6478, { emissive: 0x3a2d55, emissiveIntensity: 0.5, flatShading: true })
+    mat(0x6b6478, { emissive: 0x3a2d55, emissiveIntensity: 0.5 })
   );
   g.add(body);
 

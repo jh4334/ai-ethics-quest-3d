@@ -17,6 +17,486 @@
   --radius: 16px;
 }
 
+/* ==========================================================================
+   Campaign v3 — "기억의 군도" design system
+   Concept: docs/design/concepts/gameplay-screen-v3.webp
+   ========================================================================== */
+:root {
+  --night: #0b1020;
+  --night-soft: #151d35;
+  --moon-blue: #263b73;
+  --fog-violet: #61568d;
+  --memory-amber: #f4b860;
+  --restore-mint: #7ad7b2;
+  --paper: #f3efe4;
+  --hud: rgba(11, 16, 32, 0.82);
+  --hud-strong: rgba(11, 16, 32, 0.94);
+  --hud-line: rgba(244, 184, 96, 0.62);
+  --hud-muted: #b8bdd0;
+  --panel: var(--hud);
+  --panel-strong: var(--hud-strong);
+  --ink: var(--paper);
+  --muted: var(--hud-muted);
+  --line: rgba(243, 239, 228, 0.16);
+  --accent: var(--memory-amber);
+  --accent-2: var(--restore-mint);
+  --gold: var(--memory-amber);
+  --radius: 12px;
+}
+
+.quest-shell {
+  background: var(--night);
+}
+
+.objective-chip,
+.status-strip,
+.journal-panel,
+.class-hint,
+.dialog-panel,
+.interaction-prompt,
+.puzzle-hud,
+.boss-hud {
+  color: var(--paper);
+  background: var(--hud);
+  border: 1px solid var(--hud-line);
+  border-radius: var(--radius);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(243, 239, 228, 0.08);
+  backdrop-filter: blur(14px) saturate(120%);
+}
+
+.objective-chip::before,
+.status-strip::before {
+  background: var(--memory-amber);
+  opacity: 0.72;
+}
+
+.objective-chip {
+  top: 18px;
+  left: 18px;
+  width: min(370px, calc(100vw - 36px));
+  padding: 15px 18px 16px;
+}
+
+.objective-chip .eyebrow {
+  color: var(--memory-amber);
+  font-size: 0.84rem;
+  letter-spacing: 0.06em;
+}
+
+.objective-chip h1 {
+  color: var(--paper);
+  font-size: 1.32rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.objective-chip p:last-child,
+.status-strip span,
+.controls-note,
+.class-note,
+.technical-note {
+  color: var(--hud-muted);
+}
+
+.journey-rail {
+  position: absolute;
+  z-index: 4;
+  top: 22px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 8px 11px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.journey-node {
+  position: relative;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  color: rgba(243, 239, 228, 0.58);
+  background: rgba(11, 16, 32, 0.78);
+  border: 1px solid rgba(244, 184, 96, 0.46);
+  border-radius: 50%;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.24);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.journey-node:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 1px);
+  width: 22px;
+  height: 1px;
+  background: rgba(244, 184, 96, 0.42);
+}
+
+.journey-node[data-state="completed"] {
+  color: var(--night);
+  background: var(--restore-mint);
+  border-color: var(--restore-mint);
+}
+
+.journey-node[data-state="current"] {
+  color: var(--night);
+  background: var(--memory-amber);
+  border-color: #ffd58c;
+  box-shadow: 0 0 0 4px rgba(244, 184, 96, 0.16), 0 10px 26px rgba(0, 0, 0, 0.32);
+  transform: scale(1.08);
+}
+
+.status-strip {
+  top: auto;
+  right: auto;
+  bottom: 22px;
+  left: 22px;
+  min-width: 248px;
+}
+
+.fragment-dot,
+.tool-slot,
+.topic-list li,
+.learning-report,
+.voyage-map,
+.chapter-map {
+  color: var(--paper);
+  background: rgba(243, 239, 228, 0.06);
+  border-color: rgba(243, 239, 228, 0.14);
+}
+
+.fragment-dot[data-collected="true"] {
+  color: var(--paper);
+}
+
+.journal-toggle,
+.sound-toggle {
+  top: 18px;
+  color: var(--paper);
+  background: var(--hud);
+  border-color: var(--hud-line);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+}
+
+.journal-toggle {
+  right: 72px;
+}
+
+.sound-toggle {
+  right: 18px;
+}
+
+.interaction-prompt {
+  bottom: 24px;
+  color: var(--paper);
+  background: var(--hud-strong);
+  border-color: var(--hud-line);
+  font-size: 0.98rem;
+}
+
+button {
+  color: var(--paper);
+  background: rgba(243, 239, 228, 0.08);
+  border-color: rgba(243, 239, 228, 0.18);
+  box-shadow: none;
+}
+
+button:hover {
+  color: var(--paper);
+  background: rgba(244, 184, 96, 0.16);
+  border-color: var(--memory-amber);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+}
+
+button:focus-visible,
+[data-title-actions] button:focus-visible,
+.choice-button:focus-visible {
+  outline-color: var(--memory-amber);
+}
+
+.dialog-panel {
+  background: var(--hud-strong);
+}
+
+.choice-button,
+.finale-next,
+.title-start {
+  color: #171326;
+  background: var(--memory-amber);
+  border-color: #ffd58c;
+}
+
+.choice-button:hover,
+.finale-next:hover,
+.title-start:hover {
+  color: #171326;
+  background: #ffd188;
+}
+
+.choice-feedback {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  color: #ffd0d8;
+  background: rgba(224, 90, 108, 0.16);
+  border-left: 3px solid var(--danger);
+  border-radius: 8px;
+  line-height: 1.5;
+}
+
+.choice-feedback.is-wise {
+  color: #c8f6e4;
+  background: rgba(122, 215, 178, 0.14);
+  border-left-color: var(--restore-mint);
+}
+
+.chapter-map {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.chapter-map h3 {
+  margin: 0 0 12px;
+}
+
+.chapter-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chapter-list li {
+  position: relative;
+  display: flex;
+  gap: 11px;
+  padding: 10px 8px;
+  opacity: 0.5;
+}
+
+.chapter-list li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 39px;
+  bottom: -6px;
+  left: 24px;
+  width: 1px;
+  background: rgba(243, 239, 228, 0.16);
+}
+
+.chapter-list li[data-state="current"],
+.chapter-list li[data-state="completed"] {
+  opacity: 1;
+}
+
+.chapter-number {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  flex: 0 0 34px;
+  height: 34px;
+  place-items: center;
+  color: var(--night);
+  background: var(--chapter-color);
+  border-radius: 50%;
+  font-weight: 900;
+}
+
+.chapter-list li[data-state="locked"] .chapter-number {
+  color: var(--hud-muted);
+  background: #252b42;
+}
+
+.chapter-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.chapter-copy strong {
+  color: var(--paper);
+}
+
+.chapter-copy small,
+.chapter-copy em {
+  color: var(--hud-muted);
+  font-size: 0.78rem;
+  font-style: normal;
+  line-height: 1.4;
+}
+
+.title-screen {
+  justify-content: flex-start;
+  padding: clamp(24px, 6vw, 96px);
+  background:
+    linear-gradient(90deg, rgba(6, 11, 25, 0.28) 0%, rgba(6, 11, 25, 0.06) 48%, rgba(6, 11, 25, 0) 70%),
+    url("/assets/campaign-key-art.webp") center / cover no-repeat;
+  backdrop-filter: none;
+}
+
+.title-card {
+  width: min(470px, calc(100vw - 48px));
+  padding: 30px 0;
+  text-align: left;
+  color: var(--paper);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.title-name {
+  margin: 0 0 14px;
+  color: var(--paper);
+  background: none;
+  font-size: clamp(2.4rem, 5vw, 4.7rem);
+  line-height: 0.98;
+  letter-spacing: -0.05em;
+  -webkit-text-fill-color: currentColor;
+}
+
+.title-desc {
+  max-width: 390px;
+  color: var(--paper);
+  font-size: 1.08rem;
+}
+
+.title-hook,
+.title-recap {
+  max-width: 410px;
+  color: var(--hud-muted);
+  background: rgba(11, 16, 32, 0.62);
+  border-color: var(--memory-amber);
+}
+
+.title-actions {
+  max-width: 320px;
+}
+
+.title-start {
+  padding: 14px 18px;
+  text-align: left;
+}
+
+.title-fresh {
+  color: var(--paper);
+  background: rgba(11, 16, 32, 0.66);
+  border-color: rgba(243, 239, 228, 0.28);
+}
+
+.title-controls {
+  color: rgba(243, 239, 228, 0.62);
+}
+
+.certificate {
+  background: rgba(6, 11, 25, 0.84);
+}
+
+.certificate-card {
+  color: #262033;
+  background: linear-gradient(180deg, #fffdf7, #f3efe4);
+  border-color: var(--memory-amber);
+}
+
+@media (max-width: 900px) {
+  .journey-rail {
+    top: 116px;
+    gap: 11px;
+  }
+
+  .journey-node {
+    width: 30px;
+    height: 30px;
+    font-size: 0.75rem;
+  }
+
+  .journey-node:not(:last-child)::after {
+    width: 11px;
+  }
+
+  .objective-chip {
+    width: min(320px, calc(100vw - 112px));
+  }
+
+  .title-screen {
+    align-items: flex-end;
+    padding: 22px;
+    background-position: 62% center;
+  }
+
+  .title-screen::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgba(6, 11, 25, 0.96) 0%, rgba(6, 11, 25, 0.5) 58%, rgba(6, 11, 25, 0.12) 100%);
+  }
+
+  .title-card {
+    position: relative;
+    width: 100%;
+    padding: 18px 0;
+  }
+
+  .title-name {
+    font-size: clamp(2.2rem, 11vw, 3.6rem);
+  }
+}
+
+@media (max-width: 560px) {
+  .objective-chip {
+    top: 10px;
+    left: 10px;
+    width: calc(100vw - 104px);
+    padding: 10px 12px;
+  }
+
+  .objective-chip h1 {
+    font-size: 1rem;
+  }
+
+  .objective-chip p:last-child {
+    font-size: 0.77rem;
+  }
+
+  .journal-toggle,
+  .sound-toggle {
+    top: 10px;
+  }
+
+  .journal-toggle {
+    right: 54px;
+  }
+
+  .sound-toggle {
+    right: 10px;
+  }
+
+  .journey-rail {
+    top: 102px;
+  }
+
+  .journey-node {
+    width: 27px;
+    height: 27px;
+  }
+
+  .status-strip {
+    bottom: 10px;
+    left: 10px;
+    min-width: 0;
+  }
+
+  .interaction-prompt {
+    bottom: 76px;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -2087,4 +2567,137 @@ button:disabled {
   border-left: 3px solid var(--gold);
   font-size: 0.83rem;
   line-height: 1.45;
+}
+
+/* Campaign v3 final cascade lock — legacy rules above remain for component layout. */
+.quest-shell { background: var(--night); }
+
+.objective-chip,
+.status-strip,
+.journal-panel,
+.class-hint,
+.dialog-panel,
+.interaction-prompt,
+.puzzle-hud,
+.boss-hud {
+  color: var(--paper);
+  background: var(--hud);
+  border-color: var(--hud-line);
+  border-radius: var(--radius);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(243, 239, 228, 0.08);
+}
+
+.objective-chip {
+  top: 18px;
+  left: 18px;
+  width: min(370px, calc(100vw - 36px));
+  padding: 15px 18px 16px;
+}
+
+.objective-chip .eyebrow { color: var(--memory-amber); }
+.objective-chip h1 { color: var(--paper); font-size: 1.32rem; }
+.objective-chip p:last-child,
+.status-strip span { color: var(--hud-muted); }
+
+.status-strip {
+  inset: auto auto 22px 22px;
+  min-width: 248px;
+}
+
+.journal-toggle,
+.sound-toggle {
+  top: 18px;
+  color: var(--paper);
+  background: var(--hud);
+  border-color: var(--hud-line);
+}
+
+.journal-toggle { right: 72px; }
+.sound-toggle { right: 18px; }
+
+.interaction-prompt {
+  bottom: 24px;
+  color: var(--paper);
+  background: var(--hud-strong);
+  border-color: var(--hud-line);
+}
+
+.dialog-panel { background: var(--hud-strong); }
+
+.title-screen {
+  justify-content: flex-start;
+  padding: clamp(24px, 6vw, 96px);
+  background:
+    linear-gradient(90deg, rgba(6, 11, 25, 0.28) 0%, rgba(6, 11, 25, 0.06) 48%, rgba(6, 11, 25, 0) 70%),
+    url("/assets/campaign-key-art.webp") center / cover no-repeat;
+  backdrop-filter: none;
+}
+
+.title-card {
+  width: min(470px, calc(100vw - 48px));
+  padding: 30px 0;
+  text-align: left;
+  color: var(--paper);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.title-name {
+  margin: 0 0 14px;
+  color: var(--paper);
+  background: none;
+  font-size: clamp(2.4rem, 5vw, 4.7rem);
+  line-height: 0.98;
+  letter-spacing: -0.05em;
+  -webkit-text-fill-color: currentColor;
+}
+
+.title-desc { max-width: 390px; color: var(--paper); font-size: 1.08rem; }
+.title-hook,
+.title-recap {
+  max-width: 410px;
+  color: var(--hud-muted);
+  background: rgba(11, 16, 32, 0.62);
+  border-color: var(--memory-amber);
+}
+.title-actions { max-width: 320px; }
+.title-start { color: #171326; background: var(--memory-amber); border-color: #ffd58c; text-align: left; }
+.title-fresh { color: var(--paper); background: rgba(11, 16, 32, 0.66); border-color: rgba(243, 239, 228, 0.28); }
+.title-controls { color: rgba(243, 239, 228, 0.62); }
+
+@media (max-width: 900px) {
+  .title-screen {
+    align-items: flex-end;
+    padding: 22px;
+    background-position: 62% center;
+  }
+
+  .title-screen::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgba(6, 11, 25, 0.96) 0%, rgba(6, 11, 25, 0.5) 58%, rgba(6, 11, 25, 0.12) 100%);
+  }
+
+  .title-card { position: relative; width: 100%; padding: 18px 0; }
+  .title-name { font-size: clamp(2.2rem, 11vw, 3.6rem); }
+}
+
+@media (max-width: 560px) {
+  .objective-chip {
+    top: 10px;
+    left: 10px;
+    width: calc(100vw - 104px);
+    padding: 10px 12px;
+  }
+
+  .objective-chip h1 { font-size: 1rem; }
+  .objective-chip p:last-child { font-size: 0.77rem; }
+  .journal-toggle, .sound-toggle { top: 10px; }
+  .journal-toggle { right: 54px; }
+  .sound-toggle { right: 10px; }
+  .status-strip { inset: auto auto 10px 10px; min-width: 0; }
+  .interaction-prompt { bottom: 76px; }
 }
