@@ -98,7 +98,7 @@ test('data currents(Z3): 열린 항로 입자 해류·줄무늬·접속 링이 �
   assert.match(mainSource, /vg\.built\.connectRings/);
 });
 
-test('lighthouse(Z4): 진실의 등대 — 진행도 광선·유도등·대화가 존재한다', () => {
+test('campus administration tower(Z4): 학생 기록 행정동 — 진행도 광선·유도등·대화가 존재한다', () => {
   // 세로 랜드마크 + 광선 = 치유한 스테이지 수(진행도가 풍경에 기록).
   assert.match(mainSource, /function createLighthouse/);
   assert.match(mainSource, /game\.beaconCount = getStageStates\(game\.progress\)\.filter/);
@@ -106,7 +106,21 @@ test('lighthouse(Z4): 진실의 등대 — 진행도 광선·유도등·대화�
   // 부두→등대→코어 유도등(활주로 등화 문법) + 등대 대화.
   assert.match(mainSource, /guideLights/);
   assert.match(mainSource, /type === 'lighthouse'/);
-  assert.match(mainSource, /진실의 등대/);
+  assert.match(mainSource, /학생 기록 행정동/);
+});
+
+test('chapter 1 campus rebuild: selected reference landmarks replace the old fantasy hub', () => {
+  const worldSrc = readFileSync(new URL('../src/worldData.js', import.meta.url), 'utf8');
+  assert.match(mainSource, /function createEmptyClassroom/);
+  assert.match(mainSource, /function createFingerprintPlayground/);
+  assert.match(mainSource, /function createArchiveLibrary/);
+  assert.match(mainSource, /function createMediaLab/);
+  assert.match(mainSource, /오늘의 명단 · H-17 없음/);
+  assert.match(mainSource, /등교용 페리 탑승구/);
+  assert.match(worldSrc, /nameKo: '빈 교실'/);
+  assert.match(worldSrc, /nameKo: '지문 운동장'/);
+  assert.match(worldSrc, /nameKo: '기록 보관소'/);
+  assert.match(worldSrc, /nameKo: '미디어 검증실'/);
 });
 
 test('bottles(Z5): 지식의 유리병 12개 — 결정적 배치·세이브·도감이 존재한다', () => {
