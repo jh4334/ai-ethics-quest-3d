@@ -26,19 +26,20 @@ npm run build
 npm run smoke
 ```
 
-## Six-Chapter Campaign
+## Six-Chapter H-17 Mystery
 
-- 1장 「안개가 삼킨 이름」 — 개인정보·편향
-- 2장 「가짜 얼굴의 신전」 — 저작권·딥페이크
-- 3장 「말이 남긴 상처」 — 악플·혐오표현·디지털 발자국
-- 4장 「같은 목소리의 바다」 — 가짜뉴스·출처·필터버블
-- 5장 「멈추지 않는 밤」 — 디지털 웰빙·AI 의존·생성물 표시
-- 6장 「기억의 심장」 — 책임·인간과 AI의 협업
-- 2장에서는 네 가지 기초 약속 인증을, 6장에서는 최종 완주증을 발급한다.
+- 1장 「명단에서 사라진 아이」 — 개인정보·편향
+- 2장 「거짓 영상의 주인」 — 저작권·딥페이크
+- 3장 「웃음이 만든 폭풍」 — 악플·혐오표현·디지털 발자국
+- 4장 「두 개의 진실」 — 가짜뉴스·출처·필터버블
+- 5장 「아무도 결정하지 않는 밤」 — AI 의존·자동 결정·생성물 표시
+- 6장 「마지막 증언」 — 설명 책임·인간의 감독·이의제기권
+- 플레이어는 명단에서 삭제된 친구 하루의 사건을 조사하며, AI 계산·추천과 사람의 승인 책임을 추적한다.
+- 2장에서는 네 가지 증거 확인서를, 6장 공개 심리 뒤에는 시민 감사관 완주증을 발급한다.
 - 3–5장은 각각 핵심 도전 뒤에 발자국 복구, 필터 버블 교차 확인, AI 생성물 라벨링 3D 퍼즐을
   마쳐야 다음 장의 항로가 열린다.
-- 공간 컨셉 「정보의 바다 / 기억의 군도」: the world itself is the metaphor — 진실의 등대 (trusted
-  sources; one beam per healed stage), 안개 (unverified information), 데이터 해류
+- 공간 컨셉 「정보의 바다 / H-17 증거 항로」: the world itself is the metaphor — 진실의 등대 (trusted
+  sources; one beam per investigated stage), 화이트아웃 안개 (deleted objections), 데이터 해류
   (particle currents that flow only along opened routes), and 12 hidden 지식의 유리병
   (digital-literacy tips collected into an in-game logbook)
 - PWA: installable to the home screen and fully playable offline after first load
