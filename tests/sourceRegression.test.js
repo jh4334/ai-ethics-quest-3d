@@ -311,12 +311,12 @@ test('concept: H-17 증거 항로와 화이트아웃 언어가 출항 브리지�
 });
 
 test('camera keeps the player near screen center (no strong center bias)', () => {
-  // 시선은 항상 플레이어 — 중심 편향(x*0.6·시선 x*0.4)이 부활하면 넓은 씬에서 캐릭터가 화면 밖으로 밀린다.
-  assert.match(mainSource, /target\.x \* 0\.9, target\.y \+ 8\.7, target\.z \+ 13\.8/);
-  assert.match(mainSource, /new THREE\.Vector3\(target\.x, target\.y \+ 1\.35, target\.z - 1\.2\)/);
+  // 플레이어는 하단 중앙에 두되 학교 전경과 다음 목적지가 한 화면에 읽혀야 한다.
+  assert.match(mainSource, /target\.x \* 0\.9, target\.y \+ 11\.5, target\.z \+ 18\.6/);
+  assert.match(mainSource, /new THREE\.Vector3\(target\.x, target\.y \+ 1\.35, target\.z - 2\.8\)/);
   assert.doesNotMatch(mainSource, /target\.x \* 0\.6/);
   // snapCamera와 updateCamera 상수는 반드시 일치(씬 전환 활공 방지) — 두 곳 다 같은 공식.
-  const matches = mainSource.match(/target\.x \* 0\.9, target\.y \+ 8\.7, target\.z \+ 13\.8/g) ?? [];
+  const matches = mainSource.match(/target\.x \* 0\.9, target\.y \+ 11\.5, target\.z \+ 18\.6/g) ?? [];
   assert.equal(matches.length, 2);
 });
 
