@@ -1945,9 +1945,11 @@ button:disabled {
   box-shadow: 0 6px 16px rgba(40, 90, 70, 0.28);
 }
 
-/* 전투·던전(is-combat)과 확장 섬(is-isle)에서 동사 버튼을 보인다 — 섬 도전의 필수 입력. */
+/* 전투·던전(is-combat)과 확장 섬(is-isle)에서 동사 버튼을 보인다 — 섬 도전의 필수 입력.
+   오버월드에선 회피 스텝을 산 뒤(has-dodge)부터 💨 회피 버튼으로 나타난다(G5). */
 .is-combat .touch-tool,
-.is-isle .touch-tool {
+.is-isle .touch-tool,
+.has-dodge .touch-tool {
   display: flex;
   align-items: center;
   justify-content: center;
