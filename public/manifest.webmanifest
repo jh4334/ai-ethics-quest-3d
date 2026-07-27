@@ -1,13 +1,13 @@
 {
-  "name": "AI 윤리의 섬 3D — 정보의 바다",
-  "short_name": "AI 윤리의 섬",
-  "description": "정보의 바다에 떠 있는 섬을 탐험하며 AI 윤리를 배우는 초등 5–6학년 교육 게임 (2부)",
+  "name": "AI 윤리 퀘스트 — 삭제된 학생 H-17",
+  "short_name": "AI 윤리 퀘스트",
+  "description": "명단에서 삭제된 친구 H-17의 여섯 증거를 추적하며 AI 자동 결정과 책임을 배우는 3D 미스터리 어드벤처",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "landscape",
-  "background_color": "#66b8f0",
-  "theme_color": "#2f6bd8",
+  "background_color": "#0b1020",
+  "theme_color": "#0b1020",
   "icons": [
     {
       "src": "./icon.svg",

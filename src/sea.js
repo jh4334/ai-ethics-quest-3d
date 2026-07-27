@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { STAGES } from './stageData.js';
 
-// sea 좌표 → 월드 배율. 가장 먼 섬(기억의 심장 심부)이 시속 7 뗏목으로 십수 초 거리.
+// sea 좌표 → 월드 배율. 가장 먼 공개 심리실이 시속 7 뗏목으로 십수 초 거리.
 export const SEA_SCALE = 2.2;
 // 뗏목이 나갈 수 있는 바다 반경 / 섬 접근 인식 반경.
 export const SEA_RADIUS = 92;

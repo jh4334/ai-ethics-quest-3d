@@ -31,7 +31,7 @@ export const DUNGEON_ROOMS = {
     topicId: 'bias',
     mechanic: 'carry',
     titleKo: '모두의 꽃밭',
-    goalKo: '노이즈가 같은 색만 심어 뒀어요! 씨앗을 되집고 바꿔서 네 밭을 서로 다른 색으로 채우세요.',
+    goalKo: '위험 점수 학습 데이터가 같은 색에 치우쳤어요! 씨앗을 되집고 네 밭을 서로 다르게 채우세요.',
     lessonKo: '데이터가 다양해야 편향이 줄어요. 같은 것만 모으면 모두의 꽃밭이 안 돼요.',
     grid: { cols: 9, rows: 7, cell: 1.2 },
     dispensers: [
@@ -46,7 +46,7 @@ export const DUNGEON_ROOMS = {
       { id: 'bed3', cell: [5, 3] },
       { id: 'bed4', cell: [6, 3] }
     ],
-    // 노이즈가 미리 잘못 심어둔 시작 배치 — 빨강이 두 밭에 중복.
+    // 편향된 학습 데이터의 시작 배치 — 빨강이 두 밭에 중복.
     // 빈 밭만 채우면 끝나지 않고, 중복을 되집어 고쳐야 한다(편향 교정 경험).
     preset: [0, 0, null, null],
     // 밭 색 팔레트(렌더 참고용, 논리와 무관).
@@ -134,7 +134,7 @@ export function createRoomState(topicId) {
     }
     case 'carry': {
       if (room.beds) {
-        // preset이 있으면 노이즈가 미리 심어둔 배치로 시작(중복을 되집어 고쳐야 함).
+        // preset이 있으면 편향된 배치로 시작(중복을 되집어 고쳐야 함).
         return { held: null, beds: room.preset ? room.preset.slice() : room.beds.map(() => null) };
       }
       if (room.exhibits) {

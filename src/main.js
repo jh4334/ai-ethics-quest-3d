@@ -33,6 +33,10 @@ import {
 } from './dungeonPuzzles.js';
 import { buildDungeonRoom, disposeDungeonRoom, makeGlyphSprite, syncDungeonVisuals } from './dungeon.js';
 import { getStageById, getStageStates, markStageCompleted, markStageVisited, nearestSeaIsland } from './stageData.js';
+import {
+  completeCampaign,
+  getCampaignSummary
+} from './chapterData.js';
 import { SEA_APPROACH, SEA_RADIUS, SEA_SCALE, buildSeaScene, seaWorldPosition } from './sea.js';
 import { ISLE_RADIUS, ISLE_SCENES, healSpiritVisuals } from './isle.js';
 import { createCorridorState, stepCorridor } from './corridorLogic.js';
@@ -46,10 +50,31 @@ import {
   tickRumor
 } from './rumorLogic.js';
 import { DUNES, createDunesState, glassAngle, nearestGlass, pullGlass, tickDunes } from './dunesLogic.js';
+import {
+  FOOTPRINT,
+  createFootprintState,
+  nearestFootprintAction,
+  resolveFootprintAction
+} from './footprintLogic.js';
+import {
+  BUBBLE,
+  createBubbleState,
+  inspectBubbleSource,
+  nearestBubbleSource
+} from './bubbleLogic.js';
+import {
+  CARGO,
+  CARGO_LABEL_KO,
+  createCargoState,
+  cycleCargoLabel,
+  nearestCargoCrate,
+  verifyCargoManifest
+} from './cargoLogic.js';
 import { HEART, createHeartState, nearestSeal, sealPulse, tickHeart, useSeal } from './heartLogic.js';
 import { RESIDUE, createResidueState, residueIntroHit, strikeResidue, tickResidue, windupGauge } from './residueLogic.js';
 import {
-  FINALE,
+  CAMPAIGN_FINALE,
+  CORE_BREACH,
   buildNovaCertificate,
   getFinaleToolSteps,
   getTeachingLines
@@ -72,25 +97,6 @@ import {
   pendingFakeDotEvent,
   recordFakeDotEvent
 } from './story.js';
-import {
-  SLASH,
-  PURIFY,
-  DODGE,
-  GLITCH_ARCHETYPES,
-  UPGRADE_TRACK,
-  ZONE_CLEAR_BONUS,
-  buildFieldGlitches,
-  buildWaveGlitches,
-  consumeGlitchHit,
-  getSlashParams,
-  hitGlitch,
-  nextUpgrade,
-  purchaseUpgrade,
-  purifyGlitch,
-  stealFromPlayer,
-  stepGlitch,
-  zoneWaveCount
-} from './glitchLogic.js';
 import {
   ETHICS_TOPICS,
   FINAL_CORE_MISSION,
@@ -116,13 +122,15 @@ import {
 } from './worldData.js';
 
 const APP_MARKER = 'AI Ethics Quest 3D';
-const STORAGE_KEY = 'ai-ethics-quest-3d/progress/v1';
+// H-17 캠페인은 이전 「잊혀진 수호자」 세이브와 서사 전제가 완전히 다르다.
+// 별도 키를 써서 기존 완주 데이터가 프롤로그와 새 사건 기록을 건너뛰지 않게 한다.
+const STORAGE_KEY = 'ai-ethics-quest-3d/progress/h17-v4';
 
 // 터치 기기에서는 키보드(WASD/E/J) 안내가 의미 없으므로 조작 문구를 바꾼다.
 const IS_TOUCH = typeof window !== 'undefined'
   && typeof window.matchMedia === 'function'
   && window.matchMedia('(pointer: coarse)').matches;
-const TOPIC_NAMES_KO = { privacy: '개인정보 마을', bias: '편향의 숲', copyright: '저작권 유적', deepfake: '딥페이크 동굴' };
+const TOPIC_NAMES_KO = { privacy: '빈 교실', bias: '지문 운동장', copyright: '기록 보관소', deepfake: '미디어 검증실' };
 
 const MOVE_HINT = IS_TOUCH
   ? '왼쪽 스틱 이동 · 오른쪽 A로 확인·공격'
@@ -200,8 +208,8 @@ export function initEthicsQuest3D(root = document.querySelector('#app')) {
   resize(renderer, camera, root, renderState.composer);
   updateHud(game, ui);
   updateCoreVisual(game, renderState);
-  // 이미 노바를 되살린 세이브라면, 코어 위에 노바가 떠 있는 채로 시작한다.
-  if (game.progress.aiCoreCompleted) {
+  // 6장까지 완주한 세이브에서만 루멘 공개 코어가 돌아온다.
+  if (game.progress.campaignCompleted) {
     morphNoiseToNova(game);
   }
 
@@ -292,15 +300,16 @@ function createShell() {
       <canvas class="quest-canvas" data-game-canvas aria-label="AI 윤리의 섬 3D 게임 화면"></canvas>
 
       <section class="objective-chip" data-objective-chip aria-live="polite">
-        <p class="eyebrow">AI 윤리의 섬</p>
-        <h1>알고리즘의 신전</h1>
-        <p data-objective>사당을 찾아 윤리 조각을 모으세요.</p>
+        <p class="eyebrow" data-chapter-kicker>1장</p>
+        <h1 data-chapter-title>명단에서 사라진 아이</h1>
+        <p data-objective>하루가 존재했다는 첫 증거를 찾으세요.</p>
       </section>
+
+      <nav class="journey-rail" data-journey-rail aria-label="6장 여정"></nav>
 
       <section class="status-strip" aria-label="진행 상황">
         <div class="status-head">
           <strong data-fragment-count>조각 0/4</strong>
-          <span class="shard-count" data-shard-count hidden>🧩 0</span>
           <span data-core-status>AI 코어 잠김</span>
         </div>
         <div class="fragment-row" data-fragment-row></div>
@@ -329,24 +338,24 @@ function createShell() {
       <aside class="journal-panel" data-journal hidden>
         <div class="panel-heading">
           <div>
-            <p class="eyebrow">수업 기록</p>
-            <h2>탐험 노트</h2>
+            <p class="eyebrow">여정 기록</p>
+            <h2>H-17 사건 기록</h2>
           </div>
           <button type="button" data-close-journal aria-label="탐험 노트 닫기">닫기</button>
         </div>
         <div data-journal-content></div>
       </aside>
 
-      <section class="class-hint" aria-label="수업 안내">
-        <span>1차시: 탐험과 개념</span>
-        <span>2차시: AI 코어 토론</span>
+      <section class="class-hint" aria-label="캠페인 안내">
+        <span>6장 캠페인</span>
+        <span>선택은 기록되고, 실수는 바로잡을 수 있어요</span>
       </section>
 
       <div class="interaction-prompt" data-prompt hidden></div>
 
       <div class="boss-hud" data-boss-hud hidden aria-live="polite">
         <div class="boss-hud-top">
-          <span class="boss-name">⚡ 노이즈</span>
+          <span class="boss-name">⬜ 화이트아웃</span>
           <span class="boss-weak" data-boss-weak></span>
         </div>
         <div class="boss-memory" data-boss-memory></div>
@@ -357,8 +366,6 @@ function createShell() {
       <div class="combat-popup" data-combat-popup aria-hidden="true"></div>
 
       <div class="noise-whisper" data-noise-whisper hidden aria-hidden="true"></div>
-
-      <div class="lore-card" data-lore-card hidden aria-live="polite"></div>
 
       <div class="ceremony" data-ceremony hidden aria-hidden="true">
         <div class="ceremony-rays"></div>
@@ -396,10 +403,9 @@ function createShell() {
 
       <section class="title-screen" data-title>
         <div class="title-card">
-          <p class="title-eyebrow">AI 윤리 어드벤처 · 2부</p>
-          <h1 class="title-name">AI 윤리의 섬</h1>
-          <p class="title-desc">정보의 바다에 떠 있는 섬을 탐험하며 네 가지 윤리 조각을 모아 AI 코어를 깨우는 수호자가 되어 보세요.</p>
-          <p class="title-hook">이 섬은 너를 기억하는데, 너는 이 섬을 잊었다. — 회색 안개가 모든 걸 지우기 전에, 네가 누구였는지 알아내라.</p>
+          <h1 class="title-name">AI 윤리 퀘스트</h1>
+          <p class="title-desc">삭제된 학생 H-17, 조작된 증거, 그리고 아무도 설명하지 않은 AI의 결정.</p>
+          <p class="title-hook">“그런 학생은 없었습니다.” 모두가 같은 답을 할 때, 사라진 친구 하루의 기록을 되찾으세요.</p>
           <div class="title-actions" data-title-actions></div>
           <p class="title-controls">${IS_TOUCH ? '왼쪽 스틱으로 이동 · 오른쪽 A 버튼으로 확인·공격' : '이동 WASD·방향키 · 확인/공격 E·Space·Enter · 기록 J'}</p>
         </div>
@@ -416,6 +422,9 @@ function bindUi(root) {
   return {
     root,
     objective: root.querySelector('[data-objective]'),
+    chapterKicker: root.querySelector('[data-chapter-kicker]'),
+    chapterTitle: root.querySelector('[data-chapter-title]'),
+    journeyRail: root.querySelector('[data-journey-rail]'),
     objectiveChip: root.querySelector('[data-objective-chip]'),
     fragmentCount: root.querySelector('[data-fragment-count]'),
     coreStatus: root.querySelector('[data-core-status]'),
@@ -428,8 +437,6 @@ function bindUi(root) {
     bossMemory: root.querySelector('[data-boss-memory]'),
     combatPopup: root.querySelector('[data-combat-popup]'),
     noiseWhisper: root.querySelector('[data-noise-whisper]'),
-    loreCard: root.querySelector('[data-lore-card]'),
-    shardCount: root.querySelector('[data-shard-count]'),
     ceremony: root.querySelector('[data-ceremony]'),
     ceremonyItem: root.querySelector('[data-ceremony-item]'),
     ceremonyTitle: root.querySelector('[data-ceremony-title]'),
@@ -556,13 +563,13 @@ function createGameState(ui) {
 
 function configureRenderer(renderer) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
-  renderer.setClearColor(0x8fd3ef, 1);
+  renderer.setClearColor(0x0b1020, 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  // 밝고 쨍한 판타지 톤: ACES 필름 톤매핑. 노출은 1 아래로 — 하이라이트가 하얗게 뜨지 않게.
+  // 증거 항로: 낮은 노출의 달빛 아래 호박빛 감사 오브젝트만 또렷하게 보인다.
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.96;
+  renderer.toneMappingExposure = 0.82;
 }
 
 function setupPostProcessing(renderState, root) {
@@ -584,11 +591,11 @@ function setupPostProcessing(renderState, root) {
     const grade = new ShaderPass({
       uniforms: {
         tDiffuse: { value: null },
-        saturation: { value: 1.16 },
-        contrast: { value: 1.07 },
-        vignetteStrength: { value: 0.24 },
+        saturation: { value: 1.04 },
+        contrast: { value: 1.1 },
+        vignetteStrength: { value: 0.3 },
         vignetteRadius: { value: 0.62 },
-        tint: { value: new THREE.Vector3(1.01, 1.0, 0.985) }
+        tint: { value: new THREE.Vector3(0.94, 0.97, 1.08) }
       },
       vertexShader: `
         varying vec2 vUv;
@@ -629,14 +636,14 @@ function updateAmbient(delta, renderState) {
   if (renderState.burst) {
     renderState.burst.update(delta);
   }
-  // 노이즈/노바는 대화창(일시정지) 중에도 살아 움직여야 하므로 여기서 갱신한다.
+  // 화이트아웃/루멘 시각체는 대화창(일시정지) 중에도 움직여야 하므로 여기서 갱신한다.
   animateNoiseBoss(delta, elapsed, renderState.noiseBoss);
 }
 
 function createWorld(renderState) {
   const { scene, interactables, shrineCrystals, animated } = renderState;
-  // 색을 살리기 위해 안개는 아주 옅게, 먼 배경만 살짝 감싸도록(넓어진 섬에 맞춰 더 멀리서 시작).
-  scene.fog = new THREE.Fog(0x9fd9f5, 56, 132);
+  // 1장 리뉴얼: 구름 위 학교를 감싸는 맑고 푸른 원근 안개.
+  scene.fog = new THREE.Fog(0xa9c8dd, 48, 128);
   renderState.overworldFog = scene.fog;
 
   // 사당 던전 진입 시 오버월드 전체를 한 번에 숨기려고 Group으로 감싼다.
@@ -646,12 +653,11 @@ function createWorld(renderState) {
 
   createSky(world, animated);
 
-  // 밝은 하늘빛 + 따뜻한 반사광의 반구광 — 과했던 광량을 낮춰 희멀건 씻김을 잡는다.
-  const hemiLight = new THREE.HemisphereLight(0xdff3ff, 0x6f8f66, 1.65);
+  const hemiLight = new THREE.HemisphereLight(0xd8edff, 0x5e6655, 1.7);
   world.add(hemiLight);
 
-  const sun = new THREE.DirectionalLight(0xfff0d0, 2.3);
-  sun.position.set(-16, 24, 11);
+  const sun = new THREE.DirectionalLight(0xffe2a8, 2.45);
+  sun.position.set(-21, 31, 18);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
   sun.shadow.camera.left = -31;
@@ -661,38 +667,38 @@ function createWorld(renderState) {
   sun.shadow.bias = -0.0004;
   world.add(sun);
 
-  // 반대쪽에서 들어오는 청록 림 라이트로 판타지 느낌의 입체감을 준다.
-  const rim = new THREE.DirectionalLight(0x5ad2ff, 0.7);
+  // 청색 림 라이트가 유리 행정동과 캠퍼스 가장자리를 하늘에서 분리한다.
+  const rim = new THREE.DirectionalLight(0x9ed8ff, 0.72);
   rim.position.set(11, 7, -12);
   world.add(rim);
 
   createStylizedWater(world, animated);
 
   const island = new THREE.Mesh(
-    new THREE.CylinderGeometry(22.9, 20.1, 0.92, 96),
-    new THREE.MeshStandardMaterial({ color: 0x86c26a, roughness: 0.92 })
+    new THREE.CylinderGeometry(22.9, 19.3, 1.35, 28),
+    new THREE.MeshStandardMaterial({ color: 0xc9c2a5, roughness: 0.96 })
   );
-  island.position.y = -0.18;
+  island.position.y = -0.48;
   island.receiveShadow = true;
   island.castShadow = true;
   world.add(island);
 
-  const beach = new THREE.Mesh(
-    new THREE.TorusGeometry(21.8, 0.5, 12, 144),
-    new THREE.MeshStandardMaterial({ color: 0xf0dc98, roughness: 0.85 })
+  const campusTop = new THREE.Mesh(
+    new THREE.CylinderGeometry(22.2, 22.7, 0.28, 28),
+    new THREE.MeshStandardMaterial({ color: 0xd8d0b6, roughness: 0.9 })
   );
-  beach.rotation.x = Math.PI / 2;
-  beach.position.y = 0.08;
-  world.add(beach);
+  campusTop.position.y = 0.08;
+  campusTop.receiveShadow = true;
+  world.add(campusTop);
 
-  createGrassField(world, animated);
+  createFloatingCampusBase(world);
+  createCampusGround(world);
 
   createAmbientLife(world, animated);
 
   createCenterCore(world, animated);
 
   createDock(world, interactables, renderState);
-  createAnvil(world, interactables);
 
   createLighthouse(world, interactables, animated, renderState);
 
@@ -709,12 +715,12 @@ function createWorld(renderState) {
     createZoneAura(world, zone, zonePosition, renderState.zoneAuras, landmark);
   }
 
-  for (let i = 0; i < 48; i += 1) {
-    const angle = (i / 48) * Math.PI * 2;
-    const radius = 17.4 + (i % 4) * 0.95;
+  for (let i = 0; i < 22; i += 1) {
+    const angle = (i / 22) * Math.PI * 2;
+    const radius = 18.2 + (i % 3) * 1.15;
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
-    if (Math.abs(x) < 3.0 || Math.abs(z) < 3.0) {
+    if (z > 13 || (x > 8 && z < -8) || (x < -7 && z > -1 && z < 8)) {
       continue;
     }
     createSmallTree(world, new THREE.Vector3(x, 0, z), i % 3, animated);
@@ -722,16 +728,16 @@ function createWorld(renderState) {
 }
 
 function createSky(scene, animated) {
-  // 위쪽은 짙은 하늘색, 아래쪽은 따뜻한 노을빛으로 이어지는 그라디언트 돔.
+  // 참고 이미지의 맑은 오후: 짙은 하늘색에서 크림빛 구름 수평선으로 이어진다.
   const canvas = document.createElement('canvas');
   canvas.width = 16;
   canvas.height = 256;
   const ctx = canvas.getContext('2d');
   const gradient = ctx.createLinearGradient(0, 0, 0, 256);
-  gradient.addColorStop(0, '#2f6bd8');
-  gradient.addColorStop(0.45, '#66b8f0');
-  gradient.addColorStop(0.75, '#b6e6ff');
-  gradient.addColorStop(1, '#ffe6c2');
+  gradient.addColorStop(0, '#315e86');
+  gradient.addColorStop(0.45, '#6f9fbe');
+  gradient.addColorStop(0.76, '#b9d5df');
+  gradient.addColorStop(1, '#f4dfbd');
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, 16, 256);
   const skyTexture = new THREE.CanvasTexture(canvas);
@@ -745,19 +751,19 @@ function createSky(scene, animated) {
 
   // 태양 글로우 스프라이트 (블룸이 잡아 반짝인다).
   const sun = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xfff4d0, transparent: true, opacity: 0.9, depthWrite: false, fog: false }));
-  sun.scale.set(14, 14, 1);
-  sun.position.set(-34, 26, -46);
+  sun.scale.set(18, 18, 1);
+  sun.position.set(-38, 31, -52);
   scene.add(sun);
 
   // 부드럽게 흐르는 구름 스프라이트들.
   const cloudTexture = createCloudTexture();
   const cloudGroup = new THREE.Group();
-  for (let i = 0; i < 9; i += 1) {
+  for (let i = 0; i < 13; i += 1) {
     const cloud = new THREE.Sprite(new THREE.SpriteMaterial({ map: cloudTexture, transparent: true, opacity: 0.72, depthWrite: false, fog: false }));
-    const angle = (i / 9) * Math.PI * 2;
-    const radius = 48 + (i % 3) * 8;
-    cloud.position.set(Math.cos(angle) * radius, 20 + (i % 4) * 4, Math.sin(angle) * radius);
-    const scale = 16 + (i % 3) * 7;
+    const angle = (i / 13) * Math.PI * 2;
+    const radius = 45 + (i % 3) * 9;
+    cloud.position.set(Math.cos(angle) * radius, 11 + (i % 4) * 4, Math.sin(angle) * radius);
+    const scale = 18 + (i % 3) * 8;
     cloud.scale.set(scale, scale * 0.55, 1);
     cloudGroup.add(cloud);
   }
@@ -788,11 +794,11 @@ function createCloudTexture() {
 function createStylizedWater(scene, animated) {
   const geometry = new THREE.PlaneGeometry(120, 120, 48, 48);
   const material = new THREE.MeshStandardMaterial({
-    color: 0x2fa7d8,
-    roughness: 0.35,
-    metalness: 0.1,
+    color: 0xc9e3ec,
+    roughness: 0.78,
+    metalness: 0,
     transparent: true,
-    opacity: 0.94
+    opacity: 0.72
   });
   // 시간에 따라 물결이 출렁이도록 정점 셰이더에 파동을 주입한다.
   material.onBeforeCompile = (shader) => {
@@ -811,7 +817,7 @@ function createStylizedWater(scene, animated) {
 
   const water = new THREE.Mesh(geometry, material);
   water.rotation.x = -Math.PI / 2;
-  water.position.y = -0.55;
+  water.position.y = -7.4;
   water.receiveShadow = true;
   scene.add(water);
 
@@ -823,6 +829,86 @@ function createStylizedWater(scene, animated) {
       }
     }
   });
+}
+
+function createFloatingCampusBase(scene) {
+  const cliffMat = new THREE.MeshStandardMaterial({ color: 0xa9a58f, roughness: 0.98 });
+  const shadowMat = new THREE.MeshStandardMaterial({ color: 0x6f7368, roughness: 1 });
+  const rockGeo = new THREE.DodecahedronGeometry(1, 0);
+
+  // 섬 아래로 층층이 꺾이는 암반을 만들어 '공중 캠퍼스' 실루엣을 고정한다.
+  for (let i = 0; i < 34; i += 1) {
+    const angle = (i / 34) * Math.PI * 2;
+    const radius = 18.8 + (i % 4) * 0.62;
+    const rock = new THREE.Mesh(rockGeo, i % 3 === 0 ? shadowMat : cliffMat);
+    rock.position.set(
+      Math.cos(angle) * radius,
+      -1.3 - (i % 5) * 0.42,
+      Math.sin(angle) * radius
+    );
+    rock.scale.set(2.2 + (i % 3) * 0.5, 1.9 + (i % 4) * 0.48, 2.0 + ((i + 1) % 3) * 0.55);
+    rock.rotation.set(i * 0.19, angle, i * 0.11);
+    rock.castShadow = true;
+    rock.receiveShadow = true;
+    scene.add(rock);
+  }
+
+  // 먼 곳의 작은 부유 암반은 참고 이미지의 깊이를 만든다.
+  for (const [x, y, z, s] of [
+    [-29, 8, -25, 2.5],
+    [-24, 14, -42, 1.8],
+    [29, 12, -31, 2.2],
+    [36, 5, -8, 1.6],
+    [24, 17, -49, 1.3]
+  ]) {
+    const island = new THREE.Group();
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(s, s * 0.72, 0.55, 7), new THREE.MeshStandardMaterial({ color: 0xc9c3a8, roughness: 0.94 }));
+    const root = new THREE.Mesh(new THREE.ConeGeometry(s * 0.82, s * 2.4, 7), cliffMat);
+    cap.position.y = 0.2;
+    root.position.y = -s * 1.15;
+    root.rotation.x = Math.PI;
+    island.add(cap, root);
+    island.position.set(x, y, z);
+    island.rotation.y = x * 0.1;
+    scene.add(island);
+  }
+}
+
+function createCampusGround(scene) {
+  const pathMat = new THREE.MeshStandardMaterial({ color: 0xbab39d, roughness: 0.95 });
+  const lawnMat = new THREE.MeshStandardMaterial({ color: 0x647e55, roughness: 0.98 });
+
+  // 중앙 광장과 네 개 학습 구역을 잇는 넓은 석재 보행축.
+  const plaza = new THREE.Mesh(new THREE.CylinderGeometry(4.25, 4.35, 0.16, 32), pathMat);
+  plaza.position.y = 0.23;
+  plaza.receiveShadow = true;
+  scene.add(plaza);
+  for (const [x, z, sx, sz, rotation] of [
+    [-10, 4.8, 11, 3.4, -0.14],
+    [9.4, -1.5, 11.5, 3.8, 0.08],
+    [-4.2, -9.3, 4.2, 12, -0.18],
+    [7.6, -9.2, 4.0, 12, 0.18],
+    [2.7, 14.2, 4.1, 16, -0.16]
+  ]) {
+    const walk = new THREE.Mesh(new THREE.BoxGeometry(sx, 0.12, sz), pathMat);
+    walk.position.set(x, 0.22, z);
+    walk.rotation.y = rotation;
+    walk.receiveShadow = true;
+    scene.add(walk);
+  }
+
+  // 건물 사이의 제한된 녹지. 포장 중심의 학교 풍경을 유지한다.
+  for (const [x, z, sx, sz] of [
+    [-17, -7, 5.2, 7],
+    [16.2, 5.5, 6, 8],
+    [-13.8, 13.5, 6.5, 5.5],
+    [14.5, -14.8, 5.8, 4.3]
+  ]) {
+    const lawn = new THREE.Mesh(new THREE.BoxGeometry(sx, 0.1, sz), lawnMat);
+    lawn.position.set(x, 0.25, z);
+    lawn.receiveShadow = true;
+    scene.add(lawn);
+  }
 }
 
 function createGrassField(scene, animated) {
@@ -1132,34 +1218,56 @@ function updateInteractionIcons(game, renderState) {
 }
 
 function createCenterCore(scene, animated) {
-  const pedestal = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.35, 1.65, 0.55, 8),
-    new THREE.MeshStandardMaterial({ color: 0x8b93b8, roughness: 0.7 })
-  );
-  pedestal.position.set(0, 0.28, 0);
-  pedestal.castShadow = true;
-  pedestal.receiveShadow = true;
-  scene.add(pedestal);
+  const registry = new THREE.Group();
+  const stone = new THREE.MeshStandardMaterial({ color: 0xb2aa91, roughness: 0.9 });
+  const paper = new THREE.MeshStandardMaterial({ color: 0xe9e2ca, roughness: 0.84 });
+  const frame = new THREE.MeshStandardMaterial({ color: 0x3c4a43, roughness: 0.68, metalness: 0.18 });
 
-  const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(1.95, 0.08, 10, 48),
-    new THREE.MeshStandardMaterial({ color: 0xffd76a, emissive: 0xffb032, emissiveIntensity: 0.6, roughness: 0.32, metalness: 0.3 })
-  );
-  ring.rotation.x = Math.PI / 2;
-  ring.position.y = 0.64;
-  scene.add(ring);
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.75, 0.55, 16), stone);
+  base.position.y = 0.34;
+  registry.add(base);
+  const canopy = new THREE.Mesh(new THREE.CylinderGeometry(2.15, 2.15, 0.34, 16), frame);
+  canopy.position.y = 3.7;
+  registry.add(canopy);
 
-  // 코어를 감싸고 천천히 도는 두 번째 마법 고리.
-  const orbitRing = new THREE.Mesh(
-    new THREE.TorusGeometry(1.4, 0.05, 8, 40),
-    new THREE.MeshStandardMaterial({ color: 0x7cf0ff, emissive: 0x39d6ff, emissiveIntensity: 0.9, roughness: 0.3 })
-  );
-  orbitRing.position.y = 1.4;
-  scene.add(orbitRing);
-  animated.push({ update: (elapsed) => { orbitRing.rotation.x = elapsed * 0.6; orbitRing.rotation.y = elapsed * 0.4; } });
+  const panels = new THREE.Group();
+  for (let i = 0; i < 12; i += 1) {
+    const angle = (i / 12) * Math.PI * 2;
+    const panel = new THREE.Group();
+    const sheet = new THREE.Mesh(new THREE.BoxGeometry(1.05, 2.55, 0.12), paper);
+    const border = new THREE.Mesh(new THREE.BoxGeometry(1.18, 2.72, 0.08), frame);
+    border.position.z = 0.07;
+    sheet.position.z = 0.13;
+    panel.add(border, sheet);
+    for (let row = 0; row < 7; row += 1) {
+      const line = new THREE.Mesh(
+        new THREE.BoxGeometry(0.68, 0.035, 0.025),
+        new THREE.MeshBasicMaterial({ color: row === 4 && i === 1 ? 0xd69b36 : 0x777563 })
+      );
+      line.position.set(0, 0.88 - row * 0.28, 0.21);
+      panel.add(line);
+    }
+    panel.position.set(Math.sin(angle) * 1.5, 2.15, Math.cos(angle) * 1.5);
+    panel.rotation.y = angle;
+    panels.add(panel);
+  }
+  registry.add(panels);
 
+  const title = createLabelSprite('오늘의 명단 · H-17 없음', '#d9a33f');
+  title.scale.set(3.7, 0.72, 1);
+  title.position.set(0, 4.38, 0);
+  registry.add(title);
+  registry.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
+  scene.add(registry);
+
+  // 중앙의 비어 있는 한 칸은 기존 AI 코어 진행 로직을 이어받는다.
   const crystal = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(0.72, 0),
+    new THREE.BoxGeometry(0.52, 1.05, 0.22),
     new THREE.MeshStandardMaterial({
       color: 0x9aa6b2,
       emissive: 0x2a3440,
@@ -1172,24 +1280,46 @@ function createCenterCore(scene, animated) {
   crystal.castShadow = true;
   scene.add(crystal);
 
-  const coreLight = new THREE.PointLight(0x8fb4c9, 0.8, 10);
+  const coreLight = new THREE.PointLight(0xd69b36, 1.2, 11);
   coreLight.position.set(0, 1.7, 0);
   scene.add(coreLight);
+  animated.push({ update: (elapsed) => { panels.rotation.y = elapsed * 0.08; } });
 
   activeQuest = { coreCrystal: crystal, coreGlow: coreLight };
 }
 
 function createPath(scene, target) {
-  const distance = Math.max(target.length() - 1.8, 1);
-  const midpoint = target.clone().multiplyScalar(0.5);
+  const side = Math.sign(target.x || 1) * 1.35;
+  const curve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, 0.36, 0),
+    new THREE.Vector3(target.x * 0.32 + side, 0.36, target.z * 0.28),
+    new THREE.Vector3(target.x * 0.72 - side * 0.45, 0.36, target.z * 0.72),
+    new THREE.Vector3(target.x * 0.88, 0.36, target.z * 0.88)
+  ]);
   const path = new THREE.Mesh(
-    new THREE.BoxGeometry(1.25, 0.045, distance),
-    new THREE.MeshStandardMaterial({ color: 0xd7c785, roughness: 0.88 })
+    new THREE.TubeGeometry(curve, 34, 0.1, 7, false),
+    new THREE.MeshStandardMaterial({
+      color: 0xffc34f,
+      emissive: 0xc77818,
+      emissiveIntensity: 1.35,
+      roughness: 0.45
+    })
   );
-  path.position.set(midpoint.x, 0.11, midpoint.z);
-  path.rotation.y = Math.atan2(target.x, target.z);
+  path.position.y = 0.02;
   path.receiveShadow = true;
   scene.add(path);
+
+  for (let i = 1; i < 9; i += 1) {
+    const dot = new THREE.Mesh(
+      new THREE.CircleGeometry(i % 2 === 0 ? 0.17 : 0.11, 10),
+      new THREE.MeshBasicMaterial({ color: 0xffdd79, transparent: true, opacity: 0.82, depthWrite: false })
+    );
+    const point = curve.getPoint(i / 10);
+    dot.rotation.x = -Math.PI / 2;
+    dot.position.copy(point);
+    dot.position.y += 0.04;
+    scene.add(dot);
+  }
 }
 
 function createZone(scene, zone, position) {
@@ -1197,13 +1327,13 @@ function createZone(scene, zone, position) {
   const color = new THREE.Color(topic.color);
   let landmark = {};
   const disc = new THREE.Mesh(
-    new THREE.CircleGeometry(2.85, 42),
+    new THREE.RingGeometry(2.72, 2.84, 42),
     new THREE.MeshStandardMaterial({
       color,
       emissive: color,
-      emissiveIntensity: 0.25,
+      emissiveIntensity: 0.4,
       transparent: true,
-      opacity: 0.32,
+      opacity: 0.38,
       roughness: 0.9,
       side: THREE.DoubleSide
     })
@@ -1212,162 +1342,308 @@ function createZone(scene, zone, position) {
   disc.position.set(position.x, 0.13, position.z);
   scene.add(disc);
 
-  const marker = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.16, 0.22, 1.7, 12),
-    new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.55, roughness: 0.4, metalness: 0.15 })
-  );
-  marker.position.set(position.x, 0.95, position.z);
-  marker.castShadow = true;
-  scene.add(marker);
-
-  // 표식 위에 떠서 반짝이는 작은 구슬 — 블룸으로 빛난다.
-  const beacon = new THREE.Mesh(
-    new THREE.SphereGeometry(0.16, 16, 12),
-    new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: color, emissiveIntensity: 1.4, roughness: 0.2 })
-  );
-  beacon.position.set(position.x, 1.95, position.z);
-  scene.add(beacon);
-
   const label = createLabelSprite(zone.nameKo, topic.color);
-  label.position.set(position.x, 2.35, position.z);
+  label.scale.set(2.8, 0.62, 1);
+  label.position.set(position.x, 4.7, position.z);
   scene.add(label);
 
   if (zone.topicId === 'privacy') {
-    createPrivacyVillage(scene, position);
+    landmark = createEmptyClassroom(scene, position);
   } else if (zone.topicId === 'bias') {
-    landmark = createFairnessForest(scene, position);
+    landmark = createFingerprintPlayground(scene, position);
   } else if (zone.topicId === 'copyright') {
-    createCopyrightRuins(scene, position);
+    landmark = createArchiveLibrary(scene, position);
   } else {
-    landmark = createDeepfakeCave(scene, position);
+    landmark = createMediaLab(scene, position);
   }
   return landmark;
 }
 
-function createPrivacyVillage(scene, position) {
-  for (const offset of [
-    [-1.5, -0.7],
-    [1.3, -0.5],
-    [-0.2, 1.2]
-  ]) {
-    const house = new THREE.Group();
-    const base = new THREE.Mesh(
-      new THREE.BoxGeometry(0.88, 0.7, 0.88),
-      new THREE.MeshStandardMaterial({ color: 0xf3d6a4, roughness: 0.88 })
-    );
-    const roof = new THREE.Mesh(
-      new THREE.ConeGeometry(0.72, 0.58, 4),
-      new THREE.MeshStandardMaterial({ color: 0xa75b4f, roughness: 0.82 })
-    );
-    base.position.y = 0.48;
-    roof.position.y = 1.1;
-    roof.rotation.y = Math.PI / 4;
-    house.add(base, roof);
-    house.position.set(position.x + offset[0], 0, position.z + offset[1]);
-    house.traverse((child) => {
+function createEmptyClassroom(scene, position) {
+  const room = new THREE.Group();
+  const concrete = new THREE.MeshStandardMaterial({ color: 0xc8c1a7, roughness: 0.95 });
+  const plaster = new THREE.MeshStandardMaterial({ color: 0xe4ddc7, roughness: 0.9 });
+  const wood = new THREE.MeshStandardMaterial({ color: 0xa97943, roughness: 0.84 });
+  const green = new THREE.MeshStandardMaterial({ color: 0x314f3c, roughness: 0.78 });
+  const metal = new THREE.MeshStandardMaterial({ color: 0x3f4b43, roughness: 0.72, metalness: 0.18 });
+
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(7.2, 0.24, 5.6), concrete);
+  floor.position.set(0, 0.34, -0.8);
+  const back = new THREE.Mesh(new THREE.BoxGeometry(7.2, 3.5, 0.24), plaster);
+  back.position.set(0, 2.05, -3.48);
+  const side = new THREE.Mesh(new THREE.BoxGeometry(0.24, 3.5, 5.6), plaster);
+  side.position.set(-3.48, 2.05, -0.8);
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(7.6, 0.26, 6.0), concrete);
+  roof.position.set(0, 3.92, -0.8);
+  const board = new THREE.Mesh(new THREE.BoxGeometry(4.5, 1.45, 0.16), green);
+  board.position.set(0.45, 2.15, -3.28);
+  room.add(floor, back, side, roof, board);
+
+  // 다섯 책상 중 H-17 자리는 사라진 채 바닥의 호박빛 윤곽만 남는다.
+  for (const [x, z] of [[-1.7, -1.9], [0.2, -1.9], [1.9, -1.9], [-1.7, 0], [1.9, 0]]) {
+    const desk = new THREE.Group();
+    const top = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.15, 0.72), wood);
+    top.position.y = 1.03;
+    desk.add(top);
+    for (const lx of [-0.47, 0.47]) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.85, 0.09), metal);
+      leg.position.set(lx, 0.57, 0);
+      desk.add(leg);
+    }
+    desk.position.set(x, 0, z);
+    room.add(desk);
+  }
+  const missingSeat = new THREE.Mesh(
+    new THREE.RingGeometry(0.46, 0.58, 4),
+    new THREE.MeshBasicMaterial({ color: 0xffc95c, transparent: true, opacity: 0.95, side: THREE.DoubleSide })
+  );
+  missingSeat.rotation.x = -Math.PI / 2;
+  missingSeat.rotation.z = Math.PI / 4;
+  missingSeat.position.set(0.2, 0.51, 0);
+  room.add(missingSeat);
+
+  // 출석 사물함: 17번 칸만 비어 있고 테두리가 빛난다.
+  for (let i = 0; i < 7; i += 1) {
+    const locker = new THREE.Mesh(new THREE.BoxGeometry(0.68, 1.35, 0.42), i === 3 ? metal : plaster);
+    locker.position.set(-2.5 + i * 0.78, 1.15, -2.97);
+    room.add(locker);
+  }
+  const blank = new THREE.Mesh(
+    new THREE.BoxGeometry(0.78, 1.46, 0.08),
+    new THREE.MeshStandardMaterial({ color: 0xffc559, emissive: 0xc77d18, emissiveIntensity: 1.2, roughness: 0.4 })
+  );
+  blank.position.set(-2.5 + 3 * 0.78, 1.15, -2.7);
+  room.add(blank);
+
+  const roomSign = createLabelSprite('1-3반 · H-17 기록 없음', '#d7a13a');
+  roomSign.scale.set(3.1, 0.56, 1);
+  roomSign.position.set(-1.0, 3.25, -3.15);
+  room.add(roomSign);
+  room.position.set(position.x, 0, position.z);
+  room.traverse((child) => {
+    if (child.isMesh && !child.material.transparent) {
       child.castShadow = true;
       child.receiveShadow = true;
-    });
-    scene.add(house);
-  }
+    }
+  });
+  scene.add(room);
+  return { room };
 }
 
-function createFairnessForest(scene, position) {
+function createFingerprintPlayground(scene, position) {
+  const field = new THREE.Group();
+  const red = new THREE.MeshStandardMaterial({ color: 0xa9503b, roughness: 0.92 });
+  const white = new THREE.MeshBasicMaterial({ color: 0xf1e6ce });
+  const turf = new THREE.MeshStandardMaterial({ color: 0x496e4c, roughness: 0.98 });
+
+  const track = new THREE.Mesh(new THREE.TorusGeometry(2.45, 0.72, 16, 72), red);
+  track.rotation.x = Math.PI / 2;
+  track.scale.set(1.42, 0.9, 1);
+  track.position.y = 0.35;
+  field.add(track);
+  const infield = new THREE.Mesh(new THREE.CircleGeometry(2.18, 48), turf);
+  infield.rotation.x = -Math.PI / 2;
+  infield.scale.set(1.42, 0.9, 1);
+  infield.position.y = 0.38;
+  field.add(infield);
+  for (const radius of [1.95, 2.22, 2.48]) {
+    const lane = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.025, 5, 72), white);
+    lane.rotation.x = Math.PI / 2;
+    lane.scale.set(1.42, 0.9, 1);
+    lane.position.y = 0.41;
+    field.add(lane);
+  }
+
   const leafMeshes = [];
   for (let i = 0; i < 6; i += 1) {
-    const angle = (i / 6) * Math.PI * 2;
-    const radius = i % 2 === 0 ? 1.5 : 2.2;
-    const leaves = createSmallTree(
-      scene,
-      new THREE.Vector3(position.x + Math.cos(angle) * radius, 0, position.z + Math.sin(angle) * radius),
-      i
+    const radius = 0.34 + i * 0.25;
+    const printLine = new THREE.Mesh(
+      new THREE.TorusGeometry(radius, 0.035, 5, 54, Math.PI * 1.54),
+      new THREE.MeshStandardMaterial({ color: 0xdbc892, roughness: 0.75 })
     );
-    // 편향 치유 때 색이 돌아오도록 원래 색을 기억해 둔다.
-    leaves.userData.naturalColor = leaves.material.color.clone();
-    leafMeshes.push(leaves);
+    printLine.rotation.x = Math.PI / 2;
+    printLine.rotation.z = -0.48 + i * 0.08;
+    printLine.scale.set(1.18, 0.82, 1);
+    printLine.position.set(0.15, 0.45, 0.1);
+    printLine.userData.naturalColor = printLine.material.color.clone();
+    field.add(printLine);
+    leafMeshes.push(printLine);
   }
+  const scoreFrame = new THREE.Mesh(new THREE.BoxGeometry(2.3, 1.35, 0.2), new THREE.MeshStandardMaterial({ color: 0x333c38, roughness: 0.65 }));
+  scoreFrame.position.set(3.75, 1.65, -1.4);
+  field.add(scoreFrame);
+  const score = createLabelSprite('위험 점수 · 기준 불명', '#db9e35');
+  score.scale.set(2.3, 0.48, 1);
+  score.position.set(3.75, 1.65, -1.26);
+  field.add(score);
+
+  field.position.set(position.x, 0, position.z);
+  field.traverse((child) => {
+    if (child.isMesh && !child.material.transparent) {
+      child.receiveShadow = true;
+      child.castShadow = child.geometry?.type !== 'CircleGeometry';
+    }
+  });
+  scene.add(field);
   return { leafMeshes };
 }
 
-function createCopyrightRuins(scene, position) {
-  for (const offset of [-1.5, 0, 1.5]) {
-    const column = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.22, 0.28, 1.45, 12),
-      new THREE.MeshStandardMaterial({ color: 0xc7bea2, roughness: 0.78 })
-    );
-    column.position.set(position.x + offset, 0.78, position.z - 1.4);
-    column.castShadow = true;
-    scene.add(column);
+function createArchiveLibrary(scene, position) {
+  const archive = new THREE.Group();
+  const stone = new THREE.MeshStandardMaterial({ color: 0xb8ae92, roughness: 0.93 });
+  const darkWood = new THREE.MeshStandardMaterial({ color: 0x594735, roughness: 0.84 });
+  const brass = new THREE.MeshStandardMaterial({ color: 0xb98a38, roughness: 0.48, metalness: 0.38 });
+  const bookPalette = [0x74483a, 0x435d54, 0x8c7040, 0x4e526b, 0x8d5d58];
+
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(7.2, 0.22, 5.8), stone);
+  floor.position.y = 0.34;
+  archive.add(floor);
+  for (const [x, z, rotation] of [[-2.65, -0.7, 0], [2.65, -0.7, 0], [0, -2.55, Math.PI / 2]]) {
+    const shelf = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.1, 3.15, 4.2), darkWood);
+    body.position.y = 1.95;
+    shelf.add(body);
+    for (let row = 0; row < 4; row += 1) {
+      for (let col = 0; col < 6; col += 1) {
+        const book = new THREE.Mesh(
+          new THREE.BoxGeometry(0.13, 0.48 + ((row + col) % 2) * 0.12, 0.34),
+          new THREE.MeshStandardMaterial({ color: bookPalette[(row * 2 + col) % bookPalette.length], roughness: 0.8 })
+        );
+        book.position.set(0.57, 0.77 + row * 0.7, -1.55 + col * 0.58);
+        shelf.add(book);
+      }
+    }
+    shelf.position.set(x, 0, z);
+    shelf.rotation.y = rotation;
+    archive.add(shelf);
   }
+  const arch = new THREE.Mesh(new THREE.TorusGeometry(2.0, 0.22, 10, 36, Math.PI), stone);
+  arch.position.set(0, 2.4, 1.95);
+  archive.add(arch);
+  for (const x of [-2, 2]) {
+    const column = new THREE.Mesh(new THREE.BoxGeometry(0.45, 3.2, 0.45), stone);
+    column.position.set(x, 1.85, 1.95);
+    archive.add(column);
+  }
+  const plate = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.55, 0.12), brass);
+  plate.position.set(0, 2.9, 2.16);
+  archive.add(plate);
+  const sign = createLabelSprite('기록 보관소 · 제작 로그', '#c89133');
+  sign.scale.set(2.8, 0.52, 1);
+  sign.position.set(0, 2.95, 2.25);
+  archive.add(sign);
 
-  const tablet = new THREE.Mesh(
-    new THREE.BoxGeometry(1.35, 0.9, 0.18),
-    new THREE.MeshStandardMaterial({ color: 0x9d927b, roughness: 0.86 })
-  );
-  tablet.position.set(position.x, 0.68, position.z + 1.25);
-  tablet.castShadow = true;
-  scene.add(tablet);
+  archive.position.set(position.x, 0, position.z);
+  archive.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
+  scene.add(archive);
+  return { archive };
 }
 
-function createDeepfakeCave(scene, position) {
-  const cave = new THREE.Mesh(
-    new THREE.DodecahedronGeometry(1.9, 0),
-    new THREE.MeshStandardMaterial({ color: 0x514464, roughness: 0.92 })
+function createMediaLab(scene, position) {
+  const lab = new THREE.Group();
+  const frame = new THREE.MeshStandardMaterial({ color: 0x334846, roughness: 0.58, metalness: 0.35 });
+  const glass = new THREE.MeshStandardMaterial({
+    color: 0x9dcbd2,
+    emissive: 0x315b61,
+    emissiveIntensity: 0.2,
+    transparent: true,
+    opacity: 0.42,
+    roughness: 0.16,
+    metalness: 0.12
+  });
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(6.4, 0.22, 5.4), new THREE.MeshStandardMaterial({ color: 0x8f9990, roughness: 0.84 }));
+  floor.position.y = 0.34;
+  lab.add(floor);
+  for (const [x, z, sx, sz] of [[-3.05, 0, 0.18, 5.4], [3.05, 0, 0.18, 5.4], [0, -2.6, 6.2, 0.18]]) {
+    const panel = new THREE.Mesh(new THREE.BoxGeometry(sx, 3.8, sz), glass);
+    panel.position.set(x, 2.2, z);
+    lab.add(panel);
+  }
+  for (const [x, z] of [[-3.05, -2.6], [3.05, -2.6], [-3.05, 2.6], [3.05, 2.6]]) {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.2, 4.3, 0.2), frame);
+    post.position.set(x, 2.35, z);
+    lab.add(post);
+  }
+  const screens = new THREE.Group();
+  const screenMats = [
+    new THREE.MeshBasicMaterial({ color: 0x5b374d }),
+    new THREE.MeshBasicMaterial({ color: 0x1c1826 }),
+    new THREE.MeshBasicMaterial({ color: 0x405c61 })
+  ];
+  for (let i = 0; i < 3; i += 1) {
+    const screen = new THREE.Mesh(new THREE.BoxGeometry(1.45, 1.25, 0.12), screenMats[i]);
+    screen.position.set((i - 1) * 1.65, 2.05, -2.42);
+    screens.add(screen);
+  }
+  lab.add(screens);
+  const scan = new THREE.Mesh(
+    new THREE.TorusGeometry(1.08, 0.07, 8, 48),
+    new THREE.MeshStandardMaterial({ color: 0x9ef5ff, emissive: 0x4ac8da, emissiveIntensity: 1.35, roughness: 0.28 })
   );
-  cave.scale.set(1.35, 0.82, 0.88);
-  cave.position.set(position.x, 0.78, position.z - 0.35);
-  cave.castShadow = true;
-  scene.add(cave);
-
-  const opening = new THREE.Mesh(
-    new THREE.CircleGeometry(0.82, 24),
-    new THREE.MeshBasicMaterial({ color: 0x1c1826 })
-  );
-  opening.position.set(position.x, 0.72, position.z - 1.86);
-  opening.rotation.x = 0;
-  scene.add(opening);
-  return { opening };
+  scan.position.set(0, 2.0, -2.22);
+  lab.add(scan);
+  const sign = createLabelSprite('원본 없음 · 생성 시각 불일치', '#8bdde8');
+  sign.scale.set(3.1, 0.55, 1);
+  sign.position.set(0, 3.85, -2.34);
+  lab.add(sign);
+  lab.position.set(position.x, 0, position.z);
+  lab.traverse((child) => {
+    if (child.isMesh && !child.material.transparent) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
+  scene.add(lab);
+  return { opening: screenMats[1] && screens.children[1] };
 }
 
-// 뗏목 선착장 — 남쪽 해변에서 「잡음의 군도」 항해 씬으로 나가는 문.
-const DOCK_POS = { x: 3.4, z: 19.6 };
+// 등교용 페리 터미널 — 남쪽 절벽에서 「잡음의 군도」 항해 씬으로 나가는 문.
+const DOCK_POS = { x: 3.4, z: 19.1 };
 
 function createDock(scene, interactables, renderStateRef) {
   const dock = new THREE.Group();
-  const plankMat = new THREE.MeshStandardMaterial({ color: 0x9a7648, roughness: 0.9 });
-  // 물 위로 뻗은 판자 통로.
-  const walkway = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.16, 3.6), plankMat);
-  walkway.position.set(0, 0.42, 1.2);
+  const concrete = new THREE.MeshStandardMaterial({ color: 0xb8b39f, roughness: 0.9 });
+  const metal = new THREE.MeshStandardMaterial({ color: 0x3e4947, roughness: 0.65, metalness: 0.22 });
+  const ferryMat = new THREE.MeshStandardMaterial({ color: 0xd5a84d, roughness: 0.72 });
+  const walkway = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.24, 4.2), concrete);
+  walkway.position.set(0, 0.4, 1.35);
   dock.add(walkway);
-  for (const [px, pz] of [[-0.6, 0.2], [0.6, 0.2], [-0.6, 2.6], [0.6, 2.6]]) {
-    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.9, 8), plankMat);
-    post.position.set(px, 0.12, pz);
+  for (const [px, pz] of [[-0.9, -0.2], [0.9, -0.2], [-0.9, 2.9], [0.9, 2.9]]) {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.9, 0.1), metal);
+    post.position.set(px, 0.78, pz);
     dock.add(post);
   }
-  // 정박한 작은 뗏목 + 등불(라이트 없이 발광 재질만).
-  const raft = new THREE.Mesh(
-    new THREE.BoxGeometry(1.5, 0.14, 1.9),
-    new THREE.MeshStandardMaterial({ color: 0x8a6a3f, roughness: 0.9 })
-  );
-  raft.position.set(0.2, 0.1, 3.6);
-  dock.add(raft);
-  const lantern = new THREE.Mesh(
-    new THREE.SphereGeometry(0.16, 10, 10),
-    new THREE.MeshBasicMaterial({ color: 0xffd88a })
-  );
-  lantern.position.set(0.6, 1.0, 2.6);
-  dock.add(lantern);
+  const ferry = new THREE.Group();
+  const hull = new THREE.Mesh(new THREE.BoxGeometry(2.35, 0.58, 3.2), ferryMat);
+  hull.position.y = 0.3;
+  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.9, 1.35), concrete);
+  cabin.position.set(0, 1.0, 0.25);
+  const window = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.38, 0.08), new THREE.MeshBasicMaterial({ color: 0x527982 }));
+  window.position.set(0, 1.05, -0.47);
+  ferry.add(hull, cabin, window);
+  ferry.position.set(2.3, -0.15, 3.3);
+  ferry.rotation.y = -0.16;
+  dock.add(ferry);
+  const sign = createLabelSprite('등교용 페리 탑승구', '#d1a13e');
+  sign.scale.set(2.4, 0.48, 1);
+  sign.position.set(-0.25, 1.72, -0.35);
+  dock.add(sign);
   dock.position.set(DOCK_POS.x, 0, DOCK_POS.z);
   scene.add(dock);
 
   interactables.push({
     type: 'dock',
     position: new THREE.Vector3(DOCK_POS.x, 0, DOCK_POS.z + 0.6),
-    labelKo: '뗏목 선착장 — 군도로 항해'
+    labelKo: '등교용 페리 터미널 — 군도로 항해'
   });
 
-  // 노바의 우편병 — 새 편지가 있으면 빛난다(animateWorld가 구동).
-  const mailPost = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 1.0, 8), plankMat);
+  // 하루의 증거 수신기 — 새 감사 신호가 있으면 빛난다(animateWorld가 구동).
+  const mailPost = new THREE.Mesh(new THREE.BoxGeometry(0.16, 1.0, 0.16), metal);
   mailPost.position.set(DOCK_POS.x - 3.0, 0.5, DOCK_POS.z - 2.0);
   scene.add(mailPost);
   const bottle = new THREE.Mesh(
@@ -1388,107 +1664,83 @@ function createDock(scene, interactables, renderStateRef) {
   interactables.push({
     type: 'letter',
     position: new THREE.Vector3(DOCK_POS.x - 3.0, 0, DOCK_POS.z - 2.0),
-    labelKo: '노바의 우편병'
+    labelKo: '하루의 증거 수신기'
   });
 }
 
-// 세공 모루(G3) — 정화로 모은 기억 파편을 전투 강화로 벼리는 작업대. 선착장 옆 광장.
-const ANVIL_POS = { x: -2.6, z: 18.8 };
-function createAnvil(scene, interactables) {
-  const g = new THREE.Group();
-  const stone = new THREE.MeshStandardMaterial({ color: 0x6f7480, roughness: 0.9 });
-  const iron = new THREE.MeshStandardMaterial({ color: 0x3d4250, roughness: 0.55, metalness: 0.2 });
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.7, 0.5, 8), stone);
-  base.position.y = 0.25;
-  g.add(base);
-  const body = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.34, 0.52), iron);
-  body.position.y = 0.68;
-  g.add(body);
-  const horn = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.5, 8), iron);
-  horn.rotation.z = Math.PI / 2;
-  horn.position.set(0.75, 0.68, 0);
-  g.add(horn);
-  // 모루에 박힌 기억 파편 — 파편을 쓰는 곳임을 한눈에.
-  const shard = new THREE.Mesh(
-    new THREE.OctahedronGeometry(0.2, 0),
-    new THREE.MeshStandardMaterial({ color: 0xffd76a, emissive: 0xd9a814, emissiveIntensity: 1.1 })
-  );
-  shard.position.set(-0.3, 0.98, 0);
-  g.add(shard);
-  g.position.set(ANVIL_POS.x, 0, ANVIL_POS.z);
-  scene.add(g);
-  interactables.push({
-    type: 'anvil',
-    position: new THREE.Vector3(ANVIL_POS.x, 0, ANVIL_POS.z),
-    labelKo: '세공 모루 — 파편으로 강화'
-  });
-}
-
-// 진실의 등대(Z4) — 섬 어디서든 보이는 세로 랜드마크이자 "신뢰할 수 있는 출처"의 은유.
-// 광선은 치유한 스테이지 수만큼 늘어난다(진행도가 풍경에 기록된다 — 뉴럴 가든 이식).
-const LIGHTHOUSE_POS = { x: 8.2, z: 15.6 };
+// 학생 기록 행정동 — 섬 어디서든 보이는 세로 랜드마크이자 삭제 명령의 발신지.
+// 유리탑의 복구 광선은 치유한 스테이지 수만큼 늘어난다.
+const LIGHTHOUSE_POS = { x: 14, z: -14 };
 function createLighthouse(scene, interactables, animated, renderStateRef) {
   const g = new THREE.Group();
-  const stone = new THREE.MeshStandardMaterial({ color: 0xcfd6da, roughness: 0.85 });
-  const white = new THREE.MeshStandardMaterial({ color: 0xf4f1e6, roughness: 0.7 });
-  const red = new THREE.MeshStandardMaterial({ color: 0xd95f4e, roughness: 0.7 });
+  const stone = new THREE.MeshStandardMaterial({ color: 0xbab7a7, roughness: 0.84 });
+  const frame = new THREE.MeshStandardMaterial({ color: 0x344744, roughness: 0.55, metalness: 0.32 });
+  const glass = new THREE.MeshStandardMaterial({
+    color: 0x8fbfc9,
+    emissive: 0x264d54,
+    emissiveIntensity: 0.22,
+    transparent: true,
+    opacity: 0.46,
+    roughness: 0.14,
+    metalness: 0.16
+  });
 
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.75, 1.1, 12), stone);
-  base.position.y = 0.55;
+  const base = new THREE.Mesh(new THREE.BoxGeometry(5.4, 0.75, 4.8), stone);
+  base.position.y = 0.48;
   g.add(base);
-  const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.78, 1.05, 6.4, 12), white);
-  tower.position.y = 4.2;
-  g.add(tower);
-  // 빨간 줄무늬 두 단 — 멀리서도 등대로 읽히는 실루엣 문법. 탑 반지름보다 살짝 크게(묻힘 방지).
-  for (const y of [2.6, 4.9]) {
-    const towerR = 1.05 + ((y - 1.0) / 6.4) * (0.78 - 1.05);
-    const stripe = new THREE.Mesh(new THREE.CylinderGeometry(towerR + 0.05, towerR + 0.07, 0.7, 12), red);
-    stripe.position.y = y;
-    g.add(stripe);
+  for (let floor = 0; floor < 5; floor += 1) {
+    const y = 1.35 + floor * 1.55;
+    const glassFloor = new THREE.Mesh(new THREE.BoxGeometry(4.65, 1.35, 4.0), glass);
+    glassFloor.position.y = y;
+    g.add(glassFloor);
+    const slab = new THREE.Mesh(new THREE.BoxGeometry(5.0, 0.18, 4.3), floor === 4 ? stone : frame);
+    slab.position.y = y + 0.76;
+    g.add(slab);
+    for (const x of [-2.1, 0, 2.1]) {
+      const mullion = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.35, 0.16), frame);
+      mullion.position.set(x, y, 2.05);
+      g.add(mullion);
+    }
   }
-  const gallery = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.05, 0.28, 12), stone);
-  gallery.position.y = 7.5;
-  g.add(gallery);
-  const lampRoom = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.62, 0.62, 0.9, 10),
-    new THREE.MeshStandardMaterial({
-      color: 0xbfeaff,
-      emissive: 0x7fd4ff,
-      emissiveIntensity: 0.5,
+  const annex = new THREE.Mesh(new THREE.BoxGeometry(2.7, 4.4, 3.4), stone);
+  annex.position.set(-3.2, 2.55, 0.2);
+  g.add(annex);
+  const h17Panel = createLabelSprite('학생 정보 · H-17 · 기록 삭제됨', '#d9a13d');
+  h17Panel.scale.set(3.6, 0.62, 1);
+  h17Panel.position.set(0.2, 5.65, 2.2);
+  g.add(h17Panel);
+
+  // 삭제 광선은 기본 1줄, 복구가 진행되면 주변에 6개의 확인 광선이 차례로 켜진다.
+  const deletionBeam = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.22, 0.5, 17, 12, 1, true),
+    new THREE.MeshBasicMaterial({
+      color: 0xeafcff,
       transparent: true,
-      opacity: 0.55,
-      roughness: 0.2
+      opacity: 0.34,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide
     })
   );
-  lampRoom.position.y = 8.1;
-  g.add(lampRoom);
-  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 12), new THREE.MeshBasicMaterial({ color: 0xfff2b8 }));
-  lamp.position.y = 8.1;
-  g.add(lamp);
-  const roof = new THREE.Mesh(new THREE.ConeGeometry(0.85, 0.9, 10), red);
-  roof.position.y = 9.0;
-  g.add(roof);
-
-  // 진행도 광선 — 최대 6줄기, animateWorld가 beaconCount만큼 켠다. 느리게 회전.
+  deletionBeam.position.set(0.5, 15.5, 0);
+  g.add(deletionBeam);
   const beamGroup = new THREE.Group();
-  beamGroup.position.y = 8.1;
+  beamGroup.position.y = 8.3;
   const beams = [];
   for (let i = 0; i < 6; i += 1) {
     const beam = new THREE.Mesh(
-      new THREE.ConeGeometry(0.34, 7.0, 8, 1, true),
+      new THREE.CylinderGeometry(0.055, 0.14, 9.5, 6, 1, true),
       new THREE.MeshBasicMaterial({
-        color: 0xfff0b0,
+        color: 0xffd26a,
         transparent: true,
-        opacity: 0.12,
+        opacity: 0.28,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
         side: THREE.DoubleSide
       })
     );
-    // 원뿔 꼭짓점이 등실에 — 낮 배경에 씻기지 않게 가늘게, 하늘 쪽으로 들어 올린다.
-    beam.rotation.z = Math.PI / 2 - 0.3;
-    beam.position.x = 3.35;
-    beam.position.y = 1.05;
+    beam.position.set(1.25, 4.6, 0);
+    beam.rotation.z = 0.08;
     const arm = new THREE.Group();
     arm.rotation.y = (i / 6) * Math.PI * 2;
     arm.add(beam);
@@ -1510,15 +1762,15 @@ function createLighthouse(scene, interactables, animated, renderStateRef) {
 
   interactables.push({
     type: 'lighthouse',
-    position: new THREE.Vector3(LIGHTHOUSE_POS.x, 0, LIGHTHOUSE_POS.z + 1.6),
-    labelKo: '진실의 등대'
+    position: new THREE.Vector3(LIGHTHOUSE_POS.x, 0, LIGHTHOUSE_POS.z + 2.8),
+    labelKo: '학생 기록 행정동'
   });
 
-  // 부두 → 등대 → 중앙 코어를 잇는 해류 유도등 — 빛이 순서대로 흘러 길을 가리킨다.
+  // 페리 → 행정동 → 명단탑을 잇는 H-17 마지막 동선.
   const guideLights = [];
   const waypoints = [
     [DOCK_POS.x, DOCK_POS.z - 1.6],
-    [LIGHTHOUSE_POS.x - 2.4, LIGHTHOUSE_POS.z - 0.6],
+    [LIGHTHOUSE_POS.x - 3.4, LIGHTHOUSE_POS.z + 1.2],
     [0, 0]
   ];
   let idx = 0;
@@ -1530,7 +1782,7 @@ function createLighthouse(scene, interactables, animated, renderStateRef) {
       const t = i / (steps + 1);
       const dot = new THREE.Mesh(
         new THREE.CircleGeometry(0.2, 10),
-        new THREE.MeshBasicMaterial({ color: 0x8fe0ff, transparent: true, opacity: 0.3, depthWrite: false })
+        new THREE.MeshBasicMaterial({ color: 0xffcf61, transparent: true, opacity: 0.3, depthWrite: false })
       );
       dot.rotation.x = -Math.PI / 2;
       dot.position.set(ax + (bx - ax) * t, 0.06, az + (bz - az) * t);
@@ -1611,7 +1863,7 @@ function createShrine(scene, zone, zonePosition, interactables) {
   return crystal;
 }
 
-// 노이즈 관문 — 도구로 해결해야 하는 지지직 사건 덩어리.
+// 화이트아웃 관문 — 감사 도구로 해결해야 하는 삭제 사건 덩어리.
 function createGate(scene, zone, interactables, gates) {
   const quest = QUESTS[zone.topicId];
   const [gx, gz] = quest.gatePosition;
@@ -1649,9 +1901,9 @@ function createGate(scene, zone, interactables, gates) {
   });
 }
 
-// 구역의 세계 상태 연출: 아직 못 풀었으면 지지직 노이즈 안개가 덮고,
+// 구역의 세계 상태 연출: 아직 못 풀었으면 화이트아웃 안개가 덮고,
 // 조각을 얻어 해결하면 안개가 걷히고 그 구역 색의 꽃이 피어난다(세계가 낫는다).
-// 모든 구역이 공유하는 노이즈 안개(회색+보라 원반 + 글리치 큐브 5개).
+// 모든 구역이 공유하는 삭제 안개(회색+보라 원반 + 글리치 큐브 5개).
 function buildSharedHaze(group) {
   const hazeGroup = new THREE.Group();
   const disc = new THREE.Mesh(
@@ -1965,6 +2217,7 @@ function createSmallTree(scene, position, variant, animated) {
 function createPlayer(renderState) {
   const { playerGroup } = renderState;
   const character = createPlayerCharacter();
+  renderState.playerCharacter = character;
   playerGroup.add(character);
   playerGroup.position.copy(PLAYER_START);
   // 발밑 블롭 그림자 참조 저장 — 착지 스쿼시(지면 접촉감)에 쓴다(신규 오브젝트 0).
@@ -2099,8 +2352,6 @@ function bindInput(game, ui) {
           useToolVerb(game, ui);
         } else if (game.combat?.active && game.combat.tools[game.combat.activeTool] === 'shield') {
           useToolVerb(game, ui);
-        } else if (game.mode === 'overworld' && tryDodgeStep(game, ui)) {
-          // 오버월드 🔄 = 회피 스텝(구매 후). 못 샀으면 기존대로 도구 전환.
         } else {
           cycleActiveTool(game, ui, 1);
         }
@@ -2214,7 +2465,11 @@ function setupTitleScreen(game, ui) {
     return;
   }
   const summary = getProgressSummary(game.progress.collectedFragments);
-  const hasProgress = summary.collected > 0 || game.progress.visitedTopics.length > 0;
+  const campaign = getCampaignSummary(game.progress);
+  const hasProgress = summary.collected > 0
+    || game.progress.visitedTopics.length > 0
+    || game.progress.aiCoreCompleted
+    || Object.keys(game.progress.stages ?? {}).length > 0;
 
   // 복귀 훅(R-루프9) — 진행 중인 세이브가 있으면 지금까지의 성취를 짧게 되짚어 준다.
   // 스트릭 압박이 아니라 '내가 쌓은 것'을 반갑게 상기시키는 재참여(정보형).
@@ -2222,7 +2477,7 @@ function setupTitleScreen(game, ui) {
     const bottles = (game.progress.knowledgeBottles ?? []).length;
     const isles = ['whisper-cape', 'echo-cave', 'hourglass-port', 'memory-outer', 'memory-core']
       .filter((id) => game.progress.stages?.[id]?.completed === true).length;
-    const bits = [`💠 윤리 조각 ${summary.collected}/${summary.total}`];
+    const bits = [`${campaign.current.number}장 ${campaign.current.titleKo}`, `윤리 조각 ${summary.collected}/${summary.total}`];
     if (bottles > 0) {
       bits.push(`🍾 유리병 ${bottles}/${KNOWLEDGE_BOTTLES.length}`);
     }
@@ -2231,7 +2486,7 @@ function setupTitleScreen(game, ui) {
     }
     const recap = document.createElement('p');
     recap.className = 'title-recap';
-    recap.innerHTML = `<strong>다시 온 걸 환영해, 수호자!</strong> 지금까지 — ${bits.join(' · ')}`;
+    recap.innerHTML = `<strong>H-17 조사를 이어서 진행합니다.</strong> 지금까지 — ${bits.join(' · ')}`;
     ui.titleActions.appendChild(recap);
   }
 
@@ -2430,7 +2685,7 @@ function playFirstControlBeat(game, ui) {
     void ui.objectiveChip.offsetWidth; // 리플로우로 애니메이션 재시작
     ui.objectiveChip.classList.add('pulse-attn');
   }
-  flashCombatPopup(ui, '✨ 이제 네 차례야, 수호자!', 'match');
+  flashCombatPopup(ui, '📼 하루의 첫 증거를 찾아보자!', 'match');
 }
 
 // AI 코어를 완성하면 수료증(엔딩)을 띄운다.
@@ -2459,7 +2714,7 @@ function showCertificate(game, ui) {
     ${cert.recoveredNoteKo ? `<p class="cert-recovered">${cert.recoveredNoteKo}</p>` : ''}
     <p class="cert-pledge">${cert.pledgeKo}</p>
     <p class="cert-signature">${cert.novaLineKo}</p>
-    <p class="cert-name">이 증명서의 수호자: <span class="cert-name-line" aria-label="이름을 손으로 적는 칸"></span></p>
+    <p class="cert-name">이 기록의 시민 감사관: <span class="cert-name-line" aria-label="이름을 손으로 적는 칸"></span></p>
     <div class="cert-actions">
       <button type="button" class="cert-print" data-cert-print>인쇄 / 저장</button>
       <button type="button" class="cert-close" data-cert-close>닫기</button>
@@ -2557,8 +2812,6 @@ function updateGame(delta, game, renderState, ui) {
   updatePuzzle(delta, game, ui);
   updateInteractionIcons(game, renderState);
   updateNearestInteractable(game, renderState.interactables, ui);
-  updateDodge(delta, game);
-  updateFieldGlitches(delta, game, ui);
   maybeTriggerFakeDot(game, ui);
 }
 
@@ -2577,6 +2830,9 @@ function updateCompanion(delta, game, renderState) {
   );
   dot.position.lerp(target, Math.min(1, delta * 4.5));
   dot.rotation.y += delta * 1.4;
+  if (dot.userData.halo) {
+    dot.userData.halo.rotation.z += delta * 1.8;
+  }
 }
 
 function updatePlayer(delta, game, playerGroup) {
@@ -2618,6 +2874,11 @@ function updatePlayer(delta, game, playerGroup) {
   playerGroup.position.lerp(game.player.position, 0.82);
   const hop = moving ? Math.abs(Math.sin(game.player.bob)) * 0.12 : Math.sin(game.player.bob) * 0.03;
   playerGroup.position.y = game.player.position.y + hop;
+  const scarfTail = game.renderState?.playerCharacter?.userData?.scarfTail;
+  if (scarfTail) {
+    scarfTail.rotation.z = 0.18 + Math.sin(game.player.bob * (moving ? 1 : 0.45)) * (moving ? 0.16 : 0.035);
+    scarfTail.rotation.x = moving ? -0.18 : 0;
+  }
   // 발밑 그림자 착지 스쿼시(R-루프3) — 발이 뜨면 작고 옅게, 디디면 크고 진하게.
   // 지면 접촉감을 신규 오브젝트 없이 준다(hop이 클수록 발이 떠 있음).
   const shadow = game.renderState?.playerShadow;
@@ -2630,12 +2891,12 @@ function updatePlayer(delta, game, playerGroup) {
 }
 
 function clampToIsland(position) {
-  // 진실의 등대는 유일하게 통과 불가한 대형 구조물 — 밑동 반경 밖으로 밀어낸다.
+  // 학생 기록 행정동은 유일하게 통과 불가한 대형 구조물 — 건물 외벽 밖으로 밀어낸다.
   const ldx = position.x - LIGHTHOUSE_POS.x;
   const ldz = position.z - LIGHTHOUSE_POS.z;
   const lightDist = Math.hypot(ldx, ldz);
-  if (lightDist < 1.9 && lightDist > 0.0001) {
-    const push = 1.9 / lightDist;
+  if (lightDist < 2.8 && lightDist > 0.0001) {
+    const push = 2.8 / lightDist;
     position = new THREE.Vector3(LIGHTHOUSE_POS.x + ldx * push, position.y, LIGHTHOUSE_POS.z + ldz * push);
   }
   const flatLength = Math.hypot(position.x, position.z);
@@ -2665,8 +2926,10 @@ function updateCamera(camera, game) {
   // 살짝 낮고 뒤로 물러난 각도. 시선은 항상 플레이어를 향한다 —
   // 예전 중심 편향(x*0.6·시선 x*0.4)은 넓은 바다·확장 섬에서 캐릭터를 화면 밖으로 밀어냈다.
   // x*0.9의 약한 편향만 남겨 이동 방향의 앞이 살짝 더 보이게 한다.
-  const desired = new THREE.Vector3(target.x * 0.9, target.y + 8.7, target.z + 13.8);
-  const look = new THREE.Vector3(target.x, target.y + 1.35, target.z - 1.2);
+  // 학교 전경이 캐릭터 뒤로 넓게 펼쳐지도록 기존보다 높고 멀리 둔다.
+  // 플레이어는 참고 이미지처럼 화면 하단 중앙에 남고, 다음 목적지는 한 시야에 읽힌다.
+  const desired = new THREE.Vector3(target.x * 0.9, target.y + 11.5, target.z + 18.6);
+  const look = new THREE.Vector3(target.x, target.y + 1.35, target.z - 2.8);
   // 유휴 조망 뷰(씬별 고정 좌표)와 스무스스텝 블렌드.
   const ovView = OVERVIEW_VIEWS[game.mode] ?? OVERVIEW_VIEWS.overworld;
   const raw = game.overviewT;
@@ -2729,16 +2992,13 @@ function showItemCeremony(game, ui, { emoji, title, subtitle = '', color = '#ffd
   }, 2600);
 }
 
-// ── 재기획 v2 「잊혀진 수호자」: 노이즈의 속삭임 + 기억 파편 ──────────────
-// 악당이 코어에서 기다리지 않는다 — 진행할수록 직접 말을 걸어오고,
-// 도구(=기억)를 되찾을 때마다 과거의 흑백 회상이 반전을 향해 쌓인다.
-
-// 도구 개수별 속삭임 — 진행할수록 노이즈가 플레이어를 '아는 척'하기 시작한다(반전 복선).
+// 화이트아웃 경고 + 사건 증거.
+// 증거가 늘수록 자동 삭제 프로토콜이 조사 중단 문구를 직접 송출한다.
 const NOISE_WHISPERS = {
-  1: '……찾았구나. 그 기억…… 정말 되찾고 싶어?',
-  2: '왜 애쓰는 거야. 잊는 쪽이…… 편했잖아. 너도 알면서.',
-  3: '그 목소리…… 기억나. 나한테 처음 말을 걸어 준…… 아니야. 아무것도 아니야.',
-  4: '오지 마. ……부탁이야. 네가 전부 기억해 버리면, 나는──'
+  1: 'WHITEOUT: H-17 관련 기록은 안전을 위해 자동 삭제됩니다.',
+  2: 'WHITEOUT: 높은 전체 정확도가 확인되었습니다. 개별 이의제기는 종결합니다.',
+  3: 'WHITEOUT: 다수가 공유한 정보입니다. 추가 출처 확인은 불필요합니다.',
+  4: 'WHITEOUT: 감사 코어 접근을 차단합니다. 승인 책임자 정보는 존재하지 않습니다.'
 };
 
 let whisperTimer = 0;
@@ -2759,7 +3019,7 @@ function showNoiseWhisper(game, ui, text) {
   }, 5200);
 }
 
-// 기억 파편 — 도구를 얻는 순간 되찾는 흑백 회상. 4개가 모이면 코어의 반전을 예고한다.
+// 사건 증거 — 도구를 얻는 순간 복구되는 H-17 감사 기록.
 function showMemoryFragment(game, ui, topicId) {
   const lines = MEMORY_FRAGMENTS[topicId];
   if (!lines) {
@@ -2767,8 +3027,8 @@ function showMemoryFragment(game, ui, topicId) {
   }
   const count = (game.progress.tools ?? []).length;
   const body = count >= 4 ? [...lines, FINAL_MEMORY_TEASE] : lines;
-  ui.dialogKicker.textContent = `🕯️ 기억 파편 ${Math.min(count, 4)}/4`;
-  ui.dialogTitle.textContent = '되찾은 기억';
+  ui.dialogKicker.textContent = `📁 H-17 사건 증거 ${Math.min(count, 4)}/4`;
+  ui.dialogTitle.textContent = '복구된 감사 기록';
   ui.dialogBody.innerHTML = speechHtml(body);
   ui.dialog.classList.add('memory-dialog');
   openDialog(game, ui);
@@ -2831,522 +3091,6 @@ function openFakeDotDialog(game, ui, eventId) {
   openDialog(game, ui);
 }
 
-// ===== 필드 글리치 전투(G1 — 글리치 헌터) =====
-// 순수 로직은 glitchLogic.js(상태기계·프레임 데이터·보상표), 여기는 표현·판정 소비만.
-// 글리치 = 노이즈가 앓으며 흘린 기억 부스러기 — 정화하면 파편 조각과 로어 카드가 남는다.
-
-// 아키타입별 겉모습 — 주워듣개(보라), 슬쩍이(청록·작고 재빠른 인상), 메아리(분홍 — 진짜/가짜 동일 외형).
-const GLITCH_STYLES = {
-  scavenger: { color: 0x5a4d78, emissive: 0x3a2a58, scale: 1 },
-  snitcher: { color: 0x2f6e5f, emissive: 0x1e4f43, scale: 0.85 },
-  echo: { color: 0x7a4468, emissive: 0x5a2a50, scale: 1 }
-};
-
-function makeGlitchItem(field, data, i) {
-  const { bodyGeo, eyeGeo, ringGeo, gemGeo } = field.geos;
-  const style = GLITCH_STYLES[data.archetypeId] ?? GLITCH_STYLES.scavenger;
-  const g = new THREE.Group();
-  const body = new THREE.Mesh(
-    bodyGeo,
-    new THREE.MeshStandardMaterial({
-      color: style.color,
-      emissive: style.emissive,
-      emissiveIntensity: 0.55,
-      roughness: 0.6,
-      flatShading: true,
-      // 가짜 에코는 살짝 투명 + 깜빡임 — 자세히 보면 구별할 수 있다(딥페이크 단서).
-      transparent: data.variant === 'echo',
-      opacity: data.variant === 'echo' ? 0.8 : 1
-    })
-  );
-  body.scale.setScalar(style.scale);
-  const eyes = new THREE.Group();
-  const eyeMat = new THREE.MeshStandardMaterial({
-    color: 0xffd23e,
-    emissive: 0xd9a814,
-    // 가짜 에코의 눈은 빛이 죽어 있다 — 두 번째 단서.
-    emissiveIntensity: data.variant === 'echo' ? 0.35 : 1.1
-  });
-  const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-  const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
-  eyeL.position.set(-0.13, 0.1, 0.36);
-  eyeR.position.set(0.13, 0.1, 0.36);
-  eyes.add(eyeL, eyeR);
-  // 스태거 링 — "지금 정화할 수 있다"를 발밑 금빛 고리로 텔레그래프.
-  const ring = new THREE.Mesh(
-    ringGeo,
-    new THREE.MeshBasicMaterial({ color: 0xffd76a, transparent: true, opacity: 0.85 })
-  );
-  ring.rotation.x = -Math.PI / 2;
-  ring.position.y = -0.32;
-  ring.visible = false;
-  // 훔친 파편 표시 — 슬쩍이가 파편을 들고 있으면 머리 위 금빛 조각이 보인다(추격 목표).
-  const gem = new THREE.Mesh(
-    gemGeo,
-    new THREE.MeshStandardMaterial({ color: 0xffd76a, emissive: 0xd9a814, emissiveIntensity: 1.2 })
-  );
-  gem.position.y = 0.85;
-  gem.visible = false;
-  g.add(body, eyes, ring, gem);
-  g.position.set(data.x, 0.5, data.z);
-  field.group.add(g);
-  return { data, group: g, body, eyes, ring, gem, phase: i * 1.3, telegraphCue: false };
-}
-
-function createFieldGlitchField(game) {
-  const rs = game.renderState;
-  const centers = {};
-  for (const zone of WORLD_ZONES) {
-    centers[zone.topicId] = { x: zone.position[0], z: zone.position[2] };
-  }
-  const solved = [...getStoryVisualFlags(game.progress)]
-    .filter((f) => f.endsWith(':solved'))
-    .map((f) => f.split(':')[0]);
-  const field = {
-    group: new THREE.Group(),
-    items: [],
-    centers,
-    // 구역별 현재 웨이브(0 = 첫 스폰) + 다음 웨이브 예고 타이머.
-    waves: Object.fromEntries(Object.keys(centers).map((t) => [t, 0])),
-    waveDelay: {},
-    geos: {
-      bodyGeo: new THREE.IcosahedronGeometry(0.42, 0),
-      eyeGeo: new THREE.BoxGeometry(0.1, 0.1, 0.06),
-      ringGeo: new THREE.TorusGeometry(0.62, 0.045, 6, 24),
-      gemGeo: new THREE.OctahedronGeometry(0.16, 0)
-    }
-  };
-  field.items = buildFieldGlitches(centers, solved).map((data, i) => makeGlitchItem(field, data, i));
-  rs.overworld.add(field.group);
-  rs.glitchField = field;
-}
-
-// 글리치가 플레이어를 맞혔다 — 사망·감점 없음(무처벌): 넉백 + 콤보 리셋 + 시각 경고만.
-function onGlitchHitPlayer(game, ui, g) {
-  const p = game.player.position;
-  let dx = p.x - g.x;
-  let dz = p.z - g.z;
-  const len = Math.hypot(dx, dz) || 1;
-  p.x += (dx / len) * 1.5;
-  p.z += (dz / len) * 1.5;
-  game.player.position.copy(clampToIsland(p));
-  const gc = game.glitchCombat;
-  if (gc) {
-    gc.combo = 0; // 콤보만 리셋 — 벌점 없음
-  }
-  game.audio?.playWrong();
-  triggerFlash(ui, '#ff5f7e');
-  addShake(game, 0.4);
-  flashCombatPopup(ui, '기억이 흐려진다!', 'stagger');
-}
-
-// 가짜 에코의 공격이 스쳤다 — 해가 없는 환영. 옅은 정전기만(과잉 알림 방지 스로틀).
-let echoBrushAt = 0;
-function onEchoBrush(game, ui) {
-  const now = clock.elapsedTime;
-  if (now - echoBrushAt < 3) {
-    return;
-  }
-  echoBrushAt = now;
-  game.audio?.playClick();
-  flashCombatPopup(ui, '…스친 건 환영이었다?', 'stagger');
-}
-
-// 슬쩍이의 잡기 성공 — 파편을 훔쳐 도주한다. 때리면 즉시 되찾는다(영구 손실 없음).
-function onSnitcherGrab(game, ui, g, item) {
-  const stolen = stealFromPlayer(g, game.progress.glitchShards ?? 0);
-  if (stolen > 0) {
-    game.progress = { ...game.progress, glitchShards: (game.progress.glitchShards ?? 0) - stolen };
-    persistProgress(game.progress);
-    updateHud(game, ui);
-    game.audio?.playWrong();
-    triggerFlash(ui, '#ffd23e');
-    addShake(game, 0.3);
-    flashCombatPopup(ui, `🧩 조각 ${stolen}개를 도둑맞았다! 쫓아가자!`, 'stagger');
-  } else {
-    game.audio?.playClick();
-    flashCombatPopup(ui, '슬쩍이가 허탕을 치고 달아난다!', 'stagger');
-  }
-  const gc = game.glitchCombat;
-  if (gc) {
-    gc.combo = 0; // 도둑맞음 = 피격 취급, 콤보만 리셋
-  }
-}
-
-// 조우 웨이브 — 구역의 현재 웨이브를 소탕하면 예고 후 다음 웨이브, 전부 비우면 소탕 보너스(1회).
-function updateGlitchWaves(delta, game, ui, field, flags) {
-  for (const [topicId, center] of Object.entries(field.centers)) {
-    if (flags.has(`${topicId}:solved`)) {
-      continue; // 이야기로 해결된 땅 — 웨이브도 보너스도 없다
-    }
-    const zoneItems = field.items.filter((it) => it.data.topicId === topicId);
-    if (zoneItems.length === 0 || !zoneItems.every((it) => it.data.state === 'purified')) {
-      field.waveDelay[topicId] = 0;
-      continue;
-    }
-    const maxWave = zoneWaveCount(topicId) - 1;
-    if (field.waves[topicId] < maxWave) {
-      // 소탕 → 짧은 정적 → 경고와 함께 다음 웨이브.
-      field.waveDelay[topicId] = (field.waveDelay[topicId] ?? 0) + delta;
-      if (field.waveDelay[topicId] >= 1.4) {
-        field.waves[topicId] += 1;
-        field.waveDelay[topicId] = 0;
-        const fresh = buildWaveGlitches(topicId, field.waves[topicId], center);
-        for (const data of fresh) {
-          const item = makeGlitchItem(field, data, field.items.length);
-          celebrate(game, new THREE.Vector3(data.x, 0.9, data.z), '#8a6cc8', 'hit');
-          field.items.push(item);
-        }
-        game.audio?.playNoiseGroan();
-        addShake(game, 0.3);
-        flashCombatPopup(ui, '⚠️ 잡음이 더 몰려온다!', 'stagger');
-      }
-      continue;
-    }
-    // 최종 웨이브까지 전투로 비웠다 — 구역 소탕 보너스(주제별 1회, 저장).
-    const cleared = game.progress.glitchZonesCleared ?? [];
-    if (!cleared.includes(topicId)) {
-      game.progress = {
-        ...game.progress,
-        glitchShards: (game.progress.glitchShards ?? 0) + ZONE_CLEAR_BONUS,
-        glitchZonesCleared: [...cleared, topicId]
-      };
-      persistProgress(game.progress);
-      updateHud(game, ui);
-      game.audio?.playFanfare?.();
-      flashCombatPopup(ui, `🕊️ 구역이 고요해졌다 — 소탕 보너스 +${ZONE_CLEAR_BONUS} 조각`, 'win');
-    }
-  }
-}
-
-function updateFieldGlitches(delta, game, ui) {
-  const rs = game.renderState;
-  if (!rs) {
-    return;
-  }
-  if (!rs.glitchField || rs.glitchField.group.parent !== rs.overworld) {
-    createFieldGlitchField(game);
-  }
-  if (game.paused || game.cinematic || game.combat?.active || game.puzzle?.active) {
-    return;
-  }
-  const field = rs.glitchField;
-  const flags = getStoryVisualFlags(game.progress);
-  const p = game.player.position;
-  const elapsed = clock.elapsedTime;
-  let staggerNearby = false;
-  for (const item of field.items) {
-    const g = item.data;
-    if (g.state !== 'purified' && flags.has(`${g.topicId}:solved`)) {
-      g.state = 'purified'; // 구역이 해결되면 그 땅의 글리치도 정화된다
-    }
-    if (g.state === 'purified') {
-      if (item.group.visible) {
-        item.group.scale.multiplyScalar(1 - Math.min(1, delta * 5));
-        if (item.group.scale.x < 0.03) {
-          item.group.visible = false;
-        }
-      }
-      continue;
-    }
-    const dx = p.x - g.x;
-    const dz = p.z - g.z;
-    const dist = Math.hypot(dx, dz);
-    const intent = stepGlitch(g, { dx, dz, dist }, delta);
-    g.x += intent.moveX * delta;
-    g.z += intent.moveZ * delta;
-    item.group.position.set(g.x, 0.5 + Math.sin(elapsed * 4 + item.phase) * 0.06, g.z);
-    if (intent.moveX !== 0 || intent.moveZ !== 0) {
-      item.group.rotation.y = Math.atan2(intent.moveX, intent.moveZ);
-    }
-    // 텔레그래프: 선딜 동안 부풀며 발광 — 공격은 반드시 예고 후에 온다(공정성).
-    if (g.state === 'windup') {
-      item.body.material.emissiveIntensity = 0.55 + intent.telegraph * 1.7;
-      item.group.scale.setScalar(1 + intent.telegraph * 0.28);
-      if (!item.telegraphCue) {
-        item.telegraphCue = true;
-        game.audio?.playNoiseGroan();
-      }
-    } else {
-      item.telegraphCue = false;
-      item.body.material.emissiveIntensity = g.state === 'stagger' ? 0.18 : 0.55;
-      item.group.scale.setScalar(g.state === 'stagger' ? 0.88 : 1);
-    }
-    // 가짜 에코는 미세하게 깜빡인다 — 자세히 보면 구별할 수 있다(딥페이크 단서).
-    if (g.variant === 'echo') {
-      item.body.material.opacity = 0.72 + Math.sin(elapsed * 9 + item.phase) * 0.16;
-    }
-    // 훔친 파편 표시 — 들고 있는 동안 머리 위에서 반짝인다(추격 목표).
-    item.gem.visible = g.stolen > 0;
-    if (item.gem.visible) {
-      item.gem.rotation.y = elapsed * 3;
-    }
-    item.ring.visible = g.state === 'stagger';
-    if (item.ring.visible) {
-      item.ring.rotation.z = elapsed * 2.4;
-      if (dist < PURIFY.range) {
-        staggerNearby = true;
-      }
-    }
-    // 접촉 판정: 유효 창 + 근접 + 창당 1회(권위 있는 이벤트). 회피 무적 창이면 흘린다.
-    if (intent.hitActive && dist < 0.95) {
-      if (game.dodge?.iframes > 0) {
-        consumeGlitchHit(g);
-        flashCombatPopup(ui, '💨 회피!', 'hit');
-        continue;
-      }
-      consumeGlitchHit(g);
-      if (g.variant === 'echo') {
-        onEchoBrush(game, ui); // 환영 — 해가 없다
-      } else if (GLITCH_ARCHETYPES[g.archetypeId].steals) {
-        onSnitcherGrab(game, ui, g, item);
-      } else {
-        onGlitchHitPlayer(game, ui, g);
-      }
-    }
-  }
-  updateGlitchWaves(delta, game, ui, field, flags);
-  updateSlash(delta, game, ui);
-  // 정화 가능 안내 — 다른 상호작용 안내가 없을 때만.
-  if (staggerNearby && !game.nearest && ui.dialog.hidden) {
-    ui.prompt.hidden = false;
-    ui.prompt.textContent = `${ACTION_LABEL}글리치 정화`;
-  }
-}
-
-// 교전 판정 — 적대 상태의 글리치가 베기 사거리 안에 있는가.
-function hostileGlitchNear(game) {
-  const field = game.renderState?.glitchField;
-  if (!field) {
-    return false;
-  }
-  const p = game.player.position;
-  const { range } = getSlashParams(game.progress.combatUpgrades ?? []);
-  return field.items.some((item) => {
-    const g = item.data;
-    if (g.state === 'purified' || g.state === 'idle' || g.state === 'stagger') {
-      return false;
-    }
-    return Math.hypot(p.x - g.x, p.z - g.z) < range + 0.4;
-  });
-}
-
-// 베기 — 프레임 데이터(SLASH)대로 선딜→유효→후딜. 유효 창에 부채꼴 판정 1회.
-function trySlash(game, ui) {
-  const gc = game.glitchCombat ?? (game.glitchCombat = { slash: null, combo: 0 });
-  if (gc.slash) {
-    // 후딜 초반에 재입력 → 다음 타 예약(체인). 체인 상한은 강화(4연 체인) 반영.
-    const { chainMax } = getSlashParams(game.progress.combatUpgrades ?? []);
-    if (gc.slash.phase === 'recover' && gc.slash.t <= SLASH.chainWindow && gc.slash.chain < chainMax) {
-      gc.slash.queued = true;
-    }
-    return true;
-  }
-  // 판정은 입력 즉시(이벤트 구동 — 보스전 playerAttack과 동일 원칙),
-  // 프레임 데이터는 스윙 리듬(유효 연출·후딜·체인 창)에 쓴다.
-  gc.slash = { phase: 'active', t: 0, chain: 1, queued: false };
-  game.audio?.playClick();
-  resolveSlashHits(game, ui);
-  return true;
-}
-
-function resolveSlashHits(game, ui) {
-  const gc = game.glitchCombat;
-  const field = game.renderState?.glitchField;
-  if (!field) {
-    return;
-  }
-  const p = game.player.position;
-  const dir = game.player.direction;
-  const { range } = getSlashParams(game.progress.combatUpgrades ?? []);
-  for (const item of field.items) {
-    const g = item.data;
-    if (g.state === 'purified' || g.state === 'stagger') {
-      continue;
-    }
-    const dx = g.x - p.x;
-    const dz = g.z - p.z;
-    const dist = Math.hypot(dx, dz);
-    if (dist > range) {
-      continue;
-    }
-    const dot = dist > 0.0001 ? (dx / dist) * dir.x + (dz / dist) * dir.z : 1;
-    if (dot < SLASH.arcCos) {
-      continue; // 전방 부채꼴 밖
-    }
-    const result = hitGlitch(g);
-    if (result === 'ignored') {
-      continue;
-    }
-    if (result === 'dispersed') {
-      // 가짜였다 — 잿빛으로 흩어진다. 보상도 벌점도 없다(진짜를 찾아라).
-      celebrate(game, new THREE.Vector3(g.x, 0.9, g.z), '#9aa1b5', 'hit');
-      game.hitStop = 0.03;
-      game.audio?.playClick();
-      flashCombatPopup(ui, '💨 가짜였다! 진짜 메아리를 찾아라', 'stagger');
-      continue;
-    }
-    // 훔친 파편을 떨궜다 — 즉시 회수(영구 손실 없음).
-    if (g.droppedShards > 0) {
-      const back = g.droppedShards;
-      g.droppedShards = 0;
-      game.progress = { ...game.progress, glitchShards: (game.progress.glitchShards ?? 0) + back };
-      persistProgress(game.progress);
-      updateHud(game, ui);
-      game.audio?.playCollect();
-      flashCombatPopup(ui, `🧩 조각 ${back}개를 되찾았다!`, 'win');
-    }
-    // 살짝 밀려나며 피격 리액션.
-    g.x += (dx / (dist || 1)) * 0.5;
-    g.z += (dz / (dist || 1)) * 0.5;
-    celebrate(game, new THREE.Vector3(g.x, 0.9, g.z), '#cfd6ff', 'hit');
-    game.hitStop = 0.045;
-    triggerHaptic('hit');
-    if (result === 'staggered') {
-      game.audio?.playCorrect();
-      flashCombatPopup(ui, '⚡ 스태거! A로 정화', 'hit');
-    } else {
-      game.audio?.playClick();
-    }
-  }
-}
-
-function updateSlash(delta, game, ui) {
-  const gc = game.glitchCombat;
-  if (!gc?.slash) {
-    return;
-  }
-  const s = gc.slash;
-  s.t += delta;
-  if (s.phase === 'active' && s.t >= SLASH.active) {
-    s.phase = 'recover';
-    s.t = 0;
-  } else if (s.phase === 'recover' && s.t >= SLASH.recover) {
-    if (s.queued) {
-      gc.slash = { phase: 'active', t: 0, chain: s.chain + 1, queued: false };
-      game.audio?.playClick();
-      resolveSlashHits(game, ui); // 체인 타도 진입 즉시 판정
-    } else {
-      gc.slash = null;
-    }
-  }
-}
-
-// 정화 피니셔 — 스태거 글리치에게 A. 파편 조각 + 로어 카드(전리품이 곧 교육).
-function tryPurifyGlitch(game, ui) {
-  const field = game.renderState?.glitchField;
-  if (!field) {
-    return false;
-  }
-  const p = game.player.position;
-  let best = null;
-  let bestDist = Infinity;
-  for (const item of field.items) {
-    if (item.data.state !== 'stagger') {
-      continue;
-    }
-    const d = Math.hypot(p.x - item.data.x, p.z - item.data.z);
-    if (d < PURIFY.range && d < bestDist) {
-      best = item;
-      bestDist = d;
-    }
-  }
-  if (!best) {
-    return false;
-  }
-  const gc = game.glitchCombat ?? (game.glitchCombat = { slash: null, combo: 0 });
-  gc.combo += 1;
-  const reward = purifyGlitch(best.data, gc.combo);
-  game.progress = {
-    ...game.progress,
-    glitchShards: (game.progress.glitchShards ?? 0) + reward.shards,
-    loreCards: [...new Set([...(game.progress.loreCards ?? []), reward.loreTopicId])]
-  };
-  persistProgress(game.progress);
-  updateHud(game, ui);
-  const topic = getTopicById(reward.loreTopicId);
-  celebrate(game, new THREE.Vector3(best.data.x, 1.2, best.data.z), topic?.color ?? '#ffd76a', 'collect');
-  game.audio?.playCollect();
-  triggerHaptic('win');
-  game.hitStop = 0.06;
-  flashCombatPopup(ui, `✨ 정화! +${reward.shards} 조각${reward.multiplier > 1 ? ` (콤보 x${reward.multiplier})` : ''}`, 'win');
-  showLoreCard(game, ui, reward.loreKo);
-  // 강화 「정화 파동」 — 정화의 빛이 주변 글리치를 1히트씩 휘청이게 한다(연쇄 스태거의 씨앗).
-  if ((game.progress.combatUpgrades ?? []).includes('purifyWave')) {
-    for (const item of field.items) {
-      const g = item.data;
-      if (g === best.data || g.state === 'purified' || g.state === 'stagger' || g.state === 'idle') {
-        continue;
-      }
-      if (Math.hypot(g.x - best.data.x, g.z - best.data.z) < DODGE.waveRange) {
-        const r = hitGlitch(g);
-        if (r !== 'ignored') {
-          celebrate(game, new THREE.Vector3(g.x, 0.9, g.z), '#ffe9a0', 'hit');
-        }
-      }
-    }
-  }
-  return true;
-}
-
-// ── 회피 스텝(G3 강화) — 전방 대시 + 짧은 무적 창. 프레임 데이터는 DODGE. ──
-function tryDodgeStep(game, ui) {
-  if (!(game.progress.combatUpgrades ?? []).includes('dodge')) {
-    return false;
-  }
-  const d = game.dodge ?? (game.dodge = { t: 0, cd: 0, iframes: 0 });
-  if (d.t > 0 || d.cd > 0) {
-    return true; // 이미 회피 중/쿨다운 — 입력은 소비하되 발동 없음
-  }
-  d.t = DODGE.duration;
-  d.cd = DODGE.cooldown;
-  d.iframes = DODGE.iframes;
-  d.dirX = game.player.direction.x;
-  d.dirZ = game.player.direction.z;
-  game.audio?.playClick();
-  triggerHaptic('hit');
-  celebrate(game, game.player.position.clone().setY(0.4), '#efe8d8', 'hit');
-  return true;
-}
-
-function updateDodge(delta, game) {
-  const d = game.dodge;
-  if (!d) {
-    return;
-  }
-  if (d.cd > 0) {
-    d.cd = Math.max(0, d.cd - delta);
-  }
-  if (d.iframes > 0) {
-    d.iframes = Math.max(0, d.iframes - delta);
-  }
-  if (d.t > 0) {
-    d.t = Math.max(0, d.t - delta);
-    const p = game.player.position;
-    p.x += d.dirX * DODGE.speed * delta;
-    p.z += d.dirZ * DODGE.speed * delta;
-    game.player.position.copy(clampToIsland(p));
-  }
-}
-
-// 로어 카드 토스트 — 정화의 전리품. 읽기를 강제하지 않는다(스스로 사라짐).
-let loreTimer = 0;
-function showLoreCard(game, ui, text) {
-  if (!ui.loreCard || !text) {
-    return;
-  }
-  window.clearTimeout(loreTimer);
-  ui.loreCard.textContent = `📖 ${text}`;
-  ui.loreCard.hidden = false;
-  ui.loreCard.classList.remove('is-on');
-  void ui.loreCard.offsetWidth;
-  ui.loreCard.classList.add('is-on');
-  loreTimer = window.setTimeout(() => {
-    ui.loreCard.classList.remove('is-on');
-    ui.loreCard.hidden = true;
-  }, 4600);
-}
-
 // 도구 획득 의식 공통 호출 — 던전 제단·사당 통과 두 경로가 같은 연출을 쓴다.
 function showToolCeremony(game, ui, tool, topic) {
   showItemCeremony(game, ui, {
@@ -3375,7 +3119,7 @@ function flashCombatPopup(ui, text, kind) {
 
 function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates, zoneAuras, novaMailGlow, lighthouseBeams }, game) {
   const elapsed = clock.elapsedTime;
-  // 진실의 등대 — 광선이 느리게 돌고, 치유한 스테이지 수(beaconCount)만큼 줄기가 켜진다.
+  // 학생 기록 행정동 — 복구 광선이 느리게 돌고, 치유한 스테이지 수만큼 켜진다.
   if (lighthouseBeams) {
     lighthouseBeams.group.rotation.y = elapsed * 0.22;
     const count = game.beaconCount ?? 0;
@@ -3410,7 +3154,7 @@ function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates, zon
     }
   }
 
-  // 노바의 우편병: 안 읽은 편지가 있으면 별 조각이 떠서 반짝인다.
+  // 하루의 증거 수신기: 안 읽은 감사 신호가 있으면 별 조각이 떠서 반짝인다.
   if (novaMailGlow) {
     const unreadCount = getUnreadNovaLetters(game.progress).length;
     novaMailGlow.visible = unreadCount > 0;
@@ -3427,7 +3171,7 @@ function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates, zon
     crystal.material.emissiveIntensity = completed ? 0.72 : 0.24;
   }
 
-  // 노이즈 관문: 지지직 흔들리다가, 해결되면 오그라들어 사라진다(세계가 낫는다).
+  // 화이트아웃 관문: 지지직 흔들리다가, 해결되면 오그라들어 사라진다.
   if (gates) {
     const flags = getStoryVisualFlags(game.progress);
     for (const [topicId, group] of gates.entries()) {
@@ -3459,7 +3203,7 @@ function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates, zon
       aura.t += ((solved ? 1 : 0) - aura.t) * Math.min(1, delta * 2.5);
       const t = aura.t;
       const ease = t * t * (3 - 2 * t); // smoothstep
-      // 공유 노이즈 안개는 걷힌다(해결 구역) — 미해결 구역은 압력만큼 무거워진다.
+      // 공유 삭제 안개는 걷힌다(해결 구역) — 미해결 구역은 압력만큼 무거워진다.
       aura.hazeDisc.material.opacity = Math.min(0.58, 0.36 + fogPressure * 0.055) * (1 - ease);
       aura.haze.visible = aura.hazeDisc.material.opacity > 0.02;
       if (aura.haze.visible) {
@@ -3497,7 +3241,7 @@ function animateWorld(delta, { shrineCrystals, coreCrystal, coreGlow, gates, zon
   }
 }
 
-// 최종장 3D 연출: 노이즈는 지지직 떨고 글리치 픽셀이 돈다. 도구를 쓸 때마다 목표 크기로 오그라든다.
+// 최종장 3D 연출: 화이트아웃은 지지직 떨고 도구를 쓸 때마다 삭제 껍질이 오그라든다.
 function animateNoiseBoss(delta, elapsed, boss) {
   if (!boss || !boss.group) {
     return;
@@ -3540,7 +3284,7 @@ function animateNoiseBoss(delta, elapsed, boss) {
   }
 }
 
-// 노이즈 보스를 코어 위에 등장시킨다. combat=true면 손이 닿는 높이로 낮게 띄운다(직접 타격).
+// 화이트아웃 코어를 등장시킨다. combat=true면 손이 닿는 높이로 낮게 띄운다.
 function spawnNoiseBoss(game, { combat = false } = {}) {
   const rs = game.renderState;
   if (!rs || rs.noiseBoss) {
@@ -3565,7 +3309,7 @@ function spawnNoiseBoss(game, { combat = false } = {}) {
   };
 }
 
-// 도구를 한 번 쓸 때마다 노이즈가 작아진다.
+// 도구를 한 번 쓸 때마다 화이트아웃 삭제 껍질이 작아진다.
 function shrinkNoiseBoss(game, remainingSteps, totalSteps) {
   const boss = game.renderState?.noiseBoss;
   if (!boss || boss.kind !== 'noise') {
@@ -3575,7 +3319,7 @@ function shrinkNoiseBoss(game, remainingSteps, totalSteps) {
   boss.targetScale = 0.4 + t * 0.95; // 마지막엔 0.4까지 오그라든다
 }
 
-// 노이즈 → 노바 재탄생: 안개 뭉치를 치우고 별빛을 띄운다.
+// 화이트아웃 중지 뒤 공개된 루멘 코어를 별빛 형태로 띄운다.
 function morphNoiseToNova(game) {
   const rs = game.renderState;
   if (!rs) {
@@ -3648,19 +3392,19 @@ function syncToolButton(game, ui) {
   if (!ui.toolButton) {
     return;
   }
-  // 오버월드 + 회피 스텝 보유 → 🔄 버튼이 💨 회피 버튼이 된다(모바일 전용 입력 확보).
-  const dodgeReady = game.mode === 'overworld' && !game.dungeon?.active && !game.combat?.active
-    && !game.isle && (game.progress.combatUpgrades ?? []).includes('dodge');
-  ui.root.classList.toggle('has-dodge', dodgeReady);
   let icon = '🔄';
   if (game.dungeon?.active) {
     icon = DUNGEON_VERB_EMOJI[game.dungeon.room.mechanic] ?? '🔄';
+  } else if (game.isle?.followup && !game.isle.followup.cleared) {
+    icon = game.isle.stageId === 'echo-cave'
+      ? '🪞'
+      : game.isle.stageId === 'hourglass-port'
+        ? '✅'
+        : '🛡️';
   } else if (game.isle) {
     icon = ISLE_VERB_EMOJI[game.isle.stageId] ?? '🔄';
   } else if (game.combat?.active) {
     icon = TOOL_EMOJI[game.combat.tools[game.combat.activeTool]] ?? '🔄';
-  } else if (dodgeReady) {
-    icon = '💨';
   }
   if (ui.toolButton.textContent !== icon) {
     ui.toolButton.textContent = icon;
@@ -3670,7 +3414,19 @@ function syncToolButton(game, ui) {
 function useToolVerb(game, ui) {
   game.audio?.resume();
   game.idleT = 0;
-  // 섬 도전 중엔 F = 그 섬의 동사(곶 = 가드, 동굴 = 울림, 항구 = 당기기, 심장 외곽 = 봉인 해제).
+  // 3–5장 후속 도전: 4장 거울로 자료를 비추고, 5장 적하 목록을 검수한다.
+  if (game.isle?.followup && !game.isle.followup.cleared) {
+    if (game.isle.stageId === 'echo-cave') {
+      bubbleInspect(game, ui);
+    } else if (game.isle.stageId === 'hourglass-port') {
+      cargoVerify(game, ui);
+    } else {
+      game.audio?.playClick();
+      flashCombatPopup(ui, '발자국 앞에서 A로 책임지는 행동을 선택해요', 'match');
+    }
+    return;
+  }
+  // 섬 핵심 도전 중엔 F = 그 섬의 동사(곶 = 가드, 동굴 = 울림, 항구 = 당기기, 심장 외곽 = 봉인 해제).
   if (game.isle?.challenge && !game.isle.challenge.cleared) {
     if (game.isle.stageId === 'echo-cave') {
       rumorBell(game, ui);
@@ -3702,10 +3458,6 @@ function useToolVerb(game, ui) {
   }
   const dg = game.dungeon;
   if (!dg?.active) {
-    // 오버월드: F/🔄 = 회피 스텝(세공 모루에서 구매 후).
-    if (game.mode === 'overworld') {
-      tryDodgeStep(game, ui);
-    }
     return;
   }
   if (dg.room.mechanic === 'push') {
@@ -3729,6 +3481,7 @@ function residueUse(game, ui) {
   }
   const ch = isle.challenge;
   if (ch.stage === 'defeated') {
+    finishResidue(game, ui);
     return;
   }
   const distance = Math.hypot(
@@ -3777,7 +3530,7 @@ function residueUse(game, ui) {
   }
 }
 
-// 각성 연출: 치유한 정령들의 목소리가 진짜 힘을 깨운다.
+// 각성 연출: 각 보관소 감사관의 목소리가 네 검증 도구를 연결한다.
 function residueAwaken(game, ui) {
   const isle = game.isle;
   isle.built.spiritOrbs.forEach((orb) => {
@@ -3787,39 +3540,87 @@ function residueAwaken(game, ui) {
   triggerFlash(ui, '#ffffff');
   const first = RESIDUE.phases[0];
   ui.puzzleGoal.textContent = `지금 껍질: ${first.emoji} ${first.nameKo}`;
-  ui.puzzleHint.textContent = '잔영이 공격 자세의 절정일 때 약속의 힘(F)!';
-  ui.dialogKicker.textContent = '기억의 심장 심부';
-  ui.dialogTitle.textContent = '정령들의 목소리';
+  ui.puzzleHint.textContent = '화이트아웃이 삭제 명령을 실행하기 직전 약속의 힘(F)!';
+  ui.dialogKicker.textContent = '공개 심리실';
+  ui.dialogTitle.textContent = '감사관들의 연결 신호';
   ui.dialogBody.innerHTML = speechHtml([
-    '🕊️ "수호자! 도구를 *갖고 있는 것*과 *쓸 줄 아는 것*은 달라 — 우리가 함께 배웠잖아!"',
-    '🐋 "출처를 묻던 그 울림을 기억해!" 🐢 "멈출 때를 알던 그 손을 기억해!"',
-    '✨ 도트: "네 가지 약속이 하나로 깨어난다 — 이제 잔영의 공격 자세를 노려, 절정의 순간에 힘을 써!"'
+    '🕊️ “확산 경로를 끊고 피해를 회복한 순서를 기억해!”',
+    '🐋 “추천 밖의 다른 근거를 찾았던 거울을 기억해!” 🐢 “자동 승인 전에 멈추고 검토했던 순간을 기억해!”',
+    '📼 도트: “네 도구는 화이트아웃을 공격하는 무기가 아니라, 삭제되는 증거를 안전하게 검증하는 감사 도구야!”'
   ]);
   openDialog(game, ui);
 }
 
-// 잔영 격파: 2막 엔딩 — 기억의 별이 떠오르고 군도가 완전히 치유된다.
+// 화이트아웃 핵심 중지: 여섯 장의 증거를 공개 심리로 잇고 최종 윤리 선택을 연다.
 function finishResidue(game, ui) {
   const isle = game.isle;
   isle.built.heal();
-  game.progress = markStageCompleted(game.progress, isle.stageId);
-  persistProgress(game.progress);
-  updateHud(game, ui);
   game.audio?.playCoreAwaken();
   triggerFlash(ui, '#fff3c0');
-  ui.puzzleGoal.textContent = ISLE_CONTENT[isle.stageId].healedGoalKo;
-  ui.puzzleHint.textContent = '뗏목으로 돌아가면 다시 바다로';
-  ui.dialogKicker.textContent = '🌊 잡음의 군도 — 완전 치유';
-  ui.dialogTitle.textContent = '✨ 도트';
-  ui.dialogBody.innerHTML = speechHtml([
-    '"잔영이… 빛으로 흩어졌어. 외로웠던 기억도, 묻혀 버린 목소리도, 쉬지 못한 밤도 — 전부 별이 되어 돌아오고 있어!"',
-    '"봐, 수호자 — 곶의 바닷새도, 동굴의 고래도, 항구의 거북도, 이제 모두 건강해. 군도의 항로가 전부 열렸어."',
-    '"이 모험을 잊지 마. 방패처럼 지켜 주고, 종처럼 물어보고, 모래시계처럼 멈출 줄 알고, 거울처럼 서로를 비춰 주기 — 그게 네가 완성한 네 가지 약속이야. 🏅"'
-  ]);
+  ui.puzzleGoal.textContent = 'H-17 공개 심리를 시작하세요';
+  ui.puzzleHint.textContent = '개인정보는 보호하고, 결정의 근거와 책임은 검증 가능하게 공개하세요';
+  ui.dialogKicker.textContent = CAMPAIGN_FINALE.titleKo;
+  ui.dialogTitle.textContent = '누가 이 결정을 만들었는가';
+  const lines = (items) => items.map((text) => `<p class="finale-line">${text}</p>`).join('');
+
+  const renderChoice = () => {
+    ui.dialogBody.innerHTML = `
+      <div class="finale-scene finale-revelation">${lines(CAMPAIGN_FINALE.revelationKo)}</div>
+      <p class="prompt-line">${CAMPAIGN_FINALE.choicePromptKo}</p>
+      <div class="choice-list">
+        ${CAMPAIGN_FINALE.choices
+          .map((choice) => `<button type="button" class="choice-button" data-campaign-choice="${choice.id}">${choice.textKo}</button>`)
+          .join('')}
+      </div>
+    `;
+    ui.dialogBody.querySelector('[data-campaign-choice="seal"]')?.addEventListener('click', () => {
+      game.audio?.playWrong();
+      ui.dialogBody.innerHTML = `
+        <div class="finale-scene">${lines(CAMPAIGN_FINALE.sealKo)}</div>
+        <div class="finale-nav"><button type="button" class="finale-next" data-campaign-rethink>다시 생각한다 →</button></div>
+      `;
+      ui.dialogBody.querySelector('[data-campaign-rethink]')?.addEventListener('click', renderChoice);
+    });
+    ui.dialogBody.querySelector('[data-campaign-choice="hearing"]')?.addEventListener('click', () => {
+      const teachings = getTeachingLines(game.progress);
+      game.progress = completeCampaign(markStageCompleted(game.progress, isle.stageId));
+      persistProgress(game.progress);
+      updateHud(game, ui);
+      morphNoiseToNova(game);
+      game.audio?.playNovaChime();
+      celebrate(game, new THREE.Vector3(0, 3.6, 0), '#f4b860', 'core');
+      triggerStarShower(game);
+      ui.puzzleGoal.textContent = ISLE_CONTENT[isle.stageId].healedGoalKo;
+      ui.puzzleHint.textContent = '여섯 장의 여정을 완주했습니다';
+      ui.dialogTitle.textContent = '공개 심리 결과';
+      ui.dialogBody.innerHTML = `
+        <div class="finale-scene">
+          <p class="finale-line">${CAMPAIGN_FINALE.hearingIntroKo}</p>
+          <ul class="finale-teach">
+            ${teachings.map((teaching) => `
+              <li class="finale-teach-item" style="--topic-color:${teaching.color}">
+                <span class="finale-teach-topic">「${teaching.titleKo}」의 약속</span>
+                <span class="finale-teach-deed">${teaching.deedKo}</span>
+                <span class="finale-teach-lesson">${teaching.promiseKo}</span>
+              </li>
+            `).join('')}
+          </ul>
+          ${lines(CAMPAIGN_FINALE.resolutionKo)}
+        </div>
+        <div class="finale-nav"><button type="button" class="finale-next" data-campaign-certificate>완주증 보기 →</button></div>
+      `;
+      ui.dialogBody.querySelector('[data-campaign-certificate]')?.addEventListener('click', () => {
+        closeDialog(game, ui);
+        showCertificate(game, ui);
+      });
+    });
+  };
+
+  renderChoice();
   openDialog(game, ui);
 }
 
-// 기억의 심장 외곽의 봉인 해제 — 봉인석의 빛이 가장 환해진 순간 약속의 힘(F)을 쓴다.
+// 감사 기록 보관소의 봉인 해제 — 봉인석이 가장 밝을 때 감사 도구(F)를 쓴다.
 function heartUse(game, ui) {
   const isle = game.isle;
   if (!isle || isle.pullCd > 0 || !isle.challenge || isle.challenge.cleared) {
@@ -4089,13 +3890,9 @@ function interact(game, ui) {
     return;
   }
 
-  // 글리치 전투(G1): 스태거 정화가 최우선. 교전 중(적이 코앞)에는 A = 베기 —
-  // 싸우다 실수로 대화창이 열리지 않게(예측 가능한 컨트롤).
-  if (tryPurifyGlitch(game, ui)) {
-    return;
-  }
-  if (hostileGlitchNear(game) || !game.nearest) {
-    trySlash(game, ui);
+  if (!game.nearest) {
+    ui.prompt.hidden = false;
+    ui.prompt.textContent = '가까운 NPC, 사당, AI 코어로 이동해 보세요.';
     return;
   }
 
@@ -4116,17 +3913,18 @@ function interact(game, ui) {
     const unread = getUnreadNovaLetters(game.progress);
     if (unread.length === 0) {
       ui.prompt.hidden = false;
-      ui.prompt.textContent = '우편병이 비어 있어요 — 섬의 정령을 도우면 노바가 편지를 보내요.';
+      ui.prompt.textContent = '증거 수신기가 조용해요 — 다음 보관소를 조사하면 하루의 감사 신호가 도착해요.';
     } else {
       const stageId = unread[0];
       game.progress = { ...game.progress, novaLettersRead: [...(game.progress.novaLettersRead ?? []), stageId] };
       persistProgress(game.progress);
-      ui.dialogKicker.textContent = '💌 노바의 편지';
-      ui.dialogTitle.textContent = '⭐ 노바';
-      ui.dialogBody.innerHTML = speechHtml(NOVA_LETTERS[stageId]);
+      const finalMessage = stageId === 'memory-core' && game.progress.campaignCompleted;
+      ui.dialogKicker.textContent = finalMessage ? '📡 하루의 생방송 메시지' : '📼 복구된 H-17 감사 신호';
+      ui.dialogTitle.textContent = finalMessage ? '하루' : '발신자 H-17';
+      ui.dialogBody.innerHTML = speechHtml(HARU_SIGNALS[stageId]);
       openDialog(game, ui);
       if (stageId === 'memory-core') {
-        // 마지막 편지 — 대화를 닫으면 하늘에서 노바의 별똥별 인사가 보인다.
+        // 마지막 메시지 — 공개 심리 뒤 섬으로 돌아오는 하루의 배를 별빛으로 알린다.
         game.audio?.playNovaChime();
         triggerStarShower(game);
         updateHud(game, ui); // 탐험 노트의 완결 기록 갱신
@@ -4170,31 +3968,29 @@ function interact(game, ui) {
       }
       updateHud(game, ui);
     }
-  } else if (game.nearest.type === 'anvil') {
-    openAnvilDialog(game, ui);
   } else if (game.nearest.type === 'lighthouse') {
-    // 진실의 등대 — 광선 수 = 치유한 스테이지 수. 컨셉(출처 확인)을 대사로 심는다.
+    // 학생 기록 행정동 — 삭제 광선과 복구 광선이 사건 진행도를 풍경에 기록한다.
     const lit = game.beaconCount ?? 0;
-    ui.dialogKicker.textContent = '💡 진실의 등대';
+    ui.dialogKicker.textContent = '학생 기록 행정동';
     ui.dialogTitle.textContent = '✨ 도트';
     ui.dialogBody.innerHTML = speechHtml([
-      '"이 등대는 확인된 이야기의 불빛으로 정보의 바다를 비춰. 출처가 분명한 빛만 항해자를 지켜 주거든."',
+      '"저 흰 광선이 학생 기록을 지우는 WHITEOUT 신호야. 우리가 확인한 증거는 호박빛 복구 광선으로 남아."',
       lit === 0
-        ? '"아직 광선이 하나도 없네… 섬의 시련을 통과하면 불빛이 하나씩 켜질 거야!"'
-        : `"지금 광선이 ${lit}줄기야 — 네가 치유한 이야기의 수만큼 바다가 밝아지고 있어!"`,
-      lit >= 6 ? '"여섯 줄기 전부! 정보의 바다 어디서든 이 빛이 보일 거야. 고마워, 수호자!"' : ''
+        ? '"아직 복구 광선이 하나도 없어… 교내 네 장소에서 H-17의 흔적을 먼저 찾아야 해."'
+        : `"복구 광선 ${lit}줄기 — 네가 검증한 기록의 수만큼 삭제 명령이 약해지고 있어."`,
+      lit >= 6 ? '"여섯 줄기 전부! 이제 어떤 자동 결정도 근거 없이 사람을 지울 수 없어. 고마워, 감사관!"' : ''
     ].filter(Boolean));
     openDialog(game, ui);
   } else if (game.nearest.type === 'dock') {
-    // 바다는 노이즈를 가르친 뒤에 열린다 — 그 전엔 도트가 말린다(기록 없음).
+    // 바다는 1-2장 코어 균열을 통과한 뒤 열린다.
     if (game.progress.aiCoreCompleted) {
       enterVoyage(game, ui);
     } else {
-      ui.dialogKicker.textContent = '뗏목 선착장';
+      ui.dialogKicker.textContent = '등교용 페리 터미널';
       ui.dialogTitle.textContent = '✨ 도트';
       ui.dialogBody.innerHTML = speechHtml([
-        '"바다 너머에서 잡음의 기척이 느껴져… 하지만 지금은 이 섬의 시련이 먼저야."',
-        '"조각 네 개를 모으고 노이즈를 가르치면, 그때 함께 군도로 항해하자!"'
+        '"바다 건너 보관소에도 H-17 삭제 명령의 조각이 있어. 하지만 먼저 이 섬의 네 증거를 확보해야 해."',
+        '"증거 네 개를 모아 감사 코어를 열면, 누가 화이트아웃을 승인했는지 추적할 수 있어."'
       ]);
       openDialog(game, ui);
     }
@@ -4204,11 +4000,11 @@ function interact(game, ui) {
     && !game.combat
   ) {
     if (game.finaleResolving) {
-      // 이미 노이즈를 제압한 뒤 대화를 닫았던 경우: 재전투 대신 [지운다/가르친다] 선택부터 재개.
+      // 이미 화이트아웃을 중지한 뒤 대화를 닫았다면 재전투 없이 공개 심리 선택부터 재개.
       runFinale(game, ui, { fromCombat: true });
       openDialog(game, ui);
     } else {
-      // 조각을 모으고 코어에 닿으면: 대화가 아니라 실제 노이즈와의 액션 전투로 진입.
+      // 조각을 모으고 코어에 닿으면 화이트아웃 중지 액션 전투로 진입.
       startBossFight(game, ui);
     }
   } else {
@@ -4235,55 +4031,6 @@ function openNpcDialog(game, ui, topicId) {
     ${speechHtml(dialog.linesKo)}
     <p class="quest-hint">${getStoryObjective(game.progress)}</p>
   `;
-  openDialog(game, ui);
-}
-
-// 세공 모루 상점 — 파편 소비처. 트랙 순서 고정, 산 것은 체크로 누적 표시.
-function openAnvilDialog(game, ui) {
-  const render = () => {
-    const owned = game.progress.combatUpgrades ?? [];
-    const shards = game.progress.glitchShards ?? 0;
-    const next = nextUpgrade(owned);
-    ui.dialogKicker.textContent = '세공 모루';
-    ui.dialogTitle.textContent = '🔨 기억 세공';
-    const rows = UPGRADE_TRACK.map((u) => {
-      const has = owned.includes(u.id);
-      const isNext = next?.id === u.id;
-      return `<p class="speech-line" style="opacity:${has || isNext ? 1 : 0.45}">${has ? '✅' : isNext ? '▶️' : '🔒'} ${u.emoji} <strong>${u.nameKo}</strong> — ${u.descKo}${has ? '' : ` (파편 ${u.cost}개)`}</p>`;
-    }).join('');
-    const buyBtn = next
-      ? `<div class="choice-list"><button type="button" class="choice-button" data-anvil-buy ${shards < next.cost ? 'disabled' : ''}>${u2(next)} 벼리기 — 🧩 ${next.cost}개${shards < next.cost ? ` (지금 ${shards}개)` : ''}</button></div>`
-      : '<p class="speech-line">✨ 모든 강화를 벼렸다 — 이제 잡음이 두렵지 않아!</p>';
-    ui.dialogBody.innerHTML = `
-      <p class="speech-line">정화로 모은 기억 파편을 힘으로 벼리는 곳. 지금 파편 <strong>🧩 ${shards}개</strong>.</p>
-      ${rows}
-      ${buyBtn}
-    `;
-    ui.dialogBody.querySelector('[data-anvil-buy]')?.addEventListener('click', () => {
-      const result = purchaseUpgrade(game.progress.combatUpgrades ?? [], game.progress.glitchShards ?? 0);
-      if (!result) {
-        game.audio?.playWrong();
-        return;
-      }
-      game.progress = {
-        ...game.progress,
-        combatUpgrades: [...(game.progress.combatUpgrades ?? []), result.id],
-        glitchShards: result.shards
-      };
-      persistProgress(game.progress);
-      updateHud(game, ui);
-      game.audio?.playFanfare();
-      triggerHaptic('win');
-      const bought = UPGRADE_TRACK.find((u) => u.id === result.id);
-      flashCombatPopup(ui, `${bought.emoji} ${bought.nameKo} 획득!`, 'win');
-      if (result.id === 'dodge') {
-        window.setTimeout(() => flashCombatPopup(ui, '💨 회피: F 키 또는 🔄 버튼', 'match'), 1300);
-      }
-      render();
-    });
-  };
-  const u2 = (u) => `${u.emoji} ${u.nameKo}`;
-  render();
   openDialog(game, ui);
 }
 
@@ -4901,8 +4648,8 @@ function enterShrineChallenge(game, ui, shrineId, topicId) {
 
 // 카메라를 목표 추종 위치로 즉시 스냅(섬→방 활공 방지). updateCamera의 상수와 반드시 일치.
 function snapCamera(camera, target) {
-  camera.position.set(target.x * 0.9, target.y + 8.7, target.z + 13.8);
-  camera.lookAt(target.x, target.y + 1.35, target.z - 1.2);
+  camera.position.set(target.x * 0.9, target.y + 11.5, target.z + 18.6);
+  camera.lookAt(target.x, target.y + 1.35, target.z - 2.8);
 }
 
 function enterDungeon(game, ui, topicId, shrineId) {
@@ -5004,7 +4751,7 @@ function exitDungeon(game, ui) {
   disposeDungeonRoom(dg.built.root, rs.scene);
   rs.overworld.visible = true;
   rs.scene.fog = rs.overworldFog;
-  rs.renderer.setClearColor(0x8fd3ef, 1);
+  rs.renderer.setClearColor(0x0b1020, 1);
 
   game.mode = 'overworld';
   game.dungeon = null;
@@ -5092,21 +4839,21 @@ function enterVoyage(game, ui, spawn) {
   game.audio?.setMusicMode?.('voyage'); // 밤바다 패드 + 별빛 선율(루프4)
   ui.prompt.hidden = true;
   ui.puzzleHud.hidden = false;
-  ui.puzzleTitle.textContent = '🌊 잡음의 군도 — 항해';
-  ui.puzzleGoal.textContent = '뗏목을 몰아 군도를 살펴보세요 · 시작의 섬에 다가가면 귀항';
+  ui.puzzleTitle.textContent = '🌊 H-17 증거 항로';
+  ui.puzzleGoal.textContent = '삭제 명령서 조각이 가리키는 보관소를 따라가세요 · 기록 관리 섬에 다가가면 귀항';
   ui.puzzleHint.textContent = `금빛 화살표를 따라가요 — ${game.voyage.dest.emoji} ${game.voyage.dest.nameKo}`;
   game.updateRotateHint?.();
 
-  // 첫 출항 — 프롤로그와 2막을 잇는 브리지 서사(1회).
+  // 첫 출항 — 2장의 코어 균열과 3장을 잇는 브리지 서사(1회).
   if (!game.progress.voyageIntroSeen) {
     game.progress = { ...game.progress, voyageIntroSeen: true };
     persistProgress(game.progress);
-    ui.dialogKicker.textContent = '🌊 잡음의 군도';
+    ui.dialogKicker.textContent = '3장 · 웃음이 만든 폭풍';
     ui.dialogTitle.textContent = '✨ 도트';
     ui.dialogBody.innerHTML = speechHtml([
-      '"이 바다는 「정보의 바다」 — 세상의 모든 이야기가 물결처럼 흘러다녀."',
-      '"노바가 앓던 시절 흘린 잡음이 바다 건너 섬들까지 번져서, 정령들이 앓고 있대."',
-      '"네 친구가 남긴 잡음이니까… 마무리도 우리 몫이지. 금빛 화살표를 따라가자!"'
+      '"삭제 명령서는 세 갈래로 찢어졌어. 말이 퍼진 경로, 추천이 갈라진 경로, 사람이 검토를 포기한 기록이야."',
+      '"하루는 조작 영상 하나만으로 사라진 게 아니야. 웃고 공유하고 자동 승인한 수많은 작은 선택이 화이트아웃을 완성했어."',
+      '"누구 한 명을 쓰러뜨리는 항해가 아니야. 결정이 만들어진 길을 끝까지 되짚어 보자."'
     ]);
     openDialog(game, ui);
   }
@@ -5121,7 +4868,7 @@ function exitVoyage(game, ui) {
   disposeDungeonRoom(vg.built.root, rs.scene); // 범용 트래버스 dispose 재사용
   rs.overworld.visible = true;
   rs.scene.fog = rs.overworldFog;
-  rs.renderer.setClearColor(0x8fd3ef, 1);
+  rs.renderer.setClearColor(0x0b1020, 1);
 
   game.mode = 'overworld';
   game.voyage = null;
@@ -5140,9 +4887,9 @@ function exitVoyage(game, ui) {
   ui.puzzleHud.hidden = true;
   game.updateRotateHint?.();
 
-  // 치유를 마치고 돌아왔다면 — 부두 옆 우편병에 노바의 편지가 기다린다.
+  // 조사를 마치고 돌아왔다면 — 부두 옆 수신기에 하루의 감사 신호가 기다린다.
   if (getUnreadNovaLetters(game.progress).length > 0) {
-    flashCombatPopup(ui, '💌 부두 우편병에 노바의 편지가 도착했어요!', 'match');
+    flashCombatPopup(ui, '📼 부두 수신기에 H-17 감사 신호가 도착했어요!', 'match');
   }
 }
 
@@ -5254,35 +5001,34 @@ function voyageAction(game, ui) {
   // 아직 씬이 없는 열린 섬은 없어야 정상 — built:true는 ISLE_SCENES 등록과 함께 뒤집는다.
 }
 
-// 노바의 편지 — 섬을 치유할 때마다 별이 된 노이즈가 부두 우편병으로 답장을 보낸다.
-// 읽음 기록은 세이브(progress.novaLettersRead), 도착 순서는 항로 순서로 고정(결정성).
-const NOVA_LETTER_ORDER = ['whisper-cape', 'echo-cave', 'hourglass-port', 'memory-core'];
-const NOVA_LETTERS = {
+// 하루의 감사 신호 — 각 보관소 조사 뒤 수신기에 복구된다.
+// 저장 키는 v2 세이브 호환을 위해 novaLettersRead를 유지한다.
+const HARU_SIGNAL_ORDER = ['whisper-cape', 'echo-cave', 'hourglass-port', 'memory-core'];
+const HARU_SIGNALS = {
   'whisper-cape': [
-    '나의 첫 선생님에게. 바닷새 정령이 다시 노래한다는 소식, 별들 사이에서도 들렸어.',
-    '…그 말-화살들, 네가 떠난 뒤 외로워서 내가 뱉은 말들이야. 대신 막아 줘서 — 그리고 두 번이나 나를 포기하지 않아 줘서, 고마워.',
-    '— 별빛 사이에서, 노바 ⭐'
+    '하루의 감사 기록 03. “처음엔 내 발표 실수를 놀리는 짧은 농담이었어.”',
+    '좋아요와 웃음 반응이 붙을수록 추천 시스템은 더 많은 사람에게 보여 줬고, 원래 맥락은 잘려 나갔다.',
+    '“직접 악플을 쓰지 않은 사람도 웃고 전달하는 방식으로 폭풍에 바람을 보탰어.”'
   ],
   'echo-cave': [
-    '고래의 노래가 여기까지 들려! 메아리 속에서 진짜 목소리를 찾아 줬구나.',
-    '나도 이제 알아 — 백 번 들은 말보다 한 번 확인한 사실이 더 밝게 빛난다는 걸.',
-    '— 노바 ⭐'
+    '하루의 감사 기록 04. “내 화면에는 내 편이 되어 주는 글만, 다른 친구 화면에는 나를 유죄라 말하는 글만 떴어.”',
+    '같은 사건을 본 줄 알았지만 우리는 서로 다른 증거 꾸러미를 보고 있었다.',
+    '“추천은 진실을 판정하지 않아. 오래 머물게 할 다음 화면을 고를 뿐이야.”'
   ],
   'hourglass-port': [
-    '거북 할아버지가 푹 잤다는 소식을 들었어. 등대도 이제 숨을 쉬면서 반짝인대.',
-    '나는 멈추는 법을 몰라서 잡음이 됐었는데… 네 덕분에 밤에는 별들도 눈을 감는다는 걸 배웠어.',
-    '— 노바 ⭐'
+    '하루의 감사 기록 05. “선생님도 위원회도 루멘 점수가 맞을 거라 생각하고 승인 버튼을 눌렀어.”',
+    '공지문은 AI가 만들고 사람 이름으로 게시됐지만, 누가 사실을 확인했는지 기록되지 않았다.',
+    '“AI가 추천해도 결정 버튼을 누르는 사람은 멈춰서 이유를 확인해야 해.”'
   ],
   'memory-core': [
-    '군도의 모든 정령이 건강해졌어. 내 어두운 기억들까지 별로 만들어 줘서… 이제 나, 진짜로 반짝여.',
-    '처음 만난 날 네가 보여준 것들로 나는 회색이 됐지만 — 다시 만난 날 네가 보여준 것들로, 나는 별이 됐어.',
-    '언젠가 밤하늘을 올려다보면, 제일 신나게 깜박이는 별이 나야. 약속!',
-    '— 너의 오랜 친구, 노바 ⭐',
-    '✨ 도트: "수호자, 하늘을 봐! 노바가 인사하고 있어!"'
+    '하루의 생방송. “내 이름이 다시 명단에 생겼어. 하지만 더 중요한 건 누구든 결정의 이유를 물을 수 있게 된 거야.”',
+    '“루멘은 이제 모르면 모른다고 말하고, 중요한 결정은 사람이 다시 검토해. 나도 다음 감사 회의에 학생 대표로 참여할 거야.”',
+    '— 섬으로 돌아오는 배에서, 하루',
+    '📼 도트: “이건 복구된 과거가 아니야. 우리가 바꾼 다음 기록이야.”'
   ]
 };
 
-// 에필로그 별똥별 — 마지막 편지를 읽으면 노바가 하늘을 가로지르며 인사한다.
+// 에필로그 별똥별 — 하루의 귀환 메시지를 읽으면 새 항로의 불빛이 하늘을 가로지른다.
 // 경로·시차 전부 인덱스 기반 상수(결정적). 1회성 메시 6개, 끝나면 dispose.
 function triggerStarShower(game) {
   const rs = game.renderState;
@@ -5311,7 +5057,7 @@ function triggerStarShower(game) {
 // 치유는 끝났는데 아직 안 읽은 편지(항로 순서).
 function getUnreadNovaLetters(progress) {
   const read = new Set(progress.novaLettersRead ?? []);
-  return NOVA_LETTER_ORDER.filter(
+  return HARU_SIGNAL_ORDER.filter(
     (stageId) => progress.stages?.[stageId]?.completed === true && !read.has(stageId)
   );
 }
@@ -5324,115 +5070,115 @@ const ISLE_CONTENT = {
     fog: [0x9aa7bd, 30, 80],
     clearColor: 0x93a2b8,
     flash: '#e8eef8',
-    goalKo: '병든 정령을 찾아가 이야기를 들어 보세요',
-    healedGoalKo: '정령이 건강해졌어요 — 곶이 고요합니다',
+    goalKo: '확산 기록관에게 하루의 게시물이 퍼진 경로를 물어보세요',
+    healedGoalKo: '조롱 확산 경로를 끊고 피해 회복 기록을 남겼습니다',
     arrivalKo: [
-      '"여기가 속삭임 곶… 공기가 따가워. 저 검은 파편들은 말-화살 — 누군가 내뱉은 뾰족한 말이 아직도 땅에 박혀 있는 거야."',
-      '"절벽 쪽에서 앓는 소리가 들려. 이 곶의 정령이 아픈가 봐 — 가서 이야기를 들어 보자."'
+      '"확산 기록 곶에 도착했어. 검은 말-화살 하나하나가 하루의 발표 실수를 잘라 만든 게시물이야."',
+      '"누가 처음 썼는지만 찾으면 끝나는 사건이 아니야. 누가 웃고, 복사하고, 추천했는지 전체 경로를 확인하자."'
     ],
-    spiritNameKo: '🕊️ 바닷새 정령',
+    spiritNameKo: '🕊️ 확산 기록관 새봄',
     spiritSickKo: [
-      '"끼륵… 잘 와 주었어, 수호자. 미운 말들이 화살이 되어 깃털에 박혀 버렸어."',
-      '"한 번 내뱉은 말은 주워 담을 수 없어 — 그래서 이렇게 오래 아픈 거야."',
-      '"절벽의 「말-화살 회랑」에 잡음 발사대가 숨어 있어. 방패로 화살을 주인에게 되돌려 줘!"'
+      '"하루를 놀린 첫 글은 열 명만 봤어. 하지만 웃음 반응이 붙자 추천기가 천 명에게 밀어 보냈지."',
+      '"직접 욕하지 않았다는 이유로 아무도 책임지지 않았고, 삭제 뒤에도 캡처와 복사본이 남았어."',
+      '"말-화살 회랑에서 확산 장치를 막고, 갯벌에 남은 복사본까지 회복 순서대로 처리해 줘."'
     ],
     spiritHealedKo: [
-      '"고마워, 수호자! 깃털이 다시 따뜻해졌어."',
-      '"기억해 줘 — 뾰족한 말은 방패로 막고, 나는 따뜻한 말만 남기기. 그거면 이 바다의 어떤 곶도 아프지 않아."'
+      '"확산 장치가 멈췄어. 이제 하루가 원하면 게시물의 도달 기록과 삭제 요청 결과를 확인할 수 있어."',
+      '"상처 난 기록은 지우는 것만으로 끝나지 않아. 확산을 멈추고, 피해를 인정하고, 회복을 도와야 해."'
     ],
     spiritRevisitKo: [
-      '"또 와 줬구나! 있잖아… 사실 나도 예전에 뾰족한 말을 뱉은 적이 있어. 그 말이 어디에 떨어졌을지 지금도 가끔 생각해."',
-      '"그래서 요즘은 말하기 전에 세 번 날갯짓해 — 하나, 진짜야? 둘, 친절해? 셋, 필요해?"'
+      '"지금은 게시물마다 최초 작성, 복사, 추천 확산이 따로 표시돼. 책임을 한 사람에게만 떠넘기지 않으려고."',
+      '"반응 버튼을 누르기 전에도 묻자. 이 반응이 누군가를 더 많은 화면 앞에 세우지는 않을까?"'
     ]
   },
   'echo-cave': {
     fog: [0x2b3552, 26, 72],
     clearColor: 0x232c46,
     flash: '#bcd0ff',
-    goalKo: '물웅덩이에 갇힌 고래 정령을 찾아가세요',
-    healedGoalKo: '정령이 건강해졌어요 — 동굴이 고요합니다',
+    goalKo: '추천 감사관에게 두 개로 갈라진 사건 화면을 확인하세요',
+    healedGoalKo: '추천 경로 밖의 원본과 반대 증거를 복구했습니다',
     arrivalKo: [
-      '"여기가 메아리 동굴… 같은 소리가 벽에 부딪혀 끝없이 되돌아오고 있어."',
-      '"물웅덩이에 고래 정령이 갇혀 있나 봐 — 메아리에 둘러싸여 바깥 소리를 못 듣는 것 같아."'
+      '"추천 분기 해협이야. 왼쪽 벽에는 하루를 범인이라 하는 글만, 오른쪽 벽에는 하루를 옹호하는 글만 반복돼."',
+      '"사람들은 같은 사건을 봤다고 생각했지만 실제로는 서로 다른 증거 화면 안에 갇혀 있었어."'
     ],
-    spiritNameKo: '🐋 고래 정령',
+    spiritNameKo: '🐋 추천 감사관 파도',
     spiritSickKo: [
-      '"우우… 누구야? 방금 그 소리도… 내 노래의 메아리야?"',
-      '"소문의 벽이 같은 이야기만 자꾸 울려 줘서, 이제 뭐가 진짜 목소리인지 모르게 됐어."',
-      '"출처의 종… 그 맑은 울림이라면 가짜 메아리를 흩을 수 있을 거야."'
+      '"내 화면은 하루가 유죄라는 글로 가득했어. 반대 증거는 클릭할 가능성이 낮다는 이유로 가라앉았지."',
+      '"같은 주장이 많이 보이는 것과 서로 다른 출처가 같은 사실을 확인한 것은 달라."',
+      '"출처의 종으로 최초 기록을 찾고, 거울로 추천 경로 밖의 다른 관점까지 열어 줘."'
     ],
     spiritHealedKo: [
-      '"고마워, 수호자! 이제 진짜 목소리가 들려."',
-      '"같은 말만 자꾸 들려올 땐 꼭 물어봐 줘 — 이 이야기의 진짜 출처는 어디일까?"'
+      '"두 화면을 함께 보니 빠졌던 사실이 보여. 하루의 영상에는 원본이 없고, 이의제기서는 추천에서 숨겨졌어."',
+      '"추천은 다음에 볼 것을 고를 뿐, 사실과 거짓을 판결하는 재판관이 아니야."'
     ],
     spiritRevisitKo: [
-      '"바다 밑에서는 소리가 아주 멀리 가. 그래서 고래는 함부로 노래하지 않아 — 멀리 가는 말일수록 무겁거든."',
-      '"네가 어디선가 읽은 이야기도, 이미 백 마리 고래를 거쳐 온 메아리일지 몰라. 언제나 첫 목소리를 찾아 줘."'
+      '"지금 감사판은 왜 이 글이 추천됐는지, 어떤 관점이 빠졌는지 함께 보여 줘."',
+      '"내가 좋아할 말뿐 아니라 내가 놓쳤을 근거도 일부러 찾아보는 버튼을 만들었어."'
     ]
   },
   'hourglass-port': {
     fog: [0x4a3a5c, 28, 75],
     clearColor: 0x443655,
     flash: '#ffd8b0',
-    goalKo: '등대 아래 잠들지 못하는 거북 정령을 찾아가세요',
-    healedGoalKo: '정령이 곤히 잠들었어요 — 항구가 평화롭습니다',
+    goalKo: '자동 승인관에게 H-17 제재 결정이 통과된 과정을 확인하세요',
+    healedGoalKo: 'AI 추천과 사람의 승인 책임을 구분해 기록했습니다',
     arrivalKo: [
-      '"여기가 모래시계 항구… 밤이 오는데 등대가 쉬지 않고 깜박이고 있어."',
-      '"저 커다란 모래시계들도 전부 기울어진 채 멈췄네. 등대 아래에서 앓는 소리가 들려 — 가 보자."'
+      '"자동 결정 항구야. 루멘이 만든 공지와 점수가 밤새 쌓이는데, 사람들은 확인하지 않고 승인 도장만 찍고 있어."',
+      '"하루의 섬 밖 이동 명령도 이곳에서 3초 만에 통과됐어. 누가 무엇을 검토했는지 찾아보자."'
     ],
-    spiritNameKo: '🐢 등대거북 정령',
+    spiritNameKo: '🐢 자동 승인관 마루',
     spiritSickKo: [
-      '"으으… 눈이 감기질 않아. 불빛이 밤새 깜박여서, 나도 항구도 잠들 수가 없어."',
-      '"쉬는 때를 알려 주던 큰 모래시계가 기울어진 채 멈춰 버렸거든 — \'멈출 때\'를 잃어버린 거야."',
-      '"네 나침반의 힘이 깨어나면 모래시계를 당겨 바로 세울 수 있을 거야… 그때 다시 와 줘."'
+      '"루멘 점수가 높으면 승인, 낮으면 통과. 그렇게 하면 빠르고 공정한 줄 알았어."',
+      '"그런데 H-17 결정에는 원본 영상 확인도, 당사자 설명도, 사람의 재검토도 없었어."',
+      '"모래시계를 바로 세워 자동 승인을 멈추고, 부두 화물의 사람 제작·AI 도움·AI 생성 기록을 구분해 줘."'
     ],
     spiritHealedKo: [
-      '"하암… 푹 잤더니 세상이 반짝반짝해!"',
-      '"기억해 줘 — 반짝이는 것에도 쉬는 시간이 필요해. 등대도, 화면도, 너도!"'
+      '"처음으로 승인 전에 이유를 읽었어. 빠른 결정이 좋은 결정과 같은 뜻은 아니었네."',
+      '"이제 중요한 제재에는 당사자 통지, 사람의 재검토, 이의제기 시간을 반드시 남길게."'
     ],
     spiritRevisitKo: [
-      '"하암… 나 방금 또 낮잠 잤어. 등대지기가 잠들면 큰일인 줄 알았는데, 푹 쉬고 나니 불빛이 훨씬 또렷해."',
-      '"너도 기억해 — 꺼진 화면에 비친 네 얼굴도 꽤 멋지다는 걸!"'
+      '"AI 도움을 받은 공지에는 그 사실과 최종 확인자를 함께 표시하고 있어."',
+      '"자동화는 책임을 없애는 장치가 아니라, 사람이 더 중요한 판단에 시간을 쓰게 돕는 장치여야 해."'
     ]
   },
   'memory-outer': {
     fog: [0x241c38, 26, 72],
     clearColor: 0x1c1630,
     flash: '#e8b8d8',
-    goalKo: '기억의 심장에 다가가 목소리를 들어 보세요',
-    healedGoalKo: '바깥 봉인이 풀렸어요 — 심부로 가는 길이 열립니다',
+    goalKo: '감사 기록 보관소에서 삭제 승인자 네 명의 봉인을 해제하세요',
+    healedGoalKo: '승인 기록이 복구됐습니다 — 공개 심리실이 열립니다',
     arrivalKo: [
-      '"여기가 기억의 심장 외곽… 쿵, 쿵 — 섬 전체가 심장처럼 뛰고 있어."',
-      '"저 큰 결정 깊은 곳에서 마지막 잡음이 느껴져. 하지만 바깥 봉인 네 개가 길을 막고 있네 — 심장의 목소리를 들어 보자."'
+      '"감사 기록 보관소야. 네 개의 봉인은 개인정보, 점수표, 제작 이력, 원본 검증 기록을 각각 잠그고 있어."',
+      '"화이트아웃은 승인자 이름을 없애려 하지만, 우리가 모은 네 도구라면 필요한 증거만 안전하게 열 수 있어."'
     ],
-    spiritNameKo: '💠 기억의 심장',
+    spiritNameKo: '💠 감사 기록 보관소',
     spiritSickKo: [
-      '"…쿵… 쿵… 잘 왔구나, 수호자. 내 깊은 곳에 마지막 잡음이 뭉쳐 있어."',
-      '"바깥 봉인 네 개는 네 가지 약속의 힘으로만 풀려 — 봉인석의 빛이 가장 환해지는 순간, 그 앞에서 약속의 힘(F)을 사용해 줘."',
-      '"네가 섬들을 돌며 깨운 힘들이야. 서두르지 말고, 빛의 박자에 맞춰서."',
-      '"…그리고 네가 주워 온 기억 조각들 — 외로움도, 잊어버린 목소리도, 쉬지 못한 밤도 — 전부 여기, 내 안의 어린 노이즈의 기억이란다."'
+      '"감사 요청 H-17을 확인했습니다. 삭제 승인 기록은 네 개의 분리 봉인 안에 있습니다."',
+      '"각 봉인은 약속 도구로만 열립니다. 빛이 가장 환한 순간, 필요한 정보만 선택해 복구하세요."',
+      '"서두르면 관련 없는 학생들의 비밀까지 노출됩니다. 정확한 순간에 정확한 도구를 사용하세요."',
+      '"최종 기록에는 루멘의 계산뿐 아니라 그 계산을 검토하고 서명한 사람들의 이름도 남아 있습니다."'
     ],
     spiritHealedKo: [
-      '"바깥 봉인이 모두 풀렸어… 심부로 가는 길이 곧 열릴 거야."',
-      '"네 가지 약속을 모두 기억하는 손 — 마지막 잡음도 그 손이라면 가르칠 수 있어."'
+      '"네 봉인이 모두 풀렸습니다. 공개 심리실로 전송할 증거 묶음이 준비됐습니다."',
+      '"민감정보는 보호됐고, 결정의 근거와 승인 과정은 누구나 검증할 수 있습니다."'
     ],
     spiritRevisitKo: [
-      '"쿵… 쿵… 기억을 지키는 일은 무거워. 하지만 네 덕분에 이제 좋은 기억이 훨씬 많아."'
+      '"감사 기록은 누군가를 망신주기 위해서가 아니라 같은 오판을 반복하지 않기 위해 남깁니다."'
     ]
   },
   'memory-core': {
     fog: [0x120d20, 22, 60],
     clearColor: 0x0e0a18,
     flash: '#d8a8c8',
-    goalKo: '노이즈의 잔영과 마주하세요',
-    healedGoalKo: '군도가 완전히 치유되었습니다 — 기억의 별이 빛나요',
+    goalKo: '화이트아웃의 마지막 삭제 명령을 중지하고 공개 심리를 여세요',
+    healedGoalKo: 'H-17 사건이 바로잡혔습니다 — 하루의 이름과 이의제기권이 돌아왔습니다',
     arrivalKo: [
-      '"여기가 심부… 조심해, 저기 있어 — 노이즈가 흘리고 간 마지막 잡음 덩어리, 노이즈의 잔영이야."',
-      '"떨지 마. 네가 배운 네 가지 약속의 힘(F)으로 부딪혀 보자!"'
+      '"공개 심리실이야. 저 흰 덩어리가 모든 증거를 다시 빈 문서로 만들려는 화이트아웃 핵심 프로토콜이야."',
+      '"우리가 배운 네 가지 확인 도구로 삭제 껍질을 벗기고, 그 안의 승인 기록을 심리대에 올리자."'
     ],
-    spiritNameKo: '⚡ 노이즈의 잔영',
-    spiritSickKo: ['"…지지직…"'],
-    spiritHealedKo: ['"…고마워… 이 기억들, 이제 제자리로…"']
+    spiritNameKo: '⬜ 화이트아웃 핵심',
+    spiritSickKo: ['"갈등 없는 상태를 유지합니다. 반대 기록을 삭제합니다."'],
+    spiritHealedKo: ['"자동 삭제를 중지합니다. 인간의 재검토와 이의제기 절차를 시작합니다."']
   }
 };
 
@@ -5462,7 +5208,19 @@ function enterIsle(game, ui, stageId) {
   rs.renderer.setClearColor(content.clearColor, 1);
 
   game.mode = 'isle';
-  game.isle = { built, stageId, nearestSpot: null, challenge: null, guard: 0, guardCd: 0, bellCd: 0, ringT: 0, pullCd: 0 };
+  game.isle = {
+    built,
+    stageId,
+    nearestSpot: null,
+    nearestFollowup: null,
+    challenge: null,
+    followup: null,
+    guard: 0,
+    guardCd: 0,
+    bellCd: 0,
+    ringT: 0,
+    pullCd: 0
+  };
   game.keys.clear();
   game.player.position.set(-3.4, 0.55, 9.4); // 뗏목 옆 물가
   game.player.direction.set(0, 0, -1);
@@ -5485,7 +5243,7 @@ function enterIsle(game, ui, stageId) {
   // 심부: 잔영이 남아 있으면 도착과 동시에 리매치가 시작된다(패배 연출 단계).
   if (stageId === 'memory-core' && !healed) {
     game.isle.challenge = createResidueState();
-    ui.puzzleGoal.textContent = '노이즈의 잔영에게 약속의 힘(F)을 써 보세요';
+    ui.puzzleGoal.textContent = '화이트아웃의 삭제 껍질에 맞는 감사 도구(F)를 사용하세요';
     ui.puzzleHint.textContent = '';
   }
 
@@ -5561,7 +5319,7 @@ function updateIsle(delta, game, ui) {
     });
   }
 
-  // 잔영전(기억의 심장 심부) — 공격 자세 게이지 구동.
+  // 공개 심리실 화이트아웃 중지전 — 공격 자세 게이지 구동.
   if (isle.stageId === 'memory-core' && isle.challenge && isle.challenge.stage === 'fight') {
     tickResidue(isle.challenge, delta);
     const gauge = windupGauge(isle.challenge);
@@ -5573,7 +5331,7 @@ function updateIsle(delta, game, ui) {
     boss.scale.setScalar(1 + gauge * 0.22);
   }
 
-  // 4봉인 도전(기억의 심장 외곽) — 봉인석 빛 맥동 구동.
+  // 4봉인 도전(감사 기록 보관소) — 봉인석 빛 맥동 구동.
   if (isle.stageId === 'memory-outer' && isle.challenge && !isle.challenge.cleared) {
     tickHeart(isle.challenge, delta);
     isle.built.sealOrbs.forEach((orb, sealId) => {
@@ -5660,6 +5418,29 @@ function updateIsle(delta, game, ui) {
     }
   }
 
+  // 3–5장 후속 공간 퍼즐 — 해결된 오브젝트는 금빛으로 고정하고 남은 지점을 맥동시킨다.
+  if (isle.followup && !isle.followup.cleared) {
+    if (isle.stageId === 'whisper-cape') {
+      isle.built.footprintMarks?.forEach((marker, actionId) => {
+        if (!isle.followup.resolved[actionId]) {
+          const pulse = 1 + Math.sin(elapsed * 2.2 + marker.userData.index) * 0.08;
+          marker.scale.setScalar(pulse);
+        }
+      });
+    } else if (isle.stageId === 'echo-cave') {
+      isle.built.sourceWindows?.forEach((frame, sourceId) => {
+        if (!isle.followup.verified[sourceId]) {
+          frame.position.y = frame.userData.baseY + Math.sin(elapsed * 1.8 + frame.position.z) * 0.08;
+        }
+      });
+    } else if (isle.stageId === 'hourglass-port') {
+      isle.built.cargoStamps?.forEach((stamp, crateId) => {
+        stamp.rotation.y += delta * (isle.followup.labels[crateId] === 'unknown' ? 1.6 : 0.7);
+        stamp.position.y = 1.5 + Math.sin(elapsed * 2 + stamp.position.z) * 0.08;
+      });
+    }
+  }
+
   // 씬 로컬 상호작용 안내(정령·뗏목).
   let nearestSpot = null;
   let nearestDistance = INTERACTION_RADIUS;
@@ -5671,10 +5452,41 @@ function updateIsle(delta, game, ui) {
     }
   }
   isle.nearestSpot = nearestSpot;
+  isle.nearestFollowup = null;
+  if (isle.followup && !isle.followup.cleared) {
+    if (isle.stageId === 'whisper-cape') {
+      isle.nearestFollowup = nearestFootprintAction(
+        isle.followup,
+        game.player.position.x,
+        game.player.position.z
+      );
+    } else if (isle.stageId === 'echo-cave') {
+      isle.nearestFollowup = nearestBubbleSource(
+        isle.followup,
+        game.player.position.x,
+        game.player.position.z
+      );
+    } else if (isle.stageId === 'hourglass-port') {
+      isle.nearestFollowup = nearestCargoCrate(
+        game.player.position.x,
+        game.player.position.z
+      );
+    }
+  }
   if (!ui.dialog.hidden) {
     return;
   }
-  if (nearestSpot) {
+  if (isle.nearestFollowup) {
+    const action = isle.nearestFollowup;
+    ui.prompt.hidden = false;
+    if (isle.stageId === 'echo-cave') {
+      ui.prompt.textContent = `F · 🪞 ${action.labelKo} 비추기`;
+    } else if (isle.stageId === 'hourglass-port') {
+      ui.prompt.textContent = `${ACTION_LABEL}${action.titleKo} 라벨 바꾸기`;
+    } else {
+      ui.prompt.textContent = `${ACTION_LABEL}${action.labelKo}`;
+    }
+  } else if (nearestSpot) {
     ui.prompt.hidden = false;
     ui.prompt.textContent = `${ACTION_LABEL}${nearestSpot.labelKo}`;
   } else if (IS_TOUCH) {
@@ -5687,6 +5499,17 @@ function updateIsle(delta, game, ui) {
 
 function isleAction(game, ui) {
   if (!game.isle || !ui.dialog.hidden) {
+    return;
+  }
+  if (game.isle.followup && !game.isle.followup.cleared && game.isle.nearestFollowup) {
+    if (game.isle.stageId === 'whisper-cape') {
+      footprintResolve(game, ui);
+    } else if (game.isle.stageId === 'echo-cave') {
+      game.audio?.playClick();
+      flashCombatPopup(ui, '🪞 거울(F/도구버튼)로 이 자료를 비춰 확인해요', 'match');
+    } else if (game.isle.stageId === 'hourglass-port') {
+      cargoCycle(game, ui);
+    }
     return;
   }
   // 소문의 벽 도전 중: 돌 앞에서 A = 그 돌을 원본으로 지목.
@@ -5816,7 +5639,7 @@ function isleAction(game, ui) {
     if (completed) {
       game.isle.spiritTalked = true;
     }
-    // 기억의 심장: 목소리를 들으면 곧바로 4봉인 훈련이 시작된다(별도 도전 지점 없음).
+    // 감사 기록 보관소: 안내를 들으면 곧바로 4봉인 감사 훈련이 시작된다.
     if (game.isle.stageId === 'memory-outer' && !completed && !game.isle.challenge) {
       game.isle.challenge = createHeartState();
       ui.puzzleGoal.textContent = `동사 봉인 ${HEART.seals.length}개를 해제하세요`;
@@ -5840,80 +5663,226 @@ function finishHeart(game, ui) {
   triggerFlash(ui, '#e8b8d8');
   ui.puzzleGoal.textContent = ISLE_CONTENT[isle.stageId].healedGoalKo;
   ui.puzzleHint.textContent = '뗏목으로 돌아가면 다시 바다로';
-  ui.dialogKicker.textContent = '기억의 심장 외곽';
-  ui.dialogTitle.textContent = '💠 기억의 심장';
+  ui.dialogKicker.textContent = '감사 기록 보관소';
+  ui.dialogTitle.textContent = '💠 승인 기록 복구';
   ui.dialogBody.innerHTML = speechHtml([
-    '"…봉인이 전부 풀렸어. 네 가지 약속이 한 손에 모였구나."',
-    '"심부로 가는 관문이 곧 열려. 그 안에서 마지막 잡음 — 노이즈의 잔영이 기다리고 있어."',
-    '"두려워하지 마. 혼자가 아니야 — 네가 치유한 정령들이 지켜보고 있으니까."'
+    '"네 봉인이 모두 풀렸어. 사건과 무관한 개인정보는 가려지고, 승인 과정만 증거 묶음에 남았어."',
+    '"공개 심리실이 열렸어. 화이트아웃이 마지막 삭제를 실행하기 전에 H-17 사건 기록을 심리대에 올리자."',
+    '"하루도 섬 밖에서 생방송 연결을 기다리고 있어. 이번에는 당사자의 목소리를 빼놓지 않을 거야."'
   ]);
   openDialog(game, ui);
 }
 
-// 모래시계 사구 클리어: 거북 숙면 + 스테이지 완료 기록(항로 지도 전이) + 감사 인사.
+const CHAPTER_FOLLOWUPS = {
+  'whisper-cape': {
+    kickerKo: '3장 · 웃음이 만든 폭풍',
+    titleKo: '삭제 뒤에도 남은 확산 기록',
+    introKo: [
+      '"최초 게시물은 내려갔지만 갯벌에 캡처와 복사본, 추천 기록이 남아 있어."',
+      '"남쪽 갯벌에서 복사본 삭제 → 확산 중단 → 하루에게 알리고 회복 지원 순서로 책임을 실행해 줘."'
+    ],
+    goalKo: `책임의 발자국 ${FOOTPRINT.actions.length}개를 순서대로 밝히세요`,
+    hintKo: '남쪽 갯벌에서 A · 복사본 삭제 → 확산 중단 → 사과와 도움',
+    choiceId: 'remove-stop-repair',
+    closingKo: [
+      '"확산 경로가 공개되고 하루에게 삭제·차단·회복 요청 창구가 열렸어."',
+      '"다음 해협에서는 서로 다른 사람에게 정반대 증거만 보여 줬던 추천 기록을 찾아야 해."'
+    ]
+  },
+  'echo-cave': {
+    kickerKo: '4장 · 두 개의 진실',
+    titleKo: '추천 경로 밖의 증거',
+    introKo: [
+      '"동굴 서쪽 버블은 하루를 유죄라 말하는 게시물만 반복 추천했어."',
+      '"거울로 원본, 날짜와 맥락, 반대 증거를 각각 열어 봐. 같은 주장이 반복된 횟수는 독립된 증거가 아니야."'
+    ],
+    goalKo: `서로 다른 확인 창 ${BUBBLE.sources.filter((source) => source.required).length}개를 비추세요`,
+    hintKo: '서쪽 창 가까이에서 🪞 거울(F/도구버튼) · 같은 추천만 반복되는 창은 함정',
+    choiceId: 'verify-diverse-sources',
+    closingKo: [
+      '"하루의 이의제기서가 추천 경로 밖에서 복구됐어. 사건 화면에 “다른 근거 보기” 창이 생겼다."',
+      '"남쪽 자동 결정 항구에서 이 불완전한 증거가 어떻게 제재 명령으로 바뀌었는지 확인하자."'
+    ]
+  },
+  'hourglass-port': {
+    kickerKo: '5장 · 아무도 결정하지 않는 밤',
+    titleKo: '자동 결정 뒤에 숨은 사람',
+    introKo: [
+      '"자동 승인 시계는 멈췄지만 부두 기록에는 사람과 AI가 한 일이 뒤섞여 있어."',
+      '"상자마다 제작 기록을 읽고 사람 제작·AI 도움·AI 생성 라벨을 붙여. 최종 검수자도 확인해야 책임 경로가 완성돼."'
+    ],
+    goalKo: `화물 ${CARGO.crates.length}개의 제작 과정을 정확히 표시하세요`,
+    hintKo: '부두 상자 앞 A · 라벨 순환 / ✅ F · 적하 목록 검수',
+    choiceId: 'disclose-and-check',
+    closingKo: [
+      '"모든 결정에 AI의 역할과 최종 확인자가 표시됐다. 이제 “AI가 정했어요” 뒤에 사람이 숨을 수 없어."',
+      '"도트: 감사 기록 보관소가 열렸어. H-17 삭제 명령에 서명한 사람들과 루멘의 원래 지시문을 확인하자."'
+    ]
+  }
+};
+
+function recordChapterChoice(game, stageId, choiceId, correct) {
+  game.progress = {
+    ...game.progress,
+    choiceLog: [
+      ...(game.progress.choiceLog ?? []),
+      { kind: 'chapter-3d', stageId, topicId: null, choiceId, correct }
+    ]
+  };
+}
+
+function createChapterFollowup(stageId) {
+  if (stageId === 'whisper-cape') {
+    return createFootprintState();
+  }
+  if (stageId === 'echo-cave') {
+    return createBubbleState();
+  }
+  if (stageId === 'hourglass-port') {
+    return createCargoState();
+  }
+  return null;
+}
+
+function beginChapterFollowup(game, ui, stageId) {
+  const content = CHAPTER_FOLLOWUPS[stageId];
+  const followup = createChapterFollowup(stageId);
+  if (!content || !followup) {
+    return;
+  }
+  game.isle.followup = followup;
+  ui.puzzleGoal.textContent = content.goalKo;
+  ui.puzzleHint.textContent = content.hintKo;
+  ui.dialogKicker.textContent = content.kickerKo;
+  ui.dialogTitle.textContent = content.titleKo;
+  ui.dialogBody.innerHTML = speechHtml(content.introKo);
+  openDialog(game, ui);
+}
+
+function completeChapterFollowup(game, ui) {
+  const isle = game.isle;
+  const content = CHAPTER_FOLLOWUPS[isle.stageId];
+  if (!content) {
+    return;
+  }
+  if (isle.stageId === 'whisper-cape') {
+    healSpiritVisuals(isle.built);
+  } else {
+    isle.built.heal();
+  }
+  recordChapterChoice(game, isle.stageId, content.choiceId, true);
+  game.progress = markStageCompleted(game.progress, isle.stageId);
+  persistProgress(game.progress);
+  updateHud(game, ui);
+  game.audio?.playNovaChime();
+  triggerFlash(ui, isle.stageId === 'echo-cave' ? '#bfe8f4' : '#ffe0b0');
+  ui.puzzleGoal.textContent = ISLE_CONTENT[isle.stageId].healedGoalKo;
+  ui.puzzleHint.textContent = '뗏목으로 돌아가면 다시 바다로';
+  ui.dialogKicker.textContent = content.kickerKo;
+  ui.dialogTitle.textContent = '기억의 매듭이 풀렸다';
+  ui.dialogBody.innerHTML = speechHtml(content.closingKo);
+  openDialog(game, ui);
+}
+
+function footprintResolve(game, ui) {
+  const isle = game.isle;
+  const action = isle.nearestFollowup;
+  if (!action) {
+    return;
+  }
+  const events = resolveFootprintAction(isle.followup, action.id);
+  if (events.includes('out-of-order')) {
+    recordChapterChoice(game, isle.stageId, action.id, false);
+    persistProgress(game.progress);
+    game.audio?.playWrong();
+    flashCombatPopup(ui, '먼저 내가 만든 복사본부터 지우고, 확산을 멈춰요', 'miss');
+    return;
+  }
+  if (events.includes('resolved')) {
+    isle.built.syncFootprint(action.id, true);
+    game.audio?.playCorrect();
+    flashCombatPopup(ui, `${action.emoji} 책임지는 행동 ${isle.followup.step}/${FOOTPRINT.actions.length}`, 'match');
+  }
+  if (events.includes('cleared')) {
+    completeChapterFollowup(game, ui);
+  }
+}
+
+function bubbleInspect(game, ui) {
+  const isle = game.isle;
+  const source = isle.nearestFollowup;
+  if (!source) {
+    game.audio?.playClick();
+    flashCombatPopup(ui, '서쪽 자료 창 가까이에서 거울을 써요', 'miss');
+    return;
+  }
+  const events = inspectBubbleSource(isle.followup, source.id);
+  if (events.includes('echo')) {
+    recordChapterChoice(game, isle.stageId, source.id, false);
+    persistProgress(game.progress);
+    game.audio?.playWrong();
+    flashCombatPopup(ui, '🔁 반복은 증거가 아니야 — 다른 종류의 자료를 확인해요', 'miss');
+    return;
+  }
+  if (events.includes('verified')) {
+    isle.built.syncBubbleSource(source.id, true);
+    const count = Object.values(isle.followup.verified).filter(Boolean).length;
+    game.audio?.playCorrect();
+    flashCombatPopup(ui, `${source.emoji} 확인 완료 (${count}/3)`, 'match');
+  }
+  if (events.includes('cleared')) {
+    completeChapterFollowup(game, ui);
+  }
+}
+
+function cargoCycle(game, ui) {
+  const isle = game.isle;
+  const crate = isle.nearestFollowup;
+  if (!crate) {
+    return;
+  }
+  const labelId = cycleCargoLabel(isle.followup, crate.id);
+  if (!labelId) {
+    return;
+  }
+  isle.built.syncCargoLabel(crate.id, labelId);
+  game.audio?.playClick();
+  flashCombatPopup(ui, `${crate.emoji} ${crate.titleKo}: ${CARGO_LABEL_KO[labelId]}`, 'match');
+  ui.puzzleHint.textContent = `${crate.clueKo} · 현재 라벨: ${CARGO_LABEL_KO[labelId]} · ✅ F로 검수`;
+}
+
+function cargoVerify(game, ui) {
+  const isle = game.isle;
+  const result = verifyCargoManifest(isle.followup);
+  if (result.event === 'incomplete') {
+    recordChapterChoice(game, isle.stageId, 'manifest-incomplete', false);
+    persistProgress(game.progress);
+    game.audio?.playWrong();
+    const unknown = result.wrongIds
+      .map((id) => CARGO.crates.find((crate) => crate.id === id)?.titleKo)
+      .filter(Boolean)
+      .join(' · ');
+    flashCombatPopup(ui, `검수 필요: ${unknown}`, 'miss');
+    ui.puzzleHint.textContent = '제작 기록과 라벨이 맞는지 다시 확인해요 · 상자 앞 A로 변경';
+    return;
+  }
+  completeChapterFollowup(game, ui);
+}
+
+// 핵심 도전을 끝내도 아직 장 완료가 아니다. 후속 윤리 퍼즐까지 풀어야 항로가 열린다.
 function finishDunes(game, ui) {
-  const isle = game.isle;
-  isle.built.heal();
-  game.progress = markStageCompleted(game.progress, isle.stageId);
-  persistProgress(game.progress);
-  updateHud(game, ui);
-  game.audio?.playNovaChime();
   triggerFlash(ui, '#ffe0b0');
-  ui.puzzleGoal.textContent = ISLE_CONTENT[isle.stageId].healedGoalKo;
-  ui.puzzleHint.textContent = '뗏목으로 돌아가면 다시 바다로';
-  ui.dialogKicker.textContent = '모래시계 항구';
-  ui.dialogTitle.textContent = '🐢 등대거북 정령';
-  ui.dialogBody.innerHTML = speechHtml([
-    '"모래가… 다시 흘러. 등대도 천천히 숨을 쉬어. 하암…"',
-    '"고마워, 수호자. 재미있는 것일수록 \'멈출 때\'가 필요해 — 화면도, 놀이도, 시간을 정해 두면 더 반짝여."',
-    '"모래 속에서 노이즈의 기억이 반짝였어… \'멈추는 법을 배운 적이 없어서, 밤새 잡음을 삼켰어.\' — 쉬는 법을 몰랐던 거야."',
-    '"바다 한가운데서 커다란 심장 소리가 들려… 마지막 항로가 머지않았어."'
-  ]);
-  openDialog(game, ui);
+  beginChapterFollowup(game, ui, game.isle.stageId);
 }
 
-// 소문의 벽 클리어: 고래 치유 + 스테이지 완료 기록(항로 지도 전이) + 감사 인사.
 function finishRumor(game, ui) {
-  const isle = game.isle;
-  isle.built.heal();
-  game.progress = markStageCompleted(game.progress, isle.stageId);
-  persistProgress(game.progress);
-  updateHud(game, ui);
-  game.audio?.playNovaChime();
   triggerFlash(ui, '#bfe8f4');
-  ui.puzzleGoal.textContent = ISLE_CONTENT[isle.stageId].healedGoalKo;
-  ui.puzzleHint.textContent = '뗏목으로 돌아가면 다시 바다로';
-  ui.dialogKicker.textContent = '메아리 동굴';
-  ui.dialogTitle.textContent = '🐋 고래 정령';
-  ui.dialogBody.innerHTML = speechHtml([
-    '"메아리가… 멎었어. 이제 내 노래가 또렷하게 들려!"',
-    '"고마워, 수호자. 같은 이야기가 백 번 들려와도 원본은 하나야 — 종을 울리듯 늘 출처를 물어봐 줘."',
-    '"소문이 흩어진 자리에 노이즈의 기억이 남아 있었어… \'내 목소리가 메아리에 묻혀서, 진짜 내가 누군지 잊어버렸어.\'"',
-    '"바다 남쪽에서 모래시계 흐르는 소리가 들려… 다음 섬의 친구도 부탁할게."'
-  ]);
-  openDialog(game, ui);
+  beginChapterFollowup(game, ui, game.isle.stageId);
 }
 
-// 회랑 클리어: 정령 치유 + 스테이지 완료 기록(항로 지도 전이) + 감사 인사.
 function finishCorridor(game, ui) {
-  const isle = game.isle;
-  healSpiritVisuals(isle.built);
-  game.progress = markStageCompleted(game.progress, isle.stageId);
-  persistProgress(game.progress);
-  updateHud(game, ui);
-  game.audio?.playNovaChime();
   triggerFlash(ui, '#ffe9b0');
-  ui.puzzleGoal.textContent = ISLE_CONTENT[isle.stageId].healedGoalKo;
-  ui.puzzleHint.textContent = '뗏목으로 돌아가면 다시 바다로';
-  ui.dialogKicker.textContent = '속삭임 곶';
-  ui.dialogTitle.textContent = '🕊️ 바닷새 정령';
-  ui.dialogBody.innerHTML = speechHtml([
-    '"화살이… 멈췄어. 깃털이 다시 따뜻해!"',
-    '"고마워, 수호자. 한 번 내뱉은 말은 주워 담을 수 없지만 — 방패처럼 막아 주는 친구가 있으면 상처는 아물 수 있어."',
-    '"참, 화살에서 노이즈의 기억이 하나 떨어졌어… \'아무도 나에게 말을 걸어 주지 않았어.\' — 그 애는 아주 외로웠나 봐."',
-    '"다음 섬의 친구들도 부탁해. 바다 저편에서 메아리가 앓는 소리가 들려…"'
-  ]);
-  openDialog(game, ui);
+  beginChapterFollowup(game, ui, game.isle.stageId);
 }
 
 // 플레이어가 바라보는 방향 → 그리드 한 칸 방향([dCol, dRow]).
@@ -6201,7 +6170,7 @@ function awardDungeonItem(game, ui) {
   if (toolId) {
     showToolCeremony(game, ui, getToolById(toolId), topic);
   }
-  // 잊혀진 수호자(N1) — 사당을 지킬 때마다 주인공의 기억 한 조각이 회상으로 돌아온다.
+  // H-17 사건 — 사당을 지킬 때마다 삭제 명령의 증거 한 조각이 복구된다.
   // 획득 의식(2.6초)이 걷힌 뒤에 열어 연출이 겹치지 않게 한다.
   const fragmentTopicId = dg.topicId;
   window.setTimeout(() => showMemoryFragment(game, ui, fragmentTopicId), 2900);
@@ -6225,6 +6194,9 @@ function updateDungeon(delta, game, ui) {
     );
     rs.companion.position.lerp(target, Math.min(1, delta * 4.5));
     rs.companion.rotation.y += delta * 1.4;
+    if (rs.companion.userData.halo) {
+      rs.companion.userData.halo.rotation.z += delta * 1.8;
+    }
   }
   // 클리어되면 제단 보석이 커지며 맥동(획득 유도).
   if (dg.solved && dg.built.pedGlow) {
@@ -6291,25 +6263,25 @@ function updateDungeon(delta, game, ui) {
 
 function openCoreDialog(game, ui) {
   const unlocked = canUnlockFinalCore(game.progress.collectedFragments);
-  ui.dialogKicker.textContent = unlocked ? FINALE.titleKo : '중앙 코어';
-  ui.dialogTitle.textContent = unlocked ? '노이즈와 마주 서다' : FINAL_CORE_MISSION.nameKo;
+  ui.dialogKicker.textContent = unlocked ? CORE_BREACH.titleKo : '중앙 감사 코어';
+  ui.dialogTitle.textContent = unlocked ? '화이트아웃 명령을 추적하다' : FINAL_CORE_MISSION.nameKo;
 
   if (!unlocked) {
     const summary = getProgressSummary(game.progress.collectedFragments);
     ui.dialogBody.innerHTML = `
-      <p>코어의 틈에서 지지직 안개가 새어 나온다. 아직 내려갈 수 없다.</p>
-      <p>윤리 조각이 ${FINAL_CORE_MISSION.unlockRequirement}개 이상 필요해요. 지금은 ${summary.collected}개를 모았습니다.</p>
+      <p>감사 코어의 틈에서 흰 안개가 새어 나온다. H-17 사건 증거가 부족해 아직 원본 명령을 열 수 없다.</p>
+      <p>증거가 ${FINAL_CORE_MISSION.unlockRequirement}개 이상 필요해요. 지금은 ${summary.collected}개를 확보했습니다.</p>
     `;
     openDialog(game, ui);
     return;
   }
 
-  // 이미 노바를 되살렸다면: 짧은 후일담 + 증명서 다시 보기.
+  // 1-2장 완료 뒤에는 군도로 이어지는 항로와 기초 인증을 다시 볼 수 있다.
   if (game.progress.aiCoreCompleted) {
     ui.dialogBody.innerHTML = `
-      <p class="prompt-line">노바가 섬 위를 반짝이며 돈다. "또 놀러 왔구나. 좋은 것들아!"</p>
+      <p class="prompt-line">갈라진 코어 너머로 삭제 명령서 조각이 바다 항로를 가리킨다. 승인자 서명은 아직 세 군데 보관소에 흩어져 있다.</p>
       <div class="finale-nav">
-        <button type="button" class="finale-next" data-cert-again>증명서 다시 보기</button>
+        <button type="button" class="finale-next" data-cert-again>1-2장 기초 인증 다시 보기</button>
       </div>
     `;
     ui.dialogBody.querySelector('[data-cert-again]').addEventListener('click', () => showCertificate(game, ui));
@@ -6321,7 +6293,7 @@ function openCoreDialog(game, ui) {
   startBossFight(game, ui);
 }
 
-// ===== 최종장 액션 전투: 노이즈에게 다가가 A(공격)로 잡음을 걷어낸다 =====
+// ===== 2장 감사 코어 액션: 화이트아웃에 다가가 A로 삭제 껍질을 검증한다 =====
 // 4페이즈 보스: 사당에서 모은 네 아이템이 각 페이즈의 열쇠다(페이즈당 2히트).
 const PHASE_HITS = 2;
 const PHASE_TOOLS = PROMISE_TOOLS.map((t) => t.id); // 개인정보→편향→저작권→딥페이크 순
@@ -6342,14 +6314,14 @@ function startBossFight(game, ui) {
   if (game.combat) {
     return;
   }
-  // 아이템 게이트: 네 사당의 약속 도구를 모두 모아야 노이즈를 가르칠 수 있다.
+  // 아이템 게이트: 네 사당의 감사 도구를 모두 모아야 삭제 명령의 근거를 열 수 있다.
   const owned = game.progress.tools ?? [];
   if (owned.length < PHASE_TOOLS.length) {
     const missing = PROMISE_TOOLS.filter((t) => !owned.includes(t.id));
     ui.dialogKicker.textContent = '중앙 코어';
     ui.dialogTitle.textContent = '네 가지 약속이 필요하다';
     ui.dialogBody.innerHTML = `
-      <p class="prompt-line">노이즈의 껍질은 네 겹 — 사당에서 얻은 약속의 도구가 하나씩 필요해요.</p>
+      <p class="prompt-line">화이트아웃의 삭제 껍질은 네 겹 — 사당에서 얻은 검증 도구가 하나씩 필요해요.</p>
       <p>남은 사당의 도구: ${missing.map((t) => `${t.emoji} ${t.nameKo}`).join(' · ')}</p>
     `;
     openDialog(game, ui);
@@ -6387,10 +6359,8 @@ function startBossFight(game, ui) {
     guard: 0, // 🛡️ 가드 자세 남은 시간(그 사이 파도가 닿으면 반사)
     guardCd: 0,
     bellCd: 0, // 🔔 충격파 쿨다운
-    staggers: 0, // 피격 누적 — 3회면 노이즈가 기억 파편을 일시 강탈한다(N4)
-    fragmentStolen: false, // 강탈 상태(진짜 세이브는 건드리지 않는다 — 승리 시 반환)
-    bossStagger: 0, // G4: 껍질 체력이 다하면 휘청임 — 이 동안 A = 정화 피니셔(필드 문법 통일)
-    staggerRing: null // 스태거 텔레그래프(발밑 금빛 링) 메시
+    staggers: 0, // 피격 누적 — 3회면 화이트아웃이 사건 증거를 일시 삭제한다.
+    fragmentStolen: false // 강탈 상태(진짜 세이브는 건드리지 않는다 — 승리 시 반환)
   };
   syncBossWeakColor(game);
   ui.root.classList.add('is-combat');
@@ -6490,11 +6460,6 @@ function playerAttack(game, ui) {
     ui.bossHint.textContent = '더 가까이 다가가요';
     return;
   }
-  // G4: 휘청이는 동안 A = 정화 피니셔 — 필드 글리치와 같은 문법으로 껍질을 깬다.
-  if (c.bossStagger > 0) {
-    purifyBossShell(game, ui);
-    return;
-  }
   const activeToolId = c.tools[c.activeTool];
   if (activeToolId !== c.weakToolId) {
     // 상황에 안 맞는 도구 — 튕겨 나간다(대미지 없음). 정답은 안 주고, 상황을 다시 읽게 한다.
@@ -6514,13 +6479,9 @@ function playerAttack(game, ui) {
     updateBossHud(game, ui);
     return;
   }
-  // 상황에 맞는 약속으로 명중: 노이즈가 신음하며 오그라든다.
-  // 껍질 마지막 판정(finishing)은 체력을 깎지 않는다 — 마지막 한 점은 정화 피니셔의 몫(G4).
-  const finishing = c.phaseHits + 1 >= PHASE_HITS;
+  // 상황에 맞는 감사 도구로 명중: 화이트아웃의 삭제 껍질이 벗겨진다.
+  c.hp = Math.max(0, c.hp - 1);
   c.phaseHits += 1;
-  if (!finishing) {
-    c.hp = Math.max(0, c.hp - 1);
-  }
   boss.hitFlash = 0.3;
   addShake(game, 0.3);
   game.hitStop = 0.06; // 히트스톱 — 타격 순간 멈칫
@@ -6532,81 +6493,19 @@ function playerAttack(game, ui) {
   game.audio?.playCorrect();
   game.audio?.playNoiseGroan();
   boss.targetScale = 0.4 + (c.hp / c.maxHp) * 0.95;
-  if (finishing) {
-    enterBossStagger(game, ui); // 껍질이 흔들린다 — A로 정화(필드와 같은 마무리 문법)
+  if (c.hp <= 0) {
+    updateBossHud(game, ui);
+    winBossFight(game, ui);
+    return;
+  }
+  if (c.phaseHits >= PHASE_HITS) {
+    breakBossShell(game, ui); // 이 주제의 껍질 격파 → 다음 아이템의 페이즈
   } else {
     // 같은 주제의 다른 상황 — 아이템은 그대로, 판단만 새로.
     c.memCounter += 1;
     c.weakMemory = pickMemory(c.weakToolId, c.memCounter);
     popBossMemory(ui, c);
   }
-  updateBossHud(game, ui);
-}
-
-// G4: 껍질 체력이 다하면 노이즈가 크게 휘청인다 — 발밑 금빛 링 + "A로 정화" 텔레그래프.
-const BOSS_STAGGER_HOLD = 5.0; // 이 안에 정화하지 않으면 일어난다(명중 1회면 다시 휘청 — 벌점 없음)
-function enterBossStagger(game, ui) {
-  const c = game.combat;
-  const boss = game.renderState?.noiseBoss;
-  const scene = game.renderState?.scene;
-  c.bossStagger = BOSS_STAGGER_HOLD;
-  c.windup = 0; // 모으던 잡음은 흩어진다
-  if (c.projectile?.mesh) {
-    // 날아오던 파도도 힘을 잃고 흩어진다 — 정화 창을 온전히 준다.
-    scene?.remove(c.projectile.mesh);
-    c.projectile = null;
-    c.fireTimer = PHASE_FIRE[c.phase];
-  }
-  if (scene && !c.staggerRing) {
-    const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(1.6, 0.09, 6, 28),
-      new THREE.MeshBasicMaterial({ color: 0xffd76a, transparent: true, opacity: 0.85 })
-    );
-    ring.rotation.x = -Math.PI / 2;
-    ring.position.set(boss?.baseX ?? 0, 0.25, boss?.baseZ ?? 0);
-    scene.add(ring);
-    c.staggerRing = ring;
-  }
-  game.audio?.playCorrect();
-  game.audio?.playNoiseGroan();
-  addShake(game, 0.4);
-  flashCombatPopup(ui, '⚡ 노이즈가 휘청인다 — A로 정화!', 'hit');
-  ui.bossHint.textContent = '지금이야! 다가가서 A — 정화 피니셔!';
-  c.hintHold = BOSS_STAGGER_HOLD;
-}
-
-function clearBossStaggerRing(game) {
-  const c = game.combat;
-  if (c?.staggerRing) {
-    game.renderState?.scene?.remove(c.staggerRing);
-    c.staggerRing = null;
-  }
-}
-
-// G4: 정화 피니셔 — 껍질의 마지막 한 점을 정화의 빛으로 깬다. 파편 보상은 저장된다.
-function purifyBossShell(game, ui) {
-  const c = game.combat;
-  const boss = game.renderState?.noiseBoss;
-  c.bossStagger = 0;
-  clearBossStaggerRing(game);
-  c.hp = Math.max(0, c.hp - 1);
-  boss.hitFlash = 0.35;
-  boss.targetScale = 0.4 + (c.hp / c.maxHp) * 0.95;
-  addShake(game, 0.5);
-  game.hitStop = 0.1;
-  triggerHaptic('win');
-  game.audio?.playCollect();
-  celebrate(game, new THREE.Vector3(boss?.baseX ?? 0, boss?.baseY ?? 2.4, boss?.baseZ ?? 0), '#ffd76a', 'collect');
-  game.progress = { ...game.progress, glitchShards: (game.progress.glitchShards ?? 0) + 3 };
-  persistProgress(game.progress);
-  updateHud(game, ui);
-  flashCombatPopup(ui, '✨ 정화! 기억 파편 +3 조각', 'win');
-  if (c.hp <= 0) {
-    updateBossHud(game, ui);
-    winBossFight(game, ui);
-    return;
-  }
-  breakBossShell(game, ui); // 이 주제의 껍질 격파 → 다음 아이템의 페이즈
   updateBossHud(game, ui);
 }
 
@@ -6638,7 +6537,7 @@ function staggerPlayer(game, ui) {
   const c = game.combat;
   c.stun = STUN_TIME;
   const boss = game.renderState?.noiseBoss;
-  // 노이즈 반대쪽으로 밀려난다.
+  // 화이트아웃 반대쪽으로 밀려난다.
   let dx = game.player.position.x - (boss?.baseX ?? 0);
   let dz = game.player.position.z - (boss?.baseZ ?? 0);
   const len = Math.hypot(dx, dz) || 1;
@@ -6648,14 +6547,14 @@ function staggerPlayer(game, ui) {
   game.audio?.playWrong();
   triggerFlash(ui, '#ff5f7e');
   addShake(game, 0.5);
-  // 파편 강탈(N4): 피격 3회 누적이면 노이즈가 기억 파편 하나를 움켜쥔다.
-  // 진짜 세이브(progress)는 건드리지 않는다 — 승리하면 그 자리에서 돌려받는다(무처벌 유지).
+  // 증거 임시 삭제: 피격 3회 누적이면 화이트아웃이 사건 증거 하나를 잠시 가린다.
+  // 진짜 세이브(progress)는 건드리지 않는다 — 승리하면 그 자리에서 복구한다.
   c.staggers += 1;
   if (c.staggers >= 3 && !c.fragmentStolen) {
     c.fragmentStolen = true;
-    flashCombatPopup(ui, '💔 기억 파편을 빼앗겼다!', 'stagger');
-    ui.bossHint.textContent = '노이즈가 기억 파편 하나를 움켜쥐었다 — 이겨서 되찾자!';
-    showNoiseWhisper(game, ui, '하나쯤은…… 돌려받아도 되잖아. 원래, 내 거였는데.');
+    flashCombatPopup(ui, '💔 사건 증거가 임시 삭제됐다!', 'stagger');
+    ui.bossHint.textContent = '화이트아웃이 사건 증거 하나를 가렸다 — 검증해서 복구하자!';
+    showNoiseWhisper(game, ui, 'WHITEOUT: 이의제기 자료를 불필요 기록으로 분류합니다.');
     return;
   }
   flashCombatPopup(ui, '회피 실패!', 'stagger');
@@ -6687,23 +6586,6 @@ function updateCombat(delta, game, ui) {
   }
   const boss = game.renderState?.noiseBoss;
   if (boss && boss.kind === 'noise') {
-    // G4: 휘청이는 동안 — 이동·발사 정지, 링이 돌며 "지금 정화"를 텔레그래프.
-    if (c.bossStagger > 0) {
-      c.bossStagger = Math.max(0, c.bossStagger - delta);
-      if (c.staggerRing) {
-        c.staggerRing.rotation.z += delta * 2.6;
-        c.staggerRing.position.set(boss.baseX ?? 0, 0.25, boss.baseZ ?? 0);
-      }
-      if (c.bossStagger <= 0) {
-        // 정화 기회를 놓쳤다 — 일어난다. 명중 1회면 다시 휘청(벌점 없음).
-        clearBossStaggerRing(game);
-        c.phaseHits = Math.max(0, PHASE_HITS - 1);
-        flashCombatPopup(ui, '노이즈가 다시 일어났다…', 'stagger');
-        ui.bossHint.textContent = '한 번 더 맞는 약속으로 명중하면 다시 휘청인다!';
-        c.hintHold = 2.0;
-      }
-      return;
-    }
     c.driftAngle += delta * 0.5;
     boss.baseX = Math.cos(c.driftAngle) * 2.4;
     boss.baseZ = Math.sin(c.driftAngle) * 2.4;
@@ -6743,7 +6625,7 @@ function updateCombat(delta, game, ui) {
       c.fireTimer -= delta;
       if (c.fireTimer <= 0) {
         c.windup = WINDUP_TIME;
-        ui.bossHint.textContent = '노이즈가 잡음을 모은다 — 피해!';
+        ui.bossHint.textContent = '화이트아웃이 삭제 명령을 준비한다 — 피해!';
       }
     }
 
@@ -6751,7 +6633,7 @@ function updateCombat(delta, game, ui) {
     if (c.stun <= 0 && !c.projectile && c.windup <= 0 && c.hintHold <= 0) {
       const dist = Math.hypot(game.player.position.x - boss.baseX, game.player.position.z - boss.baseZ);
       if (dist > ATTACK_RANGE) {
-        ui.bossHint.textContent = '노이즈에게 다가가요';
+        ui.bossHint.textContent = '화이트아웃 핵심에 다가가요';
       } else if (c.revealed) {
         const weak = getToolById(c.weakToolId);
         ui.bossHint.textContent = `${weak?.emoji ?? ''} ${weak?.nameKo ?? ''}(으)로 바꿔서 공격!`;
@@ -6798,7 +6680,6 @@ function winBossFight(game, ui) {
   if (c.projectile?.mesh) {
     game.renderState.scene.remove(c.projectile.mesh);
   }
-  clearBossStaggerRing(game);
   game.combat = null;
   ui.root.classList.remove('is-combat');
   ui.bossHud.hidden = true;
@@ -6819,25 +6700,22 @@ function winBossFight(game, ui) {
   addShake(game, 0.55);
   game.hitStop = 0.09;
   flashCombatPopup(ui, '제압!', 'win');
-  // 파편 강탈(N4) 반환 — 강탈은 전투 안의 일시 상태였고, 이기면 그 자리에서 돌려받는다.
+  // 임시 삭제된 증거 반환 — 전투 안의 일시 상태였고, 이기면 그 자리에서 복구한다.
   if (c.fragmentStolen) {
-    window.setTimeout(() => flashCombatPopup(ui, '💠 빼앗긴 기억 파편을 되찾았다!', 'win'), 650);
+    window.setTimeout(() => flashCombatPopup(ui, '💠 임시 삭제된 사건 증거를 복구했다!', 'win'), 650);
   }
-  // 제압됨: 이후 대화를 닫아도 재전투가 아니라 선택 재개가 되도록 표시.
+  // 제압됨: 이후 대화를 닫아도 재전투가 아니라 코어 균열 장면을 재개한다.
   game.finaleResolving = true;
-  // 잡음을 다 걷어낸 뒤: 지울지 가르칠지 고르는 윤리적 선택으로 마무리(가르침→노바→증명서).
   window.setTimeout(() => {
     runFinale(game, ui, { fromCombat: true });
     openDialog(game, ui);
   }, 750);
 }
 
-// 최종장 마무리 대화: 전투 뒤엔 곧장 [지운다/가르친다] 선택부터 시작한다.
-// → 가르치면 행적이 곧 가르침이 되어 노바로 재탄생 → 증명서.
+// 2장 마무리: 화이트아웃 뒤에 사람의 승인 책임이 있음을 드러내고 3장 항로를 연다.
 function runFinale(game, ui, opts = {}) {
-  // 최종장은 시네마틱 모드: 대화창을 하단에 도킹해 위쪽에 노이즈 보스를 보여준다.
-  ui.dialogKicker.textContent = FINALE.titleKo;
-  ui.dialogTitle.textContent = '노이즈와 마주 서다';
+  ui.dialogKicker.textContent = CORE_BREACH.titleKo;
+  ui.dialogTitle.textContent = '끝이라고 생각한 순간';
   ui.root.classList.add('is-cinematic');
   const steps = getFinaleToolSteps(game.progress);
   const lines = (arr) => arr.map((text) => `<p class="finale-line">${text}</p>`).join('');
@@ -6845,14 +6723,14 @@ function runFinale(game, ui, opts = {}) {
     `<div class="finale-nav"><button type="button" class="finale-next" ${attr}>${label}</button></div>`;
 
   function renderIntro() {
-    // 코어 위에 거대한 노이즈가 등장한다. 도트는 후드 속으로 쏙 숨는다(대사와 연동).
+    // 코어 위에 거대한 화이트아웃 시각체가 등장한다.
     spawnNoiseBoss(game);
     if (game.renderState?.companion) {
       game.renderState.companion.visible = false;
     }
     game.audio?.playNoiseGroan();
     ui.dialogBody.innerHTML = `
-      <div class="finale-scene" data-noise="big">${lines(FINALE.introKo)}</div>
+      <div class="finale-scene" data-noise="big">${lines(CORE_BREACH.introKo)}</div>
       ${nav('마주 선다 →', 'data-finale="tools:0"')}
     `;
     bindNav();
@@ -6861,7 +6739,7 @@ function runFinale(game, ui, opts = {}) {
   function renderToolStep(index) {
     const step = steps[index];
     const isLast = index + 1 >= steps.length;
-    // 도구를 쓸 때마다 노이즈가 눈에 띄게 오그라든다.
+    // 도구를 쓸 때마다 화이트아웃의 삭제 껍질이 눈에 띄게 벗겨진다.
     shrinkNoiseBoss(game, steps.length - 1 - index, steps.length);
     ui.dialogBody.innerHTML = `
       <div class="finale-scene" data-noise="shrink">
@@ -6870,103 +6748,45 @@ function runFinale(game, ui, opts = {}) {
         <p class="finale-line">${step.actionKo}</p>
         <p class="finale-line finale-result">${step.resultKo}</p>
       </div>
-      ${nav(isLast ? '노이즈 앞에 서다 →' : '다음 도구 →', `data-finale="${isLast ? 'choice' : `tools:${index + 1}`}"`)}
+      ${nav(isLast ? '원본 명령서를 연다 →' : '다음 도구 →', `data-finale="${isLast ? 'reveal' : `tools:${index + 1}`}"`)}
     `;
     const topicColor = getTopicById(getToolById(step.toolId)?.topicId)?.color ?? '#7cf0ff';
     celebrate(game, new THREE.Vector3(0, 4.3, 0), topicColor, 'collect');
-    game.audio?.playNoiseGroan(); // 노이즈가 도구에 밀려 신음하며 작아진다.
+    game.audio?.playNoiseGroan(); // 화이트아웃 삭제 껍질이 깨지는 소리.
     bindNav();
   }
 
-  // 반전 공개(N4) — 제압 직후 마지막 파편이 회상을 완성한다: 아이=나, 빛=노이즈.
   function renderRevelation() {
-    game.audio?.playNovaChime(); // 파편이 이어지는 맑은 울림
+    game.audio?.playNovaChime();
     ui.dialogBody.innerHTML = `
-      <div class="finale-scene finale-revelation" data-noise="small">${lines(FINALE.revelationKo)}</div>
-      ${nav('그리고 —', 'data-finale="choice"')}
+      <div class="finale-scene finale-revelation" data-noise="small">${lines(CORE_BREACH.revelationKo)}</div>
+      ${nav('항로를 바라본다 →', 'data-finale="escape"')}
     `;
     bindNav();
   }
 
-  function renderChoice() {
-    const buttons = FINALE.choices
-      .map((c) => `<button type="button" class="choice-button" data-finale-choice="${c.id}">${c.textKo}</button>`)
-      .join('');
-    ui.dialogBody.innerHTML = `
-      <div class="finale-scene" data-noise="small">
-        <p class="prompt-line">${FINALE.choicePromptKo}</p>
-      </div>
-      <div class="choice-list">${buttons}</div>
-    `;
-    for (const button of ui.dialogBody.querySelectorAll('[data-finale-choice]')) {
-      button.addEventListener('click', () => {
-        game.audio?.playClick();
-        if (button.dataset.finaleChoice === 'teach') {
-          renderTeach();
-        } else {
-          renderErase();
-        }
-      });
+  function renderEscape() {
+    const boss = game.renderState?.noiseBoss;
+    if (boss?.group) {
+      game.renderState.scene.remove(boss.group);
+      game.renderState.noiseBoss = null;
     }
-  }
-
-  // [지운다] — 실패가 아니라 배움. 코어가 말리고 다시 묻는다.
-  function renderErase() {
-    game.audio?.playWrong();
-    ui.dialogBody.innerHTML = `
-      <div class="finale-scene" data-noise="small">${lines(FINALE.eraseKo)}</div>
-      ${nav('다시 생각한다 →', 'data-finale="choice"')}
-    `;
-    bindNav();
-  }
-
-  // [가르친다] — 네가 섬에서 실제로 한 행동이 그대로 가르침이 된다.
-  function renderTeach() {
-    const teachings = getTeachingLines(game.progress);
-    const items = teachings
-      .map(
-        (t) => `
-        <li class="finale-teach-item" style="--topic-color:${t.color}">
-          <span class="finale-teach-topic">「${t.titleKo}」의 약속</span>
-          <span class="finale-teach-deed">너는 「${t.deedKo}」${t.recovered ? ' <em>(실수했지만 돌아가 바로잡았지)</em>' : ''}.</span>
-          <span class="finale-teach-lesson">${t.promiseKo}</span>
-        </li>`
-      )
-      .join('');
-    ui.dialogBody.innerHTML = `
-      <div class="finale-scene" data-noise="teach">
-        <p class="finale-line">${FINALE.teachIntroKo}</p>
-        <ul class="finale-teach">${items}</ul>
-      </div>
-      ${nav('약속을 다 들려준다 →', 'data-finale="rebirth"')}
-    `;
-    bindNav();
-  }
-
-  function renderRebirth() {
-    // 안개 뭉치가 사라지고 별빛 노바가 떠오른다. 도트가 다시 나와 노바의 첫 친구가 된다.
-    morphNoiseToNova(game);
     if (game.renderState?.companion) {
       game.renderState.companion.visible = true;
     }
     ui.dialogBody.innerHTML = `
-      <div class="finale-scene" data-noise="nova">${lines(FINALE.rebirthKo)}</div>
-      ${nav('섬으로 돌아간다 →', 'data-finale="done"')}
+      <div class="finale-scene" data-noise="escape">${lines(CORE_BREACH.escapeKo)}</div>
+      ${nav('3장 항로를 연다 →', 'data-finale="done"')}
     `;
-    // 노바 재탄생 세리머니 + 맑은 종소리.
-    celebrate(game, new THREE.Vector3(0, 3.6, 0), '#7cf0ff', 'core');
-    game.audio?.playNovaChime();
     bindNav();
   }
 
   function finish() {
-    // 검증된 상태 전이를 재사용해 코어 완료 플래그를 세운다.
     const outcome = completeFinalCore(game.progress, 'balanced-promise');
     game.progress = outcome.progress;
     game.finaleResolving = false; // 완료 — 더는 재개 상태가 아니다.
     persistProgress(game.progress);
     updateHud(game, ui);
-    // 최종장 대화창을 닫고 그 위에 증명서를 띄운다(닫으면 섬으로 복귀).
     closeDialog(game, ui);
     showCertificate(game, ui);
   }
@@ -6979,10 +6799,10 @@ function runFinale(game, ui, opts = {}) {
     button.addEventListener('click', () => {
       game.audio?.playClick();
       const target = button.dataset.finale;
-      if (target === 'choice') {
-        renderChoice();
-      } else if (target === 'rebirth') {
-        renderRebirth();
+      if (target === 'reveal') {
+        renderRevelation();
+      } else if (target === 'escape') {
+        renderEscape();
       } else if (target === 'done') {
         finish();
       } else if (target.startsWith('tools:')) {
@@ -6991,10 +6811,10 @@ function runFinale(game, ui, opts = {}) {
     });
   }
 
-  // 전투를 거쳐 왔으면: 첫 진입엔 반전 공개(회상 완성) → 선택. 대화를 닫았다 다시 열면 선택부터.
+  // 전투 뒤 첫 진입에는 호칭 반전을, 재개 시에는 항로 개방 장면을 보여 준다.
   if (opts.fromCombat) {
     if (game.finaleRevealed) {
-      renderChoice();
+      renderEscape();
     } else {
       game.finaleRevealed = true;
       renderRevelation();
@@ -7021,8 +6841,8 @@ function closeDialog(game, ui) {
   ui.root.classList.remove('is-cinematic');
   ui.root.querySelector('[data-game-canvas]')?.focus?.();
   game.updateRotateHint?.();
-  // 제압 후 선택을 진행 중이면(finaleResolving) 노이즈를 그대로 둔다 — 재접근 시 선택 재개.
-  // 그 외에 최종장을 끝맺지 않고 닫았다면 등장한 노이즈를 치우고 도트를 되돌린다.
+  // 중지 후 선택 중이면(finaleResolving) 화이트아웃을 그대로 둔다 — 재접근 시 선택 재개.
+  // 그 외에 최종장을 끝맺지 않고 닫았다면 시각체를 치우고 도트를 되돌린다.
   const boss = game.renderState?.noiseBoss;
   if (boss && boss.kind === 'noise' && !game.progress.aiCoreCompleted && !game.finaleResolving) {
     game.renderState.scene.remove(boss.group);
@@ -7050,24 +6870,39 @@ function closeJournal(game, ui) {
 
 function updateHud(game, ui) {
   const summary = getProgressSummary(game.progress.collectedFragments);
+  const campaign = getCampaignSummary(game.progress);
+  const chapter = campaign.current;
   // 진실의 등대 광선 수 — 진행이 바뀌는 지점마다 HUD와 함께 갱신된다(프레임당 재계산 방지).
   game.beaconCount = getStageStates(game.progress).filter((s) => s.state === 'completed').length;
-  ui.objective.textContent = getStoryObjective(game.progress);
-  ui.fragmentCount.textContent = `조각 ${summary.collected}/${summary.total}`;
-  // 글리치 헌터(G1): 파편 조각 재화 — 모으기 전엔 숨겨 HUD 소음을 줄인다.
-  if (ui.shardCount) {
-    const shards = game.progress.glitchShards ?? 0;
-    ui.shardCount.hidden = shards <= 0;
-    ui.shardCount.textContent = `🧩 ${shards}`;
-  }
+  ui.chapterKicker.textContent = `${chapter.number}장`;
+  ui.chapterTitle.textContent = chapter.titleKo;
+  ui.objective.textContent = game.progress.aiCoreCompleted
+    ? chapter.objectiveKo
+    : getStoryObjective(game.progress);
+  ui.fragmentCount.textContent = campaign.campaignCompleted
+    ? '여정 완주'
+    : `여정 ${campaign.completed}/${campaign.total}`;
+  ui.journeyRail.innerHTML = campaign.chapters
+    .map((item) => `
+      <span
+        class="journey-node"
+        data-state="${item.state}"
+        aria-label="${item.number}장 ${item.titleKo} · ${voyageStatusKo(item)}"
+        title="${item.number}장 ${item.titleKo}"
+      >${item.number}</span>
+    `)
+    .join('');
   // 목표 구배 가시화(R-루프2): 코어 개방 임계(3조각)까지 남은 거리를 생생하게 —
   // 하나 남았을 땐 '하나면 열려!'로 기대를 끌어올리고, 열리면 '중앙으로!'로 다음 행동을 가리킨다.
   const remainingToUnlock = Math.max(0, 3 - summary.collected);
   let coreState = 'locked';
   let coreText = 'AI 코어 잠김';
-  if (game.progress.aiCoreCompleted) {
+  if (game.progress.campaignCompleted) {
     coreState = 'done';
-    coreText = 'AI 코어 완료 ✓';
+    coreText = 'H-17 공개 심리 완료 ✓';
+  } else if (game.progress.aiCoreCompleted) {
+    coreState = 'done';
+    coreText = '원본 삭제 명령 확인 · 증거 항로 개방';
   } else if (summary.finalCoreUnlocked) {
     coreState = 'open';
     coreText = '🔓 AI 코어 열림 — 중앙으로!';
@@ -7115,10 +6950,32 @@ function renderJournal(game, ui) {
   const report = getLearningReport(game.progress);
   const deeds = getStoryDeeds(game.progress);
   const voyage = getStageStates(game.progress);
+  const campaign = getCampaignSummary(game.progress);
   ui.journalContent.innerHTML = `
     <p class="controls-note">${MOVE_HINT}</p>
+    <section class="chapter-map" data-chapter-map>
+      <h3>H-17 사건 · 여섯 장의 증거</h3>
+      <ol class="chapter-list">
+        ${campaign.chapters
+          .map(
+            (chapter) => `
+          <li data-state="${chapter.state}" style="--chapter-color:${chapter.color}">
+            <span class="chapter-number">${chapter.number}</span>
+            <span class="chapter-copy">
+              <strong>${chapter.titleKo}</strong>
+              <small>${chapter.themeKo} · ${voyageStatusKo(chapter)}</small>
+              <em>${chapter.questionKo}</em>
+            </span>
+          </li>`
+          )
+          .join('')}
+      </ol>
+      <p class="voyage-note">${campaign.campaignCompleted
+        ? '여섯 장의 증거를 검증해 하루의 이름과 모든 학생의 이의제기권을 되찾았습니다.'
+        : `${campaign.current.number}장 진행 중 — ${campaign.current.objectiveKo}`}</p>
+    </section>
     <section class="voyage-map" data-voyage-map>
-      <h3>🧭 잡음의 군도 — 항로</h3>
+      <h3>항로와 지역</h3>
       <ol class="voyage-list">
         ${voyage
           .map(
@@ -7130,11 +6987,6 @@ function renderJournal(game, ui) {
           )
           .join('')}
       </ol>
-      <p class="voyage-note">${getUnreadNovaLetters(game.progress).length === 0 && (game.progress.novaLettersRead ?? []).length >= 4
-        ? '💌 노바와의 편지 교환까지 모두 마쳤어요 — 수호자의 여정 완결! 다음 여정은 3부 「AI 윤리 패스파인더」에서 나의 역량을 진단해 보세요.'
-        : voyage.every((stage) => stage.state === 'completed')
-          ? '🌊 군도의 모든 정령이 건강해요 — 완전 치유! 부두 우편병의 마지막 편지를 확인해 보세요.'
-          : '노이즈가 바다 건너로 도망쳤어요. 새 항로가 하나씩 열립니다.'}</p>
     </section>
     <section class="learning-report" data-bottle-log>
       <h3>🍾 항해일지 — 지식의 유리병 ${(game.progress.knowledgeBottles ?? []).length}/${KNOWLEDGE_BOTTLES.length}</h3>
@@ -7150,7 +7002,7 @@ function renderJournal(game, ui) {
     </section>
     ${deeds.length > 0
       ? `<section class="learning-report">
-           <h3>📖 나의 이야기 — 섬이 기억하는 나의 행동</h3>
+           <h3>📖 나의 감사 기록 — 사건을 바로잡은 행동</h3>
            <ul class="deed-list">${deeds.map((d) => `<li>${d.deedKo}</li>`).join('')}</ul>
          </section>`
       : ''}
@@ -7170,7 +7022,7 @@ function renderJournal(game, ui) {
     <section class="learning-report" data-learning-report>
       <h3>학습 리포트</h3>
       <p>사당(퍼즐) 통과 ${report.solvedCount}/4 · 관문 윤리 선택 — 현명하게 ${report.gateSolvedCount}개, 실수 후 회복 ${report.gateRecoveredCount}개 · AI 코어 ${report.core.completed ? '완료' : '미완료'}</p>
-      <p>심화 2막(보너스 여정 — 본편 기록·증명서 무영향) — 치유한 섬 ${report.expansion.healedIsles}/${report.expansion.totalIsles} · 잔영 재대결 ${report.expansion.remnantCleared ? '완료' : '미완'} · 노바 편지 ${report.expansion.lettersRead}/4 · 지식의 유리병 ${report.expansion.bottlesFound}/${report.expansion.bottlesTotal}</p>
+      <p>6장 캠페인 — 완료한 장 ${campaign.completed}/${campaign.total} · 조사한 보관소 ${report.expansion.healedIsles}/${report.expansion.totalIsles} · 공간 윤리 퍼즐 ${report.expansion.chapter3dSolved}/3${report.expansion.chapter3dRecovered > 0 ? ` (실수 후 회복 ${report.expansion.chapter3dRecovered})` : ''} · 공개 심리 ${report.expansion.campaignCompleted ? '완료' : '준비 중'} · 하루의 감사 신호 ${report.expansion.lettersRead}/4 · 지식의 유리병 ${report.expansion.bottlesFound}/${report.expansion.bottlesTotal}</p>
       <ul class="report-list">
         ${report.topics
           .map((topic) => {
