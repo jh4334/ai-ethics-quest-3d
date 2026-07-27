@@ -809,6 +809,13 @@ test('glitch-hunter(G1): 필드 전투 — 순수 로직 분리·결정성·무�
   assert.match(mainSource, /if \(tryPurifyGlitch\(game, ui\)\) \{/);
   assert.match(mainSource, /intent\.telegraph \* 1\.7/);
   assert.match(mainSource, /function showLoreCard/);
+  // G2: 웨이브·도둑·에코 배선 + 스키마 추가(glitchZonesCleared).
+  assert.match(glitchSrc, /export const GLITCH_WAVES/);
+  assert.match(glitchSrc, /export function stealFromPlayer/);
+  assert.match(worldSrc, /glitchZonesCleared: uniqueValidTopicIds/);
+  assert.match(mainSource, /updateGlitchWaves\(delta, game, ui, field, flags\);/);
+  assert.match(mainSource, /function onSnitcherGrab/);
+  assert.match(mainSource, /'dispersed'/);
   assert.match(cssSource, /\.lore-card/);
   assert.match(cssSource, /\.shard-count/);
   // 무처벌: 피격은 콤보 리셋·넉백뿐 — 사망·감점 문자열 금지.

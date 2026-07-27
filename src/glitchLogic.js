@@ -20,7 +20,6 @@ export const SLASH = {
 export const PURIFY = { range: 2.2, recover: 0.5 };
 
 // ── 글리치 아키타입 (불변 콘텐츠 정의) ──────────────────
-// G1은 기본 몹 '주워듣개' 1종. G2에서 스니처·에코 쌍둥이 추가 예정.
 export const GLITCH_ARCHETYPES = {
   scavenger: {
     id: 'scavenger',
@@ -33,6 +32,35 @@ export const GLITCH_ARCHETYPES = {
     move: { windup: 0.62, active: 0.2, recover: 1.0, cooldown: 1.5, lungeSpeed: 7.5 },
     staggerHold: 4.0, // 스태거 유지 시간 — 이 안에 정화하지 않으면 일어난다(hp 1 회복)
     shardReward: 3
+  },
+  // 파편 도둑 — 잡기에 닿으면 파편을 훔쳐 도주한다. 때리면 즉시 떨군다(무처벌: 영구 손실 없음).
+  snitcher: {
+    id: 'snitcher',
+    nameKo: '슬쩍이',
+    hp: 2,
+    speed: 3.1,
+    aggroRange: 6.5,
+    attackRange: 1.6,
+    move: { windup: 0.45, active: 0.18, recover: 0.7, cooldown: 2.2, lungeSpeed: 8.0 },
+    staggerHold: 4.0,
+    shardReward: 2,
+    steals: true,
+    stealCap: 2, // 한 번에 훔치는 최대 파편
+    fleeSpeed: 5.0, // 걷기(6.1)보다 느리다 — 추격하면 반드시 잡힌다
+    fleeTime: 3.2 // 도주 후 다시 노린다
+  },
+  // 에코 — 딥페이크의 화신. 쌍으로 나타나 진짜 흉내를 낸다.
+  // 가짜(variant 'echo')는 미세하게 깜빡이고, 공격이 스쳐도 해가 없다(환영).
+  echo: {
+    id: 'echo',
+    nameKo: '메아리',
+    hp: 2,
+    speed: 2.6,
+    aggroRange: 6.0,
+    attackRange: 1.7,
+    move: { windup: 0.55, active: 0.2, recover: 0.9, cooldown: 1.8, lungeSpeed: 7.2 },
+    staggerHold: 4.0,
+    shardReward: 4
   }
 };
 
@@ -56,26 +84,29 @@ export function comboMultiplier(streak) {
 }
 
 // ── 런타임 인스턴스 ─────────────────────────────────────
-export function createGlitch(archetypeId, topicId, index, x, z) {
+export function createGlitch(archetypeId, topicId, index, x, z, variant = 'real') {
   const arch = GLITCH_ARCHETYPES[archetypeId];
   if (!arch) {
     throw new RangeError(`Unknown glitch archetype: ${archetypeId}`);
   }
   return {
-    id: `${archetypeId}-${topicId}-${index}`,
+    id: `${archetypeId}-${variant}-${topicId}-${index}`,
     archetypeId,
     topicId,
+    variant, // 'real' | 'echo'(가짜 분신 — 베면 흩어지고 공격은 환영)
     x,
     z,
     homeX: x,
     homeZ: z,
     hp: arch.hp,
-    state: 'idle', // idle → pursue → windup → attack → recover → (stagger) → purified
+    state: 'idle', // idle → pursue → windup → attack → recover → (flee) → (stagger) → purified
     t: 0, // 현재 상태 경과 시간
     cd: 0, // 공격 쿨다운
     lungeX: 0, // windup 진입 시 고정되는 돌진 방향(즉시 회전 타격 금지)
     lungeZ: 0,
-    hitConsumed: false // 유효 창당 접촉 1회(권위 있는 판정)
+    hitConsumed: false, // 유효 창당 접촉 1회(권위 있는 판정)
+    stolen: 0, // 슬쩍이가 들고 있는 훔친 파편
+    droppedShards: 0 // 피격으로 떨군 파편 — 표현 계층이 회수 처리 후 0으로
   };
 }
 
@@ -110,6 +141,17 @@ export function stepGlitch(g, perception, dt) {
       g.state = 'pursue';
       g.t = 0;
     }
+    return out;
+  }
+  if (g.state === 'flee') {
+    // 도주 — 플레이어 반대 방향, 걷기보다 느려 추격하면 반드시 잡힌다.
+    if (g.t >= (arch.fleeTime ?? 0)) {
+      g.state = 'pursue';
+      g.t = 0;
+      return out;
+    }
+    out.moveX = -nx * (arch.fleeSpeed ?? arch.speed);
+    out.moveZ = -nz * (arch.fleeSpeed ?? arch.speed);
     return out;
   }
   if (g.state === 'pursue') {
@@ -164,10 +206,34 @@ export function consumeGlitchHit(g) {
   g.hitConsumed = true;
 }
 
-// 베기 피격 — hp가 다하면 스태거(정화 대기). 반환: 'hit' | 'staggered' | 'ignored'
+// 잡기 성공(슬쩍이) — 파편을 훔치고 도주로 전환. 훔친 양을 반환한다.
+// playerShards가 0이면 허탕(0 반환)이지만 도주는 한다(리듬 유지).
+export function stealFromPlayer(g, playerShards) {
+  const arch = GLITCH_ARCHETYPES[g.archetypeId];
+  const amount = arch.steals ? Math.min(arch.stealCap, Math.max(0, Math.floor(playerShards))) : 0;
+  g.stolen += amount;
+  g.state = 'flee';
+  g.t = 0;
+  g.cd = arch.move.cooldown;
+  return amount;
+}
+
+// 베기 피격 — hp가 다하면 스태거(정화 대기).
+// 반환: 'hit' | 'staggered' | 'dispersed'(가짜 에코가 흩어짐) | 'ignored'
 export function hitGlitch(g) {
   if (g.state === 'purified' || g.state === 'stagger') {
     return 'ignored';
+  }
+  if (g.variant === 'echo') {
+    // 가짜였다 — 보상도 벌점도 없이 흩어진다. 진짜를 찾아라(딥페이크).
+    g.state = 'purified';
+    g.t = 0;
+    return 'dispersed';
+  }
+  // 훔친 파편은 첫 피격에 즉시 떨군다 — 표현 계층이 회수해 돌려준다(영구 손실 없음).
+  if (g.stolen > 0) {
+    g.droppedShards += g.stolen;
+    g.stolen = 0;
   }
   g.hp -= 1;
   if (g.hp <= 0) {
@@ -208,7 +274,7 @@ export const GLITCH_SPAWNS = {
   deepfake: [{ ox: -5.0, oz: 0.6 }, { ox: 1.8, oz: -4.6 }]
 };
 
-// 미해결 구역에만 글리치를 깐다(해결 구역은 정화된 땅).
+// 미해결 구역에만 글리치를 깐다(해결 구역은 정화된 땅). 1웨이브(GLITCH_SPAWNS)만.
 export function buildFieldGlitches(zoneCenters, solvedTopicIds) {
   const solved = new Set(solvedTopicIds);
   const out = [];
@@ -222,4 +288,46 @@ export function buildFieldGlitches(zoneCenters, solvedTopicIds) {
     });
   }
   return out;
+}
+
+// ── 조우 웨이브 (고정표 — 교실 재현성) ──────────────────
+// 1웨이브(GLITCH_SPAWNS)를 소탕하면 등장하는 추가 웨이브. 첫 구역(privacy)은 온보딩이라 없음.
+// deepfake 최종 웨이브는 에코 쌍둥이 — 진짜/가짜 구별이 곧 주제 학습.
+export const GLITCH_WAVES = {
+  privacy: [],
+  bias: [
+    [
+      { arch: 'scavenger', ox: -3.8, oz: 3.6 },
+      { arch: 'snitcher', ox: 4.2, oz: 2.8 }
+    ]
+  ],
+  copyright: [
+    [
+      { arch: 'snitcher', ox: -4.2, oz: 3.2 },
+      { arch: 'scavenger', ox: 3.6, oz: -3.8 }
+    ]
+  ],
+  deepfake: [
+    [
+      { arch: 'echo', ox: -3.6, oz: -3.4, variant: 'real' },
+      { arch: 'echo', ox: 3.4, oz: -3.6, variant: 'echo' },
+      { arch: 'snitcher', ox: 0.4, oz: 5.2 }
+    ]
+  ]
+};
+
+// 구역 소탕 보너스 — 모든 웨이브를 전투로 비웠을 때 1회(진행 저장).
+export const ZONE_CLEAR_BONUS = 6;
+
+// 구역의 전체 웨이브 수(1웨이브 포함).
+export function zoneWaveCount(topicId) {
+  return 1 + (GLITCH_WAVES[topicId]?.length ?? 0);
+}
+
+// n번째 추가 웨이브 인스턴스 생성 (waveIndex 1부터 — 0은 GLITCH_SPAWNS).
+export function buildWaveGlitches(topicId, waveIndex, center) {
+  const wave = GLITCH_WAVES[topicId]?.[waveIndex - 1] ?? [];
+  return wave.map((s, i) =>
+    createGlitch(s.arch, topicId, waveIndex * 10 + i, center.x + s.ox, center.z + s.oz, s.variant ?? 'real')
+  );
 }

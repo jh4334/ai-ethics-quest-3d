@@ -126,9 +126,109 @@ try {
   }, g0.id);
   check(purified.state === 'purified' && purified.shards >= 3, `정화 피니셔 → 파편 +${purified.shards}`);
   check(purified.lore.includes(g0.topic) && purified.toast, '로어 카드 도감 기록 + 토스트 표시');
-  // 이후 레거시 구간의 결정성을 위해 남은 필드 글리치를 중립화(전투는 위에서 이미 증명).
+  // ── G2 조우 웨이브: 구역 소탕 → 다음 웨이브 스폰(슬쩍이 포함) ──
+  const biasWave0 = await p.evaluate(() => {
+    const f = window.__ethicsGame.renderState.glitchField;
+    f.items.filter((i) => i.data.topicId === 'bias').forEach((i) => { i.data.state = 'purified'; });
+    f.waveDelay.bias = 1.35; // 소탕 정적(1.4s)을 선진행 — 헤드리스 저프레임에서도 결정적
+    return f.waves.bias;
+  });
+  await p.waitForFunction(() => window.__ethicsGame.renderState.glitchField.waves.bias === 1, { timeout: 15000 }).catch(() => {});
+  const biasWave1 = await p.evaluate(() => {
+    const f = window.__ethicsGame.renderState.glitchField;
+    return {
+      wave: f.waves.bias,
+      fresh: f.items.filter((i) => i.data.topicId === 'bias' && i.data.state !== 'purified').map((i) => i.data.archetypeId)
+    };
+  });
+  check(biasWave0 === 0 && biasWave1.wave === 1 && biasWave1.fresh.includes('snitcher'), `구역 소탕 → 2웨이브 등장(${biasWave1.fresh.join(',')})`);
+
+  // ── G2 슬쩍이: 잡기 → 파편 강탈·도주 → 베어서 즉시 회수 ──
   await p.evaluate(() => {
-    window.__ethicsGame.renderState.glitchField.items.forEach((i) => { i.data.state = 'purified'; });
+    const g = window.__ethicsGame;
+    g.progress = { ...g.progress, glitchShards: 5 };
+    const it = g.renderState.glitchField.items.find((i) => i.data.archetypeId === 'snitcher' && i.data.state !== 'purified');
+    // 유효 창을 직접 열어 잡기 접촉을 재현(선딜·창 타이밍은 유닛이 검증).
+    g.player.position.set(it.data.x, 0.55, it.data.z);
+    it.data.state = 'attack';
+    it.data.t = 0;
+    it.data.hitConsumed = false;
+  });
+  await p.waitForFunction(
+    () => window.__ethicsGame.renderState.glitchField.items.some((i) => i.data.stolen > 0 && i.gem.visible),
+    { timeout: 15000 }
+  ).catch(() => {});
+  const grabbed = await p.evaluate(() => {
+    const g = window.__ethicsGame;
+    const it = g.renderState.glitchField.items.find((i) => i.data.archetypeId === 'snitcher' && i.data.stolen > 0);
+    return it ? { shards: g.progress.glitchShards, state: it.data.state, gem: it.gem.visible, id: it.data.id } : null;
+  });
+  check(grabbed && grabbed.shards === 3 && grabbed.state === 'flee' && grabbed.gem, `슬쩍이 강탈 → 파편 5→${grabbed?.shards}·도주·보석 표시`);
+  let recovered = null;
+  for (let i = 0; grabbed && i < 10 && !recovered; i += 1) {
+    await p.evaluate((id) => {
+      const g = window.__ethicsGame;
+      const it = g.renderState.glitchField.items.find((x) => x.data.id === id);
+      g.player.position.set(it.data.x, 0.55, it.data.z + 1.3);
+      g.player.direction.set(0, 0, -1);
+      if (g.glitchCombat) g.glitchCombat.slash = null;
+    }, grabbed.id);
+    await p.keyboard.press('e');
+    await p.waitForTimeout(220);
+    recovered = await p.evaluate((id) => {
+      const g = window.__ethicsGame;
+      const it = g.renderState.glitchField.items.find((x) => x.data.id === id);
+      return it.data.stolen === 0 && g.progress.glitchShards === 5 ? { drop: it.data.droppedShards } : null;
+    }, grabbed.id);
+  }
+  check(recovered && recovered.drop === 0, '추격 베기 → 훔친 파편 전량 회수(영구 손실 없음)');
+
+  // ── G2 에코 쌍둥이: 가짜를 베면 무보상 흩어짐, 진짜는 남는다 ──
+  await p.evaluate(() => {
+    const f = window.__ethicsGame.renderState.glitchField;
+    f.items.filter((i) => i.data.topicId === 'deepfake').forEach((i) => { i.data.state = 'purified'; });
+    f.waveDelay.deepfake = 1.35;
+  });
+  await p.waitForFunction(() => window.__ethicsGame.renderState.glitchField.waves.deepfake === 1, { timeout: 15000 }).catch(() => {});
+  const echoPair = await p.evaluate(() => {
+    const f = window.__ethicsGame.renderState.glitchField;
+    const live = f.items.filter((i) => i.data.topicId === 'deepfake' && i.data.state !== 'purified');
+    return {
+      fake: live.find((i) => i.data.variant === 'echo')?.data.id ?? null,
+      real: live.find((i) => i.data.archetypeId === 'echo' && i.data.variant === 'real')?.data.id ?? null
+    };
+  });
+  check(Boolean(echoPair.fake && echoPair.real), '딥페이크 웨이브에 진짜/가짜 메아리 한 쌍 스폰');
+  if (echoPair.fake && echoPair.real) {
+  const dispersed = await p.evaluate((id) => {
+    const g = window.__ethicsGame;
+    const it = g.renderState.glitchField.items.find((x) => x.data.id === id);
+    const before = g.progress.glitchShards;
+    g.player.position.set(it.data.x, 0.55, it.data.z + 1.3);
+    g.player.direction.set(0, 0, -1);
+    if (it.data.state === 'idle') it.data.state = 'pursue'; // 교전 판정 보장(대화 오픈 방지)
+    if (g.glitchCombat) g.glitchCombat.slash = null;
+    return { before };
+  }, echoPair.fake);
+  await p.keyboard.press('e');
+  await p.waitForTimeout(250);
+  const echoAfter = await p.evaluate(([fakeId, realId]) => {
+    const g = window.__ethicsGame;
+    const fake = g.renderState.glitchField.items.find((x) => x.data.id === fakeId);
+    const real = g.renderState.glitchField.items.find((x) => x.data.id === realId);
+    return { fakeState: fake.data.state, realState: real.data.state, shards: g.progress.glitchShards };
+  }, [echoPair.fake, echoPair.real]);
+  check(echoAfter.fakeState === 'purified' && echoAfter.realState !== 'purified' && echoAfter.shards === dispersed.before,
+    '가짜를 베면 흩어짐(보상·벌점 0), 진짜는 남는다');
+  }
+
+  // 이후 레거시 구간의 결정성을 위해 남은 필드 글리치·웨이브·보너스를 중립화(전투는 위에서 이미 증명).
+  await p.evaluate(() => {
+    const g = window.__ethicsGame;
+    const f = g.renderState.glitchField;
+    for (const t of Object.keys(f.waves)) f.waves[t] = 99; // 추가 웨이브 봉인
+    g.progress = { ...g.progress, glitchZonesCleared: ['privacy', 'bias', 'copyright', 'deepfake'] }; // 소탕 보너스 봉인
+    f.items.forEach((i) => { i.data.state = 'purified'; });
   });
 
   // ── 간격 불변식: 모든 상호작용 대상 쌍 ≥ MIN_SEPARATION ──

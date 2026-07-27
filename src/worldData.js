@@ -470,6 +470,8 @@ export function createInitialProgress() {
     // 글리치 헌터(G1) — 정화로 모은 기억 파편 조각(강화 재화)·로어 도감.
     glitchShards: 0,
     loreCards: [],
+    // 글리치 헌터(G2) — 구역 웨이브 소탕 보너스 기록(주제별 1회).
+    glitchZonesCleared: [],
     // 세이브 v2: 「잡음의 군도」 섬별 진행 맵. 프롤로그(시작의 섬) 완료는
     // 기존 신호(aiCoreCompleted)에서 파생하므로 여기 중복 기록하지 않는다.
     stages: {}
@@ -553,6 +555,7 @@ export function normalizeProgress(candidate) {
       ? Math.floor(candidate.glitchShards)
       : 0,
     loreCards: [...new Set(stringArray(candidate.loreCards))],
+    glitchZonesCleared: uniqueValidTopicIds(stringArray(candidate.glitchZonesCleared)),
     stages: normalizeStages(candidate.stages)
   };
 }

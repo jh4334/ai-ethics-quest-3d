@@ -3,16 +3,21 @@ import assert from 'node:assert/strict';
 import {
   GLITCH_ARCHETYPES,
   GLITCH_SPAWNS,
+  GLITCH_WAVES,
   LORE_CARDS,
   PURIFY,
   SLASH,
+  ZONE_CLEAR_BONUS,
   buildFieldGlitches,
+  buildWaveGlitches,
   comboMultiplier,
   consumeGlitchHit,
   createGlitch,
   hitGlitch,
   purifyGlitch,
-  stepGlitch
+  stealFromPlayer,
+  stepGlitch,
+  zoneWaveCount
 } from '../src/glitchLogic.js';
 
 const step = (g, dist, dt = 0.05) => stepGlitch(g, { dx: dist, dz: 0, dist }, dt);
@@ -100,6 +105,70 @@ test('피격→스태거→정화 보상, 스태거 방치 시 자비 복귀', (
   step(h, 10, GLITCH_ARCHETYPES.scavenger.staggerHold + 0.1);
   assert.equal(h.state, 'pursue');
   assert.equal(h.hp, 1);
+});
+
+test('슬쩍이(G2): 훔치기→도주→복귀, 피격 시 즉시 떨굼 — 영구 손실 없음(무처벌)', () => {
+  const arch = GLITCH_ARCHETYPES.snitcher;
+  assert.ok(arch.steals && arch.fleeSpeed < 6.1, '도주가 걷기보다 빠르면 회수 불가(무처벌 위반)');
+  const g = createGlitch('snitcher', 'bias', 0, 0, 0);
+  // 잡기 성공: 캡(2)만큼만 훔치고 도주로 전환.
+  assert.equal(stealFromPlayer(g, 9), arch.stealCap);
+  assert.equal(g.stolen, 2);
+  assert.equal(g.state, 'flee');
+  // 도주 의도: 플레이어 반대 방향, fleeTime 뒤 재추적.
+  const intent = step(g, 3);
+  assert.ok(intent.moveX < 0, '플레이어 반대 방향으로 달아난다');
+  step(g, 3, arch.fleeTime + 0.1);
+  assert.equal(g.state, 'pursue');
+  // 피격 → 떨굼(전량) + 정상 피해 진행.
+  assert.equal(hitGlitch(g), 'hit');
+  assert.equal(g.stolen, 0);
+  assert.equal(g.droppedShards, 2);
+  // 빈손 잡기: 허탕(0)이어도 도주 리듬은 유지.
+  const h = createGlitch('snitcher', 'bias', 1, 0, 0);
+  assert.equal(stealFromPlayer(h, 0), 0);
+  assert.equal(h.state, 'flee');
+  // 훔치지 않는 종은 잡아도 0.
+  const s = createGlitch('scavenger', 'bias', 2, 0, 0);
+  assert.equal(stealFromPlayer(s, 9), 0);
+});
+
+test('에코 쌍둥이(G2): 가짜는 베면 흩어지고 보상·벌점 없음, 진짜는 기존 문법 (딥페이크)', () => {
+  const fake = createGlitch('echo', 'deepfake', 0, 0, 0, 'echo');
+  assert.equal(hitGlitch(fake), 'dispersed');
+  assert.equal(fake.state, 'purified');
+  assert.equal(purifyGlitch(fake, 1), null, '가짜에게 정화 보상 없음');
+  const real = createGlitch('echo', 'deepfake', 1, 0, 0);
+  assert.equal(real.variant, 'real');
+  assert.equal(hitGlitch(real), 'hit');
+  assert.equal(hitGlitch(real), 'staggered');
+  const reward = purifyGlitch(real, 0);
+  assert.equal(reward.shards, GLITCH_ARCHETYPES.echo.shardReward);
+  assert.equal(reward.loreTopicId, 'deepfake');
+});
+
+test('조우 웨이브(G2): 고정표·결정적, 딥페이크 최종 웨이브는 진짜/가짜 한 쌍', () => {
+  assert.equal(zoneWaveCount('privacy'), 1, '첫 구역은 온보딩 — 추가 웨이브 없음');
+  assert.ok(zoneWaveCount('bias') >= 2 && zoneWaveCount('deepfake') >= 2);
+  assert.ok(ZONE_CLEAR_BONUS > 0);
+  const center = { x: 10, z: -5 };
+  const a = buildWaveGlitches('deepfake', 1, center);
+  const b = buildWaveGlitches('deepfake', 1, center);
+  assert.deepEqual(a.map((g) => [g.id, g.x, g.z]), b.map((g) => [g.id, g.x, g.z]), '결정성');
+  assert.equal(a.filter((g) => g.archetypeId === 'echo' && g.variant === 'real').length, 1);
+  assert.equal(a.filter((g) => g.variant === 'echo').length, 1, '가짜는 정확히 하나 — 구별 학습');
+  // id는 1웨이브(GLITCH_SPAWNS)와 절대 충돌하지 않는다.
+  const wave0 = buildFieldGlitches({ deepfake: center }, []);
+  const ids = new Set([...wave0, ...a].map((g) => g.id));
+  assert.equal(ids.size, wave0.length + a.length);
+  // 모든 웨이브 항목은 실제 아키타입만 참조한다.
+  for (const waves of Object.values(GLITCH_WAVES)) {
+    for (const wave of waves) {
+      for (const s of wave) {
+        assert.ok(GLITCH_ARCHETYPES[s.arch], `unknown archetype: ${s.arch}`);
+      }
+    }
+  }
 });
 
 test('콤보 배수는 x3 캡, 스폰은 고정표·미해결 구역만 (교실 재현성)', () => {
