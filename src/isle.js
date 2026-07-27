@@ -6,6 +6,9 @@ import { RUMOR } from './rumorLogic.js';
 import { DUNES } from './dunesLogic.js';
 import { HEART } from './heartLogic.js';
 import { RESIDUE } from './residueLogic.js';
+import { FOOTPRINT } from './footprintLogic.js';
+import { BUBBLE } from './bubbleLogic.js';
+import { CARGO } from './cargoLogic.js';
 
 export const ISLE_RADIUS = 12.6;
 
@@ -82,6 +85,9 @@ export function healSpiritVisuals(built) {
   built.vortexes.forEach((vortex) => {
     vortex.visible = false;
   });
+  FOOTPRINT.actions.forEach((action) => {
+    built.syncFootprint?.(action.id, true);
+  });
 }
 
 // 회랑 발사대(잡음 소용돌이) + 날아다니는 말-화살 메시.
@@ -138,6 +144,67 @@ export function buildWhisperCapeScene({ makeLabel, healed = false }) {
   );
   mudflat.position.set(1.5, -0.17, 8.2);
   root.add(mudflat);
+
+  // 후속 도전: 디지털 발자국 세 지점. 핵심 회랑을 끝낸 뒤 순서대로 책임진다.
+  const footprintMarks = new Map();
+  const footprintMat = new THREE.MeshStandardMaterial({
+    color: 0x44384f,
+    emissive: 0x24192f,
+    emissiveIntensity: 0.55,
+    roughness: 0.9
+  });
+  FOOTPRINT.actions.forEach((action, index) => {
+    const marker = new THREE.Group();
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0xa37ab8,
+      transparent: true,
+      opacity: 0.7
+    });
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.08, 8, 28), ringMat);
+    ring.rotation.x = Math.PI / 2;
+    ring.position.y = 0.18;
+    marker.add(ring);
+    for (const side of [-1, 1]) {
+      const print = new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 8), footprintMat.clone());
+      print.scale.set(0.7, 0.12, 1.25);
+      print.position.set(side * 0.25, 0.2, side * 0.38);
+      print.rotation.y = side * 0.28;
+      marker.add(print);
+    }
+    marker.position.set(action.x, 0, action.z);
+    marker.userData.baseY = marker.position.y;
+    marker.userData.index = index;
+    root.add(marker);
+    footprintMarks.set(action.id, marker);
+    const label = makeLabel(`${action.emoji} ${index + 1}`, '#ead8f0');
+    label.scale.multiplyScalar(0.58);
+    label.position.set(action.x, 1.65, action.z);
+    root.add(label);
+  });
+  const footprintLabel = makeLabel('남겨진 발자국', '#ead8f0');
+  footprintLabel.position.set(1.5, 2.8, 8.3);
+  root.add(footprintLabel);
+
+  const syncFootprint = (actionId, resolved) => {
+    const marker = footprintMarks.get(actionId);
+    if (!marker) {
+      return;
+    }
+    marker.userData.resolved = resolved;
+    marker.children.forEach((child) => {
+      if (!child.material) {
+        return;
+      }
+      child.material.color?.setHex(resolved ? 0xffd88a : 0x7a5f96);
+      if ('opacity' in child.material) {
+        child.material.opacity = resolved ? 0.32 : 0.72;
+      }
+      if ('emissive' in child.material) {
+        child.material.emissive.setHex(resolved ? 0x9a6a20 : 0x24192f);
+        child.material.emissiveIntensity = resolved ? 0.9 : 0.55;
+      }
+    });
+  };
   // 주변 바다.
   const water = new THREE.Mesh(
     new THREE.CircleGeometry(60, 48),
@@ -205,7 +272,25 @@ export function buildWhisperCapeScene({ makeLabel, healed = false }) {
     { id: 'raft', x: -3.4, z: 10.6, labelKo: '뗏목 — 바다로 돌아간다' }
   ];
 
-  const built = { root, spirit, wisps, wings, bodyMat, vortexes, arrowMesh, interactables };
+  const followupInteractables = FOOTPRINT.actions.map((action) => ({
+    id: action.id,
+    x: action.x,
+    z: action.z,
+    labelKo: action.labelKo
+  }));
+  const built = {
+    root,
+    spirit,
+    wisps,
+    wings,
+    bodyMat,
+    vortexes,
+    arrowMesh,
+    interactables,
+    followupInteractables,
+    footprintMarks,
+    syncFootprint
+  };
   if (healed) {
     healSpiritVisuals(built);
   }
@@ -314,6 +399,56 @@ export function buildEchoCaveScene({ makeLabel, healed = false }) {
   bellRing.visible = false;
   root.add(bellRing);
 
+  // 후속 도전: 필터 버블의 네 창. 거울 동사로 원본·맥락·다른 관점을 비춘다.
+  const sourceWindows = new Map();
+  BUBBLE.sources.forEach((source, index) => {
+    const frame = new THREE.Group();
+    const frameMat = new THREE.MeshStandardMaterial({
+      color: source.required ? 0x7084b8 : 0x6a546e,
+      emissive: source.required ? 0x283a68 : 0x36223a,
+      emissiveIntensity: 0.65,
+      roughness: 0.55
+    });
+    const outer = new THREE.Mesh(new THREE.BoxGeometry(1.7, 2.2, 0.18), frameMat);
+    outer.position.y = 1.25;
+    frame.add(outer);
+    const glassMat = new THREE.MeshBasicMaterial({
+      color: source.required ? 0x8fc9df : 0x9a6a98,
+      transparent: true,
+      opacity: 0.55
+    });
+    const glass = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 1.65), glassMat);
+    glass.position.set(0, 1.25, 0.11);
+    frame.add(glass);
+    frame.position.set(source.x, 0, source.z);
+    frame.rotation.y = index % 2 === 0 ? 0.25 : -0.18;
+    frame.userData.glass = glass;
+    frame.userData.frameMat = frameMat;
+    frame.userData.baseY = frame.position.y;
+    root.add(frame);
+    sourceWindows.set(source.id, frame);
+    const label = makeLabel(`${source.emoji} ${source.labelKo}`, '#d9ecff');
+    label.scale.multiplyScalar(0.5);
+    label.position.set(source.x, 3.0, source.z);
+    root.add(label);
+  });
+  const bubbleLabel = makeLabel('🫧 필터 버블의 창', '#bfe8f4');
+  bubbleLabel.position.set(-6.0, 4.4, -0.7);
+  root.add(bubbleLabel);
+
+  const syncBubbleSource = (sourceId, verified) => {
+    const frame = sourceWindows.get(sourceId);
+    if (!frame) {
+      return;
+    }
+    frame.userData.verified = verified;
+    frame.userData.frameMat.color.setHex(verified ? 0xffc85a : 0x7084b8);
+    frame.userData.frameMat.emissive.setHex(verified ? 0xa86a18 : 0x283a68);
+    frame.userData.frameMat.emissiveIntensity = verified ? 1.05 : 0.65;
+    frame.userData.glass.material.color.setHex(verified ? 0xffe3a0 : 0x8fc9df);
+    frame.userData.glass.material.opacity = verified ? 0.82 : 0.55;
+  };
+
   // 갇힌 고래 정령 — 웅덩이에 떠서 잿빛 메아리 링에 둘러싸여 있다.
   const spirit = new THREE.Group();
   // 병든 잿빛이 기본 — 치유 시 heal()이 맑은 색으로 바꾼다.
@@ -414,9 +549,30 @@ export function buildEchoCaveScene({ makeLabel, healed = false }) {
       stone.material.emissive.setHex(0x232837);
     });
     bellRing.visible = false;
+    BUBBLE.sources.filter((source) => source.required).forEach((source) => {
+      syncBubbleSource(source.id, true);
+    });
   };
 
-  const built = { root, spirit, interactables, animate, heal, rumorStones, stoneBubbles, bellRing };
+  const followupInteractables = BUBBLE.sources.map((source) => ({
+    id: source.id,
+    x: source.x,
+    z: source.z,
+    labelKo: source.labelKo
+  }));
+  const built = {
+    root,
+    spirit,
+    interactables,
+    followupInteractables,
+    animate,
+    heal,
+    rumorStones,
+    stoneBubbles,
+    bellRing,
+    sourceWindows,
+    syncBubbleSource
+  };
   if (healed) {
     heal();
   }
@@ -455,15 +611,58 @@ export function buildHourglassPortScene({ makeLabel, healed = false }) {
   pier.rotation.y = -0.3;
   root.add(pier);
   const crateMat = new THREE.MeshStandardMaterial({ color: 0xb08a52, emissive: 0x2c2012, emissiveIntensity: 0.35, roughness: 0.85, flatShading: true });
-  for (const [cx, cz, s, rot] of [[4.6, 6.6, 1.0, 0.2], [5.6, 5.4, 0.8, -0.4], [4.2, 5.0, 0.7, 0.7]]) {
-    const crate = new THREE.Mesh(new THREE.BoxGeometry(1.0 * s, 1.0 * s, 1.0 * s), crateMat);
-    crate.position.set(cx, 0.5 * s, cz);
-    crate.rotation.y = rot;
+  const cargoCrates = new Map();
+  const cargoStamps = new Map();
+  CARGO.crates.forEach((crateData, index) => {
+    const crate = new THREE.Mesh(new THREE.BoxGeometry(1.05, 1.05, 1.05), crateMat.clone());
+    crate.position.set(crateData.x, 0.55, crateData.z);
+    crate.rotation.y = [0.2, -0.4, 0.7][index];
     root.add(crate);
-  }
+    cargoCrates.set(crateData.id, crate);
+
+    // 라벨은 색뿐 아니라 모양도 바뀐다: 없음=상자, 사람=원, 협업=팔면체, 생성=삼각.
+    const stamp = new THREE.Group();
+    const stampDefs = [
+      ['unknown', new THREE.BoxGeometry(0.3, 0.3, 0.12), 0x6f6254],
+      ['human', new THREE.SphereGeometry(0.2, 10, 8), 0x65c69a],
+      ['ai-assisted', new THREE.OctahedronGeometry(0.24, 0), 0x73a9e8],
+      ['ai-generated', new THREE.ConeGeometry(0.23, 0.42, 3), 0xd58bd7]
+    ];
+    stampDefs.forEach(([labelId, geometry, color]) => {
+      const icon = new THREE.Mesh(
+        geometry,
+        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.96 })
+      );
+      icon.userData.labelId = labelId;
+      icon.visible = labelId === 'unknown';
+      stamp.add(icon);
+    });
+    stamp.position.set(crateData.x, 1.5, crateData.z);
+    root.add(stamp);
+    cargoStamps.set(crateData.id, stamp);
+
+    const clue = makeLabel(`${crateData.emoji} ${crateData.titleKo}`, '#ffe3b0');
+    clue.scale.multiplyScalar(0.48);
+    clue.position.set(crateData.x, 2.15, crateData.z);
+    root.add(clue);
+  });
   const cargoLabel = makeLabel('📦 표시 없는 화물', '#e8c89a');
   cargoLabel.position.set(4.8, 2.4, 5.6);
   root.add(cargoLabel);
+
+  const syncCargoLabel = (crateId, labelId) => {
+    const stamp = cargoStamps.get(crateId);
+    if (!stamp) {
+      return;
+    }
+    stamp.children.forEach((icon) => {
+      icon.visible = icon.userData.labelId === labelId;
+    });
+    const crate = cargoCrates.get(crateId);
+    if (crate) {
+      crate.material.emissiveIntensity = labelId === 'unknown' ? 0.35 : 0.72;
+    }
+  };
 
   // 뒤집힌 채 멈춘 모래시계 사구 — '멈출 때'를 잃어버린 항구의 상징.
   const glassMat = new THREE.MeshStandardMaterial({
@@ -605,6 +804,9 @@ export function buildHourglassPortScene({ makeLabel, healed = false }) {
     sandCores.forEach((sand) => {
       sand.visible = true;
     });
+    CARGO.crates.forEach((crate) => {
+      syncCargoLabel(crate.id, crate.correctLabel);
+    });
   };
 
   // 병든 상태의 초기 기울기(정지) — 도전 시작 전 모습.
@@ -613,14 +815,32 @@ export function buildHourglassPortScene({ makeLabel, healed = false }) {
     hourglass.rotation.z = Math.sin(index * 1.3) * DUNES.amplitude || 0.5;
   });
 
-  const built = { root, spirit, interactables, animate, heal, hourglasses, sandCores };
+  const followupInteractables = CARGO.crates.map((crate) => ({
+    id: crate.id,
+    x: crate.x,
+    z: crate.z,
+    labelKo: `${crate.titleKo} — ${crate.clueKo}`
+  }));
+  const built = {
+    root,
+    spirit,
+    interactables,
+    followupInteractables,
+    animate,
+    heal,
+    hourglasses,
+    sandCores,
+    cargoCrates,
+    cargoStamps,
+    syncCargoLabel
+  };
   if (healed) {
     heal();
   }
   return built;
 }
 
-// 4호: 기억의 심장 외곽 (종합 + 인간-AI 협업 — "함께 살아가기").
+// 4호: 감사 기록 보관소 (종합 + 인간-AI 협업).
 // 보랏빛 결정 섬 — 맥동하는 심장 결정을 네 개의 동사 봉인이 지키고 있다.
 export function buildMemoryOuterScene({ makeLabel, healed = false }) {
   const root = new THREE.Group();
@@ -645,7 +865,7 @@ export function buildMemoryOuterScene({ makeLabel, healed = false }) {
   water.position.y = -0.32;
   root.add(water);
 
-  // 기억의 심장 — 섬 전체가 이 박동에 맞춰 산다.
+  // 중앙 감사 인덱스 — 섬 전체 기록의 갱신 신호.
   const heartMat = new THREE.MeshStandardMaterial({
     color: 0xa84a6c,
     emissive: 0x7c2846,
@@ -664,7 +884,7 @@ export function buildMemoryOuterScene({ makeLabel, healed = false }) {
     root.add(shard);
     shards.push(shard);
   }
-  const heartLabel = makeLabel('💠 기억의 심장', '#e8b8d8');
+  const heartLabel = makeLabel('💠 중앙 감사 인덱스', '#e8b8d8');
   heartLabel.position.set(0.4, 6.0, -5.2);
   root.add(heartLabel);
 
@@ -714,8 +934,8 @@ export function buildMemoryOuterScene({ makeLabel, healed = false }) {
   root.add(raftLabel);
 
   const interactables = [
-    { id: 'spirit', x: 0.4, z: -3.0, labelKo: '기억의 심장에 다가간다' },
-    { id: 'portal', x: 0.4, z: -8.0, labelKo: '심부 관문' },
+    { id: 'spirit', x: 0.4, z: -3.0, labelKo: '중앙 감사 인덱스를 확인한다' },
+    { id: 'portal', x: 0.4, z: -8.0, labelKo: '공개 심리실 관문' },
     { id: 'raft', x: -3.4, z: 10.4, labelKo: '뗏목 — 바다로 돌아간다' }
   ];
 
@@ -753,7 +973,7 @@ export function buildMemoryOuterScene({ makeLabel, healed = false }) {
   return built;
 }
 
-// 5호: 기억의 심장 심부 (최종 재대결) — 심연 위의 아레나, 노이즈의 잔영이 기다린다.
+// 5호: 공개 심리실 — 심연 위의 아레나, 화이트아웃 프로토콜이 기다린다.
 export function buildMemoryCoreScene({ makeLabel, healed = false }) {
   const root = new THREE.Group();
 
@@ -777,7 +997,7 @@ export function buildMemoryCoreScene({ makeLabel, healed = false }) {
   rim.position.y = 0.34;
   root.add(rim);
 
-  // 노이즈의 잔영 — 검은 결정 덩어리. 4껍질(동사 색 고리)이 지키고 있다.
+  // 화이트아웃 코어 — 검은 결정 덩어리. 4껍질(동사 색 고리)이 지키고 있다.
   const bossMat = new THREE.MeshStandardMaterial({
     color: 0x2a2438,
     emissive: 0x4a1a2c,
@@ -788,7 +1008,7 @@ export function buildMemoryCoreScene({ makeLabel, healed = false }) {
   const boss = new THREE.Mesh(new THREE.IcosahedronGeometry(1.5, 0), bossMat);
   boss.position.set(RESIDUE.boss.x, 2.3, RESIDUE.boss.z);
   root.add(boss);
-  const bossLabel = makeLabel('⚡ 노이즈의 잔영', '#d8a8c8');
+  const bossLabel = makeLabel('⬜ 화이트아웃 코어', '#d8a8c8');
   bossLabel.position.set(RESIDUE.boss.x, 5.2, RESIDUE.boss.z);
   root.add(bossLabel);
   // 페이즈 껍질 고리 — 바깥부터 깨져 나간다.

@@ -81,198 +81,6 @@ try {
   check(!afterSkip.cine && afterSkip.seen, '시네마틱 스킵 → prologueSeen 저장·연출 종료');
   check((await st()).mode === 'overworld', '타이틀→프롤로그 스킵→오버월드 진입');
 
-  // ── G1 글리치 헌터: 베기 → 스태거 → 정화 피니셔 → 파편·로어 ──
-  await p.waitForTimeout(600); // 첫 오버월드 프레임에서 필드 스폰(lazy)
-  const g0 = await p.evaluate(() => {
-    const f = window.__ethicsGame.renderState.glitchField;
-    const it = f?.items.find((i) => i.data.state !== 'purified');
-    return it ? { id: it.data.id, topic: it.data.topicId } : null;
-  });
-  check(Boolean(g0), `필드 글리치 스폰(미해결 구역, 첫 대상 ${g0?.id})`);
-  let staggered = false;
-  for (let i = 0; i < 14 && !staggered; i += 1) {
-    // 글리치가 움직이므로 매 스윙 전에 정면 근접으로 재배치(전방 부채꼴 판정 보장).
-    await p.evaluate((id) => {
-      const g = window.__ethicsGame;
-      const it = g.renderState.glitchField.items.find((x) => x.data.id === id);
-      g.player.position.set(it.data.x, 0.55, it.data.z + 1.3);
-      g.player.direction.set(0, 0, -1);
-      if (g.glitchCombat) g.glitchCombat.slash = null; // 후딜 대기 없이 즉시 스윙(프레임 데이터는 유닛이 검증)
-    }, g0.id);
-    await p.keyboard.press('e');
-    await p.waitForTimeout(260);
-    staggered = await p.evaluate(
-      (id) => window.__ethicsGame.renderState.glitchField.items.find((x) => x.data.id === id).data.state === 'stagger',
-      g0.id
-    );
-  }
-  check(staggered, '베기 3히트 → 글리치 스태거(정화 대기)');
-  await p.evaluate((id) => {
-    const g = window.__ethicsGame;
-    const it = g.renderState.glitchField.items.find((x) => x.data.id === id);
-    g.player.position.set(it.data.x, 0.55, it.data.z + 1.0);
-  }, g0.id);
-  await p.waitForTimeout(300);
-  await p.keyboard.press('e');
-  await p.waitForTimeout(400);
-  const purified = await p.evaluate((id) => {
-    const g = window.__ethicsGame;
-    return {
-      state: g.renderState.glitchField.items.find((x) => x.data.id === id).data.state,
-      shards: g.progress.glitchShards,
-      lore: g.progress.loreCards,
-      toast: !g.renderState ? false : !document.querySelector('[data-lore-card]').hidden
-    };
-  }, g0.id);
-  check(purified.state === 'purified' && purified.shards >= 3, `정화 피니셔 → 파편 +${purified.shards}`);
-  check(purified.lore.includes(g0.topic) && purified.toast, '로어 카드 도감 기록 + 토스트 표시');
-  // ── G2 조우 웨이브: 구역 소탕 → 다음 웨이브 스폰(슬쩍이 포함) ──
-  const biasWave0 = await p.evaluate(() => {
-    const f = window.__ethicsGame.renderState.glitchField;
-    f.items.filter((i) => i.data.topicId === 'bias').forEach((i) => { i.data.state = 'purified'; });
-    f.waveDelay.bias = 1.35; // 소탕 정적(1.4s)을 선진행 — 헤드리스 저프레임에서도 결정적
-    return f.waves.bias;
-  });
-  await p.waitForFunction(() => window.__ethicsGame.renderState.glitchField.waves.bias === 1, { timeout: 15000 }).catch(() => {});
-  const biasWave1 = await p.evaluate(() => {
-    const f = window.__ethicsGame.renderState.glitchField;
-    return {
-      wave: f.waves.bias,
-      fresh: f.items.filter((i) => i.data.topicId === 'bias' && i.data.state !== 'purified').map((i) => i.data.archetypeId)
-    };
-  });
-  check(biasWave0 === 0 && biasWave1.wave === 1 && biasWave1.fresh.includes('snitcher'), `구역 소탕 → 2웨이브 등장(${biasWave1.fresh.join(',')})`);
-
-  // ── G2 슬쩍이: 잡기 → 파편 강탈·도주 → 베어서 즉시 회수 ──
-  await p.evaluate(() => {
-    const g = window.__ethicsGame;
-    g.progress = { ...g.progress, glitchShards: 5 };
-    const it = g.renderState.glitchField.items.find((i) => i.data.archetypeId === 'snitcher' && i.data.state !== 'purified');
-    // 유효 창을 직접 열어 잡기 접촉을 재현(선딜·창 타이밍은 유닛이 검증).
-    g.player.position.set(it.data.x, 0.55, it.data.z);
-    it.data.state = 'attack';
-    it.data.t = 0;
-    it.data.hitConsumed = false;
-  });
-  await p.waitForFunction(
-    () => window.__ethicsGame.renderState.glitchField.items.some((i) => i.data.stolen > 0 && i.gem.visible),
-    { timeout: 15000 }
-  ).catch(() => {});
-  const grabbed = await p.evaluate(() => {
-    const g = window.__ethicsGame;
-    const it = g.renderState.glitchField.items.find((i) => i.data.archetypeId === 'snitcher' && i.data.stolen > 0);
-    return it ? { shards: g.progress.glitchShards, state: it.data.state, gem: it.gem.visible, id: it.data.id } : null;
-  });
-  check(grabbed && grabbed.shards === 3 && grabbed.state === 'flee' && grabbed.gem, `슬쩍이 강탈 → 파편 5→${grabbed?.shards}·도주·보석 표시`);
-  let recovered = null;
-  for (let i = 0; grabbed && i < 10 && !recovered; i += 1) {
-    await p.evaluate((id) => {
-      const g = window.__ethicsGame;
-      const it = g.renderState.glitchField.items.find((x) => x.data.id === id);
-      g.player.position.set(it.data.x, 0.55, it.data.z + 1.3);
-      g.player.direction.set(0, 0, -1);
-      if (g.glitchCombat) g.glitchCombat.slash = null;
-    }, grabbed.id);
-    await p.keyboard.press('e');
-    await p.waitForTimeout(220);
-    recovered = await p.evaluate((id) => {
-      const g = window.__ethicsGame;
-      const it = g.renderState.glitchField.items.find((x) => x.data.id === id);
-      return it.data.stolen === 0 && g.progress.glitchShards === 5 ? { drop: it.data.droppedShards } : null;
-    }, grabbed.id);
-  }
-  check(recovered && recovered.drop === 0, '추격 베기 → 훔친 파편 전량 회수(영구 손실 없음)');
-
-  // ── G2 에코 쌍둥이: 가짜를 베면 무보상 흩어짐, 진짜는 남는다 ──
-  await p.evaluate(() => {
-    const f = window.__ethicsGame.renderState.glitchField;
-    f.items.filter((i) => i.data.topicId === 'deepfake').forEach((i) => { i.data.state = 'purified'; });
-    f.waveDelay.deepfake = 1.35;
-  });
-  await p.waitForFunction(() => window.__ethicsGame.renderState.glitchField.waves.deepfake === 1, { timeout: 15000 }).catch(() => {});
-  const echoPair = await p.evaluate(() => {
-    const f = window.__ethicsGame.renderState.glitchField;
-    const live = f.items.filter((i) => i.data.topicId === 'deepfake' && i.data.state !== 'purified');
-    return {
-      fake: live.find((i) => i.data.variant === 'echo')?.data.id ?? null,
-      real: live.find((i) => i.data.archetypeId === 'echo' && i.data.variant === 'real')?.data.id ?? null
-    };
-  });
-  check(Boolean(echoPair.fake && echoPair.real), '딥페이크 웨이브에 진짜/가짜 메아리 한 쌍 스폰');
-  if (echoPair.fake && echoPair.real) {
-  const dispersed = await p.evaluate((id) => {
-    const g = window.__ethicsGame;
-    const it = g.renderState.glitchField.items.find((x) => x.data.id === id);
-    const before = g.progress.glitchShards;
-    g.player.position.set(it.data.x, 0.55, it.data.z + 1.3);
-    g.player.direction.set(0, 0, -1);
-    if (it.data.state === 'idle') it.data.state = 'pursue'; // 교전 판정 보장(대화 오픈 방지)
-    if (g.glitchCombat) g.glitchCombat.slash = null;
-    return { before };
-  }, echoPair.fake);
-  await p.keyboard.press('e');
-  await p.waitForTimeout(250);
-  const echoAfter = await p.evaluate(([fakeId, realId]) => {
-    const g = window.__ethicsGame;
-    const fake = g.renderState.glitchField.items.find((x) => x.data.id === fakeId);
-    const real = g.renderState.glitchField.items.find((x) => x.data.id === realId);
-    return { fakeState: fake.data.state, realState: real.data.state, shards: g.progress.glitchShards };
-  }, [echoPair.fake, echoPair.real]);
-  check(echoAfter.fakeState === 'purified' && echoAfter.realState !== 'purified' && echoAfter.shards === dispersed.before,
-    '가짜를 베면 흩어짐(보상·벌점 0), 진짜는 남는다');
-  }
-
-  // ── G3 세공 모루: 파편 → 회피 스텝 구매 → F 대시 발동 ──
-  await p.evaluate(() => {
-    const g = window.__ethicsGame;
-    g.progress = { ...g.progress, glitchShards: 12 };
-  });
-  // 저프레임 헤드리스에서 nearest 갱신이 늦을 수 있어 개점은 재시도 루프로.
-  let anvilOpen = { open: false, buy: false };
-  for (let i = 0; i < 5 && !anvilOpen.buy; i += 1) {
-    await tp(-2.6, 17.2, 0, 1); // 모루 앞
-    await p.waitForTimeout(700);
-    await A(500);
-    anvilOpen = await p.evaluate(() => ({
-      open: !window.__ethicsUi.dialog.hidden,
-      buy: Boolean(document.querySelector('[data-anvil-buy]'))
-    }));
-    if (!anvilOpen.buy) {
-      await closeDlg(); // 다른 대상이 열렸으면 닫고 재시도
-    }
-  }
-  check(anvilOpen.open && anvilOpen.buy, '세공 모루 상점 열림(구매 버튼 표시)');
-  await p.evaluate(() => document.querySelector('[data-anvil-buy]')?.click());
-  await p.waitForTimeout(300);
-  const bought = await p.evaluate(() => ({
-    owned: window.__ethicsGame.progress.combatUpgrades,
-    shards: window.__ethicsGame.progress.glitchShards
-  }));
-  check(bought.owned.includes('dodge') && bought.shards === 8, `회피 스텝 구매(파편 12→${bought.shards})`);
-  await closeDlg();
-  const beforeDodge = await p.evaluate(() => {
-    const g = window.__ethicsGame;
-    g.player.position.set(0, 0.55, 0);
-    g.player.direction.set(0, 0, -1);
-    return { z: g.player.position.z };
-  });
-  await p.keyboard.press('f');
-  await p.waitForFunction(() => window.__ethicsGame.player.position.z < -0.8, { timeout: 10000 }).catch(() => {});
-  const afterDodge = await p.evaluate(() => ({
-    z: window.__ethicsGame.player.position.z,
-    cd: window.__ethicsGame.dodge?.cd ?? 0
-  }));
-  check(afterDodge.z < beforeDodge.z - 0.8 && afterDodge.cd > 0, `회피 스텝 대시(z ${beforeDodge.z.toFixed(1)}→${afterDodge.z.toFixed(1)}, 쿨다운 가동)`);
-
-  // 이후 레거시 구간의 결정성을 위해 남은 필드 글리치·웨이브·보너스를 중립화(전투는 위에서 이미 증명).
-  await p.evaluate(() => {
-    const g = window.__ethicsGame;
-    const f = g.renderState.glitchField;
-    for (const t of Object.keys(f.waves)) f.waves[t] = 99; // 추가 웨이브 봉인
-    g.progress = { ...g.progress, glitchZonesCleared: ['privacy', 'bias', 'copyright', 'deepfake'] }; // 소탕 보너스 봉인
-    f.items.forEach((i) => { i.data.state = 'purified'; });
-  });
-
   // ── 간격 불변식: 모든 상호작용 대상 쌍 ≥ MIN_SEPARATION ──
   const sep = await p.evaluate(() => {
     const its = window.__ethicsGame.renderState.interactables;
@@ -351,7 +159,7 @@ try {
     const ceremony = await p.evaluate(() =>
       !window.__ethicsUi.ceremony.hidden && (window.__ethicsUi.ceremonyTitle.textContent ?? '').includes('획득')
     );
-    // N1: 제단 획득 2.9초 뒤(의식이 걷힌 뒤) '기억 파편' 회상 대화가 자동으로 열린다.
+    // 제단 획득 2.9초 뒤(의식이 걷힌 뒤) H-17 사건 증거가 자동으로 열린다.
     const memory = await p
       .waitForFunction(() => !window.__ethicsUi.dialog.hidden && window.__ethicsUi.dialog.classList.contains('memory-dialog'), { timeout: 6000 })
       .then(() => true)
@@ -379,19 +187,19 @@ try {
   for (const d of ['E', 'E', 'N', 'N']) await push('p2', d);
   check(await solved(), '개인정보: 상자 11수 해결');
   const firstCollect = await collect();
-  check(firstCollect.memory, '기억 파편 회상 자동 재생(잊혀진 수호자)');
+  check(firstCollect.memory, 'H-17 사건 증거 자동 재생');
   check(firstCollect.ceremony, '도구 획득 의식(데이터 캡슐·팡파레) 표시');
-  // 회상 2.4초 뒤 노이즈의 속삭임 자막이 글리치로 스며든다(반전 복선).
+  // 증거 2.4초 뒤 화이트아웃의 삭제 경고가 글리치로 스며든다.
   const whispered = await p
     .waitForFunction(() => { const w = window.__ethicsUi.noiseWhisper; return w && !w.hidden && w.textContent.length > 0; }, { timeout: 5000 })
     .then(() => true)
     .catch(() => false);
-  check(whispered, '노이즈 속삭임 자막 표시(도구 1개 시점)');
+  check(whispered, '화이트아웃 삭제 경고 표시(도구 1개 시점)');
 
   // ② 편향(잡기·프리셋 중복 교정)
   check(await enterDungeon('bias'), '편향 던전 진입');
   const at = async ([c, r], ox = 0, oz = 0.5) => { const w = cw(c, r); await tp(w.x + ox, w.z + oz); await A(); };
-  await at([4, 3]); // 노이즈가 심어둔 중복 빨강 되집기(bed2)
+  await at([4, 3]); // 편향된 데이터의 중복 빨강 되집기(bed2)
   await at([0, 2], 0.6, 0); // 파랑으로 교체
   await at([4, 3]); // 심기
   await at([0, 4], 0.6, 0); await at([5, 3]); // 노랑
@@ -475,17 +283,14 @@ try {
   await p.waitForTimeout(400);
   await closeDlg();
 
-  // ── 보스 4페이즈 → 가르침 → 증명서 ─────────────────
+  // ── 화이트아웃 4페이즈 → 삭제 명령 공개 → 증명서 ────
   let bossStarted = false;
   for (let i = 0; i < 4 && !bossStarted; i += 1) {
     await tp(0, 2.2); await p.waitForTimeout(1000); await A(800);
     bossStarted = await p.evaluate(() => Boolean(window.__ethicsGame.combat));
   }
   check(bossStarted, '보스전 진입(도구 4개 게이트 통과)');
-  // G4 문법: 페이즈마다 정답 명중 2회 → 보스 스태거(금빛 링) → A 정화 피니셔로 껍질 파괴.
-  const shardsBeforeBoss = await p.evaluate(() => window.__ethicsGame.progress.glitchShards ?? 0);
-  let sawBossStagger = false;
-  for (let i = 0; i < 16 && await p.evaluate(() => Boolean(window.__ethicsGame.combat)); i += 1) {
+  for (let i = 0; i < 8; i += 1) {
     await p.evaluate(() => {
       const g = window.__ethicsGame; const c = g.combat; if (!c) return;
       const boss = g.renderState.noiseBoss;
@@ -493,21 +298,16 @@ try {
       g.player.position.set(boss.baseX ?? 0, 0.55, (boss.baseZ ?? 0) + 1.0);
     });
     await p.keyboard.press('e'); await p.waitForTimeout(300);
-    sawBossStagger = sawBossStagger || await p.evaluate(() => (window.__ethicsGame.combat?.bossStagger ?? 0) > 0);
   }
-  check(sawBossStagger, '보스 스태거 발생(껍질 마지막 점은 정화 피니셔의 몫)');
-  const shardsAfterBoss = await p.evaluate(() => window.__ethicsGame.progress.glitchShards ?? 0);
-  check(shardsAfterBoss >= shardsBeforeBoss + 12, `정화 피니셔 파편 보상(+${shardsAfterBoss - shardsBeforeBoss}, 4껍질×3)`);
-  // N4: 제압 직후 반전 공개(회상 완성)가 선택보다 먼저 나온다.
+  // 제압 직후 H-17 삭제 명령과 사람 승인자가 공개된다.
   await p.waitForTimeout(1400);
-  const revelation = await p.evaluate(() => window.__ethicsUi.dialogBody.textContent.includes('그 아이는, 나였다'));
-  check(revelation, '반전 공개 — 회상 완성(아이=나, 빛=노이즈)');
+  const revelation = await p.evaluate(() => window.__ethicsUi.dialogBody.textContent.includes('대상 H-17'));
+  check(revelation, '2장 반전 공개 — H-17 삭제 명령과 사람 승인자');
   for (let i = 0; i < 25; i += 1) {
     if (await p.evaluate(() => window.__ethicsUi.certificate && !window.__ethicsUi.certificate.hidden)) break;
     await p.evaluate(() => {
       const body = window.__ethicsUi.dialogBody;
-      (body.querySelector('[data-finale-choice="teach"]')
-        ?? body.querySelector('[data-finale]')
+      (body.querySelector('[data-finale]')
         ?? body.querySelector('[data-dialog-ok], .finale-next'))?.click();
     });
     await p.waitForTimeout(500);
@@ -517,7 +317,7 @@ try {
     done: window.__ethicsGame.progress.aiCoreCompleted,
     nameLine: Boolean(document.querySelector('.cert-name-line'))
   }));
-  check(fin.cert && fin.done, '가르침 선택 → 증명서 발급');
+  check(fin.cert && fin.done, '감사 코어 공개 → 증거 확인서 발급');
   check(fin.nameLine, '증명서에 이름 손글씨 칸 존재');
 
   // ── 인쇄 격리(증명서만 보임) ───────────────────────
@@ -634,18 +434,37 @@ try {
     arrow.z = -7.5;
   });
   await p.waitForTimeout(1600);
-  const healed = await p.evaluate(() => {
+  const corridorDone = await p.evaluate(() => {
     const g = window.__ethicsGame;
     return {
       completed: g.progress.stages['whisper-cape']?.completed === true,
       cleared: g.isle.challenge?.cleared === true,
-      wispsGone: g.isle.built.wisps.every((w) => !w.visible),
-      thanks: !window.__ethicsUi.dialog.hidden
+      followup: Boolean(g.isle.followup?.resolved),
+      intro: !window.__ethicsUi.dialog.hidden
     };
   });
   check(
-    healed.completed && healed.cleared && healed.wispsGone && healed.thanks,
-    '회랑 클리어 → 정령 치유 + 스테이지 완료 기록 + 감사 대화'
+    corridorDone.cleared && !corridorDone.completed && corridorDone.followup && corridorDone.intro,
+    '회랑 클리어 → 남겨진 발자국 3D 후속 도전 개방(아직 장 미완료)'
+  );
+  await closeDlg();
+  for (const [x, z] of [[-2.2, 7.4], [1.5, 8.8], [5.0, 7.1]]) {
+    await tp(x, z + 0.4, 0, -1);
+    await p.waitForTimeout(700);
+    await A(500);
+  }
+  const healed = await p.evaluate(() => {
+    const g = window.__ethicsGame;
+    return {
+      completed: g.progress.stages['whisper-cape']?.completed === true,
+      footprint: g.isle.followup?.cleared === true,
+      wispsGone: g.isle.built.wisps.every((w) => !w.visible),
+      ending: !window.__ethicsUi.dialog.hidden
+    };
+  });
+  check(
+    healed.completed && healed.footprint && healed.wispsGone && healed.ending,
+    '복사본 삭제 → 확산 중단 → 사과·도움: 정령 치유 + 3장 완료'
   );
   await closeDlg();
 
@@ -704,18 +523,38 @@ try {
     await p.waitForTimeout(1000);
     await A(700);
   }
-  const rumorDone = await p.evaluate(() => {
+  const rumorPrimaryDone = await p.evaluate(() => {
     const g = window.__ethicsGame;
     return {
       cleared: g.isle.challenge?.cleared === true,
       completed: g.progress.stages['echo-cave']?.completed === true,
-      bubblesGone: [...g.isle.built.stoneBubbles.values()].every((b) => !b.visible),
-      thanks: !window.__ethicsUi.dialog.hidden
+      followup: Boolean(g.isle.followup?.verified),
+      intro: !window.__ethicsUi.dialog.hidden
     };
   });
   check(
-    rumorDone.cleared && rumorDone.completed && rumorDone.bubblesGone && rumorDone.thanks,
-    '소문의 벽 클리어 → 고래 치유 + 스테이지 완료 기록 + 감사 대화'
+    rumorPrimaryDone.cleared && !rumorPrimaryDone.completed && rumorPrimaryDone.followup && rumorPrimaryDone.intro,
+    '소문의 벽 클리어 → 필터 버블의 창 3D 후속 도전 개방'
+  );
+  await closeDlg();
+  for (const [x, z] of [[-6.8, -4.7], [-7.8, -0.8], [-6.4, 3.3]]) {
+    await tp(x, z + 0.4, 0, -1);
+    await p.waitForTimeout(700);
+    await p.keyboard.press('f');
+    await p.waitForTimeout(500);
+  }
+  const rumorDone = await p.evaluate(() => {
+    const g = window.__ethicsGame;
+    return {
+      completed: g.progress.stages['echo-cave']?.completed === true,
+      bubble: g.isle.followup?.cleared === true,
+      bubblesGone: [...g.isle.built.stoneBubbles.values()].every((b) => !b.visible),
+      ending: !window.__ethicsUi.dialog.hidden
+    };
+  });
+  check(
+    rumorDone.completed && rumorDone.bubble && rumorDone.bubblesGone && rumorDone.ending,
+    '원본·맥락·다른 관점 확인 → 필터 버블 해제 + 4장 완료'
   );
   await closeDlg();
 
@@ -782,18 +621,44 @@ try {
       if (await p.evaluate((gid) => window.__ethicsGame.isle.challenge?.locked[gid] !== false, gid)) break;
     }
   }
-  const dunesDone = await p.evaluate(() => {
+  const dunesPrimaryDone = await p.evaluate(() => {
     const g = window.__ethicsGame;
     return {
       cleared: g.isle.challenge?.cleared === true,
       completed: g.progress.stages['hourglass-port']?.completed === true,
-      sand: [...g.isle.built.sandCores.values()].every((s) => s.visible),
-      thanks: !window.__ethicsUi.dialog.hidden
+      followup: Boolean(g.isle.followup?.labels),
+      intro: !window.__ethicsUi.dialog.hidden
     };
   });
   check(
-    dunesDone.cleared && dunesDone.completed && dunesDone.sand && dunesDone.thanks,
-    '사구 클리어 → 거북 숙면 + 스테이지 완료 기록 + 감사 대화'
+    dunesPrimaryDone.cleared && !dunesPrimaryDone.completed && dunesPrimaryDone.followup && dunesPrimaryDone.intro,
+    '사구 클리어 → 표시 없는 화물 3D 후속 도전 개방'
+  );
+  await closeDlg();
+  const cargoLabels = [
+    [4.4, 6.7, 1],
+    [5.7, 5.3, 2],
+    [3.8, 4.8, 3]
+  ];
+  for (const [x, z, cycles] of cargoLabels) {
+    await tp(x, z + 0.35, 0, -1);
+    await p.waitForTimeout(700);
+    for (let i = 0; i < cycles; i += 1) await A(300);
+  }
+  await p.keyboard.press('f');
+  await p.waitForTimeout(700);
+  const dunesDone = await p.evaluate(() => {
+    const g = window.__ethicsGame;
+    return {
+      completed: g.progress.stages['hourglass-port']?.completed === true,
+      cargo: g.isle.followup?.cleared === true,
+      sand: [...g.isle.built.sandCores.values()].every((s) => s.visible),
+      ending: !window.__ethicsUi.dialog.hidden
+    };
+  });
+  check(
+    dunesDone.completed && dunesDone.cargo && dunesDone.sand && dunesDone.ending,
+    '사람 제작·AI 도움·AI 생성 라벨 검수 → 거북 숙면 + 5장 완료'
   );
   await closeDlg();
 
@@ -802,7 +667,7 @@ try {
   await A(800);
   check((await st()).mode === 'voyage', '모래시계 항구 → 바다 복귀');
 
-  // ── 기억의 심장 외곽: 상륙 → 심장의 목소리(도전 시작) → 4봉인 해제 → 심부 개방 ──
+  // ── 감사 기록 보관소: 상륙 → 연결 신호 → 4봉인 해제 → 공개 심리실 개방 ──
   await tp(17.6, -51.9, 0, -1);
   await p.waitForTimeout(1000);
   await A(800);
@@ -811,7 +676,7 @@ try {
     stage: window.__ethicsGame.isle?.stageId,
     arrival: !window.__ethicsUi.dialog.hidden
   }));
-  check(outer.mode === 'isle' && outer.stage === 'memory-outer' && outer.arrival, '기억의 심장 외곽 상륙(도착 서사)');
+  check(outer.mode === 'isle' && outer.stage === 'memory-outer' && outer.arrival, '감사 기록 보관소 상륙(도착 서사)');
   await closeDlg();
   await tp(0.4, -2.6, 0, -1);
   await p.waitForTimeout(1000);
@@ -820,7 +685,7 @@ try {
     dialog: !window.__ethicsUi.dialog.hidden,
     challenge: Boolean(window.__ethicsGame.isle?.challenge?.released)
   }));
-  check(heartVoice.dialog && heartVoice.challenge, '심장의 목소리 → 4봉인 훈련 시작');
+  check(heartVoice.dialog && heartVoice.challenge, '감사관 연결 신호 → 4봉인 훈련 시작');
   await closeDlg();
   // 봉인별: 빛 만개 t로 워프 → F (느린 프레임 드리프트 대비 재시도).
   const seals = [
@@ -903,23 +768,41 @@ try {
       if (await p.evaluate((idx) => window.__ethicsGame.isle.challenge?.phase > idx || window.__ethicsGame.isle.challenge?.stage === 'defeated', idx)) break;
     }
   }
-  const finale = await p.evaluate(() => {
+  const finaleChoice = await p.evaluate(() => {
     const g = window.__ethicsGame;
-    const stages = g.progress.stages;
     return {
       defeated: g.isle.challenge?.stage === 'defeated',
-      completed: stages['memory-core']?.completed === true,
-      allHealed: ['whisper-cape', 'echo-cave', 'hourglass-port', 'memory-outer', 'memory-core'].every((id) => stages[id]?.completed === true),
+      completed: g.progress.stages['memory-core']?.completed === true,
       stars: g.isle.built.memoryStars.every((s) => s.visible),
       bossGone: !g.isle.built.boss.visible,
-      ending: !window.__ethicsUi.dialog.hidden
+      choice: Boolean(window.__ethicsUi.dialogBody.querySelector('[data-campaign-choice="hearing"]'))
     };
   });
   check(
-    finale.defeated && finale.completed && finale.allHealed && finale.stars && finale.bossGone && finale.ending,
-    '잔영 격파 → 2막 엔딩(기억의 별·군도 완전 치유)'
+    finaleChoice.defeated && !finaleChoice.completed && finaleChoice.stars && finaleChoice.bossGone && finaleChoice.choice,
+    '화이트아웃 중지 → 봉인/공개 심리 최종 책임 선택'
   );
-  await closeDlg();
+  await p.evaluate(() => window.__ethicsUi.dialogBody.querySelector('[data-campaign-choice="hearing"]')?.click());
+  await p.waitForTimeout(700);
+  const taught = await p.evaluate(() => ({
+    campaign: window.__ethicsGame.progress.campaignCompleted === true,
+    completed: window.__ethicsGame.progress.stages['memory-core']?.completed === true,
+    nova: window.__ethicsGame.noiseIsNova === true,
+    certificateButton: Boolean(window.__ethicsUi.dialogBody.querySelector('[data-campaign-certificate]'))
+  }));
+  check(
+    taught.campaign && taught.completed && taught.certificateButton,
+    '개인정보 보호 공개 심리 → 6장 완료·캠페인 완주 저장'
+  );
+  await p.evaluate(() => window.__ethicsUi.dialogBody.querySelector('[data-campaign-certificate]')?.click());
+  await p.waitForTimeout(600);
+  const finalCert = await p.evaluate(() => ({
+    visible: !window.__ethicsUi.certificate.hidden,
+    title: window.__ethicsUi.certificateCard?.innerText ?? ''
+  }));
+  check(finalCert.visible && finalCert.title.includes('완주증'), '6장 AI 윤리 시민 감사관 완주증 발급');
+  await p.evaluate(() => window.__ethicsUi.certificateCard.querySelector('[data-cert-close]')?.click());
+  await p.waitForTimeout(300);
   await tp(-3.4, 8.4, 0, 1);
   await p.waitForTimeout(1000);
   await A(800);
@@ -944,7 +827,7 @@ try {
   });
   check(beacon.count === 6 && beacon.visible === 6, `진실의 등대 진행도 광선 6줄기 (실제 ${beacon.visible})`);
 
-  // ── 에필로그: 노바의 편지 4통 완독 → 별똥별 인사 + 완결 기록 ──
+  // ── 에필로그: 하루의 감사 신호 4통 완독 → 별똥별 인사 + 완결 기록 ──
   await tp(0.4, 17.2, 0, -1);
   await p.waitForTimeout(1000);
   for (let i = 0; i < 4; i += 1) {
@@ -956,7 +839,7 @@ try {
     shower: window.__ethicsGame.renderState.starShower?.active === true
       || window.__ethicsGame.renderState.starShower?.stars?.length > 0
   }));
-  check(epilogue.read === 4 && epilogue.shower, `노바 편지 4통 완독 → 별똥별 에필로그(읽음 ${epilogue.read})`);
+  check(epilogue.read === 4 && epilogue.shower, `하루 감사 신호 4통 완독 → 별똥별 에필로그(읽음 ${epilogue.read})`);
   await p.evaluate(() => window.__ethicsUi.journalToggle?.click());
   await p.waitForTimeout(600);
   const finaleNote = await p.evaluate(() => (window.__ethicsUi.journalContent?.innerText ?? '').includes('패스파인더'));

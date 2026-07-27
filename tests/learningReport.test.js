@@ -140,7 +140,16 @@ test('report expansion(루프3): 심화 2막·유리병 신호는 필드 추가�
   // 새 세이브: 심화 신호는 전부 0/false, 기존 신호 형태는 그대로.
   const fresh = getLearningReport(createInitialProgress());
   assert.deepEqual(fresh.expansion, {
-    healedIsles: 0, totalIsles: 4, remnantCleared: false, lettersRead: 0, bottlesFound: 0, bottlesTotal: 12
+    healedIsles: 0,
+    totalIsles: 4,
+    remnantCleared: false,
+    lettersRead: 0,
+    bottlesFound: 0,
+    bottlesTotal: 12,
+    campaignCompleted: false,
+    chapter3dAttempts: 0,
+    chapter3dSolved: 0,
+    chapter3dRecovered: 0
   });
   assert.equal(typeof fresh.solvedCount, 'number');
   assert.equal(typeof fresh.core.completed, 'boolean');
@@ -154,4 +163,20 @@ test('report expansion(루프3): 심화 2막·유리병 신호는 필드 추가�
   assert.equal(report.expansion.healedIsles, 2);
   assert.equal(report.expansion.remnantCleared, true);
   assert.equal(report.expansion.bottlesFound, 1);
+});
+
+test('report records 3D chapter puzzle completion and recovery', async () => {
+  const { getLearningReport, createInitialProgress } = await import('../src/worldData.js');
+  const progress = {
+    ...createInitialProgress(),
+    choiceLog: [
+      { kind: 'chapter-3d', stageId: 'whisper-cape', choiceId: 'repair-harm', correct: false },
+      { kind: 'chapter-3d', stageId: 'whisper-cape', choiceId: 'remove-stop-repair', correct: true },
+      { kind: 'chapter-3d', stageId: 'echo-cave', choiceId: 'verify-diverse-sources', correct: true }
+    ]
+  };
+  const report = getLearningReport(progress);
+  assert.equal(report.expansion.chapter3dAttempts, 3);
+  assert.equal(report.expansion.chapter3dSolved, 2);
+  assert.equal(report.expansion.chapter3dRecovered, 1);
 });
