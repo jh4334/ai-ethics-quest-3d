@@ -49,7 +49,7 @@ test('living world(Z1): 풀 흔들림·앰비언트 생물·블롭 그림자가 
   assert.match(mainSource, /swayPhase = instanceMatrix\[3\]\.x/);
   assert.match(mainSource, /uTime \* 1\.9 \+ swayPhase/);
   // 앰비언트 생물: 비트나비·소식 갈매기·굴뚝 연기 — elapsed 기반 결정적 궤도.
-  const lifeBlock = mainSource.match(/function createAmbientLife[\s\S]*?\n\}\n/)?.[0] ?? '';
+  const lifeBlock = mainSource.match(/function createAmbientLife[\s\S]*?\r?\n\}\r?\n/)?.[0] ?? '';
   assert.ok(lifeBlock.includes('butterflies'), 'createAmbientLife에 비트나비');
   assert.ok(lifeBlock.includes('gulls'), 'createAmbientLife에 갈매기');
   assert.ok(lifeBlock.includes('puffs'), 'createAmbientLife에 연기 퍼프');
@@ -229,7 +229,7 @@ test('first-control beat(R-루프1): 시네마틱 종료·스킵 후 첫 조작�
   // 첫 플레이 1회만(재방문 세이브에선 안 뜸).
   assert.match(mainSource, /firstControlBeatDone/);
   // finishPrologueCinematic이 비트를 호출(스킵·정상 종료 공통 경로).
-  assert.match(mainSource, /snapCamera\(game\.renderState\.camera, game\.player\.position\);\n  playFirstControlBeat/);
+  assert.match(mainSource, /snapCamera\(game\.renderState\.camera, game\.player\.position\);\r?\n  playFirstControlBeat/);
   assert.match(cssSrc, /@keyframes chipAttn/);
 });
 
@@ -284,7 +284,7 @@ test('touch dialog(루프1): 터치 기기에서 대화 버튼 타깃 확대 + �
   assert.match(coarseBlock, /\.panel-heading button \{[\s\S]*?min-height: 46px/);
   assert.match(coarseBlock, /\.finale-next \{[\s\S]*?min-height: 52px/);
   // 태블릿에서 대화창이 하단 스틱과 겹치지 않게 위치·높이 캡.
-  assert.match(cssSrc, /top: 40%;\n    max-height: min\(60vh, 560px\)/);
+  assert.match(cssSrc, /top: 40%;\r?\n    max-height: min\(60vh, 560px\)/);
 });
 
 test('pwa(루프2): 매니페스트·서비스워커·등록이 오프라인 주장(요약본)을 실제로 충족한다', () => {
@@ -700,7 +700,7 @@ test('scene BGM: three procedural layers crossfade on dungeon/boss transitions (
 });
 
 test('mobile HUD stays minimal: one-line objective, small popups, clamped dungeon/boss panels', () => {
-  const mobile = cssSource.match(/@media \(pointer: coarse\), \(max-width: 760px\) \{[\s\S]*?\n\}\n/g)?.join('') ?? '';
+  const mobile = cssSource.match(/@media \(pointer: coarse\), \(max-width: 760px\) \{[\s\S]*?\r?\n\}\r?\n/g)?.join('') ?? '';
   // 목표 칩은 모바일에서 한 줄로(작은 화면에서 조작 공간 확보).
   assert.match(mobile, /\.objective-chip p:last-child \{[\s\S]*?-webkit-line-clamp: 1/);
   // 전투 팝업·던전 목표·보스 말풍선은 축소/클램프.
