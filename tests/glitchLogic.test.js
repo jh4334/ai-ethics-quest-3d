@@ -171,6 +171,27 @@ test('조우 웨이브(G2): 고정표·결정적, 딥페이크 최종 웨이브�
   }
 });
 
+test('세공 트랙(G3): 순서 고정 구매·잔액 계산·강화 반영 파라미터', async () => {
+  const { DODGE, UPGRADE_TRACK, getSlashParams, nextUpgrade, purchaseUpgrade } = await import('../src/glitchLogic.js');
+  // 트랙: 회피 → 사거리 → 체인 → 파동. 비용은 오름차순(진행 구배).
+  assert.deepEqual(UPGRADE_TRACK.map((u) => u.id), ['dodge', 'reach', 'chain4', 'purifyWave']);
+  for (let i = 1; i < UPGRADE_TRACK.length; i += 1) {
+    assert.ok(UPGRADE_TRACK[i].cost > UPGRADE_TRACK[i - 1].cost);
+  }
+  // 구매: 순서대로만, 파편 부족이면 null(벌점 없음 — 거래 자체가 안 일어남).
+  assert.equal(nextUpgrade([]).id, 'dodge');
+  assert.equal(purchaseUpgrade([], 3), null, '파편 부족');
+  const first = purchaseUpgrade([], 5);
+  assert.deepEqual(first, { id: 'dodge', shards: 1 });
+  assert.equal(nextUpgrade(['dodge']).id, 'reach');
+  assert.equal(nextUpgrade(UPGRADE_TRACK.map((u) => u.id)), null, '품절');
+  // 강화 반영: 기본 ↔ 사거리·체인 업그레이드.
+  assert.deepEqual(getSlashParams([]), { range: SLASH.range, chainMax: 3 });
+  assert.deepEqual(getSlashParams(['dodge', 'reach', 'chain4']), { range: SLASH.range + 0.5, chainMax: 4 });
+  // 회피 프레임 데이터: 무적 창·쿨다운 존재, 대시가 무한 도주 수단이 되지 않게 지속은 짧다.
+  assert.ok(DODGE.iframes > 0 && DODGE.cooldown > 0 && DODGE.duration < 0.4);
+});
+
 test('콤보 배수는 x3 캡, 스폰은 고정표·미해결 구역만 (교실 재현성)', () => {
   assert.equal(comboMultiplier(0), 1);
   assert.equal(comboMultiplier(1), 1);

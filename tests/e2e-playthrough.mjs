@@ -222,6 +222,41 @@ try {
     '가짜를 베면 흩어짐(보상·벌점 0), 진짜는 남는다');
   }
 
+  // ── G3 세공 모루: 파편 → 회피 스텝 구매 → F 대시 발동 ──
+  await p.evaluate(() => {
+    const g = window.__ethicsGame;
+    g.progress = { ...g.progress, glitchShards: 12 };
+  });
+  await tp(-2.6, 17.2, 0, 1); // 모루 앞
+  await p.waitForTimeout(400);
+  await A(400);
+  const anvilOpen = await p.evaluate(() => ({
+    open: !window.__ethicsUi.dialog.hidden,
+    buy: Boolean(document.querySelector('[data-anvil-buy]'))
+  }));
+  check(anvilOpen.open && anvilOpen.buy, '세공 모루 상점 열림(구매 버튼 표시)');
+  await p.evaluate(() => document.querySelector('[data-anvil-buy]')?.click());
+  await p.waitForTimeout(300);
+  const bought = await p.evaluate(() => ({
+    owned: window.__ethicsGame.progress.combatUpgrades,
+    shards: window.__ethicsGame.progress.glitchShards
+  }));
+  check(bought.owned.includes('dodge') && bought.shards === 8, `회피 스텝 구매(파편 12→${bought.shards})`);
+  await closeDlg();
+  const beforeDodge = await p.evaluate(() => {
+    const g = window.__ethicsGame;
+    g.player.position.set(0, 0.55, 0);
+    g.player.direction.set(0, 0, -1);
+    return { z: g.player.position.z };
+  });
+  await p.keyboard.press('f');
+  await p.waitForFunction(() => window.__ethicsGame.player.position.z < -0.8, { timeout: 10000 }).catch(() => {});
+  const afterDodge = await p.evaluate(() => ({
+    z: window.__ethicsGame.player.position.z,
+    cd: window.__ethicsGame.dodge?.cd ?? 0
+  }));
+  check(afterDodge.z < beforeDodge.z - 0.8 && afterDodge.cd > 0, `회피 스텝 대시(z ${beforeDodge.z.toFixed(1)}→${afterDodge.z.toFixed(1)}, 쿨다운 가동)`);
+
   // 이후 레거시 구간의 결정성을 위해 남은 필드 글리치·웨이브·보너스를 중립화(전투는 위에서 이미 증명).
   await p.evaluate(() => {
     const g = window.__ethicsGame;
