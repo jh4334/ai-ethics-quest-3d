@@ -75,12 +75,17 @@ import {
 import {
   SLASH,
   PURIFY,
+  DODGE,
   GLITCH_ARCHETYPES,
+  UPGRADE_TRACK,
   ZONE_CLEAR_BONUS,
   buildFieldGlitches,
   buildWaveGlitches,
   consumeGlitchHit,
+  getSlashParams,
   hitGlitch,
+  nextUpgrade,
+  purchaseUpgrade,
   purifyGlitch,
   stealFromPlayer,
   stepGlitch,
@@ -687,6 +692,7 @@ function createWorld(renderState) {
   createCenterCore(world, animated);
 
   createDock(world, interactables, renderState);
+  createAnvil(world, interactables);
 
   createLighthouse(world, interactables, animated, renderState);
 
@@ -1386,6 +1392,38 @@ function createDock(scene, interactables, renderStateRef) {
   });
 }
 
+// 세공 모루(G3) — 정화로 모은 기억 파편을 전투 강화로 벼리는 작업대. 선착장 옆 광장.
+const ANVIL_POS = { x: -2.6, z: 18.8 };
+function createAnvil(scene, interactables) {
+  const g = new THREE.Group();
+  const stone = new THREE.MeshStandardMaterial({ color: 0x6f7480, roughness: 0.9 });
+  const iron = new THREE.MeshStandardMaterial({ color: 0x3d4250, roughness: 0.55, metalness: 0.2 });
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.7, 0.5, 8), stone);
+  base.position.y = 0.25;
+  g.add(base);
+  const body = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.34, 0.52), iron);
+  body.position.y = 0.68;
+  g.add(body);
+  const horn = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.5, 8), iron);
+  horn.rotation.z = Math.PI / 2;
+  horn.position.set(0.75, 0.68, 0);
+  g.add(horn);
+  // 모루에 박힌 기억 파편 — 파편을 쓰는 곳임을 한눈에.
+  const shard = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.2, 0),
+    new THREE.MeshStandardMaterial({ color: 0xffd76a, emissive: 0xd9a814, emissiveIntensity: 1.1 })
+  );
+  shard.position.set(-0.3, 0.98, 0);
+  g.add(shard);
+  g.position.set(ANVIL_POS.x, 0, ANVIL_POS.z);
+  scene.add(g);
+  interactables.push({
+    type: 'anvil',
+    position: new THREE.Vector3(ANVIL_POS.x, 0, ANVIL_POS.z),
+    labelKo: '세공 모루 — 파편으로 강화'
+  });
+}
+
 // 진실의 등대(Z4) — 섬 어디서든 보이는 세로 랜드마크이자 "신뢰할 수 있는 출처"의 은유.
 // 광선은 치유한 스테이지 수만큼 늘어난다(진행도가 풍경에 기록된다 — 뉴럴 가든 이식).
 const LIGHTHOUSE_POS = { x: 8.2, z: 15.6 };
@@ -2061,6 +2099,8 @@ function bindInput(game, ui) {
           useToolVerb(game, ui);
         } else if (game.combat?.active && game.combat.tools[game.combat.activeTool] === 'shield') {
           useToolVerb(game, ui);
+        } else if (game.mode === 'overworld' && tryDodgeStep(game, ui)) {
+          // 오버월드 🔄 = 회피 스텝(구매 후). 못 샀으면 기존대로 도구 전환.
         } else {
           cycleActiveTool(game, ui, 1);
         }
@@ -2517,6 +2557,7 @@ function updateGame(delta, game, renderState, ui) {
   updatePuzzle(delta, game, ui);
   updateInteractionIcons(game, renderState);
   updateNearestInteractable(game, renderState.interactables, ui);
+  updateDodge(delta, game);
   updateFieldGlitches(delta, game, ui);
   maybeTriggerFakeDot(game, ui);
 }
@@ -3047,8 +3088,13 @@ function updateFieldGlitches(delta, game, ui) {
         staggerNearby = true;
       }
     }
-    // 접촉 판정: 유효 창 + 근접 + 창당 1회(권위 있는 이벤트).
+    // 접촉 판정: 유효 창 + 근접 + 창당 1회(권위 있는 이벤트). 회피 무적 창이면 흘린다.
     if (intent.hitActive && dist < 0.95) {
+      if (game.dodge?.iframes > 0) {
+        consumeGlitchHit(g);
+        flashCombatPopup(ui, '💨 회피!', 'hit');
+        continue;
+      }
       consumeGlitchHit(g);
       if (g.variant === 'echo') {
         onEchoBrush(game, ui); // 환영 — 해가 없다
@@ -3075,12 +3121,13 @@ function hostileGlitchNear(game) {
     return false;
   }
   const p = game.player.position;
+  const { range } = getSlashParams(game.progress.combatUpgrades ?? []);
   return field.items.some((item) => {
     const g = item.data;
     if (g.state === 'purified' || g.state === 'idle' || g.state === 'stagger') {
       return false;
     }
-    return Math.hypot(p.x - g.x, p.z - g.z) < SLASH.range + 0.4;
+    return Math.hypot(p.x - g.x, p.z - g.z) < range + 0.4;
   });
 }
 
@@ -3088,8 +3135,9 @@ function hostileGlitchNear(game) {
 function trySlash(game, ui) {
   const gc = game.glitchCombat ?? (game.glitchCombat = { slash: null, combo: 0 });
   if (gc.slash) {
-    // 후딜 초반에 재입력 → 다음 타 예약(체인).
-    if (gc.slash.phase === 'recover' && gc.slash.t <= SLASH.chainWindow && gc.slash.chain < SLASH.chainMax) {
+    // 후딜 초반에 재입력 → 다음 타 예약(체인). 체인 상한은 강화(4연 체인) 반영.
+    const { chainMax } = getSlashParams(game.progress.combatUpgrades ?? []);
+    if (gc.slash.phase === 'recover' && gc.slash.t <= SLASH.chainWindow && gc.slash.chain < chainMax) {
       gc.slash.queued = true;
     }
     return true;
@@ -3110,6 +3158,7 @@ function resolveSlashHits(game, ui) {
   }
   const p = game.player.position;
   const dir = game.player.direction;
+  const { range } = getSlashParams(game.progress.combatUpgrades ?? []);
   for (const item of field.items) {
     const g = item.data;
     if (g.state === 'purified' || g.state === 'stagger') {
@@ -3118,7 +3167,7 @@ function resolveSlashHits(game, ui) {
     const dx = g.x - p.x;
     const dz = g.z - p.z;
     const dist = Math.hypot(dx, dz);
-    if (dist > SLASH.range) {
+    if (dist > range) {
       continue;
     }
     const dot = dist > 0.0001 ? (dx / dist) * dir.x + (dz / dist) * dir.z : 1;
@@ -3222,7 +3271,62 @@ function tryPurifyGlitch(game, ui) {
   game.hitStop = 0.06;
   flashCombatPopup(ui, `✨ 정화! +${reward.shards} 조각${reward.multiplier > 1 ? ` (콤보 x${reward.multiplier})` : ''}`, 'win');
   showLoreCard(game, ui, reward.loreKo);
+  // 강화 「정화 파동」 — 정화의 빛이 주변 글리치를 1히트씩 휘청이게 한다(연쇄 스태거의 씨앗).
+  if ((game.progress.combatUpgrades ?? []).includes('purifyWave')) {
+    for (const item of field.items) {
+      const g = item.data;
+      if (g === best.data || g.state === 'purified' || g.state === 'stagger' || g.state === 'idle') {
+        continue;
+      }
+      if (Math.hypot(g.x - best.data.x, g.z - best.data.z) < DODGE.waveRange) {
+        const r = hitGlitch(g);
+        if (r !== 'ignored') {
+          celebrate(game, new THREE.Vector3(g.x, 0.9, g.z), '#ffe9a0', 'hit');
+        }
+      }
+    }
+  }
   return true;
+}
+
+// ── 회피 스텝(G3 강화) — 전방 대시 + 짧은 무적 창. 프레임 데이터는 DODGE. ──
+function tryDodgeStep(game, ui) {
+  if (!(game.progress.combatUpgrades ?? []).includes('dodge')) {
+    return false;
+  }
+  const d = game.dodge ?? (game.dodge = { t: 0, cd: 0, iframes: 0 });
+  if (d.t > 0 || d.cd > 0) {
+    return true; // 이미 회피 중/쿨다운 — 입력은 소비하되 발동 없음
+  }
+  d.t = DODGE.duration;
+  d.cd = DODGE.cooldown;
+  d.iframes = DODGE.iframes;
+  d.dirX = game.player.direction.x;
+  d.dirZ = game.player.direction.z;
+  game.audio?.playClick();
+  triggerHaptic('hit');
+  celebrate(game, game.player.position.clone().setY(0.4), '#efe8d8', 'hit');
+  return true;
+}
+
+function updateDodge(delta, game) {
+  const d = game.dodge;
+  if (!d) {
+    return;
+  }
+  if (d.cd > 0) {
+    d.cd = Math.max(0, d.cd - delta);
+  }
+  if (d.iframes > 0) {
+    d.iframes = Math.max(0, d.iframes - delta);
+  }
+  if (d.t > 0) {
+    d.t = Math.max(0, d.t - delta);
+    const p = game.player.position;
+    p.x += d.dirX * DODGE.speed * delta;
+    p.z += d.dirZ * DODGE.speed * delta;
+    game.player.position.copy(clampToIsland(p));
+  }
 }
 
 // 로어 카드 토스트 — 정화의 전리품. 읽기를 강제하지 않는다(스스로 사라짐).
@@ -3592,6 +3696,10 @@ function useToolVerb(game, ui) {
   }
   const dg = game.dungeon;
   if (!dg?.active) {
+    // 오버월드: F/🔄 = 회피 스텝(세공 모루에서 구매 후).
+    if (game.mode === 'overworld') {
+      tryDodgeStep(game, ui);
+    }
     return;
   }
   if (dg.room.mechanic === 'push') {
@@ -4056,6 +4164,8 @@ function interact(game, ui) {
       }
       updateHud(game, ui);
     }
+  } else if (game.nearest.type === 'anvil') {
+    openAnvilDialog(game, ui);
   } else if (game.nearest.type === 'lighthouse') {
     // 진실의 등대 — 광선 수 = 치유한 스테이지 수. 컨셉(출처 확인)을 대사로 심는다.
     const lit = game.beaconCount ?? 0;
@@ -4119,6 +4229,55 @@ function openNpcDialog(game, ui, topicId) {
     ${speechHtml(dialog.linesKo)}
     <p class="quest-hint">${getStoryObjective(game.progress)}</p>
   `;
+  openDialog(game, ui);
+}
+
+// 세공 모루 상점 — 파편 소비처. 트랙 순서 고정, 산 것은 체크로 누적 표시.
+function openAnvilDialog(game, ui) {
+  const render = () => {
+    const owned = game.progress.combatUpgrades ?? [];
+    const shards = game.progress.glitchShards ?? 0;
+    const next = nextUpgrade(owned);
+    ui.dialogKicker.textContent = '세공 모루';
+    ui.dialogTitle.textContent = '🔨 기억 세공';
+    const rows = UPGRADE_TRACK.map((u) => {
+      const has = owned.includes(u.id);
+      const isNext = next?.id === u.id;
+      return `<p class="speech-line" style="opacity:${has || isNext ? 1 : 0.45}">${has ? '✅' : isNext ? '▶️' : '🔒'} ${u.emoji} <strong>${u.nameKo}</strong> — ${u.descKo}${has ? '' : ` (파편 ${u.cost}개)`}</p>`;
+    }).join('');
+    const buyBtn = next
+      ? `<div class="choice-list"><button type="button" class="choice-button" data-anvil-buy ${shards < next.cost ? 'disabled' : ''}>${u2(next)} 벼리기 — 🧩 ${next.cost}개${shards < next.cost ? ` (지금 ${shards}개)` : ''}</button></div>`
+      : '<p class="speech-line">✨ 모든 강화를 벼렸다 — 이제 잡음이 두렵지 않아!</p>';
+    ui.dialogBody.innerHTML = `
+      <p class="speech-line">정화로 모은 기억 파편을 힘으로 벼리는 곳. 지금 파편 <strong>🧩 ${shards}개</strong>.</p>
+      ${rows}
+      ${buyBtn}
+    `;
+    ui.dialogBody.querySelector('[data-anvil-buy]')?.addEventListener('click', () => {
+      const result = purchaseUpgrade(game.progress.combatUpgrades ?? [], game.progress.glitchShards ?? 0);
+      if (!result) {
+        game.audio?.playWrong();
+        return;
+      }
+      game.progress = {
+        ...game.progress,
+        combatUpgrades: [...(game.progress.combatUpgrades ?? []), result.id],
+        glitchShards: result.shards
+      };
+      persistProgress(game.progress);
+      updateHud(game, ui);
+      game.audio?.playFanfare();
+      triggerHaptic('win');
+      const bought = UPGRADE_TRACK.find((u) => u.id === result.id);
+      flashCombatPopup(ui, `${bought.emoji} ${bought.nameKo} 획득!`, 'win');
+      if (result.id === 'dodge') {
+        window.setTimeout(() => flashCombatPopup(ui, '💨 회피: F 키 또는 🔄 버튼', 'match'), 1300);
+      }
+      render();
+    });
+  };
+  const u2 = (u) => `${u.emoji} ${u.nameKo}`;
+  render();
   openDialog(game, ui);
 }
 

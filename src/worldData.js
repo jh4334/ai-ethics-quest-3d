@@ -1,5 +1,8 @@
 import { createStoryState, normalizeStoryState } from './story.js';
 import { normalizeStages } from './stageData.js';
+import { UPGRADE_TRACK } from './glitchLogic.js';
+
+const upgradeIdSet = new Set(UPGRADE_TRACK.map((u) => u.id));
 
 // 네 개의 약속 도구 — 사당 시련의 보상. 능력이 곧 윤리 개념이다.
 export const PROMISE_TOOLS = [
@@ -472,6 +475,8 @@ export function createInitialProgress() {
     loreCards: [],
     // 글리치 헌터(G2) — 구역 웨이브 소탕 보너스 기록(주제별 1회).
     glitchZonesCleared: [],
+    // 글리치 헌터(G3) — 세공 모루에서 파편으로 산 전투 강화(트랙 순서 고정).
+    combatUpgrades: [],
     // 세이브 v2: 「잡음의 군도」 섬별 진행 맵. 프롤로그(시작의 섬) 완료는
     // 기존 신호(aiCoreCompleted)에서 파생하므로 여기 중복 기록하지 않는다.
     stages: {}
@@ -556,6 +561,7 @@ export function normalizeProgress(candidate) {
       : 0,
     loreCards: [...new Set(stringArray(candidate.loreCards))],
     glitchZonesCleared: uniqueValidTopicIds(stringArray(candidate.glitchZonesCleared)),
+    combatUpgrades: [...new Set(stringArray(candidate.combatUpgrades).filter((id) => upgradeIdSet.has(id)))],
     stages: normalizeStages(candidate.stages)
   };
 }

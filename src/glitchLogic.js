@@ -72,6 +72,40 @@ export const LORE_CARDS = {
   deepfake: '이 글리치는 「진짜 흉내를 낸 목소리」가 뭉쳐 태어난 잡음이었다.'
 };
 
+// ── 파편 세공 (G3) — 강화 트랙·회피 프레임 데이터 ──────
+// 순서 고정 트랙(교실 재현성): 회피 → 사거리 → 4타 체인 → 정화 파동.
+export const UPGRADE_TRACK = [
+  { id: 'dodge', nameKo: '회피 스텝', emoji: '💨', cost: 4, descKo: '앞으로 짧게 미끄러지며 공격을 흘린다' },
+  { id: 'reach', nameKo: '긴 빛날', emoji: '🗡️', cost: 8, descKo: '베기가 닿는 거리가 늘어난다' },
+  { id: 'chain4', nameKo: '4연 체인', emoji: '⚡', cost: 14, descKo: '베기 체인이 4타까지 이어진다' },
+  { id: 'purifyWave', nameKo: '정화 파동', emoji: '✨', cost: 20, descKo: '정화의 빛이 주변 글리치까지 휘청이게 한다' }
+];
+
+// 회피 스텝 프레임 데이터 — 무적 창(iframes)은 시전 직후부터, 쿨다운은 짧게(리듬 유지).
+export const DODGE = { speed: 13, duration: 0.2, iframes: 0.45, cooldown: 0.9, waveRange: 3.6 };
+
+// 다음 구매 가능 항목(트랙 순서 고정). 전부 샀으면 null.
+export function nextUpgrade(owned) {
+  return UPGRADE_TRACK.find((u) => !owned.includes(u.id)) ?? null;
+}
+
+// 구매 시도 — 성공 시 { id, shards(잔액) }, 불가(품절·파편 부족) 시 null. 순수 함수.
+export function purchaseUpgrade(owned, shards) {
+  const next = nextUpgrade(owned);
+  if (!next || shards < next.cost) {
+    return null;
+  }
+  return { id: next.id, shards: shards - next.cost };
+}
+
+// 강화 반영 베기 파라미터 — 표현 계층은 항상 이 값으로 판정한다.
+export function getSlashParams(owned) {
+  return {
+    range: SLASH.range + (owned.includes('reach') ? 0.5 : 0),
+    chainMax: owned.includes('chain4') ? 4 : SLASH.chainMax
+  };
+}
+
 // 콤보 배수 — 피격 없이 연속 정화. 상한 x3, 끊겨도 벌점 없음(참여 원칙).
 export function comboMultiplier(streak) {
   if (streak >= 5) {

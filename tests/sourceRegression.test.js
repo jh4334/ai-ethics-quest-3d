@@ -816,6 +816,13 @@ test('glitch-hunter(G1): 필드 전투 — 순수 로직 분리·결정성·무�
   assert.match(mainSource, /updateGlitchWaves\(delta, game, ui, field, flags\);/);
   assert.match(mainSource, /function onSnitcherGrab/);
   assert.match(mainSource, /'dispersed'/);
+  // G3: 세공 모루·회피 스텝·강화 반영 판정 배선 + 스키마(combatUpgrades).
+  assert.match(glitchSrc, /export const UPGRADE_TRACK/);
+  assert.match(glitchSrc, /export function purchaseUpgrade/);
+  assert.match(worldSrc, /combatUpgrades: \[\.\.\.new Set/);
+  assert.match(mainSource, /function openAnvilDialog/);
+  assert.match(mainSource, /function tryDodgeStep/);
+  assert.match(mainSource, /getSlashParams\(game\.progress\.combatUpgrades \?\? \[\]\)/);
   assert.match(cssSource, /\.lore-card/);
   assert.match(cssSource, /\.shard-count/);
   // 무처벌: 피격은 콤보 리셋·넉백뿐 — 사망·감점 문자열 금지.
