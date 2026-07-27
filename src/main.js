@@ -75,11 +75,16 @@ import {
 import {
   SLASH,
   PURIFY,
+  GLITCH_ARCHETYPES,
+  ZONE_CLEAR_BONUS,
   buildFieldGlitches,
+  buildWaveGlitches,
   consumeGlitchHit,
   hitGlitch,
   purifyGlitch,
-  stepGlitch
+  stealFromPlayer,
+  stepGlitch,
+  zoneWaveCount
 } from './glitchLogic.js';
 import {
   ETHICS_TOPICS,
@@ -2789,6 +2794,64 @@ function openFakeDotDialog(game, ui, eventId) {
 // 순수 로직은 glitchLogic.js(상태기계·프레임 데이터·보상표), 여기는 표현·판정 소비만.
 // 글리치 = 노이즈가 앓으며 흘린 기억 부스러기 — 정화하면 파편 조각과 로어 카드가 남는다.
 
+// 아키타입별 겉모습 — 주워듣개(보라), 슬쩍이(청록·작고 재빠른 인상), 메아리(분홍 — 진짜/가짜 동일 외형).
+const GLITCH_STYLES = {
+  scavenger: { color: 0x5a4d78, emissive: 0x3a2a58, scale: 1 },
+  snitcher: { color: 0x2f6e5f, emissive: 0x1e4f43, scale: 0.85 },
+  echo: { color: 0x7a4468, emissive: 0x5a2a50, scale: 1 }
+};
+
+function makeGlitchItem(field, data, i) {
+  const { bodyGeo, eyeGeo, ringGeo, gemGeo } = field.geos;
+  const style = GLITCH_STYLES[data.archetypeId] ?? GLITCH_STYLES.scavenger;
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(
+    bodyGeo,
+    new THREE.MeshStandardMaterial({
+      color: style.color,
+      emissive: style.emissive,
+      emissiveIntensity: 0.55,
+      roughness: 0.6,
+      flatShading: true,
+      // 가짜 에코는 살짝 투명 + 깜빡임 — 자세히 보면 구별할 수 있다(딥페이크 단서).
+      transparent: data.variant === 'echo',
+      opacity: data.variant === 'echo' ? 0.8 : 1
+    })
+  );
+  body.scale.setScalar(style.scale);
+  const eyes = new THREE.Group();
+  const eyeMat = new THREE.MeshStandardMaterial({
+    color: 0xffd23e,
+    emissive: 0xd9a814,
+    // 가짜 에코의 눈은 빛이 죽어 있다 — 두 번째 단서.
+    emissiveIntensity: data.variant === 'echo' ? 0.35 : 1.1
+  });
+  const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+  const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+  eyeL.position.set(-0.13, 0.1, 0.36);
+  eyeR.position.set(0.13, 0.1, 0.36);
+  eyes.add(eyeL, eyeR);
+  // 스태거 링 — "지금 정화할 수 있다"를 발밑 금빛 고리로 텔레그래프.
+  const ring = new THREE.Mesh(
+    ringGeo,
+    new THREE.MeshBasicMaterial({ color: 0xffd76a, transparent: true, opacity: 0.85 })
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = -0.32;
+  ring.visible = false;
+  // 훔친 파편 표시 — 슬쩍이가 파편을 들고 있으면 머리 위 금빛 조각이 보인다(추격 목표).
+  const gem = new THREE.Mesh(
+    gemGeo,
+    new THREE.MeshStandardMaterial({ color: 0xffd76a, emissive: 0xd9a814, emissiveIntensity: 1.2 })
+  );
+  gem.position.y = 0.85;
+  gem.visible = false;
+  g.add(body, eyes, ring, gem);
+  g.position.set(data.x, 0.5, data.z);
+  field.group.add(g);
+  return { data, group: g, body, eyes, ring, gem, phase: i * 1.3, telegraphCue: false };
+}
+
 function createFieldGlitchField(game) {
   const rs = game.renderState;
   const centers = {};
@@ -2798,38 +2861,23 @@ function createFieldGlitchField(game) {
   const solved = [...getStoryVisualFlags(game.progress)]
     .filter((f) => f.endsWith(':solved'))
     .map((f) => f.split(':')[0]);
-  const group = new THREE.Group();
-  const bodyGeo = new THREE.IcosahedronGeometry(0.42, 0);
-  const eyeGeo = new THREE.BoxGeometry(0.1, 0.1, 0.06);
-  const ringGeo = new THREE.TorusGeometry(0.62, 0.045, 6, 24);
-  const items = buildFieldGlitches(centers, solved).map((data, i) => {
-    const g = new THREE.Group();
-    const body = new THREE.Mesh(
-      bodyGeo,
-      new THREE.MeshStandardMaterial({ color: 0x5a4d78, emissive: 0x3a2a58, emissiveIntensity: 0.55, roughness: 0.6, flatShading: true })
-    );
-    const eyes = new THREE.Group();
-    const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffd23e, emissive: 0xd9a814, emissiveIntensity: 1.1 });
-    const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-    const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
-    eyeL.position.set(-0.13, 0.1, 0.36);
-    eyeR.position.set(0.13, 0.1, 0.36);
-    eyes.add(eyeL, eyeR);
-    // 스태거 링 — "지금 정화할 수 있다"를 발밑 금빛 고리로 텔레그래프.
-    const ring = new THREE.Mesh(
-      ringGeo,
-      new THREE.MeshBasicMaterial({ color: 0xffd76a, transparent: true, opacity: 0.85 })
-    );
-    ring.rotation.x = -Math.PI / 2;
-    ring.position.y = -0.32;
-    ring.visible = false;
-    g.add(body, eyes, ring);
-    g.position.set(data.x, 0.5, data.z);
-    group.add(g);
-    return { data, group: g, body, eyes, ring, phase: i * 1.3, telegraphCue: false };
-  });
-  rs.overworld.add(group);
-  rs.glitchField = { group, items };
+  const field = {
+    group: new THREE.Group(),
+    items: [],
+    centers,
+    // 구역별 현재 웨이브(0 = 첫 스폰) + 다음 웨이브 예고 타이머.
+    waves: Object.fromEntries(Object.keys(centers).map((t) => [t, 0])),
+    waveDelay: {},
+    geos: {
+      bodyGeo: new THREE.IcosahedronGeometry(0.42, 0),
+      eyeGeo: new THREE.BoxGeometry(0.1, 0.1, 0.06),
+      ringGeo: new THREE.TorusGeometry(0.62, 0.045, 6, 24),
+      gemGeo: new THREE.OctahedronGeometry(0.16, 0)
+    }
+  };
+  field.items = buildFieldGlitches(centers, solved).map((data, i) => makeGlitchItem(field, data, i));
+  rs.overworld.add(field.group);
+  rs.glitchField = field;
 }
 
 // 글리치가 플레이어를 맞혔다 — 사망·감점 없음(무처벌): 넉백 + 콤보 리셋 + 시각 경고만.
@@ -2849,6 +2897,85 @@ function onGlitchHitPlayer(game, ui, g) {
   triggerFlash(ui, '#ff5f7e');
   addShake(game, 0.4);
   flashCombatPopup(ui, '기억이 흐려진다!', 'stagger');
+}
+
+// 가짜 에코의 공격이 스쳤다 — 해가 없는 환영. 옅은 정전기만(과잉 알림 방지 스로틀).
+let echoBrushAt = 0;
+function onEchoBrush(game, ui) {
+  const now = clock.elapsedTime;
+  if (now - echoBrushAt < 3) {
+    return;
+  }
+  echoBrushAt = now;
+  game.audio?.playClick();
+  flashCombatPopup(ui, '…스친 건 환영이었다?', 'stagger');
+}
+
+// 슬쩍이의 잡기 성공 — 파편을 훔쳐 도주한다. 때리면 즉시 되찾는다(영구 손실 없음).
+function onSnitcherGrab(game, ui, g, item) {
+  const stolen = stealFromPlayer(g, game.progress.glitchShards ?? 0);
+  if (stolen > 0) {
+    game.progress = { ...game.progress, glitchShards: (game.progress.glitchShards ?? 0) - stolen };
+    persistProgress(game.progress);
+    updateHud(game, ui);
+    game.audio?.playWrong();
+    triggerFlash(ui, '#ffd23e');
+    addShake(game, 0.3);
+    flashCombatPopup(ui, `🧩 조각 ${stolen}개를 도둑맞았다! 쫓아가자!`, 'stagger');
+  } else {
+    game.audio?.playClick();
+    flashCombatPopup(ui, '슬쩍이가 허탕을 치고 달아난다!', 'stagger');
+  }
+  const gc = game.glitchCombat;
+  if (gc) {
+    gc.combo = 0; // 도둑맞음 = 피격 취급, 콤보만 리셋
+  }
+}
+
+// 조우 웨이브 — 구역의 현재 웨이브를 소탕하면 예고 후 다음 웨이브, 전부 비우면 소탕 보너스(1회).
+function updateGlitchWaves(delta, game, ui, field, flags) {
+  for (const [topicId, center] of Object.entries(field.centers)) {
+    if (flags.has(`${topicId}:solved`)) {
+      continue; // 이야기로 해결된 땅 — 웨이브도 보너스도 없다
+    }
+    const zoneItems = field.items.filter((it) => it.data.topicId === topicId);
+    if (zoneItems.length === 0 || !zoneItems.every((it) => it.data.state === 'purified')) {
+      field.waveDelay[topicId] = 0;
+      continue;
+    }
+    const maxWave = zoneWaveCount(topicId) - 1;
+    if (field.waves[topicId] < maxWave) {
+      // 소탕 → 짧은 정적 → 경고와 함께 다음 웨이브.
+      field.waveDelay[topicId] = (field.waveDelay[topicId] ?? 0) + delta;
+      if (field.waveDelay[topicId] >= 1.4) {
+        field.waves[topicId] += 1;
+        field.waveDelay[topicId] = 0;
+        const fresh = buildWaveGlitches(topicId, field.waves[topicId], center);
+        for (const data of fresh) {
+          const item = makeGlitchItem(field, data, field.items.length);
+          celebrate(game, new THREE.Vector3(data.x, 0.9, data.z), '#8a6cc8', 'hit');
+          field.items.push(item);
+        }
+        game.audio?.playNoiseGroan();
+        addShake(game, 0.3);
+        flashCombatPopup(ui, '⚠️ 잡음이 더 몰려온다!', 'stagger');
+      }
+      continue;
+    }
+    // 최종 웨이브까지 전투로 비웠다 — 구역 소탕 보너스(주제별 1회, 저장).
+    const cleared = game.progress.glitchZonesCleared ?? [];
+    if (!cleared.includes(topicId)) {
+      game.progress = {
+        ...game.progress,
+        glitchShards: (game.progress.glitchShards ?? 0) + ZONE_CLEAR_BONUS,
+        glitchZonesCleared: [...cleared, topicId]
+      };
+      persistProgress(game.progress);
+      updateHud(game, ui);
+      game.audio?.playFanfare?.();
+      flashCombatPopup(ui, `🕊️ 구역이 고요해졌다 — 소탕 보너스 +${ZONE_CLEAR_BONUS} 조각`, 'win');
+    }
+  }
 }
 
 function updateFieldGlitches(delta, game, ui) {
@@ -2904,6 +3031,15 @@ function updateFieldGlitches(delta, game, ui) {
       item.body.material.emissiveIntensity = g.state === 'stagger' ? 0.18 : 0.55;
       item.group.scale.setScalar(g.state === 'stagger' ? 0.88 : 1);
     }
+    // 가짜 에코는 미세하게 깜빡인다 — 자세히 보면 구별할 수 있다(딥페이크 단서).
+    if (g.variant === 'echo') {
+      item.body.material.opacity = 0.72 + Math.sin(elapsed * 9 + item.phase) * 0.16;
+    }
+    // 훔친 파편 표시 — 들고 있는 동안 머리 위에서 반짝인다(추격 목표).
+    item.gem.visible = g.stolen > 0;
+    if (item.gem.visible) {
+      item.gem.rotation.y = elapsed * 3;
+    }
     item.ring.visible = g.state === 'stagger';
     if (item.ring.visible) {
       item.ring.rotation.z = elapsed * 2.4;
@@ -2914,9 +3050,16 @@ function updateFieldGlitches(delta, game, ui) {
     // 접촉 판정: 유효 창 + 근접 + 창당 1회(권위 있는 이벤트).
     if (intent.hitActive && dist < 0.95) {
       consumeGlitchHit(g);
-      onGlitchHitPlayer(game, ui, g);
+      if (g.variant === 'echo') {
+        onEchoBrush(game, ui); // 환영 — 해가 없다
+      } else if (GLITCH_ARCHETYPES[g.archetypeId].steals) {
+        onSnitcherGrab(game, ui, g, item);
+      } else {
+        onGlitchHitPlayer(game, ui, g);
+      }
     }
   }
+  updateGlitchWaves(delta, game, ui, field, flags);
   updateSlash(delta, game, ui);
   // 정화 가능 안내 — 다른 상호작용 안내가 없을 때만.
   if (staggerNearby && !game.nearest && ui.dialog.hidden) {
@@ -2985,6 +3128,24 @@ function resolveSlashHits(game, ui) {
     const result = hitGlitch(g);
     if (result === 'ignored') {
       continue;
+    }
+    if (result === 'dispersed') {
+      // 가짜였다 — 잿빛으로 흩어진다. 보상도 벌점도 없다(진짜를 찾아라).
+      celebrate(game, new THREE.Vector3(g.x, 0.9, g.z), '#9aa1b5', 'hit');
+      game.hitStop = 0.03;
+      game.audio?.playClick();
+      flashCombatPopup(ui, '💨 가짜였다! 진짜 메아리를 찾아라', 'stagger');
+      continue;
+    }
+    // 훔친 파편을 떨궜다 — 즉시 회수(영구 손실 없음).
+    if (g.droppedShards > 0) {
+      const back = g.droppedShards;
+      g.droppedShards = 0;
+      game.progress = { ...game.progress, glitchShards: (game.progress.glitchShards ?? 0) + back };
+      persistProgress(game.progress);
+      updateHud(game, ui);
+      game.audio?.playCollect();
+      flashCombatPopup(ui, `🧩 조각 ${back}개를 되찾았다!`, 'win');
     }
     // 살짝 밀려나며 피격 리액션.
     g.x += (dx / (dist || 1)) * 0.5;
