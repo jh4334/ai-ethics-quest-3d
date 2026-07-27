@@ -99,7 +99,7 @@ test('a solved gate ignores further choices and the npc gives its closing line',
 
 test('objective walks the zones in order through talk, tool, and gate stages', () => {
   let progress = fresh();
-  assert.match(getStoryObjective(progress), /삭제 요청 17번.*이야기/);
+  assert.match(getStoryObjective(progress), /흩어진 사진들.*이야기/);
   progress = applyIntroTalk(progress, 'privacy');
   assert.match(getStoryObjective(progress), /사당에서 도구/);
   progress = { ...progress, tools: ['shield'] };
@@ -137,21 +137,21 @@ test('josaWaGwa(루프A): 받침 유무로 와/과를 고른다 — 목표 문�
   assert.doesNotMatch(objective, /담와/);
 });
 
-test('화이트아웃 반격: 증거 압력 2 이상이면 미해결 NPC 대화에 삭제 경고가 앞선다', () => {
+test('침식 반격(N2): 안개 압력 2 이상이면 미해결 NPC 대화에 망각의 말이 앞선다', () => {
   let progress = fresh();
   // 압력 0~1: 평소 대화 그대로.
   assert.equal(getNpcDialog(progress, 'bias').linesKo[0], QUESTS.bias.introKo[0]);
   progress = { ...progress, tools: ['shield'] };
   assert.equal(getNpcDialog(progress, 'bias').linesKo[0], QUESTS.bias.introKo[0]);
-  // 압력 2: 삭제 경고가 한 줄 앞선다(intro·seek-tool 공통).
+  // 압력 2: 망각의 말이 한 줄 앞선다(intro·seek-tool 공통).
   progress = { ...progress, tools: ['shield', 'mirror'] };
   const intro = getNpcDialog(progress, 'copyright');
   assert.equal(intro.kind, 'intro');
-  assert.match(intro.linesKo[0], /삭제|지워/);
+  assert.match(intro.linesKo[0], /안개/);
   assert.equal(intro.linesKo[1], QUESTS.copyright.introKo[0]);
   const seeking = getNpcDialog(applyIntroTalk(progress, 'deepfake'), 'deepfake');
   assert.equal(seeking.kind, 'seek-tool');
-  assert.match(seeking.linesKo[0], /삭제|화이트아웃/);
+  assert.match(seeking.linesKo[0], /안개/);
   // 해결된 구역은 압력과 무관하게 평온한 마무리 대사.
   const solvedState = { talkedIntro: true, solved: true, chosen: 'ask', recovered: false };
   const solvedProgress = { ...progress, story: { ...progress.story, privacy: solvedState } };

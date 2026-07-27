@@ -88,7 +88,7 @@ test('markStageVisited: 첫 상륙 신호 — completed는 건드리지 않고 �
   assert.throws(() => markStageVisited(progress, 'atlantis'), RangeError);
 });
 
-test('세이브 v3 마이그레이션: v1 세이브(version·stages 없음)가 손실 없이 올라온다', () => {
+test('세이브 v2 마이그레이션: v1 세이브(version·stages 없음)가 손실 없이 올라온다', () => {
   const v1 = {
     visitedTopics: ['privacy'],
     completedShrines: ['privacy-shrine'],
@@ -99,8 +99,7 @@ test('세이브 v3 마이그레이션: v1 세이브(version·stages 없음)가 �
     aiCoreCompleted: true
   };
   const migrated = normalizeProgress(v1);
-  assert.equal(migrated.version, 3);
-  assert.equal(migrated.campaignCompleted, false);
+  assert.equal(migrated.version, 2);
   assert.deepEqual(migrated.stages, {});
   // 기존 필드(학습 리포트 신호 포함)는 그대로.
   assert.deepEqual(migrated.visitedTopics, ['privacy']);

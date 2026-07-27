@@ -14,19 +14,18 @@ test('keyboard interaction does not swallow native button activation keys', () =
   assert.match(mainSource, /!isFormControl && !event\.repeat && \(event\.code === 'KeyE'/);
 });
 
-test('chapter 2 opens the H-17 evidence route, while chapter 6 owns the public hearing', () => {
-  // 2장 감사 코어는 승인 기록 추적을 열고 증거 확인서만 발급한다.
-  assert.match(mainSource, /CORE_BREACH/);
+test('final core runs the Noise->Nova finale and is terminal once completed', () => {
+  // 최종장: 지운다/가르친다 선택을 거쳐 노바로 재탄생 → 증명서.
+  assert.match(mainSource, /data-finale-choice/);
+  assert.match(mainSource, /renderTeach|renderErase/);
+  // 가르치면 검증된 완료 전이를 재사용해 코어를 완료하고 증명서를 띄운다.
   assert.match(mainSource, /completeFinalCore\(game\.progress, 'balanced-promise'\)/);
-  // 은폐/공개 심리 선택과 루멘 공개 코어는 6장 캠페인 완료에만 있다.
-  assert.match(mainSource, /data-campaign-choice/);
-  assert.match(mainSource, /completeCampaign\(markStageCompleted/);
-  assert.match(mainSource, /morphNoiseToNova\(game\)/);
   assert.match(mainSource, /showCertificate\(game, ui\)/);
-  assert.match(mainSource, /if \(game\.progress\.campaignCompleted\)/);
+  // 이미 완료했다면 선택을 다시 묻지 않고 후일담을 보여준다.
+  assert.match(mainSource, /if \(game\.progress\.aiCoreCompleted\)/);
 });
 
-test('voyage guide: 화살표가 다음 목적지를 가리키고 H-17 증거 항로가 이어진다', () => {
+test('voyage guide: 화살표가 다음 목적지를 가리키고, 출항 브리지·기억 조각 서사가 이어진다', () => {
   const seaSrc = readFileSync(new URL('../src/sea.js', import.meta.url), 'utf8');
   const worldSrc = readFileSync(new URL('../src/worldData.js', import.meta.url), 'utf8');
   // 가이드 화살표: 표현은 sea.js, 목적지 판정(첫 '진행 중' 섬)은 main.
@@ -36,11 +35,11 @@ test('voyage guide: 화살표가 다음 목적지를 가리키고 H-17 증거 �
   // 첫 출항 브리지 서사(1회) — 스키마에 voyageIntroSeen 추가(기존 필드 불변).
   assert.match(worldSrc, /voyageIntroSeen: candidate\.voyageIntroSeen === true/);
   assert.match(mainSource, /voyageIntroSeen: true/);
-  // 사건 관통 서사: 확산·추천·자동 승인 기록을 3섬에서 모아 공개 심리에서 회수한다.
-  assert.match(mainSource, /웃음 반응이 붙을수록 추천 시스템/);
-  assert.match(mainSource, /서로 다른 증거 꾸러미/);
-  assert.match(mainSource, /승인 버튼을 눌렀어/);
-  assert.match(mainSource, /data-campaign-choice/);
+  // 기억 조각 관통 서사: 3섬 치유에 심고 심장·엔딩에서 회수한다.
+  assert.match(mainSource, /아무도 나에게 말을 걸어 주지 않았어/);
+  assert.match(mainSource, /진짜 내가 누군지 잊어버렸어/);
+  assert.match(mainSource, /멈추는 법을 배운 적이 없어서/);
+  assert.match(mainSource, /전부 별이 되어 돌아오고 있어/);
 });
 
 test('living world(Z1): 풀 흔들림·앰비언트 생물·블롭 그림자가 결정적으로 존재한다', () => {
@@ -98,7 +97,7 @@ test('data currents(Z3): 열린 항로 입자 해류·줄무늬·접속 링이 �
   assert.match(mainSource, /vg\.built\.connectRings/);
 });
 
-test('campus administration tower(Z4): 학생 기록 행정동 — 진행도 광선·유도등·대화가 존재한다', () => {
+test('lighthouse(Z4): 진실의 등대 — 진행도 광선·유도등·대화가 존재한다', () => {
   // 세로 랜드마크 + 광선 = 치유한 스테이지 수(진행도가 풍경에 기록).
   assert.match(mainSource, /function createLighthouse/);
   assert.match(mainSource, /game\.beaconCount = getStageStates\(game\.progress\)\.filter/);
@@ -106,21 +105,7 @@ test('campus administration tower(Z4): 학생 기록 행정동 — 진행도 광
   // 부두→등대→코어 유도등(활주로 등화 문법) + 등대 대화.
   assert.match(mainSource, /guideLights/);
   assert.match(mainSource, /type === 'lighthouse'/);
-  assert.match(mainSource, /학생 기록 행정동/);
-});
-
-test('chapter 1 campus rebuild: selected reference landmarks replace the old fantasy hub', () => {
-  const worldSrc = readFileSync(new URL('../src/worldData.js', import.meta.url), 'utf8');
-  assert.match(mainSource, /function createEmptyClassroom/);
-  assert.match(mainSource, /function createFingerprintPlayground/);
-  assert.match(mainSource, /function createArchiveLibrary/);
-  assert.match(mainSource, /function createMediaLab/);
-  assert.match(mainSource, /오늘의 명단 · H-17 없음/);
-  assert.match(mainSource, /등교용 페리 탑승구/);
-  assert.match(worldSrc, /nameKo: '빈 교실'/);
-  assert.match(worldSrc, /nameKo: '지문 운동장'/);
-  assert.match(worldSrc, /nameKo: '기록 보관소'/);
-  assert.match(worldSrc, /nameKo: '미디어 검증실'/);
+  assert.match(mainSource, /진실의 등대/);
 });
 
 test('bottles(Z5): 지식의 유리병 12개 — 결정적 배치·세이브·도감이 존재한다', () => {
@@ -138,7 +123,7 @@ test('bottles(Z5): 지식의 유리병 12개 — 결정적 배치·세이브·�
 test('return hook(R-루프9): 복귀 시 진척 리캡으로 재참여(스트릭 압박 없이)', () => {
   const cssSrc = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
   // 진행 중 세이브가 있으면 성취 리캡을 반갑게 되짚는다.
-  assert.match(mainSource, /H-17 조사를 이어서 진행합니다/);
+  assert.match(mainSource, /다시 온 걸 환영해, 수호자/);
   assert.match(mainSource, /title-recap/);
   assert.match(mainSource, /윤리 조각 \$\{summary\.collected\}/);
   assert.match(cssSrc, /\.title-recap \{/);
@@ -187,9 +172,9 @@ test('mastery(R-루프5): 완벽 반사 등급은 보너스만 — 실패 처벌
 
 test('curiosity(R-루프4): 콜드오픈 훅 + 조각 획득 뒤 다음 구역 예고', () => {
   const worldSrc = readFileSync(new URL('../src/worldData.js', import.meta.url), 'utf8');
-  // 타이틀 콜드오픈: 삭제된 친구 H-17의 미스터리와 자동 결정 책임을 심는다.
+  // 타이틀 콜드오픈: 잊혀진 수호자의 미스터리('네가 누구였는지')를 심는다.
   assert.match(mainSource, /title-hook/);
-  assert.match(mainSource, /그런 학생은 없었습니다/);
+  assert.match(mainSource, /네가 누구였는지 알아내라/);
   // 조각 획득 결말에 다음 구역 예고 훅 노출.
   assert.match(mainSource, /quest-teaser/);
   assert.match(mainSource, /topic\?\.teaserKo/);
@@ -222,9 +207,9 @@ test('goal-gradient(R-루프2): 코어 개방 임박이 HUD에 생생하게 드�
 
 test('first-control beat(R-루프1): 시네마틱 종료·스킵 후 첫 조작이 보상 순간이 된다', () => {
   const cssSrc = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
-  // 넘겨받기 비트: 밝은 사운드 + 도트 반짝임 + 목표 칩 펄스 + 첫 증거 팝업.
+  // 넘겨받기 비트: 밝은 사운드 + 도트 반짝임 + 목표 칩 펄스 + '네 차례' 팝업.
   assert.match(mainSource, /function playFirstControlBeat/);
-  assert.match(mainSource, /하루의 첫 증거를 찾아보자/);
+  assert.match(mainSource, /이제 네 차례야, 수호자/);
   assert.match(mainSource, /pulse-attn/);
   // 첫 플레이 1회만(재방문 세이브에선 안 뜸).
   assert.match(mainSource, /firstControlBeatDone/);
@@ -239,11 +224,10 @@ test('bundle & 허브(루프E): three 벤더 청크 분리 + 허브 2부 소개 
   // Three.js를 별도 청크로 — 재배포 시 게임 코드만 재다운로드(PWA 캐시 세밀화).
   assert.match(vite, /manualChunks\(id\)/);
   assert.match(vite, /node_modules\/three/);
-  // 교사 허브: 2부 소개가 H-17 사건·6장 캠페인·오프라인을 반영.
-  assert.match(hub, /삭제된 학생 H-17/);
-  assert.match(hub, /6장 캠페인/);
-  assert.match(hub, /디지털 발자국·필터버블·AI 의존/);
-  assert.match(hub, /무설치·오프라인/);
+  // 교사 허브: 2부 소개가 정보의 바다·심화 2막·오프라인을 반영.
+  assert.match(hub, /「정보의 바다」/);
+  assert.match(hub, /심화 2막 「잡음의 군도」/);
+  assert.match(hub, /지식의 유리병 12개/);
 });
 
 test('a11y & 재방문(루프D): 포커스 링·대화 role + 초기화 후 월드 재구성', () => {
@@ -305,18 +289,20 @@ test('pwa(루프2): 매니페스트·서비스워커·등록이 오프라인 주
   assert.match(html, /rel="manifest"/);
 });
 
-test('concept: H-17 증거 항로와 화이트아웃 언어가 출항 브리지에 정착돼 있다', () => {
-  assert.match(mainSource, /H-17 증거 항로/);
-  assert.match(mainSource, /화이트아웃/);
+test('concept: 「정보의 바다」 언어가 타이틀·출항 브리지에 정착돼 있다', () => {
+  // 공간 컨셉(기획서 7장) — 세계의 바다 이름. 지역명 「잡음의 군도」와 공존한다.
+  assert.match(mainSource, /정보의 바다에 떠 있는 섬/);
+  assert.match(mainSource, /「정보의 바다」/);
+  assert.match(mainSource, /잡음의 군도/);
 });
 
 test('camera keeps the player near screen center (no strong center bias)', () => {
-  // 플레이어는 하단 중앙에 두되 학교 전경과 다음 목적지가 한 화면에 읽혀야 한다.
-  assert.match(mainSource, /target\.x \* 0\.9, target\.y \+ 11\.5, target\.z \+ 18\.6/);
-  assert.match(mainSource, /new THREE\.Vector3\(target\.x, target\.y \+ 1\.35, target\.z - 2\.8\)/);
+  // 시선은 항상 플레이어 — 중심 편향(x*0.6·시선 x*0.4)이 부활하면 넓은 씬에서 캐릭터가 화면 밖으로 밀린다.
+  assert.match(mainSource, /target\.x \* 0\.9, target\.y \+ 8\.7, target\.z \+ 13\.8/);
+  assert.match(mainSource, /new THREE\.Vector3\(target\.x, target\.y \+ 1\.35, target\.z - 1\.2\)/);
   assert.doesNotMatch(mainSource, /target\.x \* 0\.6/);
   // snapCamera와 updateCamera 상수는 반드시 일치(씬 전환 활공 방지) — 두 곳 다 같은 공식.
-  const matches = mainSource.match(/target\.x \* 0\.9, target\.y \+ 11\.5, target\.z \+ 18\.6/g) ?? [];
+  const matches = mainSource.match(/target\.x \* 0\.9, target\.y \+ 8\.7, target\.z \+ 13\.8/g) ?? [];
   assert.equal(matches.length, 2);
 });
 
@@ -332,7 +318,7 @@ test('idle overview: 3초 유휴 시 씬 전체 조망, 전투·도전 중엔 �
   assert.match(mainSource, /game\.lastCameraMode !== game\.mode/);
 });
 
-test('epilogue: 하루의 귀환 메시지 → 별빛 항로(결정적·1회성 dispose) + 완결 기록', () => {
+test('epilogue: 마지막 편지 → 별똥별 인사(결정적·1회성 dispose) + 완결 기록·3부 연결', () => {
   assert.match(mainSource, /function triggerStarShower/);
   // 결정적: 경로·시차는 인덱스 기반 상수, 랜덤 금지.
   const showerBlock = mainSource.match(/function triggerStarShower[\s\S]*?\n\}/)?.[0] ?? '';
@@ -343,17 +329,17 @@ test('epilogue: 하루의 귀환 메시지 → 별빛 항로(결정적·1회성 
   // 별똥별 동안 시선을 하늘로 — 팔로우 카메라는 아래를 보므로 이 블렌드 없이는 연출이 화면 밖이다.
   assert.match(mainSource, /skyGazing = game\.renderState\?\.starShower\?\.active === true/);
   assert.match(mainSource, /look\.y \+= sg \* 15/);
-  // 완주 시 6장 HUD와 완주 기록이 갱신된다.
-  assert.match(mainSource, /여섯 장의 여정을 완주했습니다/);
+  // 완독 시 항로 지도에 완결 기록과 3부 연결 안내.
+  assert.match(mainSource, /패스파인더/);
 });
 
-test('story depth: 감사관 재방문 대화 + 하루의 감사 신호(읽음 세이브·항로 순서)', () => {
+test('story depth: 정령 재방문 대화 + 노바의 편지(읽음 세이브·항로 순서)', () => {
   const worldSrc2 = readFileSync(new URL('../src/worldData.js', import.meta.url), 'utf8');
   // 재방문 사이드 대화 — 치유 후 두 번째 대화부터.
   assert.match(mainSource, /spiritRevisitKo/);
   assert.match(mainSource, /game\.isle\.spiritTalked/);
-  // 하루의 감사 신호: 항로 순서 고정 + 읽음은 기존 호환 세이브 키에.
-  assert.match(mainSource, /HARU_SIGNAL_ORDER = \['whisper-cape', 'echo-cave', 'hourglass-port', 'memory-core'\]/);
+  // 노바의 편지: 항로 순서 고정 + 읽음은 세이브에.
+  assert.match(mainSource, /NOVA_LETTER_ORDER = \['whisper-cape', 'echo-cave', 'hourglass-port', 'memory-core'\]/);
   assert.match(mainSource, /function getUnreadNovaLetters/);
   assert.match(worldSrc2, /novaLettersRead: \[\.\.\.new Set\(stringArray\(candidate\.novaLettersRead\)\)\]/);
   assert.match(mainSource, /type: 'letter'/);
@@ -588,24 +574,6 @@ test('dunes: 순수 로직 + 나침반 라우팅 + 타이밍 잠금 + 완료 전
   assert.match(mainSource, /function finishDunes/);
 });
 
-test('chapters 3-5 require a second in-world ethics puzzle before stage completion', () => {
-  const isleSrc = readFileSync(new URL('../src/isle.js', import.meta.url), 'utf8');
-  const footprintSrc = readFileSync(new URL('../src/footprintLogic.js', import.meta.url), 'utf8');
-  const bubbleSrc = readFileSync(new URL('../src/bubbleLogic.js', import.meta.url), 'utf8');
-  const cargoSrc = readFileSync(new URL('../src/cargoLogic.js', import.meta.url), 'utf8');
-  for (const source of [footprintSrc, bubbleSrc, cargoSrc]) {
-    assert.doesNotMatch(source, /from 'three'/);
-    assert.doesNotMatch(source, /Math\.random/);
-  }
-  assert.match(isleSrc, /FOOTPRINT\.actions\.forEach/);
-  assert.match(isleSrc, /BUBBLE\.sources\.forEach/);
-  assert.match(isleSrc, /CARGO\.crates\.forEach/);
-  assert.match(mainSource, /function beginChapterFollowup/);
-  assert.match(mainSource, /function completeChapterFollowup/);
-  assert.match(mainSource, /kind: 'chapter-3d'/);
-  assert.match(mainSource, /recordChapterChoice\(game, isle\.stageId, content\.choiceId, true\)/);
-});
-
 test('heart seals: 순수 로직 + 4동사 봉인 + 완료 전이', () => {
   const heartSource = readFileSync(new URL('../src/heartLogic.js', import.meta.url), 'utf8');
   const isleSrc3 = readFileSync(new URL('../src/isle.js', import.meta.url), 'utf8');
@@ -651,20 +619,18 @@ test('tablet: 섬 도전에서 동사 버튼이 보이고, 태블릿 레이어�
   assert.match(mainSource, /ISLE_VERB_EMOJI/);
 });
 
-test('stage frame: 순수 데이터 모듈 + 세이브 v3 + 6장 여정 지도', () => {
+test('stage frame: 순수 데이터 모듈 + 세이브 v2 + 항로 지도', () => {
   const stageSource = readFileSync(new URL('../src/stageData.js', import.meta.url), 'utf8');
   const worldSource = readFileSync(new URL('../src/worldData.js', import.meta.url), 'utf8');
   // 스테이지 데이터는 THREE 무의존 순수 모듈이어야 한다(node 테스트 가능).
   assert.doesNotMatch(stageSource, /from 'three'/);
   assert.match(stageSource, /export const STAGES = \[/);
-  // 세이브 v3: campaignCompleted + stages 맵, 1-2장 완료는 기존 신호에서 파생.
-  assert.match(worldSource, /version: 3/);
-  assert.match(worldSource, /campaignCompleted: candidate\.campaignCompleted === true/);
+  // 세이브 v2: version + stages 맵, 프롤로그 완료는 기존 신호에서 파생(중복 기록 금지).
+  assert.match(worldSource, /version: 2/);
   assert.match(worldSource, /stages: normalizeStages\(candidate\.stages\)/);
   assert.match(stageSource, /aiCoreCompleted === true/);
   // 탐험 노트의 항로 지도.
   assert.match(mainSource, /data-voyage-map/);
-  assert.match(mainSource, /data-chapter-map/);
   assert.match(cssSource, /\.voyage-list/);
 });
 
@@ -755,18 +721,18 @@ test('mobile interaction prompt is positioned beside rather than under touch con
   assert.match(mobilePromptRule, /transform:\s*none/);
 });
 
-test('story-v4: 삭제된 학생 H-17 — 콜드오픈·사건 증거·화이트아웃 경고가 배선돼 있다', () => {
+test('story-v2(N1): 잊혀진 수호자 — 콜드오픈·기억 파편·잡음의 속삭임이 배선돼 있다', () => {
   const storySource = readFileSync(new URL('../src/story.js', import.meta.url), 'utf8');
-  // 프롤로그 콜드오픈: 존재 기록이 삭제된 친구 하루를 찾는 구체적 미스터리로 시작한다.
-  assert.match(storySource, /프로젝트 짝꿍 하루가 사라졌다/);
-  assert.match(storySource, /존재하지 않는 친구/);
-  // 사건 증거: 사당 4주제 각각의 감사 기록 + 마지막 원본 명령 예고.
+  // 프롤로그 콜드오픈: 기억을 잃은 주인공(미스터리 훅)으로 시작한다.
+  assert.match(storySource, /내가 누구인지조차 기억나지 않는다/);
+  assert.match(storySource, /잊혀진 수호자/);
+  // 기억 파편: 사당 4주제 각각의 흑백 회상 + 마지막 파편의 코어 예고.
   assert.match(storySource, /export const MEMORY_FRAGMENTS = \{/);
   for (const key of ['privacy', 'bias', 'copyright', 'deepfake']) {
-    assert.match(storySource, new RegExp(`${key}: \\[`), `사건 증거 누락: ${key}`);
+    assert.match(storySource, new RegExp(`${key}: \\[`), `기억 파편 누락: ${key}`);
   }
   assert.match(storySource, /export const FINAL_MEMORY_TEASE/);
-  // 표현 계층: 제단 획득 → 사건 증거 복구 → 진행도별 화이트아웃 중단 경고.
+  // 표현 계층: 제단 획득 → 기억 파편 회상 → 진행도별 노이즈 속삭임(반전 복선).
   assert.match(mainSource, /const NOISE_WHISPERS = \{/);
   assert.match(mainSource, /function showNoiseWhisper/);
   assert.match(mainSource, /function showMemoryFragment/);
@@ -787,7 +753,7 @@ test('erosion-pushback(N2): 안개 압력 — 미해결 구역 안개 심화 + N
   assert.match(mainSource, /14 \+ fogPressure \* 3/);
 });
 
-test('counterfeit-dot: 화이트아웃 복제 신호 — 결정적 트리거·선택 기록·무한 재발동 방지', () => {
+test('fake-dot(N3): 가짜 도트 조우 — 결정적 트리거·선택 기록·무한 재발동 방지', () => {
   const storySource = readFileSync(new URL('../src/story.js', import.meta.url), 'utf8');
   const worldSrc = readFileSync(new URL('../src/worldData.js', import.meta.url), 'utf8');
   // 순수 데이터·로직은 story.js에(테스트 가능), 스키마는 필드 추가만.
@@ -798,30 +764,53 @@ test('counterfeit-dot: 화이트아웃 복제 신호 — 결정적 트리거·�
   assert.match(mainSource, /function maybeTriggerFakeDot/);
   assert.match(mainSource, /maybeTriggerFakeDot\(game, ui\);/);
   assert.match(mainSource, /recordFakeDotEvent\(game\.progress, eventId, 'seen'\)/);
-  // 판별 단서는 기기 번호·생성 시각·원본 위치 — 출처 검증이 경험으로 남는다.
-  assert.match(storySource, /기기 번호, 생성 시각, 원본 위치/);
+  // 판별 단서는 말버릇(간식) — 딥페이크 판별법이 경험으로 남는다.
+  assert.match(storySource, /간식 얘기를 못 참거든/);
 });
 
-test('H-17 reveal: 2장 사람의 서명·6장 공개 심리·증거 임시 삭제가 배선돼 있다', () => {
+test('twist(N4): 반전 공개·선택 재무게·보스 파편 강탈이 배선돼 있다', () => {
   const finaleSrc = readFileSync(new URL('../src/finale.js', import.meta.url), 'utf8');
-  // 2장은 H-17 삭제 명령의 사람 서명을 공개하고, 책임 선택은 6장에서 완성한다.
-  assert.match(finaleSrc, /승인자 칸에는 사람 세 명의 서명/);
-  assert.match(finaleSrc, /운영위원회/);
-  assert.match(finaleSrc, /공개 심리를 연다/);
-  assert.match(finaleSrc, /사람의 재검토와 이의제기/);
-  // 표현: 전투 승리 → 승인 기록 공개가 1회, 재개 시엔 항로 개방.
+  // 반전 데이터: 회상 완성(아이=나) + 개인화된 선택 대사.
+  assert.match(finaleSrc, /revelationKo/);
+  assert.match(finaleSrc, /그 아이는, 나였다/);
+  assert.match(finaleSrc, /네 친구를… 어떻게 할까/);
+  assert.match(finaleSrc, /잘못 가르친 사람이, 누구보다 잘 가르칠 수 있지/);
+  // 표현: 전투 승리 → 반전 공개가 선택보다 먼저(1회), 재개 시엔 선택부터.
   assert.match(mainSource, /function renderRevelation/);
   assert.match(mainSource, /game\.finaleRevealed/);
-  // 증거 임시 삭제: 피격 3회 누적 시 일시 삭제, 세이브 불변, 승리 시 복구.
+  // 파편 강탈: 피격 3회 누적 시 일시 강탈, 세이브 불변, 승리 시 반환.
   assert.match(mainSource, /c\.staggers >= 3 && !c\.fragmentStolen/);
-  assert.match(mainSource, /사건 증거가 임시 삭제됐다/);
-  assert.match(mainSource, /임시 삭제된 사건 증거를 복구했다/);
+  assert.match(mainSource, /기억 파편을 빼앗겼다/);
+  assert.match(mainSource, /빼앗긴 기억 파편을 되찾았다/);
   assert.match(cssSource, /\.finale-revelation/);
 });
 
-test('coherence: 항해 브리지·하루의 감사 신호·공개 심리가 H-17 사건과 정합한다', () => {
-  assert.match(mainSource, /삭제 명령서는 세 갈래로 찢어졌어/);
-  assert.match(mainSource, /하루의 감사 기록 03/);
-  assert.match(mainSource, /하루의 생방송/);
-  assert.match(mainSource, /공개 심리 결과/);
+test('coherence(N5): 항해 브리지·노바 편지가 반전과 정합한다', () => {
+  // 출항 브리지: 잡음의 소유가 '내 친구가 남긴 것'으로 연결된다(3줄 압축).
+  assert.match(mainSource, /네 친구가 남긴 잡음이니까/);
+  // 노바 편지: 첫 편지의 수신인이 재회 관계("첫 선생님")로, 마지막 편지에 반전 회고.
+  assert.match(mainSource, /나의 첫 선생님에게/);
+  assert.match(mainSource, /다시 만난 날 네가 보여준 것들로, 나는 별이 됐어/);
+});
+
+test('glitch-hunter(G1): 필드 전투 — 순수 로직 분리·결정성·무처벌·표현 배선', () => {
+  const glitchSrc = readFileSync(new URL('../src/glitchLogic.js', import.meta.url), 'utf8');
+  const worldSrc = readFileSync(new URL('../src/worldData.js', import.meta.url), 'utf8');
+  // 순수 로직: THREE 무의존 + 무작위 호출 0 (교실 재현성).
+  assert.doesNotMatch(glitchSrc, /from 'three'|Math\.random\(/);
+  assert.match(glitchSrc, /export function stepGlitch/);
+  assert.match(glitchSrc, /export const GLITCH_ARCHETYPES/);
+  assert.match(glitchSrc, /export const LORE_CARDS/);
+  // 스키마: 필드 추가만(glitchShards·loreCards).
+  assert.match(worldSrc, /glitchShards: Number\.isFinite/);
+  assert.match(worldSrc, /loreCards: \[\.\.\.new Set\(stringArray\(candidate\.loreCards\)\)\]/);
+  // 표현: 오버월드 업데이트 배선 + 정화 우선 A 처리 + 텔레그래프 발광 + 로어 토스트.
+  assert.match(mainSource, /updateFieldGlitches\(delta, game, ui\);/);
+  assert.match(mainSource, /if \(tryPurifyGlitch\(game, ui\)\) \{/);
+  assert.match(mainSource, /intent\.telegraph \* 1\.7/);
+  assert.match(mainSource, /function showLoreCard/);
+  assert.match(cssSource, /\.lore-card/);
+  assert.match(cssSource, /\.shard-count/);
+  // 무처벌: 피격은 콤보 리셋·넉백뿐 — 사망·감점 문자열 금지.
+  assert.match(mainSource, /gc\.combo = 0; \/\/ 콤보만 리셋 — 벌점 없음/);
 });

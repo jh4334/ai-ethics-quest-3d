@@ -1,7 +1,7 @@
 // 오프라인 서비스워커 — 학교 와이파이가 불안정해도 한 번 연 태블릿에선 계속 동작한다.
 // 전략: 페이지 이동(navigate)은 네트워크 우선(새 배포 즉시 반영) + 실패 시 캐시 폴백,
 // 해시 파일명 에셋(/assets/)은 캐시 우선(불변 파일이라 재다운로드 불필요).
-const CACHE = 'ethics-quest-h17-v4';
+const CACHE = 'ethics-isle-v1';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon.svg', './trilogy.html'];
 
 self.addEventListener('install', (event) => {

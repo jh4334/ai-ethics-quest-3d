@@ -26,18 +26,19 @@ function solveTopic(progress, topicId, toolId, { withMistake = false } = {}) {
   return { ...outcome.progress, collectedFragments: [...new Set([...(next.collectedFragments ?? []), topicId])] };
 }
 
-test('finale offers one public-hearing choice and one quiet-seal recovery branch', () => {
-  const hearing = FINALE.choices.filter((c) => c.wise);
-  const seal = FINALE.choices.filter((c) => !c.wise);
-  assert.equal(hearing.length, 1);
-  assert.equal(seal.length, 1);
-  assert.equal(seal[0].id, 'seal');
-  assert.equal(hearing[0].id, 'hearing');
-  assert.ok(FINALE.sealKo.length >= 1, 'seal branch explains why accountability still matters');
-  assert.ok(FINALE.resolutionKo.length >= 1 && FINALE.revelationKo.length >= 1);
-  assert.ok(FINALE.revelationKo.length >= 3, 'revelation separates AI calculation from human approval');
-  assert.match(FINALE.revelationKo.join(' '), /운영위원회/);
-  assert.match(FINALE.sealKo.join(' '), /이의제기|공개/);
+test('finale offers exactly one wise (teach) and one unwise (erase) choice with an erase recovery', () => {
+  const teach = FINALE.choices.filter((c) => c.wise);
+  const erase = FINALE.choices.filter((c) => !c.wise);
+  assert.equal(teach.length, 1);
+  assert.equal(erase.length, 1);
+  assert.equal(erase[0].id, 'erase');
+  assert.equal(teach[0].id, 'teach');
+  assert.ok(FINALE.eraseKo.length >= 1, 'erase branch gently refuses and re-asks');
+  assert.ok(FINALE.rebirthKo.length >= 1 && FINALE.introKo.length >= 1);
+  // 반전 공개(N4): 회상 완성 비트가 존재하고, 지우기의 무게가 '내 친구·내 시간'으로 개인화된다.
+  assert.ok(FINALE.revelationKo.length >= 3, 'revelation completes the memory');
+  assert.match(FINALE.revelationKo.join(' '), /나였다/);
+  assert.match(FINALE.eraseKo.join(' '), /네 친구/);
 });
 
 test('tool steps follow story order and only include owned promise tools', () => {
@@ -79,9 +80,7 @@ test('a recovered mistake is remembered and surfaced with pride on the certifica
   const cert = buildNovaCertificate(progress);
   assert.equal(cert.recovered, true);
   assert.match(cert.recoveredNoteKo, /바로잡/);
-  assert.equal(cert.titleKo, '네 가지 증거 확인서');
-  const finalCert = buildNovaCertificate({ ...progress, campaignCompleted: true });
-  assert.equal(finalCert.titleKo, 'AI 윤리 시민 감사관 완주증');
+  assert.equal(cert.titleKo, '노바의 첫 친구 증명서');
 });
 
 test('certificate falls back to collected fragments when story deeds are missing', () => {

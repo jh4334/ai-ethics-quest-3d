@@ -284,12 +284,12 @@ export function createAudioEngine() {
       arpeggio([392, 523.25, 659.25, 783.99, 1046.5], { step: 0.12, type: 'triangle', gain: 0.24 });
     },
     playNoiseGroan() {
-      // 화이트아웃의 삭제 경고음 — 낮게 흔들리며 내려가는 글리치 소리.
+      // 노이즈의 '지지직' 신음 — 낮게 흔들리며 내려가는 고장난 소리(무섭기보다 아픈 느낌).
       blip(140, { type: 'sawtooth', duration: 0.5, gain: 0.16, slideTo: 68 });
       blip(150, { type: 'square', duration: 0.34, gain: 0.07, slideTo: 96 });
     },
     playNovaChime() {
-      // 루멘 공개 코어 전환 — 맑고 따뜻하게 피어오르는 종소리.
+      // 노바 재탄생 — 맑고 따뜻하게 피어오르는 종소리.
       arpeggio([523.25, 783.99, 1046.5, 1567.98], { step: 0.1, type: 'sine', gain: 0.24 });
     },
     playFanfare() {

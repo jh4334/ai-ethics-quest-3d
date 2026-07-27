@@ -59,5 +59,6 @@ test('final AI Core requires unlock progress and completes on the balanced pledg
   assert.equal(outcome.unlocked, true);
   assert.equal(outcome.result.correct, true);
   assert.equal(outcome.progress.aiCoreCompleted, true);
-  assert.match(getNextObjective(outcome.progress), /선착장/);
+  assert.match(getNextObjective(outcome.progress), /활동지/);
 });
+

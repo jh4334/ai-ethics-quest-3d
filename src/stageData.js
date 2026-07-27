@@ -1,4 +1,4 @@
-// 6장 캠페인의 월드 스테이지 프레임 — 순수 데이터 + 순수 로직 (THREE 무의존, node 테스트 가능).
+// 「잡음의 군도」 스테이지 프레임 — 순수 데이터 + 순수 로직 (THREE 무의존, node 테스트 가능).
 // 기획서(docs/design/2막-잡음의-군도-기획서.md)의 프롤로그 + 5스테이지 골격을 데이터로 승격한다.
 // 3D 표현·항해 씬은 이 데이터를 읽기만 한다 (DUNGEON_ROOMS ↔ dungeon.js 패턴).
 
@@ -8,8 +8,8 @@
 export const STAGES = [
   {
     id: 'prologue',
-    nameKo: '기록 관리 섬',
-    frameKo: '1장 명단에서 사라진 아이 · 2장 거짓 영상의 주인',
+    nameKo: '시작의 섬',
+    frameKo: 'AI 윤리의 네 약속',
     themeKo: '개인정보 · 편향 · 저작권 · 딥페이크',
     verbKo: '약속의 도구 4종',
     emoji: '🏝️',
@@ -19,8 +19,8 @@ export const STAGES = [
   },
   {
     id: 'whisper-cape',
-    nameKo: '확산 기록 곶',
-    frameKo: '3장 웃음이 만든 폭풍',
+    nameKo: '속삭임 곶',
+    frameKo: '내가 남기는 것',
     themeKo: '악플·혐오표현 + 디지털 발자국',
     verbKo: '🛡️ 막기·밀쳐내기',
     emoji: '🌊',
@@ -30,8 +30,8 @@ export const STAGES = [
   },
   {
     id: 'echo-cave',
-    nameKo: '추천 분기 해협',
-    frameKo: '4장 두 개의 진실',
+    nameKo: '메아리 동굴',
+    frameKo: '내게 들어오는 것',
     themeKo: '가짜뉴스·출처 + 필터버블',
     verbKo: '🔔 울림 충격파 · 🪞 정체 드러내기',
     emoji: '🕳️',
@@ -41,8 +41,8 @@ export const STAGES = [
   },
   {
     id: 'hourglass-port',
-    nameKo: '자동 결정 항구',
-    frameKo: '5장 아무도 결정하지 않는 밤',
+    nameKo: '모래시계 항구',
+    frameKo: 'AI와 나의 습관',
     themeKo: '스크린타임·디지털 웰빙 + 생성물 표시',
     verbKo: '🧭 끌어당기기',
     emoji: '⏳',
@@ -52,9 +52,9 @@ export const STAGES = [
   },
   {
     id: 'memory-outer',
-    nameKo: '감사 기록 보관소',
-    frameKo: '6장 마지막 증언 · 증거 보관소',
-    themeKo: '종합 + 설명 책임·이의제기권',
+    nameKo: '기억의 심장 · 외곽',
+    frameKo: '함께 살아가기',
+    themeKo: '종합 + 인간-AI 협업',
     verbKo: '4동사 조합',
     emoji: '💠',
     sea: [8, -26],
@@ -63,9 +63,9 @@ export const STAGES = [
   },
   {
     id: 'memory-core',
-    nameKo: '공개 심리실',
-    frameKo: '6장 마지막 증언 · 공개 심리',
-    themeKo: '화이트아웃 감사 — 사람과 AI의 공동 책임',
+    nameKo: '기억의 심장 · 심부',
+    frameKo: '최종 재대결',
+    themeKo: '노이즈 리매치 — 페이즈마다 다른 동사',
     verbKo: '4동사 총동원',
     emoji: '⚡',
     sea: [8, -34],

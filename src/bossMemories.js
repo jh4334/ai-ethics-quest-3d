@@ -1,4 +1,4 @@
-// 화이트아웃이 지우려는 사건 증거 — 보스전에서 약점이 바뀔 때마다 나타나는 감사 장면.
+// 노이즈의 '잘못된 기억' — 보스전에서 약점이 바뀔 때마다 노이즈가 토해내는 상황.
 // 플레이어는 색이 아니라 '이 상황엔 어떤 약속(도구)이 필요한가'를 읽고 판단해야 한다.
 // 각 상황은 오직 한 도구에만 논리적으로 대응한다(4도구 상호 배타).
 // 문장은 story.js의 사건 어휘와 맞추고, 초등 5–6학년 수준(한 문장 ~25자).
@@ -34,7 +34,7 @@ export const NOISE_MEMORIES = {
 export function pickMemory(toolId, counter) {
   const list = NOISE_MEMORIES[toolId];
   if (!list || list.length === 0) {
-    return { textKo: '화이트아웃이 증거를 덮으려 한다!', hintKo: '감사 도구로 원본을 지키자' };
+    return { textKo: '노이즈가 잡음을 토해낸다!', hintKo: '약속의 도구로 막아내자' };
   }
   return list[((counter % list.length) + list.length) % list.length];
 }

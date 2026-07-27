@@ -60,7 +60,7 @@ export const ETHICS_TOPICS = [
     safeRule: '필요한 정보만, 허락받고, 목적을 알고 사용하기',
     realCaseKo: '실제로 한 앱이 필요 이상으로 많은 개인정보를 모았다가 유출되어 많은 사람이 피해를 본 일이 있어요. 그래서 ‘꼭 필요한 정보만’ 모으는 것이 중요해요.',
     vocabularyKo: ['개인정보', '동의', '목적'],
-    teaserKo: '운동장 점수판에서 누군가 "이건 공평하지 않아…" 하고 웅얼거려. 지문 운동장엔 무슨 일이?'
+    teaserKo: '숲 쪽에서 누군가 "이건 공평하지 않아…" 하고 웅얼거려. 편향의 숲엔 무슨 일이?'
   },
   {
     id: 'bias',
@@ -72,7 +72,7 @@ export const ETHICS_TOPICS = [
     safeRule: '한 가지 결과만 믿지 말고 빠진 사람과 다른 관점 확인하기',
     realCaseKo: '예전에 어떤 AI 채용 프로그램이 남성 지원자를 더 높게 평가한 적이 있어요. 사람이 만든 과거 자료가 한쪽으로 치우쳐 있었기 때문이에요.',
     vocabularyKo: ['편향', '공정성', '자료'],
-    teaserKo: '기록 보관소의 서가 사이로 지워진 이름표가 보여. 누구의 작품이 사라진 걸까?'
+    teaserKo: '낡은 기둥 사이로 붓 자국이 보여. 저작권 유적엔 누구의 작품이 잠들어 있을까?'
   },
   {
     id: 'copyright',
@@ -84,7 +84,7 @@ export const ETHICS_TOPICS = [
     safeRule: '출처 확인, 허락 확인, 내 생각과 수정한 부분 밝히기',
     realCaseKo: 'AI로 만든 그림이 실제 화가의 그림과 너무 비슷해 문제가 된 일이 있어요. AI가 다른 사람의 작품을 배워 만들기 때문에 출처와 허락이 중요해요.',
     vocabularyKo: ['저작권', '출처', '허락'],
-    teaserKo: '미디어 검증실에서 원본 없는 목소리가 반복돼. 누가 이 영상을 만든 걸까?'
+    teaserKo: '동굴 깊은 곳에서 진짜 같은 가짜 목소리가 새어 나와. 딥페이크 동굴의 정체는?'
   },
   {
     id: 'deepfake',
@@ -104,10 +104,10 @@ export const WORLD_ZONES = [
   {
     id: 'privacy-village',
     topicId: 'privacy',
-    nameKo: '빈 교실',
-    shortNameKo: '빈 교실',
-    descriptionKo: 'H-17의 자리만 도려낸 듯 비어 있는 1-3반입니다. 삭제 신청서와 사라진 사물함 기록을 추적합니다.',
-    position: [-12, 0, 3],
+    nameKo: '개인정보 마을',
+    shortNameKo: '정보 마을',
+    descriptionKo: '작은 집과 우체통이 모인 마을입니다. AI 도우미에게 어떤 정보를 알려도 되는지 배우는 곳입니다.',
+    position: [-13.7, 0, -9.5],
     npc: {
       id: 'privacy-keeper',
       nameKo: '비밀지기 담',
@@ -120,10 +120,10 @@ export const WORLD_ZONES = [
   {
     id: 'bias-forest',
     topicId: 'bias',
-    nameKo: '지문 운동장',
-    shortNameKo: '지문 운동장',
-    descriptionKo: '학생들의 행동을 하나의 위험 점수로 바꾼 운동장입니다. 누구에게 불리한 기준인지 비교합니다.',
-    position: [10, 0, -2],
+    nameKo: '편향의 숲',
+    shortNameKo: '공정 숲',
+    descriptionKo: '서로 다른 나무가 자라는 숲입니다. AI가 한쪽 자료만 배우면 결과가 치우칠 수 있음을 살펴봅니다.',
+    position: [13.8, 0, -9.2],
     npc: {
       id: 'fairness-ranger',
       nameKo: '외알안경 모리',
@@ -136,10 +136,10 @@ export const WORLD_ZONES = [
   {
     id: 'copyright-ruins',
     topicId: 'copyright',
-    nameKo: '기록 보관소',
-    shortNameKo: '기록 보관소',
-    descriptionKo: '책과 제작 로그가 층층이 쌓인 보관소입니다. 지워진 창작자 이름과 출처를 복구합니다.',
-    position: [-5, 0, -11],
+    nameKo: '저작권 유적',
+    shortNameKo: '창작 유적',
+    descriptionKo: '책 조각과 무대가 놓인 유적입니다. AI 결과를 사용할 때 창작자와 출처를 존중하는 법을 배웁니다.',
+    position: [-13.3, 0, 10.1],
     npc: {
       id: 'credit-archivist',
       nameKo: '조각가 무로',
@@ -152,10 +152,10 @@ export const WORLD_ZONES = [
   {
     id: 'deepfake-cave',
     topicId: 'deepfake',
-    nameKo: '미디어 검증실',
-    shortNameKo: '검증실',
-    descriptionKo: '영상의 원본·시간·출처를 대조하는 유리 실험실입니다. H-17 고발 영상의 조작 흔적을 확인합니다.',
-    position: [8, 0, -10],
+    nameKo: '딥페이크 동굴',
+    shortNameKo: '진실 동굴',
+    descriptionKo: '빛과 그림자가 흔들리는 동굴입니다. AI로 만든 사진, 목소리, 영상의 진짜 여부를 확인하는 법을 익힙니다.',
+    position: [12.9, 0, 10.4],
     npc: {
       id: 'truth-guide',
       nameKo: '메아리 에코',
@@ -453,7 +453,7 @@ export function getProgressSummary(collectedTopicIds) {
 
 export function createInitialProgress() {
   return {
-    version: 3,
+    version: 2,
     visitedTopics: [],
     completedShrines: [],
     collectedFragments: [],
@@ -461,16 +461,16 @@ export function createInitialProgress() {
     tools: [],
     story: createStoryState(),
     prologueSeen: false,
-    // 1-2장 중간 관문. H-17 삭제 명령이 다섯 보관소로 흩어진다.
     aiCoreCompleted: false,
-    // 6장 공개 심리를 마치고 H-17 사건을 바로잡은 최종 완료 신호.
-    campaignCompleted: false,
     voyageIntroSeen: false,
     novaLettersRead: [],
     knowledgeBottles: [],
     // 가짜 도트(N3) 조우 기록 — '이벤트ID:선택ID' 형식.
     fakeDotEvents: [],
-    // 세이브 v3: 6장 캠페인의 섬별 진행 맵. 1-2장(안개의 섬) 완료는
+    // 글리치 헌터(G1) — 정화로 모은 기억 파편 조각(강화 재화)·로어 도감.
+    glitchShards: 0,
+    loreCards: [],
+    // 세이브 v2: 「잡음의 군도」 섬별 진행 맵. 프롤로그(시작의 섬) 완료는
     // 기존 신호(aiCoreCompleted)에서 파생하므로 여기 중복 기록하지 않는다.
     stages: {}
   };
@@ -535,8 +535,8 @@ export function normalizeProgress(candidate) {
       : [];
 
   return {
-    // v1/v2 세이브도 필드 손실 없이 v3로 올라온다.
-    version: 3,
+    // v1 세이브(version 없음)도 필드 손실 없이 v2로 올라온다 — stages만 새로 붙는다.
+    version: 2,
     visitedTopics: uniqueValidTopicIds(stringArray(candidate.visitedTopics)),
     completedShrines: stringArray(candidate.completedShrines).filter((id) => Boolean(getShrineById(id))),
     collectedFragments: uniqueValidTopicIds(stringArray(candidate.collectedFragments)),
@@ -545,11 +545,14 @@ export function normalizeProgress(candidate) {
     story: normalizeStoryState(candidate.story),
     prologueSeen: candidate.prologueSeen === true,
     aiCoreCompleted: candidate.aiCoreCompleted === true,
-    campaignCompleted: candidate.campaignCompleted === true,
     voyageIntroSeen: candidate.voyageIntroSeen === true,
     novaLettersRead: [...new Set(stringArray(candidate.novaLettersRead))],
     knowledgeBottles: [...new Set(stringArray(candidate.knowledgeBottles).filter((id) => bottleIdSet.has(id)))],
     fakeDotEvents: [...new Set(stringArray(candidate.fakeDotEvents))],
+    glitchShards: Number.isFinite(candidate.glitchShards) && candidate.glitchShards >= 0
+      ? Math.floor(candidate.glitchShards)
+      : 0,
+    loreCards: [...new Set(stringArray(candidate.loreCards))],
     stages: normalizeStages(candidate.stages)
   };
 }
@@ -768,15 +771,6 @@ export function getLearningReport(progress) {
 
   const coreAttempts = log.filter((entry) => entry.kind === 'core');
   const practiceEntries = log.filter((entry) => entry.kind === 'practice');
-  const chapter3dEntries = log.filter((entry) => entry.kind === 'chapter-3d');
-  const chapter3dSolved = new Set(
-    chapter3dEntries.filter((entry) => entry.correct && typeof entry.stageId === 'string').map((entry) => entry.stageId)
-  );
-  const chapter3dRecovered = new Set(
-    chapter3dEntries
-      .filter((entry) => !entry.correct && chapter3dSolved.has(entry.stageId))
-      .map((entry) => entry.stageId)
-  );
 
   return {
     topics,
@@ -801,11 +795,7 @@ export function getLearningReport(progress) {
       remnantCleared: progress.stages?.['memory-core']?.completed === true,
       lettersRead: (progress.novaLettersRead ?? []).length,
       bottlesFound: (progress.knowledgeBottles ?? []).length,
-      bottlesTotal: KNOWLEDGE_BOTTLES.length,
-      campaignCompleted: progress.campaignCompleted === true,
-      chapter3dAttempts: chapter3dEntries.length,
-      chapter3dSolved: chapter3dSolved.size,
-      chapter3dRecovered: chapter3dRecovered.size
+      bottlesTotal: KNOWLEDGE_BOTTLES.length
     }
   };
 }
@@ -813,12 +803,8 @@ export function getLearningReport(progress) {
 export function getNextObjective(progress) {
   const summary = getProgressSummary(progress.collectedFragments);
 
-  if (progress.campaignCompleted) {
-    return '완주 기록을 돌아보고 우리 반의 AI 윤리 약속을 정리하세요.';
-  }
-
   if (progress.aiCoreCompleted) {
-    return '선착장에서 증거 항로로 출항해 H-17 삭제 명령의 나머지 기록을 찾으세요.';
+    return '활동지에 우리 반 AI 윤리 약속을 정리하세요.';
   }
 
   if (summary.finalCoreUnlocked) {
@@ -832,3 +818,4 @@ export function getNextObjective(progress) {
 
   return `${nextTopic.titleKo} 구역에서 NPC와 대화하고 사당 문제를 해결하세요.`;
 }
+
