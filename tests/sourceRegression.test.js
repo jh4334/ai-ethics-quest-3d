@@ -823,6 +823,12 @@ test('glitch-hunter(G1): 필드 전투 — 순수 로직 분리·결정성·무�
   assert.match(mainSource, /function openAnvilDialog/);
   assert.match(mainSource, /function tryDodgeStep/);
   assert.match(mainSource, /getSlashParams\(game\.progress\.combatUpgrades \?\? \[\]\)/);
+  // G4: 보스전도 같은 마무리 문법 — 스태거(금빛 링) → A 정화 피니셔 → 파편 보상.
+  assert.match(mainSource, /function enterBossStagger/);
+  assert.match(mainSource, /function purifyBossShell/);
+  assert.match(mainSource, /BOSS_STAGGER_HOLD/);
+  // 자비 규칙: 스태거를 놓쳐도 명중 1회면 재스태거(벌점 없음).
+  assert.match(mainSource, /c\.phaseHits = Math\.max\(0, PHASE_HITS - 1\);/);
   assert.match(cssSource, /\.lore-card/);
   assert.match(cssSource, /\.shard-count/);
   // 무처벌: 피격은 콤보 리셋·넉백뿐 — 사망·감점 문자열 금지.

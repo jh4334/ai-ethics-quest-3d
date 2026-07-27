@@ -475,7 +475,10 @@ try {
     bossStarted = await p.evaluate(() => Boolean(window.__ethicsGame.combat));
   }
   check(bossStarted, '보스전 진입(도구 4개 게이트 통과)');
-  for (let i = 0; i < 8; i += 1) {
+  // G4 문법: 페이즈마다 정답 명중 2회 → 보스 스태거(금빛 링) → A 정화 피니셔로 껍질 파괴.
+  const shardsBeforeBoss = await p.evaluate(() => window.__ethicsGame.progress.glitchShards ?? 0);
+  let sawBossStagger = false;
+  for (let i = 0; i < 16 && await p.evaluate(() => Boolean(window.__ethicsGame.combat)); i += 1) {
     await p.evaluate(() => {
       const g = window.__ethicsGame; const c = g.combat; if (!c) return;
       const boss = g.renderState.noiseBoss;
@@ -483,7 +486,11 @@ try {
       g.player.position.set(boss.baseX ?? 0, 0.55, (boss.baseZ ?? 0) + 1.0);
     });
     await p.keyboard.press('e'); await p.waitForTimeout(300);
+    sawBossStagger = sawBossStagger || await p.evaluate(() => (window.__ethicsGame.combat?.bossStagger ?? 0) > 0);
   }
+  check(sawBossStagger, '보스 스태거 발생(껍질 마지막 점은 정화 피니셔의 몫)');
+  const shardsAfterBoss = await p.evaluate(() => window.__ethicsGame.progress.glitchShards ?? 0);
+  check(shardsAfterBoss >= shardsBeforeBoss + 12, `정화 피니셔 파편 보상(+${shardsAfterBoss - shardsBeforeBoss}, 4껍질×3)`);
   // N4: 제압 직후 반전 공개(회상 완성)가 선택보다 먼저 나온다.
   await p.waitForTimeout(1400);
   const revelation = await p.evaluate(() => window.__ethicsUi.dialogBody.textContent.includes('그 아이는, 나였다'));
