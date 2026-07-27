@@ -6382,7 +6382,9 @@ function startBossFight(game, ui) {
     guardCd: 0,
     bellCd: 0, // 🔔 충격파 쿨다운
     staggers: 0, // 피격 누적 — 3회면 노이즈가 기억 파편을 일시 강탈한다(N4)
-    fragmentStolen: false // 강탈 상태(진짜 세이브는 건드리지 않는다 — 승리 시 반환)
+    fragmentStolen: false, // 강탈 상태(진짜 세이브는 건드리지 않는다 — 승리 시 반환)
+    bossStagger: 0, // G4: 껍질 체력이 다하면 휘청임 — 이 동안 A = 정화 피니셔(필드 문법 통일)
+    staggerRing: null // 스태거 텔레그래프(발밑 금빛 링) 메시
   };
   syncBossWeakColor(game);
   ui.root.classList.add('is-combat');
@@ -6482,6 +6484,11 @@ function playerAttack(game, ui) {
     ui.bossHint.textContent = '더 가까이 다가가요';
     return;
   }
+  // G4: 휘청이는 동안 A = 정화 피니셔 — 필드 글리치와 같은 문법으로 껍질을 깬다.
+  if (c.bossStagger > 0) {
+    purifyBossShell(game, ui);
+    return;
+  }
   const activeToolId = c.tools[c.activeTool];
   if (activeToolId !== c.weakToolId) {
     // 상황에 안 맞는 도구 — 튕겨 나간다(대미지 없음). 정답은 안 주고, 상황을 다시 읽게 한다.
@@ -6502,8 +6509,12 @@ function playerAttack(game, ui) {
     return;
   }
   // 상황에 맞는 약속으로 명중: 노이즈가 신음하며 오그라든다.
-  c.hp = Math.max(0, c.hp - 1);
+  // 껍질 마지막 판정(finishing)은 체력을 깎지 않는다 — 마지막 한 점은 정화 피니셔의 몫(G4).
+  const finishing = c.phaseHits + 1 >= PHASE_HITS;
   c.phaseHits += 1;
+  if (!finishing) {
+    c.hp = Math.max(0, c.hp - 1);
+  }
   boss.hitFlash = 0.3;
   addShake(game, 0.3);
   game.hitStop = 0.06; // 히트스톱 — 타격 순간 멈칫
@@ -6515,19 +6526,81 @@ function playerAttack(game, ui) {
   game.audio?.playCorrect();
   game.audio?.playNoiseGroan();
   boss.targetScale = 0.4 + (c.hp / c.maxHp) * 0.95;
-  if (c.hp <= 0) {
-    updateBossHud(game, ui);
-    winBossFight(game, ui);
-    return;
-  }
-  if (c.phaseHits >= PHASE_HITS) {
-    breakBossShell(game, ui); // 이 주제의 껍질 격파 → 다음 아이템의 페이즈
+  if (finishing) {
+    enterBossStagger(game, ui); // 껍질이 흔들린다 — A로 정화(필드와 같은 마무리 문법)
   } else {
     // 같은 주제의 다른 상황 — 아이템은 그대로, 판단만 새로.
     c.memCounter += 1;
     c.weakMemory = pickMemory(c.weakToolId, c.memCounter);
     popBossMemory(ui, c);
   }
+  updateBossHud(game, ui);
+}
+
+// G4: 껍질 체력이 다하면 노이즈가 크게 휘청인다 — 발밑 금빛 링 + "A로 정화" 텔레그래프.
+const BOSS_STAGGER_HOLD = 5.0; // 이 안에 정화하지 않으면 일어난다(명중 1회면 다시 휘청 — 벌점 없음)
+function enterBossStagger(game, ui) {
+  const c = game.combat;
+  const boss = game.renderState?.noiseBoss;
+  const scene = game.renderState?.scene;
+  c.bossStagger = BOSS_STAGGER_HOLD;
+  c.windup = 0; // 모으던 잡음은 흩어진다
+  if (c.projectile?.mesh) {
+    // 날아오던 파도도 힘을 잃고 흩어진다 — 정화 창을 온전히 준다.
+    scene?.remove(c.projectile.mesh);
+    c.projectile = null;
+    c.fireTimer = PHASE_FIRE[c.phase];
+  }
+  if (scene && !c.staggerRing) {
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(1.6, 0.09, 6, 28),
+      new THREE.MeshBasicMaterial({ color: 0xffd76a, transparent: true, opacity: 0.85 })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(boss?.baseX ?? 0, 0.25, boss?.baseZ ?? 0);
+    scene.add(ring);
+    c.staggerRing = ring;
+  }
+  game.audio?.playCorrect();
+  game.audio?.playNoiseGroan();
+  addShake(game, 0.4);
+  flashCombatPopup(ui, '⚡ 노이즈가 휘청인다 — A로 정화!', 'hit');
+  ui.bossHint.textContent = '지금이야! 다가가서 A — 정화 피니셔!';
+  c.hintHold = BOSS_STAGGER_HOLD;
+}
+
+function clearBossStaggerRing(game) {
+  const c = game.combat;
+  if (c?.staggerRing) {
+    game.renderState?.scene?.remove(c.staggerRing);
+    c.staggerRing = null;
+  }
+}
+
+// G4: 정화 피니셔 — 껍질의 마지막 한 점을 정화의 빛으로 깬다. 파편 보상은 저장된다.
+function purifyBossShell(game, ui) {
+  const c = game.combat;
+  const boss = game.renderState?.noiseBoss;
+  c.bossStagger = 0;
+  clearBossStaggerRing(game);
+  c.hp = Math.max(0, c.hp - 1);
+  boss.hitFlash = 0.35;
+  boss.targetScale = 0.4 + (c.hp / c.maxHp) * 0.95;
+  addShake(game, 0.5);
+  game.hitStop = 0.1;
+  triggerHaptic('win');
+  game.audio?.playCollect();
+  celebrate(game, new THREE.Vector3(boss?.baseX ?? 0, boss?.baseY ?? 2.4, boss?.baseZ ?? 0), '#ffd76a', 'collect');
+  game.progress = { ...game.progress, glitchShards: (game.progress.glitchShards ?? 0) + 3 };
+  persistProgress(game.progress);
+  updateHud(game, ui);
+  flashCombatPopup(ui, '✨ 정화! 기억 파편 +3 조각', 'win');
+  if (c.hp <= 0) {
+    updateBossHud(game, ui);
+    winBossFight(game, ui);
+    return;
+  }
+  breakBossShell(game, ui); // 이 주제의 껍질 격파 → 다음 아이템의 페이즈
   updateBossHud(game, ui);
 }
 
@@ -6608,6 +6681,23 @@ function updateCombat(delta, game, ui) {
   }
   const boss = game.renderState?.noiseBoss;
   if (boss && boss.kind === 'noise') {
+    // G4: 휘청이는 동안 — 이동·발사 정지, 링이 돌며 "지금 정화"를 텔레그래프.
+    if (c.bossStagger > 0) {
+      c.bossStagger = Math.max(0, c.bossStagger - delta);
+      if (c.staggerRing) {
+        c.staggerRing.rotation.z += delta * 2.6;
+        c.staggerRing.position.set(boss.baseX ?? 0, 0.25, boss.baseZ ?? 0);
+      }
+      if (c.bossStagger <= 0) {
+        // 정화 기회를 놓쳤다 — 일어난다. 명중 1회면 다시 휘청(벌점 없음).
+        clearBossStaggerRing(game);
+        c.phaseHits = Math.max(0, PHASE_HITS - 1);
+        flashCombatPopup(ui, '노이즈가 다시 일어났다…', 'stagger');
+        ui.bossHint.textContent = '한 번 더 맞는 약속으로 명중하면 다시 휘청인다!';
+        c.hintHold = 2.0;
+      }
+      return;
+    }
     c.driftAngle += delta * 0.5;
     boss.baseX = Math.cos(c.driftAngle) * 2.4;
     boss.baseZ = Math.sin(c.driftAngle) * 2.4;
@@ -6702,6 +6792,7 @@ function winBossFight(game, ui) {
   if (c.projectile?.mesh) {
     game.renderState.scene.remove(c.projectile.mesh);
   }
+  clearBossStaggerRing(game);
   game.combat = null;
   ui.root.classList.remove('is-combat');
   ui.bossHud.hidden = true;
