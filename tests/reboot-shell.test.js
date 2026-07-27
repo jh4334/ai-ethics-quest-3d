@@ -1,0 +1,183 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import test from 'node:test';
+
+import { createAppLifecycle } from '../src/reboot/app/lifecycle.js';
+import { resolveBootScene } from '../src/reboot/app/fixtures.js';
+import { createInputRouter } from '../src/reboot/app/input.js';
+import { createSceneRegistry } from '../src/reboot/app/sceneRegistry.js';
+import { createDisposableRegistry } from '../src/reboot/render/dispose.js';
+
+function createScheduler() {
+  let nextId = 1;
+  const callbacks = new Map();
+
+  return {
+    cancel(id) {
+      callbacks.delete(id);
+    },
+    flush(time = 16) {
+      const pending = [...callbacks.values()];
+      callbacks.clear();
+      for (const callback of pending) callback(time);
+    },
+    pendingCount() {
+      return callbacks.size;
+    },
+    request(callback) {
+      const id = nextId;
+      nextId += 1;
+      callbacks.set(id, callback);
+      return id;
+    }
+  };
+}
+
+function createKeyboardEvent(type, code) {
+  const event = new Event(type, { cancelable: true });
+  Object.defineProperty(event, 'code', { value: code });
+  Object.defineProperty(event, 'repeat', { value: false });
+  return event;
+}
+
+test('app lifecycle owns one frame loop through pause, resume, and restart', () => {
+  // Given: one valid scene factory and an inspectable animation scheduler.
+  const calls = [];
+  const scheduler = createScheduler();
+  const registry = createSceneRegistry([
+    ['school-night', () => ({
+      dispose: () => calls.push('dispose'),
+      enter: () => calls.push('enter'),
+      exit: () => calls.push('exit'),
+      update: () => calls.push('update')
+    })]
+  ]);
+  const app = createAppLifecycle({ registry, scheduler });
+
+  // When: the app runs, pauses, resumes, and restarts once.
+  app.start('school-night');
+  scheduler.flush();
+  app.pause();
+  app.resume();
+  app.restart();
+
+  // Then: one loop is pending and the replaced scene was fully cleaned up.
+  assert.equal(scheduler.pendingCount(), 1);
+  assert.deepEqual(calls, ['enter', 'update', 'exit', 'dispose', 'enter']);
+  assert.equal(app.getState().status, 'running');
+});
+
+test('restart disposes every scene instance across fifty cycles', () => {
+  // Given: each scene owns one disposable resource.
+  const scheduler = createScheduler();
+  let created = 0;
+  let disposed = 0;
+  const registry = createSceneRegistry([
+    ['school-night', () => {
+      created += 1;
+      const resources = createDisposableRegistry();
+      resources.register({ dispose: () => { disposed += 1; } }, `scene-${created}`);
+      return {
+        dispose: () => resources.disposeAll(),
+        enter() {},
+        exit() {},
+        update() {}
+      };
+    }]
+  ]);
+  const app = createAppLifecycle({ registry, scheduler });
+  app.start('school-night');
+
+  // When: the same scene is restarted fifty times and then destroyed.
+  for (let index = 0; index < 50; index += 1) app.restart();
+  app.destroy();
+
+  // Then: all fifty replacements and the final scene release their resources.
+  assert.equal(created, 51);
+  assert.equal(disposed, 51);
+  assert.equal(scheduler.pendingCount(), 0);
+});
+
+test('scene registry enforces lifecycle contracts and stable ids', () => {
+  // Given: entries are authored in a non-alphabetical order.
+  const scene = { dispose() {}, enter() {}, exit() {}, update() {} };
+  const registry = createSceneRegistry([
+    ['z-scene', () => scene],
+    ['a-scene', () => scene]
+  ]);
+
+  // When: the ids and a created scene are requested.
+  const ids = registry.list();
+  const created = registry.create('a-scene');
+
+  // Then: ids are deterministic and malformed scene contracts are rejected.
+  assert.deepEqual(ids, ['a-scene', 'z-scene']);
+  assert.equal(created, scene);
+  assert.throws(
+    () => createSceneRegistry([['broken', () => ({ enter() {} })]]).create('broken'),
+    /dispose.*enter.*exit.*update|scene contract/i
+  );
+});
+
+test('fixture bootstrap accepts query fixtures only behind the explicit test hook', () => {
+  // Given: a production scene and a deterministic test fixture exist.
+  const ids = ['school-night', 'disposal-fixture'];
+
+  // When: the same fixture query is resolved with and without the test hook.
+  const productionId = resolveBootScene({
+    defaultId: 'school-night',
+    fixtureIds: ids,
+    search: '?fixture=disposal-fixture',
+    testHook: false
+  });
+  const testId = resolveBootScene({
+    defaultId: 'school-night',
+    fixtureIds: ids,
+    search: '?fixture=disposal-fixture',
+    testHook: true
+  });
+
+  // Then: production ignores the fixture while tests select it exactly.
+  assert.equal(productionId, 'school-night');
+  assert.equal(testId, 'disposal-fixture');
+  assert.equal(resolveBootScene({ defaultId: 'school-night', fixtureIds: ids, search: '?fixture=unknown', testHook: true }), 'school-night');
+});
+
+test('input router maps key state once and detaches cleanly', () => {
+  // Given: an event target and one keyboard binding.
+  const target = new EventTarget();
+  const changes = [];
+  const input = createInputRouter({ bindings: { KeyW: 'move-up' }, target });
+  input.subscribe((change) => changes.push(change));
+  input.attach();
+
+  // When: the key is pressed twice, released, and pressed after detach.
+  target.dispatchEvent(createKeyboardEvent('keydown', 'KeyW'));
+  target.dispatchEvent(createKeyboardEvent('keydown', 'KeyW'));
+  target.dispatchEvent(createKeyboardEvent('keyup', 'KeyW'));
+  input.detach();
+  target.dispatchEvent(createKeyboardEvent('keydown', 'KeyW'));
+
+  // Then: only real state transitions are emitted and no key stays active.
+  assert.deepEqual(changes, [
+    { action: 'move-up', active: true },
+    { action: 'move-up', active: false }
+  ]);
+  assert.equal(input.isActive('move-up'), false);
+});
+
+test('Vite builds isolated legacy and reboot entries with one Three chunk rule', () => {
+  // Given: the authored HTML entries, Vite config, and reboot entry source.
+  const legacyHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const rebootHtml = readFileSync(new URL('../reboot.html', import.meta.url), 'utf8');
+  const vite = readFileSync(new URL('../vite.config.js', import.meta.url), 'utf8');
+  const rebootEntry = readFileSync(new URL('../src/reboot/entry.js', import.meta.url), 'utf8');
+
+  // When: their static entry contracts are inspected.
+  // Then: legacy stays default, reboot is isolated, and both share the pinned Three chunk.
+  assert.match(legacyHtml, /src="\/src\/main\.js"/);
+  assert.match(rebootHtml, /src="\/src\/reboot\/entry\.js"/);
+  assert.match(vite, /input:\s*\{[\s\S]*main:[\s\S]*reboot:/);
+  assert.match(vite, /node_modules\/three[\s\S]*return 'three'/);
+  assert.doesNotMatch(rebootEntry, /(?:\.\.\/)+main\.js|\/src\/main\.js/);
+});

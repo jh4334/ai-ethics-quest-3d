@@ -1,10 +1,15 @@
 import { defineConfig } from 'vite';
+import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
   base: './',
   build: {
     target: 'es2020',
     rollupOptions: {
+      input: {
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        reboot: fileURLToPath(new URL('./reboot.html', import.meta.url))
+      },
       output: {
         // Three.js를 별도 벤더 청크로 분리 — 게임 코드만 바뀌는 재배포에서
         // 학생이 Three.js를 다시 받지 않는다(PWA 캐시 우선 전략과 맞물려 재방문 로드 개선).

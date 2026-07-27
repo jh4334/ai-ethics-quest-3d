@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#050918" />
+  <title>H-17: NULL — 삭제된 밤</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #050918; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100svh; overflow: hidden; }
+    [data-reboot-root] { min-height: 100svh; position: relative; background: #050918; }
+    [data-reboot-canvas] { display: block; width: 100vw; height: 100svh; }
+    .hud { position: fixed; inset: max(16px, env(safe-area-inset-top)) 16px auto; display: flex; justify-content: space-between; align-items: start; gap: 16px; pointer-events: none; }
+    .title { margin: 0; color: #f4c06d; font-size: clamp(1rem, 3vw, 1.5rem); letter-spacing: .08em; text-shadow: 0 2px 12px #000; }
+    .status { margin: .35rem 0 0; color: #d9e4ff; font-size: .9rem; }
+    .actions { display: flex; gap: 8px; pointer-events: auto; }
+    button { min-width: 48px; min-height: 44px; padding: 8px 12px; border: 1px solid #7b91bf; border-radius: 8px; color: #fff; background: #101a36dd; font: inherit; }
+    button:focus-visible { outline: 3px solid #f4c06d; outline-offset: 2px; }
+    .hint { position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); translate: -50% 0; margin: 0; color: #d9e4ff; font-size: .82rem; text-align: center; text-shadow: 0 2px 8px #000; }
+  </style>
+</head>
+<body>
+  <main data-reboot-root data-app-marker="H-17 Reboot">
+    <canvas data-reboot-canvas aria-label="00시 17분의 어두운 학교 복도"></canvas>
+    <section class="hud" aria-label="게임 상태와 제어">
+      <div>
+        <h1 class="title">H-17: NULL</h1>
+        <p class="status" data-reboot-status aria-live="polite">학교 기록 연결 중</p>
+      </div>
+      <div class="actions">
+        <button type="button" data-pause>일시정지</button>
+        <button type="button" data-restart>다시 시작</button>
+      </div>
+    </section>
+    <p class="hint">WASD·방향키 이동 · Esc 일시정지 · R 다시 시작</p>
+  </main>
+  <script type="module" src="/src/reboot/entry.js"></script>
+</body>
+</html>
