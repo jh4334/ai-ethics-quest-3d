@@ -1,5 +1,9 @@
 # AI Ethics Quest 3D
 
+> **Reboot in progress:** the canonical design is now
+> [`H-17: NULL — 삭제된 밤`](docs/reboot/game-bible.md). The six-chapter campaign described
+> below remains playable as the legacy baseline until the reboot cutover.
+
 Six-chapter Three.js story adventure about AI ethics for upper elementary and middle-school classes.
 
 Originally created as the second part of 「AI 윤리 수호자의 여정」, the game is being rebuilt as a

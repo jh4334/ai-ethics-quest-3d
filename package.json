@@ -11,10 +11,10 @@
     "e2e": "node tests/e2e-playthrough.mjs"
   },
   "dependencies": {
-    "three": "latest"
+    "three": "0.185.0"
   },
   "devDependencies": {
-    "vite": "latest"
+    "vite": "8.1.0"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
