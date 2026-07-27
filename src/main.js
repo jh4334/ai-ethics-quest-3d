@@ -3648,6 +3648,10 @@ function syncToolButton(game, ui) {
   if (!ui.toolButton) {
     return;
   }
+  // 오버월드 + 회피 스텝 보유 → 🔄 버튼이 💨 회피 버튼이 된다(모바일 전용 입력 확보).
+  const dodgeReady = game.mode === 'overworld' && !game.dungeon?.active && !game.combat?.active
+    && !game.isle && (game.progress.combatUpgrades ?? []).includes('dodge');
+  ui.root.classList.toggle('has-dodge', dodgeReady);
   let icon = '🔄';
   if (game.dungeon?.active) {
     icon = DUNGEON_VERB_EMOJI[game.dungeon.room.mechanic] ?? '🔄';
@@ -3655,6 +3659,8 @@ function syncToolButton(game, ui) {
     icon = ISLE_VERB_EMOJI[game.isle.stageId] ?? '🔄';
   } else if (game.combat?.active) {
     icon = TOOL_EMOJI[game.combat.tools[game.combat.activeTool]] ?? '🔄';
+  } else if (dodgeReady) {
+    icon = '💨';
   }
   if (ui.toolButton.textContent !== icon) {
     ui.toolButton.textContent = icon;

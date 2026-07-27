@@ -29,6 +29,12 @@ npm run smoke
 
 - Four ethics zones: 개인정보, 편향, 저작권, 딥페이크
 - NPC learning prompts, shrine puzzles, progress tracking, and final AI Core mission
+- 글리치 헌터 액션 루프: unresolved zones spawn field glitches (주워듣개·슬쩍이·에코
+  쌍둥이) fought with a 3-hit slash chain → stagger → 정화 finisher; purifying drops
+  기억 파편 (shards) and lore cards. Waves escalate per zone, a 세공 모루 near the dock
+  turns shards into upgrades (회피 스텝 → 사거리 → 4연 체인 → 정화 파동), and the boss
+  fight ends each shell with the same stagger → purify grammar. Deterministic (no RNG),
+  no death — mistakes only reset the combo
 - 심화 확장 2막 「잡음의 군도」: after the certificate, a raft voyage opens four themed
   islands — 악플·혐오표현 (🛡️ shield deflection), 가짜뉴스·출처 (🔔 bell reveal),
   스크린타임·디지털 웰빙 (🧭 compass timing), and a final rematch combining all four

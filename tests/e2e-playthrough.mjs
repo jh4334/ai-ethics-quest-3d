@@ -227,13 +227,20 @@ try {
     const g = window.__ethicsGame;
     g.progress = { ...g.progress, glitchShards: 12 };
   });
-  await tp(-2.6, 17.2, 0, 1); // 모루 앞
-  await p.waitForTimeout(400);
-  await A(400);
-  const anvilOpen = await p.evaluate(() => ({
-    open: !window.__ethicsUi.dialog.hidden,
-    buy: Boolean(document.querySelector('[data-anvil-buy]'))
-  }));
+  // 저프레임 헤드리스에서 nearest 갱신이 늦을 수 있어 개점은 재시도 루프로.
+  let anvilOpen = { open: false, buy: false };
+  for (let i = 0; i < 5 && !anvilOpen.buy; i += 1) {
+    await tp(-2.6, 17.2, 0, 1); // 모루 앞
+    await p.waitForTimeout(700);
+    await A(500);
+    anvilOpen = await p.evaluate(() => ({
+      open: !window.__ethicsUi.dialog.hidden,
+      buy: Boolean(document.querySelector('[data-anvil-buy]'))
+    }));
+    if (!anvilOpen.buy) {
+      await closeDlg(); // 다른 대상이 열렸으면 닫고 재시도
+    }
+  }
   check(anvilOpen.open && anvilOpen.buy, '세공 모루 상점 열림(구매 버튼 표시)');
   await p.evaluate(() => document.querySelector('[data-anvil-buy]')?.click());
   await p.waitForTimeout(300);
