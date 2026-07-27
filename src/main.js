@@ -73,6 +73,15 @@ import {
   recordFakeDotEvent
 } from './story.js';
 import {
+  SLASH,
+  PURIFY,
+  buildFieldGlitches,
+  consumeGlitchHit,
+  hitGlitch,
+  purifyGlitch,
+  stepGlitch
+} from './glitchLogic.js';
+import {
   ETHICS_TOPICS,
   FINAL_CORE_MISSION,
   SHRINES,
@@ -281,6 +290,7 @@ function createShell() {
       <section class="status-strip" aria-label="진행 상황">
         <div class="status-head">
           <strong data-fragment-count>조각 0/4</strong>
+          <span class="shard-count" data-shard-count hidden>🧩 0</span>
           <span data-core-status>AI 코어 잠김</span>
         </div>
         <div class="fragment-row" data-fragment-row></div>
@@ -337,6 +347,8 @@ function createShell() {
       <div class="combat-popup" data-combat-popup aria-hidden="true"></div>
 
       <div class="noise-whisper" data-noise-whisper hidden aria-hidden="true"></div>
+
+      <div class="lore-card" data-lore-card hidden aria-live="polite"></div>
 
       <div class="ceremony" data-ceremony hidden aria-hidden="true">
         <div class="ceremony-rays"></div>
@@ -406,6 +418,8 @@ function bindUi(root) {
     bossMemory: root.querySelector('[data-boss-memory]'),
     combatPopup: root.querySelector('[data-combat-popup]'),
     noiseWhisper: root.querySelector('[data-noise-whisper]'),
+    loreCard: root.querySelector('[data-lore-card]'),
+    shardCount: root.querySelector('[data-shard-count]'),
     ceremony: root.querySelector('[data-ceremony]'),
     ceremonyItem: root.querySelector('[data-ceremony-item]'),
     ceremonyTitle: root.querySelector('[data-ceremony-title]'),
@@ -2498,6 +2512,7 @@ function updateGame(delta, game, renderState, ui) {
   updatePuzzle(delta, game, ui);
   updateInteractionIcons(game, renderState);
   updateNearestInteractable(game, renderState.interactables, ui);
+  updateFieldGlitches(delta, game, ui);
   maybeTriggerFakeDot(game, ui);
 }
 
@@ -2768,6 +2783,303 @@ function openFakeDotDialog(game, ui, eventId) {
     });
   }
   openDialog(game, ui);
+}
+
+// ===== 필드 글리치 전투(G1 — 글리치 헌터) =====
+// 순수 로직은 glitchLogic.js(상태기계·프레임 데이터·보상표), 여기는 표현·판정 소비만.
+// 글리치 = 노이즈가 앓으며 흘린 기억 부스러기 — 정화하면 파편 조각과 로어 카드가 남는다.
+
+function createFieldGlitchField(game) {
+  const rs = game.renderState;
+  const centers = {};
+  for (const zone of WORLD_ZONES) {
+    centers[zone.topicId] = { x: zone.position[0], z: zone.position[2] };
+  }
+  const solved = [...getStoryVisualFlags(game.progress)]
+    .filter((f) => f.endsWith(':solved'))
+    .map((f) => f.split(':')[0]);
+  const group = new THREE.Group();
+  const bodyGeo = new THREE.IcosahedronGeometry(0.42, 0);
+  const eyeGeo = new THREE.BoxGeometry(0.1, 0.1, 0.06);
+  const ringGeo = new THREE.TorusGeometry(0.62, 0.045, 6, 24);
+  const items = buildFieldGlitches(centers, solved).map((data, i) => {
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(
+      bodyGeo,
+      new THREE.MeshStandardMaterial({ color: 0x5a4d78, emissive: 0x3a2a58, emissiveIntensity: 0.55, roughness: 0.6, flatShading: true })
+    );
+    const eyes = new THREE.Group();
+    const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffd23e, emissive: 0xd9a814, emissiveIntensity: 1.1 });
+    const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+    const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+    eyeL.position.set(-0.13, 0.1, 0.36);
+    eyeR.position.set(0.13, 0.1, 0.36);
+    eyes.add(eyeL, eyeR);
+    // 스태거 링 — "지금 정화할 수 있다"를 발밑 금빛 고리로 텔레그래프.
+    const ring = new THREE.Mesh(
+      ringGeo,
+      new THREE.MeshBasicMaterial({ color: 0xffd76a, transparent: true, opacity: 0.85 })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = -0.32;
+    ring.visible = false;
+    g.add(body, eyes, ring);
+    g.position.set(data.x, 0.5, data.z);
+    group.add(g);
+    return { data, group: g, body, eyes, ring, phase: i * 1.3, telegraphCue: false };
+  });
+  rs.overworld.add(group);
+  rs.glitchField = { group, items };
+}
+
+// 글리치가 플레이어를 맞혔다 — 사망·감점 없음(무처벌): 넉백 + 콤보 리셋 + 시각 경고만.
+function onGlitchHitPlayer(game, ui, g) {
+  const p = game.player.position;
+  let dx = p.x - g.x;
+  let dz = p.z - g.z;
+  const len = Math.hypot(dx, dz) || 1;
+  p.x += (dx / len) * 1.5;
+  p.z += (dz / len) * 1.5;
+  game.player.position.copy(clampToIsland(p));
+  const gc = game.glitchCombat;
+  if (gc) {
+    gc.combo = 0; // 콤보만 리셋 — 벌점 없음
+  }
+  game.audio?.playWrong();
+  triggerFlash(ui, '#ff5f7e');
+  addShake(game, 0.4);
+  flashCombatPopup(ui, '기억이 흐려진다!', 'stagger');
+}
+
+function updateFieldGlitches(delta, game, ui) {
+  const rs = game.renderState;
+  if (!rs) {
+    return;
+  }
+  if (!rs.glitchField || rs.glitchField.group.parent !== rs.overworld) {
+    createFieldGlitchField(game);
+  }
+  if (game.paused || game.cinematic || game.combat?.active || game.puzzle?.active) {
+    return;
+  }
+  const field = rs.glitchField;
+  const flags = getStoryVisualFlags(game.progress);
+  const p = game.player.position;
+  const elapsed = clock.elapsedTime;
+  let staggerNearby = false;
+  for (const item of field.items) {
+    const g = item.data;
+    if (g.state !== 'purified' && flags.has(`${g.topicId}:solved`)) {
+      g.state = 'purified'; // 구역이 해결되면 그 땅의 글리치도 정화된다
+    }
+    if (g.state === 'purified') {
+      if (item.group.visible) {
+        item.group.scale.multiplyScalar(1 - Math.min(1, delta * 5));
+        if (item.group.scale.x < 0.03) {
+          item.group.visible = false;
+        }
+      }
+      continue;
+    }
+    const dx = p.x - g.x;
+    const dz = p.z - g.z;
+    const dist = Math.hypot(dx, dz);
+    const intent = stepGlitch(g, { dx, dz, dist }, delta);
+    g.x += intent.moveX * delta;
+    g.z += intent.moveZ * delta;
+    item.group.position.set(g.x, 0.5 + Math.sin(elapsed * 4 + item.phase) * 0.06, g.z);
+    if (intent.moveX !== 0 || intent.moveZ !== 0) {
+      item.group.rotation.y = Math.atan2(intent.moveX, intent.moveZ);
+    }
+    // 텔레그래프: 선딜 동안 부풀며 발광 — 공격은 반드시 예고 후에 온다(공정성).
+    if (g.state === 'windup') {
+      item.body.material.emissiveIntensity = 0.55 + intent.telegraph * 1.7;
+      item.group.scale.setScalar(1 + intent.telegraph * 0.28);
+      if (!item.telegraphCue) {
+        item.telegraphCue = true;
+        game.audio?.playNoiseGroan();
+      }
+    } else {
+      item.telegraphCue = false;
+      item.body.material.emissiveIntensity = g.state === 'stagger' ? 0.18 : 0.55;
+      item.group.scale.setScalar(g.state === 'stagger' ? 0.88 : 1);
+    }
+    item.ring.visible = g.state === 'stagger';
+    if (item.ring.visible) {
+      item.ring.rotation.z = elapsed * 2.4;
+      if (dist < PURIFY.range) {
+        staggerNearby = true;
+      }
+    }
+    // 접촉 판정: 유효 창 + 근접 + 창당 1회(권위 있는 이벤트).
+    if (intent.hitActive && dist < 0.95) {
+      consumeGlitchHit(g);
+      onGlitchHitPlayer(game, ui, g);
+    }
+  }
+  updateSlash(delta, game, ui);
+  // 정화 가능 안내 — 다른 상호작용 안내가 없을 때만.
+  if (staggerNearby && !game.nearest && ui.dialog.hidden) {
+    ui.prompt.hidden = false;
+    ui.prompt.textContent = `${ACTION_LABEL}글리치 정화`;
+  }
+}
+
+// 교전 판정 — 적대 상태의 글리치가 베기 사거리 안에 있는가.
+function hostileGlitchNear(game) {
+  const field = game.renderState?.glitchField;
+  if (!field) {
+    return false;
+  }
+  const p = game.player.position;
+  return field.items.some((item) => {
+    const g = item.data;
+    if (g.state === 'purified' || g.state === 'idle' || g.state === 'stagger') {
+      return false;
+    }
+    return Math.hypot(p.x - g.x, p.z - g.z) < SLASH.range + 0.4;
+  });
+}
+
+// 베기 — 프레임 데이터(SLASH)대로 선딜→유효→후딜. 유효 창에 부채꼴 판정 1회.
+function trySlash(game, ui) {
+  const gc = game.glitchCombat ?? (game.glitchCombat = { slash: null, combo: 0 });
+  if (gc.slash) {
+    // 후딜 초반에 재입력 → 다음 타 예약(체인).
+    if (gc.slash.phase === 'recover' && gc.slash.t <= SLASH.chainWindow && gc.slash.chain < SLASH.chainMax) {
+      gc.slash.queued = true;
+    }
+    return true;
+  }
+  // 판정은 입력 즉시(이벤트 구동 — 보스전 playerAttack과 동일 원칙),
+  // 프레임 데이터는 스윙 리듬(유효 연출·후딜·체인 창)에 쓴다.
+  gc.slash = { phase: 'active', t: 0, chain: 1, queued: false };
+  game.audio?.playClick();
+  resolveSlashHits(game, ui);
+  return true;
+}
+
+function resolveSlashHits(game, ui) {
+  const gc = game.glitchCombat;
+  const field = game.renderState?.glitchField;
+  if (!field) {
+    return;
+  }
+  const p = game.player.position;
+  const dir = game.player.direction;
+  for (const item of field.items) {
+    const g = item.data;
+    if (g.state === 'purified' || g.state === 'stagger') {
+      continue;
+    }
+    const dx = g.x - p.x;
+    const dz = g.z - p.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist > SLASH.range) {
+      continue;
+    }
+    const dot = dist > 0.0001 ? (dx / dist) * dir.x + (dz / dist) * dir.z : 1;
+    if (dot < SLASH.arcCos) {
+      continue; // 전방 부채꼴 밖
+    }
+    const result = hitGlitch(g);
+    if (result === 'ignored') {
+      continue;
+    }
+    // 살짝 밀려나며 피격 리액션.
+    g.x += (dx / (dist || 1)) * 0.5;
+    g.z += (dz / (dist || 1)) * 0.5;
+    celebrate(game, new THREE.Vector3(g.x, 0.9, g.z), '#cfd6ff', 'hit');
+    game.hitStop = 0.045;
+    triggerHaptic('hit');
+    if (result === 'staggered') {
+      game.audio?.playCorrect();
+      flashCombatPopup(ui, '⚡ 스태거! A로 정화', 'hit');
+    } else {
+      game.audio?.playClick();
+    }
+  }
+}
+
+function updateSlash(delta, game, ui) {
+  const gc = game.glitchCombat;
+  if (!gc?.slash) {
+    return;
+  }
+  const s = gc.slash;
+  s.t += delta;
+  if (s.phase === 'active' && s.t >= SLASH.active) {
+    s.phase = 'recover';
+    s.t = 0;
+  } else if (s.phase === 'recover' && s.t >= SLASH.recover) {
+    if (s.queued) {
+      gc.slash = { phase: 'active', t: 0, chain: s.chain + 1, queued: false };
+      game.audio?.playClick();
+      resolveSlashHits(game, ui); // 체인 타도 진입 즉시 판정
+    } else {
+      gc.slash = null;
+    }
+  }
+}
+
+// 정화 피니셔 — 스태거 글리치에게 A. 파편 조각 + 로어 카드(전리품이 곧 교육).
+function tryPurifyGlitch(game, ui) {
+  const field = game.renderState?.glitchField;
+  if (!field) {
+    return false;
+  }
+  const p = game.player.position;
+  let best = null;
+  let bestDist = Infinity;
+  for (const item of field.items) {
+    if (item.data.state !== 'stagger') {
+      continue;
+    }
+    const d = Math.hypot(p.x - item.data.x, p.z - item.data.z);
+    if (d < PURIFY.range && d < bestDist) {
+      best = item;
+      bestDist = d;
+    }
+  }
+  if (!best) {
+    return false;
+  }
+  const gc = game.glitchCombat ?? (game.glitchCombat = { slash: null, combo: 0 });
+  gc.combo += 1;
+  const reward = purifyGlitch(best.data, gc.combo);
+  game.progress = {
+    ...game.progress,
+    glitchShards: (game.progress.glitchShards ?? 0) + reward.shards,
+    loreCards: [...new Set([...(game.progress.loreCards ?? []), reward.loreTopicId])]
+  };
+  persistProgress(game.progress);
+  updateHud(game, ui);
+  const topic = getTopicById(reward.loreTopicId);
+  celebrate(game, new THREE.Vector3(best.data.x, 1.2, best.data.z), topic?.color ?? '#ffd76a', 'collect');
+  game.audio?.playCollect();
+  triggerHaptic('win');
+  game.hitStop = 0.06;
+  flashCombatPopup(ui, `✨ 정화! +${reward.shards} 조각${reward.multiplier > 1 ? ` (콤보 x${reward.multiplier})` : ''}`, 'win');
+  showLoreCard(game, ui, reward.loreKo);
+  return true;
+}
+
+// 로어 카드 토스트 — 정화의 전리품. 읽기를 강제하지 않는다(스스로 사라짐).
+let loreTimer = 0;
+function showLoreCard(game, ui, text) {
+  if (!ui.loreCard || !text) {
+    return;
+  }
+  window.clearTimeout(loreTimer);
+  ui.loreCard.textContent = `📖 ${text}`;
+  ui.loreCard.hidden = false;
+  ui.loreCard.classList.remove('is-on');
+  void ui.loreCard.offsetWidth;
+  ui.loreCard.classList.add('is-on');
+  loreTimer = window.setTimeout(() => {
+    ui.loreCard.classList.remove('is-on');
+    ui.loreCard.hidden = true;
+  }, 4600);
 }
 
 // 도구 획득 의식 공통 호출 — 던전 제단·사당 통과 두 경로가 같은 연출을 쓴다.
@@ -3502,9 +3814,13 @@ function interact(game, ui) {
     return;
   }
 
-  if (!game.nearest) {
-    ui.prompt.hidden = false;
-    ui.prompt.textContent = '가까운 NPC, 사당, AI 코어로 이동해 보세요.';
+  // 글리치 전투(G1): 스태거 정화가 최우선. 교전 중(적이 코앞)에는 A = 베기 —
+  // 싸우다 실수로 대화창이 열리지 않게(예측 가능한 컨트롤).
+  if (tryPurifyGlitch(game, ui)) {
+    return;
+  }
+  if (hostileGlitchNear(game) || !game.nearest) {
+    trySlash(game, ui);
     return;
   }
 
@@ -6321,6 +6637,12 @@ function updateHud(game, ui) {
   game.beaconCount = getStageStates(game.progress).filter((s) => s.state === 'completed').length;
   ui.objective.textContent = getStoryObjective(game.progress);
   ui.fragmentCount.textContent = `조각 ${summary.collected}/${summary.total}`;
+  // 글리치 헌터(G1): 파편 조각 재화 — 모으기 전엔 숨겨 HUD 소음을 줄인다.
+  if (ui.shardCount) {
+    const shards = game.progress.glitchShards ?? 0;
+    ui.shardCount.hidden = shards <= 0;
+    ui.shardCount.textContent = `🧩 ${shards}`;
+  }
   // 목표 구배 가시화(R-루프2): 코어 개방 임계(3조각)까지 남은 거리를 생생하게 —
   // 하나 남았을 땐 '하나면 열려!'로 기대를 끌어올리고, 열리면 '중앙으로!'로 다음 행동을 가리킨다.
   const remainingToUnlock = Math.max(0, 3 - summary.collected);

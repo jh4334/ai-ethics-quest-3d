@@ -792,3 +792,25 @@ test('coherence(N5): 항해 브리지·노바 편지가 반전과 정합한다',
   assert.match(mainSource, /나의 첫 선생님에게/);
   assert.match(mainSource, /다시 만난 날 네가 보여준 것들로, 나는 별이 됐어/);
 });
+
+test('glitch-hunter(G1): 필드 전투 — 순수 로직 분리·결정성·무처벌·표현 배선', () => {
+  const glitchSrc = readFileSync(new URL('../src/glitchLogic.js', import.meta.url), 'utf8');
+  const worldSrc = readFileSync(new URL('../src/worldData.js', import.meta.url), 'utf8');
+  // 순수 로직: THREE 무의존 + 무작위 호출 0 (교실 재현성).
+  assert.doesNotMatch(glitchSrc, /from 'three'|Math\.random\(/);
+  assert.match(glitchSrc, /export function stepGlitch/);
+  assert.match(glitchSrc, /export const GLITCH_ARCHETYPES/);
+  assert.match(glitchSrc, /export const LORE_CARDS/);
+  // 스키마: 필드 추가만(glitchShards·loreCards).
+  assert.match(worldSrc, /glitchShards: Number\.isFinite/);
+  assert.match(worldSrc, /loreCards: \[\.\.\.new Set\(stringArray\(candidate\.loreCards\)\)\]/);
+  // 표현: 오버월드 업데이트 배선 + 정화 우선 A 처리 + 텔레그래프 발광 + 로어 토스트.
+  assert.match(mainSource, /updateFieldGlitches\(delta, game, ui\);/);
+  assert.match(mainSource, /if \(tryPurifyGlitch\(game, ui\)\) \{/);
+  assert.match(mainSource, /intent\.telegraph \* 1\.7/);
+  assert.match(mainSource, /function showLoreCard/);
+  assert.match(cssSource, /\.lore-card/);
+  assert.match(cssSource, /\.shard-count/);
+  // 무처벌: 피격은 콤보 리셋·넉백뿐 — 사망·감점 문자열 금지.
+  assert.match(mainSource, /gc\.combo = 0; \/\/ 콤보만 리셋 — 벌점 없음/);
+});

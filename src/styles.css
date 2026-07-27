@@ -819,10 +819,52 @@ button:disabled {
   color: #e8c37a;
 }
 
+/* 로어 카드(G1) — 정화의 전리품. 전투 리듬을 끊지 않게 하단에 잠깐 떴다 사라진다. */
+.lore-card {
+  position: absolute;
+  z-index: 8;
+  left: 50%;
+  bottom: 15%;
+  transform: translateX(-50%);
+  max-width: min(540px, 86vw);
+  padding: 9px 16px;
+  border-radius: 10px;
+  background: rgba(30, 24, 14, 0.88);
+  border: 1px solid rgba(232, 195, 122, 0.5);
+  color: #f0e2c8;
+  font-size: 0.98rem;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.lore-card.is-on {
+  animation: loreIn 4.6s ease-out forwards;
+}
+
+@keyframes loreIn {
+  0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  8% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  82% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* 파편 조각 카운터 — 상태 스트립의 재화 칩. */
+.shard-count {
+  font-weight: 800;
+  color: #b57e2f;
+  white-space: nowrap;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .noise-whisper.is-on {
     animation: none;
     opacity: 0.95;
+  }
+
+  .lore-card.is-on {
+    animation: none;
+    opacity: 1;
   }
 }
 

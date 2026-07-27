@@ -81,6 +81,56 @@ try {
   check(!afterSkip.cine && afterSkip.seen, '시네마틱 스킵 → prologueSeen 저장·연출 종료');
   check((await st()).mode === 'overworld', '타이틀→프롤로그 스킵→오버월드 진입');
 
+  // ── G1 글리치 헌터: 베기 → 스태거 → 정화 피니셔 → 파편·로어 ──
+  await p.waitForTimeout(600); // 첫 오버월드 프레임에서 필드 스폰(lazy)
+  const g0 = await p.evaluate(() => {
+    const f = window.__ethicsGame.renderState.glitchField;
+    const it = f?.items.find((i) => i.data.state !== 'purified');
+    return it ? { id: it.data.id, topic: it.data.topicId } : null;
+  });
+  check(Boolean(g0), `필드 글리치 스폰(미해결 구역, 첫 대상 ${g0?.id})`);
+  let staggered = false;
+  for (let i = 0; i < 14 && !staggered; i += 1) {
+    // 글리치가 움직이므로 매 스윙 전에 정면 근접으로 재배치(전방 부채꼴 판정 보장).
+    await p.evaluate((id) => {
+      const g = window.__ethicsGame;
+      const it = g.renderState.glitchField.items.find((x) => x.data.id === id);
+      g.player.position.set(it.data.x, 0.55, it.data.z + 1.3);
+      g.player.direction.set(0, 0, -1);
+      if (g.glitchCombat) g.glitchCombat.slash = null; // 후딜 대기 없이 즉시 스윙(프레임 데이터는 유닛이 검증)
+    }, g0.id);
+    await p.keyboard.press('e');
+    await p.waitForTimeout(260);
+    staggered = await p.evaluate(
+      (id) => window.__ethicsGame.renderState.glitchField.items.find((x) => x.data.id === id).data.state === 'stagger',
+      g0.id
+    );
+  }
+  check(staggered, '베기 3히트 → 글리치 스태거(정화 대기)');
+  await p.evaluate((id) => {
+    const g = window.__ethicsGame;
+    const it = g.renderState.glitchField.items.find((x) => x.data.id === id);
+    g.player.position.set(it.data.x, 0.55, it.data.z + 1.0);
+  }, g0.id);
+  await p.waitForTimeout(300);
+  await p.keyboard.press('e');
+  await p.waitForTimeout(400);
+  const purified = await p.evaluate((id) => {
+    const g = window.__ethicsGame;
+    return {
+      state: g.renderState.glitchField.items.find((x) => x.data.id === id).data.state,
+      shards: g.progress.glitchShards,
+      lore: g.progress.loreCards,
+      toast: !g.renderState ? false : !document.querySelector('[data-lore-card]').hidden
+    };
+  }, g0.id);
+  check(purified.state === 'purified' && purified.shards >= 3, `정화 피니셔 → 파편 +${purified.shards}`);
+  check(purified.lore.includes(g0.topic) && purified.toast, '로어 카드 도감 기록 + 토스트 표시');
+  // 이후 레거시 구간의 결정성을 위해 남은 필드 글리치를 중립화(전투는 위에서 이미 증명).
+  await p.evaluate(() => {
+    window.__ethicsGame.renderState.glitchField.items.forEach((i) => { i.data.state = 'purified'; });
+  });
+
   // ── 간격 불변식: 모든 상호작용 대상 쌍 ≥ MIN_SEPARATION ──
   const sep = await p.evaluate(() => {
     const its = window.__ethicsGame.renderState.interactables;
