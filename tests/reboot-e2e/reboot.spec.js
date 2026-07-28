@@ -56,8 +56,13 @@ test('결과·손상 저장·저품질 fixture가 사용자 의미와 예산을 
   await page.goto(`/reboot.html?${TEST_QUERY}&fixture=qa-result-secure`, { waitUntil: 'domcontentloaded' });
   const result = page.locator('[data-chapter-result]');
   await expect(result).toBeVisible();
+  await expect(result.locator('h2')).toContainText('00:17 — 출석번호 없음');
+  await expect(result.locator('[data-result-action]')).not.toBeEmpty();
+  await expect(result.locator('[data-result-consequence]')).not.toBeEmpty();
   await expect(result).toHaveScreenshot('secure-result.png', {
     animations: 'disabled',
+    mask: [result.locator('h2'), result.locator('p')],
+    maskColor: '#050918',
     maxDiffPixelRatio: 0.015
   });
 
