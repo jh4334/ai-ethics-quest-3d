@@ -4,7 +4,7 @@ import test from 'node:test';
 
 import { createAppLifecycle } from '../src/reboot/app/lifecycle.js';
 import { resolveBootScene } from '../src/reboot/app/fixtures.js';
-import { createInputRouter } from '../src/reboot/app/input.js';
+import { DEFAULT_BINDINGS, createInputRouter } from '../src/reboot/app/input.js';
 import { createRebootSession } from '../src/reboot/app/session.js';
 import { createSceneRegistry } from '../src/reboot/app/sceneRegistry.js';
 import { createDisposableRegistry } from '../src/reboot/render/dispose.js';
@@ -76,6 +76,7 @@ test('app lifecycle owns one frame loop through pause, resume, and restart', () 
       dispose: () => calls.push('dispose'),
       enter: () => calls.push('enter'),
       exit: () => calls.push('exit'),
+      getDebugState: () => ({ encounter: 'training' }),
       update: () => calls.push('update')
     })]
   ]);
@@ -92,6 +93,7 @@ test('app lifecycle owns one frame loop through pause, resume, and restart', () 
   assert.equal(scheduler.pendingCount(), 1);
   assert.deepEqual(calls, ['enter', 'update', 'exit', 'dispose', 'enter']);
   assert.equal(app.getState().status, 'running');
+  assert.deepEqual(app.getSceneDebugState(), { encounter: 'training' });
 });
 
 test('restart disposes every scene instance across fifty cycles', () => {
@@ -193,6 +195,31 @@ test('input router maps key state once and detaches cleanly', () => {
   assert.equal(input.isActive('move-up'), false);
 });
 
+test('input router exposes combat verbs to keyboard and touch adapters', () => {
+  // Given: 기본 전투 키와 버튼이 함께 쓰는 입력 라우터가 있다.
+  const target = new EventTarget();
+  const changes = [];
+  const input = createInputRouter({ target });
+  input.subscribe((change) => changes.push(change));
+
+  // When: 키보드 공격과 터치 어댑터 대시를 각각 한 번 입력한다.
+  input.attach();
+  target.dispatchEvent(createKeyboardEvent('keydown', 'KeyJ'));
+  target.dispatchEvent(createKeyboardEvent('keyup', 'KeyJ'));
+  input.setActive('dash', true);
+  input.setActive('dash', false);
+
+  // Then: 모든 전투 동사가 고정 키에 있고 같은 상태 변경 경계를 지난다.
+  assert.deepEqual(
+    Object.fromEntries(['KeyJ', 'Space', 'KeyK', 'KeyE', 'KeyF'].map((key) => [key, DEFAULT_BINDINGS[key]])),
+    { KeyJ: 'attack', Space: 'dash', KeyK: 'reflect', KeyE: 'trace', KeyF: 'secure' }
+  );
+  assert.deepEqual(changes.map(({ action, active }) => [action, active]), [
+    ['attack', true], ['attack', false], ['dash', true], ['dash', false]
+  ]);
+  input.detach();
+});
+
 test('Vite builds isolated legacy and reboot entries with one Three chunk rule', () => {
   // Given: the authored HTML entries, Vite config, and reboot entry source.
   const legacyHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
@@ -208,11 +235,18 @@ test('Vite builds isolated legacy and reboot entries with one Three chunk rule',
   assert.match(vite, /node_modules\/three[\s\S]*return 'three'/);
   assert.doesNotMatch(rebootEntry, /(?:\.\.\/)+main\.js|\/src\/main\.js/);
   assert.match(rebootEntry, /createRebootSession\(\{ storage: window\.localStorage \}\)/);
+  assert.match(rebootEntry, /health:\s*root\.querySelector\('\[data-combat-health\]'\)/);
+  assert.match(rebootEntry, /getSceneDebugState:\s*\(\) => app\.getSceneDebugState\(\)/);
+  for (const fixture of ['classroom', 'corridor', 'first-arena', 'memory', 'pursuit', 'gym']) {
+    assert.match(rebootEntry, new RegExp(`route-${fixture}`));
+  }
   assert.match(rebootEntry, /sessionStorage\.getItem\('h17\.testHook'\) === 'true'/);
   assert.match(rebootEntry, /URLSearchParams\(window\.location\.search\)[\s\S]*testHook[\s\S]*h17/);
+  assert.match(rebootEntry, /viewport[\s\S]*touch[\s\S]*390px/);
   assert.match(rebootEntry, /seedLegacyForTest/);
   assert.match(rebootEntry, /corruptV4ForTest/);
   assert.match(rebootHtml, /data-recovery-notice/);
+  assert.match(rebootHtml, /data-combat-health[\s\S]*data-combat-action[\s\S]*data-combat-chain[\s\S]*data-route-objective/);
   assert.match(rebootHtml, /data-test-storage[\s\S]*data-test-seed-v3[\s\S]*data-test-checkpoint[\s\S]*data-test-corrupt[\s\S]*data-test-output/);
   assert.match(rebootEntry, /data-test-seed-v3[\s\S]*data-test-checkpoint[\s\S]*data-test-corrupt/);
 });

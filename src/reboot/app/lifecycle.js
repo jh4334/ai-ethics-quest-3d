@@ -48,6 +48,9 @@ export function createAppLifecycle({ registry, scheduler }) {
     getState() {
       return Object.freeze({ framePending: frameId !== null, sceneId, status });
     },
+    getSceneDebugState() {
+      return scene && typeof scene.getDebugState === 'function' ? scene.getDebugState() : null;
+    },
     pause() {
       if (status !== 'running') return;
       status = 'paused';

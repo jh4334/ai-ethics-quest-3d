@@ -339,7 +339,7 @@ Primary references:
 
   **Commit**: YES | Message: `feat(reboot): add v4 consequence and save model` | Files: `src/reboot/state/*`, `src/reboot/save/*`, `tests/reboot-save.test.js`, `tests/reboot-consequences.test.js`
 
-- [ ] 4. Build the deterministic player action and combat simulation
+- [x] 4. Build the deterministic player action and combat simulation
 
   **What to do**: Test-drive a fixed-step simulation and explicit action machines for movement, three-hit blade combo, dash, REFLECT, TRACE, hit/stagger/defeat, cooldowns, cancellation, and SYNC CHAIN. Define startup/active/recovery frames, contact shapes, per-target hit IDs, direction/range checks, and input buffering in one content table. Rendering receives events and never decides damage.
 
@@ -353,9 +353,9 @@ Primary references:
   - [Action combat contracts](https://github.com/MengTo/Skills/blob/21b278c62f49f3ce3d8c8ecbcc84cbcd534f3e49/agent-skills/game-development/design-action-combat/SKILL.md) — timing and authority rules.
 
   **Acceptance Criteria**:
-  - [ ] RED/GREEN tests cover early/late parry, wrong direction, out-of-range, interruption, repeated input, multi-target, pause, and 30/60/120Hz equivalence.
-  - [ ] Combat replay with the same seed/input log produces the same state hash.
-  - [ ] A headless 5-minute stress simulation has no duplicate contacts or unbounded transient state.
+  - [x] RED/GREEN tests cover early/late parry, wrong direction, out-of-range, interruption, repeated input, multi-target, pause, and 30/60/120Hz equivalence.
+  - [x] Combat replay with the same seed/input log produces the same state hash.
+  - [x] A headless 5-minute stress simulation has no duplicate contacts or unbounded transient state.
 
   **QA Scenarios**:
   ```text
@@ -374,7 +374,7 @@ Primary references:
 
   **Commit**: YES | Message: `feat(combat): implement deterministic signal blade loop` | Files: `src/reboot/sim/*`, `src/reboot/combat/*`, `src/reboot/content/actions.js`, `tests/reboot-combat.test.js`
 
-- [ ] 5. Author the chapter-one school route and readable camera
+- [x] 5. Author the chapter-one school route and readable camera
 
   **What to do**: Build one flat playable route with separate authored data, collision, navigation, visuals, encounter zones, checkpoints, and local-light inventory. Route order is classroom cold open → collapsing corridor → first arena → memory backup decision → scanner pursuit → gym boss arena. Implement independent camera position/look-at smoothing, clamped framing, occlusion fade, short chase/boss modifiers, shake budget, and reset framing.
 
@@ -389,9 +389,9 @@ Primary references:
   - [Camera controls](https://github.com/MengTo/Skills/blob/21b278c62f49f3ce3d8c8ecbcc84cbcd534f3e49/agent-skills/game-development/build-game-camera-controls/SKILL.md) — authoritative target and modifiers.
 
   **Acceptance Criteria**:
-  - [ ] Data validation rejects out-of-plane anchors, missing exits/checkpoints, collision/nav disagreement, and unattached local lights.
-  - [ ] Player, immediate threat, TRACE target, and next route cue remain visible at representative desktop/touch distances.
-  - [ ] Cold open gives control within 20 seconds and first combat begins within 3 minutes in E2E timing.
+  - [x] Data validation rejects out-of-plane anchors, missing exits/checkpoints, collision/nav disagreement, and unattached local lights.
+  - [x] Player, immediate threat, TRACE target, and next route cue remain visible at representative desktop/touch distances.
+  - [x] Cold open gives control within 20 seconds and first combat begins within 3 minutes in E2E timing.
 
   **QA Scenarios**:
   ```text

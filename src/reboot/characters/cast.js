@@ -20,6 +20,7 @@ export function createCharacterCast({ scene }) {
   const errors = [];
   let disposed = false;
   let loading = null;
+  let playerPresentation = null;
 
   for (const entry of SCHOOL_CAST) {
     const anchor = new THREE.Group();
@@ -68,15 +69,28 @@ export function createCharacterCast({ scene }) {
       return anchors.get('player').position;
     },
     load,
+    setPlayerState(state) {
+      const player = anchors.get('player');
+      player.position.set(state.position.x, 0, state.position.y);
+      player.rotation.y = Math.atan2(state.facing.x, state.facing.y);
+      playerPresentation = {
+        acting: !['idle', 'stagger', 'defeat'].includes(state.action),
+        defeated: state.status === 'defeated',
+        hit: state.action === 'stagger',
+        moving: state.moving === true
+      };
+    },
     update(delta, { horizontal = 0, vertical = 0 } = {}) {
       const player = anchors.get('player');
-      const moving = horizontal !== 0 || vertical !== 0;
-      player.position.x = THREE.MathUtils.clamp(player.position.x + horizontal * delta * 4, -4.3, 4.3);
-      player.position.z = THREE.MathUtils.clamp(player.position.z + vertical * delta * 4, -15, 4);
-      if (moving) player.rotation.y = Math.atan2(horizontal, vertical);
+      const moving = playerPresentation?.moving ?? (horizontal !== 0 || vertical !== 0);
+      if (!playerPresentation) {
+        player.position.x = THREE.MathUtils.clamp(player.position.x + horizontal * delta * 4, -4.3, 4.3);
+        player.position.z = THREE.MathUtils.clamp(player.position.z + vertical * delta * 4, -15, 4);
+        if (moving) player.rotation.y = Math.atan2(horizontal, vertical);
+      }
 
       for (const [id, character] of characters) {
-        character.update(delta, { moving: id === 'player' && moving });
+        character.update(delta, id === 'player' ? (playerPresentation ?? { moving }) : {});
       }
     }
   });

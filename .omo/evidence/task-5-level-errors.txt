@@ -1,0 +1,11 @@
+Task 5 invalid-level and occlusion evidence — 2026-07-28
+
+- Focused command: node --test tests/reboot-level.test.js tests/reboot-route-render.test.js
+- Validator reports stable codes for invalid ids, non-finite/out-of-plane anchors,
+  missing exits/checkpoints, collision/navigation disagreement, orphan lights,
+  unreachable segments, and unreachable boss exit.
+- Player-only and empty camera targets remain finite.
+- AABB camera-to-player occlusion tests mark only intersecting occluders for fade.
+- Reset clears chase/boss modifiers and shake; split updates remain deterministic.
+- Browser fixtures loaded all six authored segments with matching objectives.
+- Verdict: PASS.

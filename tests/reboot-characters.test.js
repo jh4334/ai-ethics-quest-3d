@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
+import * as THREE from 'three';
 
 import {
   CHARACTER_ASSET_PATHS,
@@ -8,6 +9,7 @@ import {
   getCharacterProfile
 } from '../src/reboot/characters/catalog.js';
 import { chooseCharacterAnimation } from '../src/reboot/characters/animationState.js';
+import { createCharacterCast } from '../src/reboot/characters/cast.js';
 
 const REQUIRED_CHARACTER_IDS = [
   'player',
@@ -57,6 +59,25 @@ test('character animation priority is deterministic across combat and movement',
   assert.equal(chooseCharacterAnimation(profile, { defeated: true, hit: true }), profile.animations.defeat);
 });
 
+test('character cast accepts the authoritative simulation pose without moving itself', () => {
+  // Given: 아직 에셋을 로드하지 않은 학교 캐릭터 캐스트가 있다.
+  const scene = new THREE.Scene();
+  const cast = createCharacterCast({ scene });
+
+  // When: 고정 스텝 시뮬레이션 위치와 상태를 적용한다.
+  cast.setPlayerState({
+    action: 'attack1',
+    facing: { x: 1, y: 0 },
+    position: { x: 2.5, y: -7 },
+    status: 'active'
+  });
+  cast.update(1 / 60);
+
+  // Then: Three 앵커는 x/z 평면에 그대로 반영된다.
+  assert.deepEqual(cast.getPlayerPosition().toArray(), [2.5, 0, -7]);
+  cast.dispose();
+});
+
 test('runtime character assets exist locally and are documented as CC0', () => {
   // Given: every runtime file declared by the character catalog.
   const projectRoot = new URL('../', import.meta.url);
@@ -81,5 +102,11 @@ test('school scene uses the imported character pipeline instead of primitive ava
   // When: its player construction is inspected.
   // Then: no capsule or other primitive avatar remains in the reboot runtime.
   assert.match(source, /createCharacterCast/);
+  assert.match(source, /createSchoolRoute/);
+  assert.match(source, /createGameRuntime/);
+  assert.match(source, /createCombatPresentationAdapter/);
+  assert.match(source, /createCameraController[\s\S]*updateCameraController/);
+  assert.match(source, /canvas\.dataset\.lastAction/);
   assert.doesNotMatch(source, /CapsuleGeometry|playerGeometry|playerMaterial/);
+  assert.doesNotMatch(source, /new THREE\.PlaneGeometry/);
 });

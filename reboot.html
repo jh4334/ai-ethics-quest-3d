@@ -14,6 +14,9 @@
     .hud { position: fixed; inset: max(16px, env(safe-area-inset-top)) 16px auto; display: flex; justify-content: space-between; align-items: start; gap: 16px; pointer-events: none; }
     .title { margin: 0; color: #f4c06d; font-size: clamp(1rem, 3vw, 1.5rem); letter-spacing: .08em; text-shadow: 0 2px 12px #000; }
     .status { margin: .35rem 0 0; color: #d9e4ff; font-size: .9rem; }
+    .combat-hud { display: flex; gap: 10px; margin-top: 8px; color: #d9e4ff; font-size: .78rem; }
+    .combat-hud span { padding: 4px 7px; border: 1px solid #7b91bf66; border-radius: 5px; background: #050918aa; }
+    .objective { position: fixed; top: max(112px, calc(env(safe-area-inset-top) + 96px)); left: 50%; translate: -50% 0; margin: 0; color: #fff3d6; font-size: clamp(.82rem, 2vw, 1rem); text-shadow: 0 2px 8px #000; }
     .actions { display: flex; gap: 8px; pointer-events: auto; }
     button { min-width: 48px; min-height: 44px; padding: 8px 12px; border: 1px solid #7b91bf; border-radius: 8px; color: #fff; background: #101a36dd; font: inherit; }
     button:focus-visible { outline: 3px solid #f4c06d; outline-offset: 2px; }
@@ -30,12 +33,18 @@
       <div>
         <h1 class="title">H-17: NULL</h1>
         <p class="status" data-reboot-status aria-live="polite">학교 기록 연결 중</p>
+        <div class="combat-hud" aria-label="전투 상태">
+          <span data-combat-health>HP 100</span>
+          <span data-combat-action>READY</span>
+          <span data-combat-chain>SYNC 0</span>
+        </div>
       </div>
       <div class="actions">
         <button type="button" data-pause>일시정지</button>
         <button type="button" data-restart>다시 시작</button>
       </div>
     </section>
+    <p class="objective" data-route-objective>교실 기록 단말로 이동</p>
     <p class="recovery" data-recovery-notice role="status" hidden></p>
     <p class="hint">WASD·방향키 이동 · Esc 일시정지 · R 다시 시작</p>
     <section class="test-storage" data-test-storage hidden aria-label="저장 QA 도구">

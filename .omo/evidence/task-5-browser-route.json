@@ -1,0 +1,35 @@
+{
+  "date": "2026-07-28",
+  "tool": "in-app browser",
+  "desktopFixtures": [
+    { "fixture": "route-classroom", "segment": "classroom-cold-open", "objective": "교실 기록 단말로 이동" },
+    { "fixture": "route-corridor", "segment": "collapsing-corridor", "objective": "무너지는 복도를 통과" },
+    { "fixture": "route-first-arena", "segment": "first-arena", "objective": "지우개 요원의 빈틈을 추적" },
+    { "fixture": "route-memory", "segment": "memory-backup-decision", "objective": "하루의 기억 백업을 확보" },
+    { "fixture": "route-pursuit", "segment": "scanner-pursuit", "objective": "스캐너 추격을 따돌리기" },
+    { "fixture": "route-gym", "segment": "gym-boss-arena", "objective": "출석 감독관과 대면" }
+  ],
+  "observed": {
+    "charactersReadyEachFixture": 4,
+    "desktopCameraTargetsIncluded": 4,
+    "touchCanvas": "390x720",
+    "touchCameraMode": "touch",
+    "touchSegment": "first-arena",
+    "firstControlSeconds": 2,
+    "firstCombatSeconds": 3,
+    "routeDrawCalls": 5,
+    "routeTriangles": 432,
+    "consoleWarnings": 0,
+    "consoleErrors": 0
+  },
+  "artifacts": [
+    ".omo/evidence/task-5-route-contact-sheet.png",
+    ".omo/evidence/task-5-route-touch.png"
+  ],
+  "cleanup": {
+    "browserTabsFinalized": true,
+    "viteServerStopped": true,
+    "port5173Closed": true
+  },
+  "result": "PASS"
+}

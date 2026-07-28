@@ -4,11 +4,16 @@ export const DEFAULT_BINDINGS = Object.freeze({
   ArrowRight: 'move-right',
   ArrowUp: 'move-up',
   Escape: 'pause',
+  KeyE: 'trace',
+  KeyF: 'secure',
+  KeyJ: 'attack',
+  KeyK: 'reflect',
   KeyA: 'move-left',
   KeyD: 'move-right',
   KeyR: 'restart',
   KeyS: 'move-down',
-  KeyW: 'move-up'
+  KeyW: 'move-up',
+  Space: 'dash'
 });
 
 export function createInputRouter({ bindings = DEFAULT_BINDINGS, target }) {
@@ -54,6 +59,10 @@ export function createInputRouter({ bindings = DEFAULT_BINDINGS, target }) {
     },
     isActive(action) {
       return active.has(action);
+    },
+    setActive(action, nextActive) {
+      if (typeof action !== 'string') return;
+      emit(action, nextActive === true);
     },
     subscribe(listener) {
       listeners.add(listener);

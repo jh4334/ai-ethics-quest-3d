@@ -1,0 +1,96 @@
+Task 5 render worker evidence - low-spec chapter-one school route
+Date: 2026-07-28 (Asia/Seoul)
+
+OWNERSHIP / ISOLATION
+- Created only src/reboot/render/schoolRoute.js,
+  tests/reboot-route-render.test.js, and this evidence file.
+- Did not edit schoolNightScene.js, entry.js, HTML, level/camera pure modules,
+  assets, licenses, or any other worker-owned file.
+- No sub-agent and no commit were created.
+
+BASELINE (before production changes)
+- npm.cmd run build: PASS - Vite built 62 modules.
+- npm.cmd run smoke: PASS - DOM marker/module wiring present.
+- npm.cmd test: 251 pass, 1 fail. The only failure was the concurrent
+  tests/reboot-game-runtime.test.js import of not-yet-created
+  src/reboot/app/gameRuntime.js; route-render files did not yet exist.
+
+RED -> GREEN
+- RED command: node --test tests/reboot-route-render.test.js
+- RED result: expected ERR_MODULE_NOT_FOUND for the not-yet-created
+  src/reboot/render/schoolRoute.js contract.
+- Final focused GREEN commands (two independent invocations):
+  node --test tests/reboot-route-render.test.js
+  node --test tests/reboot-route-render.test.js
+- Results: PASS/PASS - each run 7 tests, 7 pass, 0 fail.
+- Focused source-regression command:
+  node --test tests/sourceRegression.test.js tests/reboot-route-render.test.js
+- Result: PASS - 72 tests, 72 pass, 0 fail.
+
+IMPLEMENTED CONTRACT
+- createSchoolRoute({ level, scene }) validates before attaching any object.
+- All six chapterOneLevel segments consume collision, navigation, visual,
+  encounter, checkpoint, and localLight data.
+- Explicit immutable debug state names six flat colliders, twelve wall
+  occluders, six route cues, six checkpoints, six visuals, six encounters,
+  and exactly six data-backed local lights.
+- Collision state is copied only from collision/navigation layers; visual kind
+  changes cannot alter collision. No walkable stairs or ramps exist.
+- Five InstancedMesh draw calls share one box geometry. The complete route is
+  432 triangles and six disposable GPU resources.
+- Point lights have finite distance, castShadow=false, and source ids copied
+  from localLight. No ambient/speculative light or render target is created.
+- Ground cues/checkpoints remain at y <= 0.03, fixtures remain overhead at the
+  authored y >= 2.2, and walls stay outside walkable bounds. The route creates
+  no SkinnedMesh/character, so it does not duplicate or intersect the CC0 cast.
+- dispose() removes and clears the group, disposes each shared GPU resource
+  exactly once, returns 6 on first call, and returns 0 on repeated calls.
+
+MANUAL QA - exact Node invocation
+Command:
+node --input-type=module -e "import * as THREE from 'three'; import { chapterOneLevel } from './src/reboot/content/levels/chapter1.js'; import { createSchoolRoute } from './src/reboot/render/schoolRoute.js'; const scene = new THREE.Scene(); const route = createSchoolRoute({ level: chapterOneLevel, scene }); const debug = route.getDebugState(); const lights = []; route.group.traverse(object => { if (object.isLight) lights.push(object.userData.sourceId); }); const firstDispose = route.dispose(); const secondDispose = route.dispose(); console.log(JSON.stringify({ segments: debug.segmentIds.length, colliders: debug.colliders.length, occluders: debug.occluders.length, routeCues: debug.routeCues.length, checkpoints: debug.checkpoints.length, visuals: debug.visuals.length, lights, drawCalls: debug.budget.drawCalls, triangles: debug.budget.triangles, flatOnly: debug.colliders.every(entry => entry.surface === 'flat'), attachedAfterDispose: scene.children.includes(route.group), firstDispose, secondDispose }));"
+Output:
+{"segments":6,"colliders":6,"occluders":12,"routeCues":6,"checkpoints":6,"visuals":6,"lights":["light-classroom","light-corridor","light-arena","light-memory","light-pursuit","light-gym"],"drawCalls":5,"triangles":432,"flatOnly":true,"attachedAfterDispose":false,"firstDispose":6,"secondDispose":0}
+Result: PASS - every authored route/debug count, flat-only navigation, low-spec
+budget, exact light ids, and idempotent cleanup matched the contract.
+
+FULL VERIFICATION
+- npm.cmd test: PASS - 279 tests, 279 pass, 0 fail.
+- npm.cmd run build: PASS - Vite built 75 modules; existing Three chunk-size
+  warning only.
+- npm.cmd run smoke: PASS - DOM smoke passed.
+- An earlier full-suite attempt while concurrent work was still landing showed
+  only Task 6 enemy fallbacks and the shared reboot HUD expectation; after those
+  independent files appeared, the unchanged route implementation passed all
+  279 tests.
+- git diff --check -- src/reboot/render/schoolRoute.js tests/reboot-route-render.test.js:
+  PASS.
+- rg -n "Math\\.random|Date\\.|performance\\.|setTimeout|setInterval" src/reboot/render/schoolRoute.js:
+  PASS - no matches (rg exit 1 means zero matches).
+
+SIZE / ARCHITECTURE REVIEW
+- src/reboot/render/schoolRoute.js: 206 pure LOC (<250; 200-250 warning band).
+- tests/reboot-route-render.test.js: 101 pure LOC (<250).
+- Single responsibility: the production file owns chapter school-route Three
+  assembly and disposal.
+- Boundary purity: validateLevel rejects malformed data before scene mutation;
+  debug state contains plain deterministic values and no UUID/clock state.
+- Tagged variants: none. Escape hatches, randomness, timers, parameter
+  reassignment, and inferred art collision: none.
+- The 206-LOC warning means any future route rendering responsibility should
+  extract box-layout calculation into a route-specific module before growth.
+
+ADVERSARIAL / CLEANUP RECEIPT
+- Mutated every visual kind to decor-only: collider bounds remained exact.
+- Corrupted collision/navigation agreement: construction threw the named code
+  and left scene.children empty.
+- Built identical levels twice: debug states were deeply equal.
+- Traversed the real Three graph: exact authored point-light count/positions,
+  no shadows, no SkinnedMesh, no stair/ramp role.
+- Observed dispose events on unique shared geometries/materials: exactly six
+  once; repeated dispose returned zero and left an empty detached group.
+- Budget assertions fail above 5 draw calls or 500 triangles; actual is 5/432.
+- No prompt/text ingestion exists, so prompt injection is N/A.
+- No servers, ports, browser sessions, timers, child processes, temp scripts,
+  or new assets were created. All Node processes exited normally; no cleanup
+  action was required.

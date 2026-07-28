@@ -16,12 +16,38 @@ if (!root || !canvas) throw new Error('H-17 reboot root and canvas are required'
 const renderer = createRenderer(canvas);
 const input = createInputRouter({ target: window });
 const session = createRebootSession({ storage: window.localStorage });
+const searchParams = new URLSearchParams(window.location.search);
 const testHook = window.__ETHICS_TEST_HOOK__ === true
   || window.sessionStorage.getItem('h17.testHook') === 'true'
-  || new URLSearchParams(window.location.search).get('testHook') === 'h17';
+  || searchParams.get('testHook') === 'h17';
+if (testHook && searchParams.get('viewport') === 'touch') {
+  root.style.width = '390px';
+  root.style.height = '720px';
+  root.style.minHeight = '720px';
+  canvas.style.width = '390px';
+  canvas.style.height = '720px';
+}
+const sceneUi = Object.freeze({
+  action: root.querySelector('[data-combat-action]'),
+  chain: root.querySelector('[data-combat-chain]'),
+  health: root.querySelector('[data-combat-health]'),
+  objective: root.querySelector('[data-route-objective]')
+});
+const routeFixtures = Object.freeze([
+  ['route-classroom', { x: 0, y: -1 }],
+  ['route-corridor', { x: 0, y: -18 }],
+  ['route-first-arena', { x: 0, y: -39 }],
+  ['route-memory', { x: 0, y: -54 }],
+  ['route-pursuit', { x: 0, y: -76 }],
+  ['route-gym', { x: 0, y: -104 }]
+]);
+const createScene = (startPosition = { x: 0, y: 0 }) => (
+  createSchoolNightScene({ canvas, input, renderer, startPosition, ui: sceneUi })
+);
 const sceneRegistry = createSceneRegistry([
-  ['school-night', () => createSchoolNightScene({ canvas, input, renderer })],
-  ['disposal-fixture', () => createSchoolNightScene({ canvas, input, renderer })]
+  ['school-night', () => createScene()],
+  ['disposal-fixture', () => createScene()],
+  ...routeFixtures.map(([id, startPosition]) => [id, () => createScene(startPosition)])
 ]);
 const scheduler = Object.freeze({
   cancel: (id) => window.cancelAnimationFrame(id),
@@ -92,7 +118,7 @@ if (testHook) {
       save: session.getState()
     });
   };
-  testPanel.hidden = false;
+  testPanel.hidden = searchParams.get('tools') === 'hidden';
   testPanel.querySelector('[data-test-seed-v3]').addEventListener('click', () => {
     window.__ethicsReboot.clearStorageForTest();
     window.localStorage.setItem(LEGACY_V3_KEY, legacyFixture);
@@ -120,6 +146,7 @@ if (testHook) {
     getSaveState: () => session.getState(),
     getRecoveryNotice: () => session.getRecoveryNotice(),
     getLegacyBackup: () => session.getLegacyBackup(),
+    getSceneDebugState: () => app.getSceneDebugState(),
     pause: () => { app.pause(); syncStatus(); },
     restart: () => { app.restart(); syncStatus(); },
     resume: () => { app.resume(); syncStatus(); },
