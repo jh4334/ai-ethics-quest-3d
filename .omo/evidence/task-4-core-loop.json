@@ -1,0 +1,29 @@
+{
+  "date": "2026-07-28",
+  "tool": "in-app browser and deterministic input log",
+  "url": "http://127.0.0.1:5173/reboot.html?testHook=h17&fixture=route-memory",
+  "browserObserved": {
+    "charactersReady": 4,
+    "keyboardActions": ["attack1", "reflect", "dash", "trace", "secure"],
+    "traceChain": "SYNC 1",
+    "secureChain": "SYNC 2",
+    "finalChain": "SYNC 3",
+    "health": "HP 100",
+    "consoleWarnings": 0,
+    "consoleErrors": 0
+  },
+  "inputLogObserved": {
+    "perfectReflectCount": 1,
+    "traceSecureOrder": ["traced", "secured"],
+    "chainLevel": 3,
+    "firstHash": "d512a1de",
+    "replayedHash": "d512a1de"
+  },
+  "screenshot": ".omo/evidence/task-4-browser-core-loop.png",
+  "cleanup": {
+    "browserTabsFinalized": true,
+    "viteServerStopped": true,
+    "port5173Closed": true
+  },
+  "result": "PASS"
+}
