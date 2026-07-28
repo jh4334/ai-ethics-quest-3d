@@ -446,7 +446,7 @@ Primary references:
 
   **Commit**: YES | Message: `feat(enemies): add readable eraser and stamper encounters` | Files: `src/reboot/content/enemies/*`, `src/reboot/enemies/*`, `src/reboot/encounters/*`, `tests/reboot-enemies.test.js`
 
-- [ ] 7. Implement chapter-one narrative, evidence chain, and consequence reversal
+- [x] 7. Implement chapter-one narrative, evidence chain, and consequence reversal
 
   **What to do**: Encode the exact 30-minute beat sheet as data with trigger IDs, prerequisites, interruptible radio lines, evidence records, and outcome effects. Implement the memory-backup event with two mechanically distinct actions: fast PURGE and risky TRACE→SECURE. Both continue the story; they alter Integrity, Exposure, Haru/DOT Trust, later arena dressing, boss callouts, and the result report. Deliver all essential context through play, environment, and short moving dialogue.
 
@@ -461,9 +461,9 @@ Primary references:
   - `docs/reboot/story-bible.md` — authoritative line, secret, and reveal order created by Task 1.
 
   **Acceptance Criteria**:
-  - [ ] Story validation rejects duplicate triggers, missing evidence, impossible prerequisites, spoiler-order violations, and lines exceeding UI duration/length budgets.
-  - [ ] PURGE and SECURE both reach the boss but produce visibly and textually different consequences without `correct`/`wrong` language.
-  - [ ] Automated transcript proves the player's signature is first revealed only after the boss.
+  - [x] Story validation rejects duplicate triggers, missing evidence, impossible prerequisites, spoiler-order violations, and lines exceeding UI duration/length budgets.
+  - [x] PURGE and SECURE both reach the boss but produce visibly and textually different consequences without `correct`/`wrong` language.
+  - [x] Automated transcript proves the player's signature is first revealed only after the boss.
 
   **QA Scenarios**:
   ```text
@@ -482,7 +482,7 @@ Primary references:
 
   **Commit**: YES | Message: `feat(story): deliver attendance-zero consequence arc` | Files: `src/reboot/content/chapter1/*`, `src/reboot/story/*`, `src/reboot/ui/radio*`, `tests/reboot-story.test.js`
 
-- [ ] 8. Build the Attendance Proctor boss and chapter reversal
+- [x] 8. Build the Attendance Proctor boss and chapter reversal
 
   **What to do**: Implement three deterministic phases: reflect scanning beams, distinguish true ID from clones with TRACE, and expose the approval core while the arena erases safe ground visually but not vertically. Phase transitions alter decision pressure without invalidating learned timing. On victory, play a skippable short in-engine reveal of the player's approval ID, award one PATCH choice, save atomically, show consequence report, and return to continuation title.
 
@@ -496,9 +496,9 @@ Primary references:
   - [Encounter design](https://github.com/MengTo/Skills/blob/21b278c62f49f3ce3d8c8ecbcc84cbcd534f3e49/agent-skills/game-development/design-game-encounters/SKILL.md) — phase/retry/reward rules.
 
   **Acceptance Criteria**:
-  - [ ] Fixtures exist for phase start, low health, every attack window, stagger, victory, death/retry, and each prior consequence path.
-  - [ ] Boss defeat returns to arena start in ≤2 seconds and skips completed intro without duplicating PATCH/evidence rewards.
-  - [ ] The same seeded fixture has identical phase/action logs at 30/60/120Hz.
+  - [x] Fixtures exist for phase start, low health, every attack window, stagger, victory, death/retry, and each prior consequence path.
+  - [x] Boss defeat returns to arena start in ≤2 seconds and skips completed intro without duplicating PATCH/evidence rewards.
+  - [x] The same seeded fixture has identical phase/action logs at 30/60/120Hz.
 
   **QA Scenarios**:
   ```text

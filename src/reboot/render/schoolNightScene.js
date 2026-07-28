@@ -1,60 +1,25 @@
 import * as THREE from 'three';
 
 import { createEncounterGameRuntime } from '../app/encounterGameRuntime.js';
-import {
-  createCameraController, getFramingReport, updateCameraController
-} from '../camera/controller.js';
+import { createBossGameRuntime } from '../app/bossGameRuntime.js';
+import { resolveBossVictory } from '../bosses/rewards.js';
+import { createCameraController, getFramingReport, updateCameraController } from '../camera/controller.js';
 import { createCharacterCast } from '../characters/cast.js';
 import { chapterOneLevel } from '../content/levels/chapter1.js';
+import { createChapterOneDirector } from '../story/chapterOneDirector.js';
 import { createCombatPresentationAdapter } from './combatPresentation.js';
+import { createBossCast } from './bossCast.js';
 import { createDisposableRegistry } from './dispose.js';
 import { createEnemyCast } from './enemyCast.js';
 import { createSchoolRoute } from './schoolRoute.js';
-
-const OBJECTIVES = Object.freeze({
-  'classroom-cold-open': '교실 기록 단말로 이동',
-  'collapsing-corridor': '무너지는 복도를 통과',
-  'first-arena': '지우개 요원의 빈틈을 추적',
-  'memory-backup-decision': '하루의 기억 백업을 확보',
-  'scanner-pursuit': '스캐너 추격을 따돌리기',
-  'gym-boss-arena': '출석 감독관과 대면'
-});
-
-function closestSegment(z) {
-  return chapterOneLevel.segments.reduce((closest, segment) => (
-    Math.abs(segment.anchor.z - z) < Math.abs(closest.anchor.z - z) ? segment : closest
-  ));
-}
-
-function viewportFor(canvas) {
-  const width = Math.max(canvas.clientWidth, 1);
-  const height = Math.max(canvas.clientHeight, 1);
-  return { height, mode: width <= 820 ? 'touch' : 'desktop', width };
-}
-
-function cameraTargets(frame, routeCue, encounter) {
-  const committed = encounter.enemies.find((enemy) => ['windup', 'active'].includes(enemy.phase));
-  const nearest = encounter.enemies
-    .filter((enemy) => enemy.phase !== 'defeat')
-    .toSorted((first, second) => (
-      Math.hypot(first.position.x - frame.player.position.x, first.position.z - frame.player.position.z)
-      - Math.hypot(second.position.x - frame.player.position.x, second.position.z - frame.player.position.z)
-    ))[0];
-  const threatId = committed?.id ?? nearest?.id;
-  const threat = frame.targets.find((target) => target.id === threatId) ?? frame.player;
-  const traceTarget = frame.targets.find((target) => target.id === 'memory-backup') ?? threat;
-  const cue = committed ? { id: routeCue.id, ...threat.position } : routeCue.position;
-  return {
-    player: { id: 'player', ...frame.player.position },
-    threat: { id: threat.id, ...threat.position },
-    traceTarget: { id: traceTarget.id, ...traceTarget.position },
-    routeCue: { id: routeCue.id, ...cue }
-  };
-}
+import {
+  closestRouteSegment, getBossCameraTargets, getEncounterCameraTargets, getSceneViewport
+} from './schoolSceneCamera.js';
+import { createSchoolSceneHud } from './schoolSceneHud.js';
 
 export function createSchoolNightScene({
-  canvas, encounterOptions = {}, input, renderer,
-  startPosition = { x: 0, y: 0 }, ui = {}, windowRef = window
+  bossOptions = {}, canvas, encounterOptions = {}, input, renderer,
+  startPosition = { x: 0, y: 0 }, storyOptions = {}, ui = {}, windowRef = window
 }) {
   const resources = createDisposableRegistry();
   const scene = new THREE.Scene();
@@ -65,6 +30,9 @@ export function createSchoolNightScene({
   const route = resources.register(createSchoolRoute({ level: chapterOneLevel, scene }), 'school-route');
   const cast = resources.register(createCharacterCast({ scene }), 'character-cast');
   const enemyCast = resources.register(createEnemyCast({ scene }), 'enemy-cast');
+  const bossCast = bossOptions.enabled
+    ? resources.register(createBossCast({ scene }), 'boss-cast')
+    : null;
   const {
     blockAfterTick = null,
     delayedBlockers = [],
@@ -72,82 +40,94 @@ export function createSchoolNightScene({
     ...runtimeEncounterOptions
   } = encounterOptions;
   const game = createEncounterGameRuntime({
-    deviceClass: viewportFor(canvas).mode,
+    deviceClass: getSceneViewport(canvas).mode,
     startPosition,
     ...runtimeEncounterOptions
   });
   const combatView = createCombatPresentationAdapter();
+  const story = createChapterOneDirector(storyOptions);
+  const bossGame = bossOptions.enabled ? createBossGameRuntime({
+    consequencePath: story.getState().memoryOutcome ?? 'secure'
+  }) : null;
   scene.add(new THREE.HemisphereLight(0xb5c6ff, 0x271626, 2.35));
 
   let entered = false;
   let unsubscribeInput = null;
-  let currentSegment = closestSegment(startPosition.y);
+  let currentSegment = closestRouteSegment(chapterOneLevel.segments, startPosition.y);
   let lastEvents = [];
   let lastEnemyEvents = [];
   let armorBreaks = 0;
   let reflections = 0;
   let playerHits = 0;
   let cancelledAttacks = 0;
+  let lastBossEvents = [];
+  let bossResolved = false;
+  let resultVisible = storyOptions.showOutcome === true;
   let lastFrame = combatView.present(game.getState().combat, []);
   const initialCueIndex = chapterOneLevel.segments.findIndex((segment) => segment.id === currentSegment.id);
-  let activeTargets = cameraTargets(lastFrame, route.routeCues[initialCueIndex], game.getState().encounter);
-  let cameraState = createCameraController(activeTargets, viewportFor(canvas));
+  let activeTargets = bossGame && currentSegment.id === 'gym-boss-arena'
+    ? getBossCameraTargets(lastFrame, route.routeCues[initialCueIndex])
+    : getEncounterCameraTargets(lastFrame, route.routeCues[initialCueIndex], game.getState().encounter);
+  let cameraState = createCameraController(activeTargets, getSceneViewport(canvas));
+  const hud = createSchoolSceneHud({ canvas, ui });
 
   function resize() {
-    const viewport = viewportFor(canvas);
+    const viewport = getSceneViewport(canvas);
     camera.aspect = viewport.width / viewport.height;
     camera.updateProjectionMatrix();
     renderer.setSize(viewport.width, viewport.height, false);
   }
 
   function syncHud() {
-    if (ui.health) ui.health.textContent = `HP ${lastFrame.hud.hp}`;
-    if (ui.action) ui.action.textContent = lastFrame.hud.action.toUpperCase();
-    if (ui.chain) ui.chain.textContent = `SYNC ${lastFrame.hud.chainLevel}`;
-    if (ui.enemy) {
-      const eraser = game.getState().encounter.enemies.find((enemy) => enemy.definition.id === 'eraser');
-      ui.enemy.textContent = `ARMOR ${eraser?.armor ?? 0}`;
-    }
-    if (ui.objective) ui.objective.textContent = OBJECTIVES[currentSegment.id];
-    canvas.dataset.combatTick = String(lastFrame.tick);
-    canvas.dataset.cameraMode = viewportFor(canvas).mode;
-    canvas.dataset.routeSegment = currentSegment.id;
     const encounter = game.getState().encounter;
-    canvas.dataset.enemyCount = String(encounter.enemies.length);
-    canvas.dataset.enemyPhases = encounter.enemies.map((enemy) => `${enemy.id}:${enemy.phase}`).join(',');
-    canvas.dataset.enemyPhaseTicks = encounter.enemies
-      .map((enemy) => `${enemy.id}:${enemy.phaseTick}`)
-      .join(',');
-    const stamper = encounter.enemies.find((enemy) => enemy.definition.id === 'stamper');
-    canvas.dataset.stamperTelegraph = stamper ? `${stamper.phase}:${stamper.phaseTick}` : 'missing';
-    canvas.dataset.eraserArmor = String(
-      encounter.enemies.find((enemy) => enemy.definition.id === 'eraser')?.armor ?? 0
-    );
-    canvas.dataset.armorBreaks = String(armorBreaks);
-    canvas.dataset.reflections = String(reflections);
-    canvas.dataset.playerHits = String(playerHits);
-    canvas.dataset.cancelledAttacks = String(cancelledAttacks);
-    canvas.dataset.blockerActive = String(
-      Number.isInteger(blockAfterTick) && encounter.tick >= blockAfterTick
-    );
-    canvas.dataset.offscreenActive = String(
-      Number.isInteger(offscreenAfterTick) && encounter.tick >= offscreenAfterTick
-    );
-    const started = lastEvents.find((event) => event.type === 'action-started');
-    if (started) canvas.dataset.lastAction = started.action;
-    const enemyEvent = lastEnemyEvents.at(-1);
-    if (enemyEvent) canvas.dataset.lastEnemyEvent = enemyEvent.type;
+    const storyState = story.getState();
+    hud.sync({
+      blockerActive: Number.isInteger(blockAfterTick) && encounter.tick >= blockAfterTick,
+      bossEvents: lastBossEvents,
+      bossState: bossGame && currentSegment.id === 'gym-boss-arena' ? bossGame.getState() : null,
+      counters: { armorBreaks, cancelledAttacks, playerHits, reflections },
+      encounter,
+      frame: lastFrame,
+      lastEnemyEvents,
+      lastEvents,
+      offscreenActive: Number.isInteger(offscreenAfterTick) && encounter.tick >= offscreenAfterTick,
+      radioLine: story.getRadioLine(),
+      resultVisible,
+      routeSegmentId: currentSegment.id,
+      storyOutcome: resultVisible ? story.getOutcome() : null,
+      storyState,
+      viewportMode: getSceneViewport(canvas).mode
+    });
   }
 
   function queueAction({ action, active }) {
-    if (!active || !['attack', 'dash', 'reflect', 'trace', 'secure'].includes(action)) return;
+    if (!active) return;
+    if (action === 'purge') {
+      story.memoryAction('purge');
+      return;
+    }
+    if (!['attack', 'dash', 'reflect', 'trace', 'secure'].includes(action)) return;
     const targetId = ['trace', 'secure'].includes(action) ? 'memory-backup' : null;
     game.queueAction(action, targetId);
+    bossGame?.queueAction(action);
+  }
+
+  function selectPatch(patchId) {
+    if (!bossGame || bossGame.getState().status !== 'victory') return false;
+    const reward = resolveBossVictory(story.getState().campaign, bossGame.getState(), patchId);
+    storyOptions.persist?.(reward.state);
+    resultVisible = true;
+    bossOptions.onPatchResolved?.();
+    canvas.dataset.patchChoice = patchId;
+    canvas.dataset.savedChapter = String(reward.state.chapterProgress.current);
+    canvas.dataset.savedEvidenceCount = String(reward.state.evidence.length);
+    return true;
   }
 
   return Object.freeze({
     dispose() {
       unsubscribeInput?.();
+      bossOptions.onPatchResolved?.();
       resources.disposeAll();
     },
     enter() {
@@ -155,17 +135,23 @@ export function createSchoolNightScene({
       entered = true;
       resize();
       unsubscribeInput = input.subscribe(queueAction);
+      story.start();
       canvas.dataset.characters = 'loading';
       canvas.dataset.enemies = 'loading';
       canvas.dataset.lastAction = 'none';
       canvas.dataset.lastEnemyEvent = 'none';
-      Promise.all([cast.load(), enemyCast.load(game.getState().encounter)]).then(() => {
+      Promise.all([
+        cast.load(), enemyCast.load(game.getState().encounter), bossCast?.load()
+      ]).then(() => {
         if (!entered) return;
         const castDebug = cast.getDebugState();
         const enemyDebug = enemyCast.getDebugState();
-        canvas.dataset.characterCount = String(castDebug.loaded + enemyDebug.loaded);
+        canvas.dataset.characterCount = String(
+          castDebug.loaded + enemyDebug.loaded + (bossCast?.getDebugState().loaded ? 1 : 0)
+        );
         canvas.dataset.characters = castDebug.errors.length === 0 ? 'ready' : 'error';
         canvas.dataset.enemies = enemyDebug.errors.length === 0 ? 'ready' : 'error';
+        canvas.dataset.boss = bossCast && bossCast.getDebugState().errors.length === 0 ? 'ready' : 'disabled';
       });
       windowRef.addEventListener('resize', resize);
       syncHud();
@@ -179,7 +165,8 @@ export function createSchoolNightScene({
     },
     getDebugState() {
       return Object.freeze({
-        camera: getFramingReport(cameraState, activeTargets, viewportFor(canvas)),
+        boss: bossGame?.getState() ?? null,
+        camera: getFramingReport(cameraState, activeTargets, getSceneViewport(canvas)),
         characters: cast.getDebugState(),
         combat: Object.freeze({
           action: lastFrame.hud.action,
@@ -192,7 +179,8 @@ export function createSchoolNightScene({
         encounter: game.getState().encounter,
         eventTypes: Object.freeze(lastEvents.map((event) => event.type)),
         route: route.getDebugState(),
-        routeSegmentId: currentSegment.id
+        routeSegmentId: currentSegment.id,
+        story: story.getState()
       });
     },
     resourceCount() {
@@ -231,12 +219,31 @@ export function createSchoolNightScene({
       cast.update(delta);
       enemyCast.update(delta);
 
-      currentSegment = closestSegment(lastFrame.player.position.z);
+      currentSegment = closestRouteSegment(chapterOneLevel.segments, lastFrame.player.position.z);
+      story.observe({
+        combatEvents: result.combatEvents,
+        encounter: result.state.encounter,
+        segmentId: currentSegment.id
+      });
+      story.update(delta);
+      if (bossGame && currentSegment.id === 'gym-boss-arena') {
+        const bossResult = bossGame.update(delta, { playerHp: result.state.combat.player.hp });
+        lastBossEvents = bossResult.events;
+        bossCast.present(bossResult.state, bossResult.events);
+        bossCast.update(delta, bossResult.state);
+        if (!bossResolved && bossResult.state.status === 'victory') {
+          bossResolved = story.completeBoss();
+          if (bossResolved) bossOptions.onPatchReady?.(selectPatch);
+        }
+      }
       const cueIndex = chapterOneLevel.segments.findIndex((segment) => segment.id === currentSegment.id);
-      activeTargets = cameraTargets(lastFrame, route.routeCues[cueIndex], result.state.encounter);
-      cameraState = updateCameraController(cameraState, activeTargets, delta, viewportFor(canvas));
-      const combatFocus = currentSegment.id === 'first-arena'
-        && result.state.encounter.enemies.some((enemy) => ['windup', 'active'].includes(enemy.phase));
+      activeTargets = bossGame && currentSegment.id === 'gym-boss-arena'
+        ? getBossCameraTargets(lastFrame, route.routeCues[cueIndex])
+        : getEncounterCameraTargets(lastFrame, route.routeCues[cueIndex], result.state.encounter);
+      cameraState = updateCameraController(cameraState, activeTargets, delta, getSceneViewport(canvas));
+      const combatFocus = (currentSegment.id === 'first-arena'
+        && result.state.encounter.enemies.some((enemy) => ['windup', 'active'].includes(enemy.phase)))
+        || (bossGame && currentSegment.id === 'gym-boss-arena');
       camera.position.set(
         cameraState.position.x,
         cameraState.position.y - (combatFocus ? 2 : 0),

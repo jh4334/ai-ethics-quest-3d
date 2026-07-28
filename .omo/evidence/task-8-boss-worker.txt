@@ -1,0 +1,48 @@
+Task 8 boss foundation worker evidence
+Date: 2026-07-28
+
+Scope
+- Added only src/reboot/content/bosses/**, src/reboot/bosses/**,
+  tests/reboot-boss.test.js, and this evidence file.
+- No renderer, scene, entry, plan, ledger, or git commit changes.
+
+RED
+- Command: node --test tests/reboot-boss.test.js
+- Result: 0/1 pass, expected contract assertion failed because the Attendance Proctor
+  content module did not exist yet.
+
+GREEN / focused stability
+- First complete implementation run exposed a shared timing-object alias through the
+  adversarial validator fixture (10/11 pass); content timings were made independent.
+- Command, final run 1: node --test tests/reboot-boss.test.js
+- Result: 11/11 pass, 0 fail.
+- Command, final run 2: node --test tests/reboot-boss.test.js
+- Result: 11/11 pass, 0 fail.
+
+Repository regression
+- Command: npm.cmd test
+- Result: 306/306 pass, 0 fail.
+
+Determinism and fairness receipt
+- One fixed input log reaches victory at simulation tick 166 with identical phase/action
+  logs at 30, 60, and 120Hz render schedules.
+- Phase contract: two reflected scan beams, two true-ID TRACE successes, three exposed
+  approval-core hits. No extra HP-only damage loop is required.
+- Every windup is at least 20 ticks; validator rejects windups below 18 ticks.
+- Phase-three erasure events preserve collisionChanged=false and leave two safe sectors.
+- Wrong clone TRACE, repeated input IDs, defeat/retry, stagger, low-health, victory,
+  purge, and secure boundaries have deterministic fixtures.
+- Retry delay is 90 fixed ticks (1.5 seconds), retains learned pattern knowledge,
+  skips the completed intro, and clears transient input IDs.
+- Signature H-17 is emitted only on the victory transition. PATCH, evidence, and chapter
+  completion resolution is immutable and idempotent on repeated calls.
+- Math.random: no matches in Task 8 source.
+- Largest production module: runtime.js, 175 pure LOC; all Task 8 modules are below 250.
+- git diff --check for owned paths: pass.
+
+Integration handoff
+- Runtime is Three-independent and emits presentation-ready boss-telegraph,
+  boss-attack-window, ground-erasure-visual, mastery-success, boss-staggered,
+  boss-phase-changed, boss-defeated, signature-revealed, and retry events.
+- Browser scene wiring, video evidence, PATCH picker UI, and repository.write remain root
+  integration work and are intentionally outside this worker scope.

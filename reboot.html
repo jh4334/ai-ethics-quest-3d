@@ -22,6 +22,13 @@
     button:focus-visible { outline: 3px solid #f4c06d; outline-offset: 2px; }
     .hint { position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); translate: -50% 0; margin: 0; color: #d9e4ff; font-size: .82rem; text-align: center; text-shadow: 0 2px 8px #000; }
     .recovery { position: fixed; left: 50%; top: 82px; translate: -50% 0; max-width: min(90vw, 560px); margin: 0; padding: 10px 14px; border: 1px solid #f4c06d88; border-radius: 8px; color: #fff3d6; background: #101a36ee; text-align: center; }
+    .radio { position: fixed; left: 50%; bottom: 64px; translate: -50% 0; width: min(88vw, 680px); margin: 0; padding: 10px 14px; border-left: 3px solid #5de0c1; color: #eef5ff; background: #050918d9; text-shadow: 0 2px 8px #000; }
+    .radio strong { margin-right: 8px; color: #5de0c1; }
+    .chapter-result { position: fixed; inset: 50% auto auto 50%; translate: -50% -50%; z-index: 3; width: min(88vw, 620px); padding: 22px; border: 1px solid #f4c06d88; border-radius: 12px; background: #081126f2; box-shadow: 0 20px 80px #000a; }
+    .chapter-result h2 { margin: 0 0 14px; color: #f4c06d; }
+    .chapter-result p { margin: 9px 0; color: #e9f0ff; line-height: 1.55; }
+    .patch-picker { position: fixed; left: 50%; bottom: 28px; translate: -50% 0; z-index: 4; padding: 12px; border: 1px solid #5de0c188; border-radius: 10px; background: #081126ee; }
+    .patch-picker p { margin: 0 0 8px; color: #5de0c1; text-align: center; }
     .test-storage { position: fixed; left: 12px; bottom: 12px; z-index: 4; max-width: min(92vw, 700px); padding: 8px; border: 1px dashed #6aa9ff; background: #050918ee; }
     .test-storage pre { max-height: 110px; overflow: auto; margin: 8px 0 0; color: #bfe8ff; font-size: 11px; white-space: pre-wrap; }
   </style>
@@ -47,7 +54,20 @@
     </section>
     <p class="objective" data-route-objective>교실 기록 단말로 이동</p>
     <p class="recovery" data-recovery-notice role="status" hidden></p>
-    <p class="hint">WASD·방향키 이동 · Esc 일시정지 · R 다시 시작</p>
+    <p class="radio" data-radio-subtitle aria-live="polite" hidden><strong data-radio-speaker></strong><span data-radio-text></span></p>
+    <section class="chapter-result" data-chapter-result hidden aria-label="1장 결과">
+      <h2>00:17 — 출석번호 없음</h2>
+      <p data-result-action></p>
+      <p data-result-consequence></p>
+      <p data-result-reversal></p>
+    </section>
+    <section class="patch-picker" data-patch-picker hidden aria-label="PATCH 선택">
+      <p>남길 PATCH 하나를 선택</p>
+      <button type="button" data-patch-id="reflect-arc">반사 범위</button>
+      <button type="button" data-patch-id="trace-speed">추적 속도</button>
+      <button type="button" data-patch-id="chain-persistence">연계 유지</button>
+    </section>
+    <p class="hint">WASD·방향키 이동 · J 공격 · K 반사 · E 추적 · F 확보 · Q 소거</p>
     <section class="test-storage" data-test-storage hidden aria-label="저장 QA 도구">
       <button type="button" data-test-seed-v3>v3 심기</button>
       <button type="button" data-test-checkpoint>체크포인트</button>

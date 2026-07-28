@@ -211,8 +211,8 @@ test('input router exposes combat verbs to keyboard and touch adapters', () => {
 
   // Then: 모든 전투 동사가 고정 키에 있고 같은 상태 변경 경계를 지난다.
   assert.deepEqual(
-    Object.fromEntries(['KeyJ', 'Space', 'KeyK', 'KeyE', 'KeyF'].map((key) => [key, DEFAULT_BINDINGS[key]])),
-    { KeyJ: 'attack', Space: 'dash', KeyK: 'reflect', KeyE: 'trace', KeyF: 'secure' }
+    Object.fromEntries(['KeyJ', 'Space', 'KeyK', 'KeyE', 'KeyF', 'KeyQ'].map((key) => [key, DEFAULT_BINDINGS[key]])),
+    { KeyJ: 'attack', Space: 'dash', KeyK: 'reflect', KeyE: 'trace', KeyF: 'secure', KeyQ: 'purge' }
   );
   assert.deepEqual(changes.map(({ action, active }) => [action, active]), [
     ['attack', true], ['attack', false], ['dash', true], ['dash', false]
@@ -243,6 +243,9 @@ test('Vite builds isolated legacy and reboot entries with one Three chunk rule',
   for (const fixture of ['enemy-mixed', 'enemy-blocked', 'enemy-offscreen']) {
     assert.match(rebootEntry, new RegExp(fixture));
   }
+  assert.match(rebootEntry, /\['secure', 'purge'\]\.map/);
+  assert.match(rebootEntry, /`story-\$\{branch\}-ending`/);
+  assert.match(rebootEntry, /`boss-\$\{branch\}`/);
   assert.match(rebootEntry, /sessionStorage\.getItem\('h17\.testHook'\) === 'true'/);
   assert.match(rebootEntry, /URLSearchParams\(window\.location\.search\)[\s\S]*testHook[\s\S]*h17/);
   assert.match(rebootEntry, /viewport[\s\S]*touch[\s\S]*390px/);
@@ -250,6 +253,8 @@ test('Vite builds isolated legacy and reboot entries with one Three chunk rule',
   assert.match(rebootEntry, /corruptV4ForTest/);
   assert.match(rebootHtml, /data-recovery-notice/);
   assert.match(rebootHtml, /data-combat-health[\s\S]*data-combat-action[\s\S]*data-combat-chain[\s\S]*data-enemy-status[\s\S]*data-route-objective/);
+  assert.match(rebootHtml, /data-chapter-result[\s\S]*data-result-action[\s\S]*data-result-consequence[\s\S]*data-result-reversal/);
+  assert.match(rebootHtml, /data-patch-picker[\s\S]*data-patch-id="reflect-arc"[\s\S]*data-patch-id="trace-speed"[\s\S]*data-patch-id="chain-persistence"/);
   assert.match(rebootHtml, /data-test-storage[\s\S]*data-test-seed-v3[\s\S]*data-test-checkpoint[\s\S]*data-test-corrupt[\s\S]*data-test-output/);
   assert.match(rebootEntry, /data-test-seed-v3[\s\S]*data-test-checkpoint[\s\S]*data-test-corrupt/);
 });
