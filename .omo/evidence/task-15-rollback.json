@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "rollbackTag": "pre-reboot-fa1ac50",
+  "targetCommit": "fa1ac503d7d21dce0ff7c43b1268fd1207f24f4c",
+  "canonicalEntry": "/reboot.html",
+  "legacyEntry": "/legacy.html",
+  "serviceWorkerCache": "ethics-quest-h17-v10",
+  "preservedStorageKeys": [
+    "h17.null.save.v4",
+    "h17.legacy.v3.backup",
+    "ai-ethics-quest-3d/progress/h17-v4"
+  ],
+  "rollbackCommand": "gh workflow run pages.yml --ref pre-reboot-fa1ac50",
+  "restoreCommand": "gh workflow run pages.yml --ref main",
+  "localChecks": [
+    "tag resolves to target commit",
+    "legacy and reboot entries build together",
+    "save repository preserves v3 backup across reset and corruption"
+  ],
+  "productionRollbackRun": null,
+  "productionRestoreRun": null
+}

@@ -239,10 +239,10 @@ test('bundle & 허브(루프E): three 벤더 청크 분리 + 허브 2부 소개 
   // Three.js를 별도 청크로 — 재배포 시 게임 코드만 재다운로드(PWA 캐시 세밀화).
   assert.match(vite, /manualChunks\(id\)/);
   assert.match(vite, /node_modules\/three/);
-  // 교사 허브: 2부 소개가 H-17 사건·6장 캠페인·오프라인을 반영.
-  assert.match(hub, /삭제된 학생 H-17/);
-  assert.match(hub, /6장 캠페인/);
-  assert.match(hub, /디지털 발자국·필터버블·AI 의존/);
+  // 교사 허브: 2부 소개가 현재 H-17 액션 스릴러·5장 캠페인·오프라인을 반영.
+  assert.match(hub, /H-17: NULL/);
+  assert.match(hub, /5장 캠페인/);
+  assert.match(hub, /Copycat 공유 폭동/);
   assert.match(hub, /무설치·오프라인/);
 });
 

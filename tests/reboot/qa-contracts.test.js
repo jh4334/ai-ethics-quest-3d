@@ -33,7 +33,7 @@ test('서비스 워커는 reboot 문서와 양쪽 빌드 자산을 오프라인 
   const reboot = readFileSync(new URL('reboot.html', rootUrl), 'utf8');
   const manifest = JSON.parse(readFileSync(new URL('public/reboot-assets.json', rootUrl), 'utf8'));
   assert.match(sw, /\.\/reboot\.html/);
-  assert.match(sw, /\['\.\/index\.html', '\.\/reboot\.html'\]/);
+  assert.match(sw, /\['\.\/index\.html', '\.\/reboot\.html', '\.\/legacy\.html'\]/);
   assert.equal(manifest.some((asset) => asset.endsWith('ual2-standard.glb')), true);
   assert.equal(manifest.some((asset) => asset.endsWith('Male_Ranger.gltf')), true);
   assert.match(reboot, /navigator\.serviceWorker\.register\('\.\/sw\.js'\)/);

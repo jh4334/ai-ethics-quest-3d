@@ -52,6 +52,7 @@
     .chapter-result p { margin: 9px 0; color: #e9f0ff; line-height: 1.55; }
     .patch-picker { position: fixed; left: 50%; bottom: 28px; translate: -50% 0; z-index: 4; padding: 12px; border: 1px solid #5de0c188; border-radius: 10px; background: #081126ee; }
     .patch-picker p { margin: 0 0 8px; color: #5de0c1; text-align: center; }
+    .campaign-continue { position: fixed; left: 50%; bottom: 28px; translate: -50% 0; z-index: 6; border-color: #f4c06d; background: #332611ee; }
     .test-storage { position: fixed; left: 12px; bottom: 12px; z-index: 4; max-width: min(92vw, 700px); padding: 8px; border: 1px dashed #6aa9ff; background: #050918ee; }
     .test-storage pre { max-height: 110px; overflow: auto; margin: 8px 0 0; color: #bfe8ff; font-size: 11px; white-space: pre-wrap; }
     .viewport-tools { position: fixed; left: 50%; top: 10px; translate: -50% 0; z-index: 8; display: flex; gap: 6px; }
@@ -93,6 +94,7 @@
       <button type="button" data-patch-id="trace-speed">추적 속도</button>
       <button type="button" data-patch-id="chain-persistence">연계 유지</button>
     </section>
+    <button class="campaign-continue" type="button" data-campaign-continue hidden>다음 장 계속</button>
     <section class="touch-controls" data-touch-controls aria-label="터치 조작">
       <div class="touch-stick" data-touch-stick aria-label="이동 스틱"><span class="touch-stick-knob" data-touch-stick-knob></span></div>
       <div class="touch-actions">

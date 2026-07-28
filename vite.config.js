@@ -7,6 +7,7 @@ export default defineConfig({
     target: 'es2020',
     rollupOptions: {
       input: {
+        legacy: fileURLToPath(new URL('./legacy.html', import.meta.url)),
         main: fileURLToPath(new URL('./index.html', import.meta.url)),
         reboot: fileURLToPath(new URL('./reboot.html', import.meta.url))
       },

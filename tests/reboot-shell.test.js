@@ -223,17 +223,19 @@ test('input router exposes combat verbs to keyboard and touch adapters', () => {
 
 test('Vite builds isolated legacy and reboot entries with one Three chunk rule', () => {
   // Given: the authored HTML entries, Vite config, and reboot entry source.
-  const legacyHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const canonicalHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const legacyHtml = readFileSync(new URL('../legacy.html', import.meta.url), 'utf8');
   const rebootHtml = readFileSync(new URL('../reboot.html', import.meta.url), 'utf8');
   const vite = readFileSync(new URL('../vite.config.js', import.meta.url), 'utf8');
   const rebootEntry = readFileSync(new URL('../src/reboot/entry.js', import.meta.url), 'utf8');
   const runtimeSettings = readFileSync(new URL('../src/reboot/settings/runtime.js', import.meta.url), 'utf8');
 
   // When: their static entry contracts are inspected.
-  // Then: legacy stays default, reboot is isolated, and both share the pinned Three chunk.
+  // Then: reboot is canonical, legacy remains available, and both share the pinned Three chunk.
+  assert.match(canonicalHtml, /reboot\.html/);
   assert.match(legacyHtml, /src="\/src\/main\.js"/);
   assert.match(rebootHtml, /src="\/src\/reboot\/entry\.js"/);
-  assert.match(vite, /input:\s*\{[\s\S]*main:[\s\S]*reboot:/);
+  assert.match(vite, /input:\s*\{[\s\S]*legacy:[\s\S]*main:[\s\S]*reboot:/);
   assert.match(vite, /node_modules\/three[\s\S]*return 'three'/);
   assert.doesNotMatch(rebootEntry, /(?:\.\.\/)+main\.js|\/src\/main\.js/);
   assert.match(rebootEntry, /createRebootSession\(\{ storage: window\.localStorage \}\)/);

@@ -1,21 +1,18 @@
-# AI Ethics Quest 3D
+# H-17: NULL — 삭제된 밤
 
-> **Reboot in progress:** the canonical design is now
-> [`H-17: NULL — 삭제된 밤`](docs/reboot/game-bible.md). The six-chapter campaign described
-> below remains playable as the legacy baseline until the reboot cutover.
+학교 축제가 끝난 00시 17분, 출석부·사진·기억에서 사라진 하루의 결정 경로를 추적하는 Three.js 3D 액션 스릴러입니다. 정답 퀴즈 대신 이동·전투·TRACE·증거 보존 행동이 다음 장과 결말을 바꿉니다.
 
-Six-chapter Three.js story adventure about AI ethics for upper elementary and middle-school classes.
+## 5장 캠페인
 
-Originally created as the second part of 「AI 윤리 수호자의 여정」, the game is being rebuilt as a
-standalone six-chapter campaign:
+1. `00:17 — 출석번호 없음`: 사라지는 학교에서 기억 백업을 지우거나 추적해 보존한다.
+2. `웃는 얼굴의 폭동`: Copycat 군집을 막으며 최초 업로드 경로를 찾는다.
+3. `두 개의 학교`: 편안한 현실과 검증 가능한 현실을 전환해 Recommender를 무너뜨린다.
+4. `3초 승인실`: 삭제 파이프라인을 역주행하고 긴급 지원 기록의 운명을 정한다.
+5. `마지막 방송`: LUMEN·DOT 보호 프로토콜을 모든 동사로 돌파하고 행동 이력에 맞는 결말을 감당한다.
 
-1. [codex-aiethics](https://github.com/jh4334/codex-aiethics) — 2D 탐험 퍼즐 (배움)
-2. **ai-ethics-quest-3d** (this repo) — 3D 판단 시뮬레이션 (적용)
-3. [ethics-path-finder](https://github.com/jh4334/ethics-path-finder) — 역량 진단 웹앱 (진단·성찰)
+결말은 `개인정보를 가린 검증 방송`, `원본 공개`, `사건 봉인` 세 상태이며 도덕 점수나 정답 낙인을 붙이지 않습니다.
 
-Trilogy hub page: `public/trilogy.html` (served at `/trilogy.html`). Curriculum mapping (2022 개정 성취기준) and the 6-차시 lesson plans live in [`docs/trilogy/`](docs/trilogy/README.md).
-
-## Run
+## 실행
 
 ```bash
 npm install --cache ./.npm-cache
@@ -23,37 +20,25 @@ npm test
 npm run dev
 ```
 
-Build for static hosting:
+배포 전 최소 검증:
 
 ```bash
 npm run build
 npm run smoke
+npm run e2e
 ```
 
-## Six-Chapter H-17 Mystery
+- 운영 진입점: `/index.html` → `/reboot.html`
+- 한 릴리스 동안 보존하는 이전 캠페인: `/legacy.html`
+- 키보드: WASD/방향키 이동, J SIGNAL BLADE, K REFLECT, E TRACE, Space DASH, F SECURE, Q PURGE
+- 터치: 왼쪽 이동 스틱, 오른쪽 동사 버튼
 
-- 1장 「명단에서 사라진 아이」 — 개인정보·편향
-- 2장 「거짓 영상의 주인」 — 저작권·딥페이크
-- 3장 「웃음이 만든 폭풍」 — 악플·혐오표현·디지털 발자국
-- 4장 「두 개의 진실」 — 가짜뉴스·출처·필터버블
-- 5장 「아무도 결정하지 않는 밤」 — AI 의존·자동 결정·생성물 표시
-- 6장 「마지막 증언」 — 설명 책임·인간의 감독·이의제기권
-- 플레이어는 명단에서 삭제된 친구 하루의 사건을 조사하며, AI 계산·추천과 사람의 승인 책임을 추적한다.
-- 2장에서는 네 가지 증거 확인서를, 6장 공개 심리 뒤에는 시민 감사관 완주증을 발급한다.
-- 3–5장은 각각 핵심 도전 뒤에 발자국 복구, 필터 버블 교차 확인, AI 생성물 라벨링 3D 퍼즐을
-  마쳐야 다음 장의 항로가 열린다.
-- 공간 컨셉 「정보의 바다 / H-17 증거 항로」: the world itself is the metaphor — 진실의 등대 (trusted
-  sources; one beam per investigated stage), 화이트아웃 안개 (deleted objections), 데이터 해류
-  (particle currents that flow only along opened routes), and 12 hidden 지식의 유리병
-  (digital-literacy tips collected into an in-game logbook)
-- PWA: installable to the home screen and fully playable offline after first load
-  (service worker precaches the hashed bundle; navigation stays network-first)
-- No accounts, backend, secrets, payments, analytics, or student data storage
-- Class documents in `docs/` — trilogy program (기획서·성취기준 매핑·지도안) in `docs/trilogy/`
+## 안전·오프라인·출처
 
-The game uses procedural Three.js geometry, generated title art, and DOM UI, so it can be deployed as a static Vite site,
-including GitHub Pages. Runtime art provenance is documented in [`ASSET_LICENSES.md`](ASSET_LICENSES.md).
+- 계정·백엔드·분석·결제 없음
+- 이름·소속·연락처 등 개인정보 입력 없음
+- 진행은 브라우저 `localStorage`에만 저장
+- 첫 온라인 로드 뒤 서비스워커로 오프라인 재실행 가능
+- 외부 캐릭터와 애니메이션은 CC0 자산만 사용하며 [ASSET_LICENSES.md](ASSET_LICENSES.md)에 기록
 
-`.github/workflows/pages.yml` deploys `dist/` (game + `/trilogy.html` hub) to GitHub Pages on every push to `main` — set repository Settings → Pages → Source to "GitHub Actions" once to enable it.
-
-Student progress (shrine choices, learning report) is kept in the browser's localStorage only; the journal (J) has a reset button for shared devices.
+정본 서사는 [스토리 바이블](docs/reboot/story-bible.md), 구현·롤백 절차는 [릴리스 안내](docs/reboot/release.md)를 참고하세요.

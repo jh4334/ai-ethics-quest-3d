@@ -38,6 +38,8 @@ jobs:
         run: npm run build
       - name: 스모크 테스트
         run: npm run smoke
+      - name: 수직 슬라이스 증거 게이트
+        run: npm run slice:gate
       - name: reboot 브라우저·시각·오프라인 테스트
         run: npm run e2e
       - uses: actions/upload-pages-artifact@v3

@@ -23,9 +23,10 @@ const PHASE_COLORS = Object.freeze({
 });
 
 export function createFinalBroadcastPreviewScene({
-  canvas, endingId = 'redacted', input, renderer, ui = {}, windowRef = window
+  campaign = null, canvas, endingId = null, input, persist, renderer, ui = {}, windowRef = window
 }) {
-  const fixture = createFinaleFixture(endingId);
+  const fixture = endingId ? createFinaleFixture(endingId) : { campaign, decision: null };
+  if (!fixture.campaign) throw new TypeError('마지막 방송에는 캠페인 저장 상태가 필요합니다.');
   const resources = createDisposableRegistry();
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x07101d);
@@ -63,6 +64,7 @@ export function createFinalBroadcastPreviewScene({
   let accumulator = 0;
   let entered = false;
   let unsubscribeInput = null;
+  const alreadyResolved = /^chapter-5:resolved-/.test(fixture.campaign.chapterProgress.checkpoint);
 
   for (const entry of CAST) {
     const anchor = new THREE.Group();
@@ -79,9 +81,10 @@ export function createFinalBroadcastPreviewScene({
     renderer.setSize(viewport.width, viewport.height, false);
   }
 
-  function showOutcome() {
-    const finalized = finalizeCampaign(fixture.campaign, { decision: fixture.decision });
+  function showOutcome(decision = fixture.decision) {
+    const finalized = finalizeCampaign(fixture.campaign, { decision });
     outcome = finalized.outcome;
+    persist?.(finalized.state);
     if (ui.result) {
       ui.result.hidden = false;
       const heading = ui.result.querySelector('h2');
@@ -90,28 +93,42 @@ export function createFinalBroadcastPreviewScene({
     if (ui.resultAction) ui.resultAction.textContent = outcome.peopleChanges.join(' ');
     if (ui.resultConsequence) ui.resultConsequence.textContent = outcome.worldChanges.join(' ');
     if (ui.resultReversal) ui.resultReversal.textContent = outcome.costs.join(' ');
+    if (ui.continueButton) {
+      ui.continueButton.hidden = false;
+      ui.continueButton.textContent = '결과 기록 유지';
+    }
     canvas.dataset.campaignEnding = outcome.id;
   }
 
   function syncPresentation() {
     const phase = protocol.definition.phases[protocol.phaseIndex];
-    ring.visible = protocol.status === 'active';
+    const restoredOutcome = alreadyResolved && outcome !== null;
+    ring.visible = !restoredOutcome && protocol.status === 'active';
     ringMaterial.color.setHex(PHASE_COLORS[phase.id]);
     canvas.dataset.protocolPhase = phase.id;
     canvas.dataset.protocolPhaseTick = String(protocol.phaseTick);
-    canvas.dataset.protocolStatus = protocol.status;
+    canvas.dataset.protocolStatus = restoredOutcome ? 'resolved' : protocol.status;
     canvas.dataset.protocolHp = String(protocol.hp);
     canvas.dataset.characters = errors.length > 0 ? 'error' : characters.size === CAST.length ? 'ready' : 'loading';
-    if (ui.objective) ui.objective.textContent = protocol.status === 'victory'
-      ? '방송 대기열의 결과를 확인하세요'
-      : `${phase.response.toUpperCase()} — ${phase.id}`;
+    if (ui.objective) ui.objective.textContent = restoredOutcome
+      ? '기록된 마지막 방송 결과입니다'
+      : protocol.status === 'victory'
+        ? outcome ? '방송 대기열의 결과를 확인하세요' : 'F 검증 가능한 방송 · Q 사건 봉인'
+        : `${phase.response.toUpperCase()} — ${phase.id}`;
     if (ui.enemy) ui.enemy.textContent = `LUMEN + DOT ${protocol.hp}`;
-    if (ui.action) ui.action.textContent = phase.response.toUpperCase();
-    if (ui.chain) ui.chain.textContent = `${protocol.phaseIndex + 1}/4 PROTOCOL`;
+    if (ui.action) ui.action.textContent = restoredOutcome ? 'RECORDED' : phase.response.toUpperCase();
+    if (ui.chain) ui.chain.textContent = restoredOutcome ? '5/5 COMPLETE' : `${protocol.phaseIndex + 1}/4 PROTOCOL`;
   }
 
   function queueAction({ action, active }) {
-    if (!active || protocol.status !== 'active') return;
+    if (!active) return;
+    if (protocol.status === 'victory' && !outcome) {
+      if (action === 'secure') showOutcome('broadcast');
+      if (action === 'purge') showOutcome('contain');
+      syncPresentation();
+      return;
+    }
+    if (protocol.status !== 'active') return;
     if (!['reflect', 'trace', 'dash', 'attack'].includes(action)) return;
     const result = stepBroadcastProtocol(protocol, {
       actions: [{
@@ -121,7 +138,7 @@ export function createFinalBroadcastPreviewScene({
       }]
     });
     protocol = result.state;
-    if (protocol.status === 'victory') showOutcome();
+    if (protocol.status === 'victory' && fixture.decision) showOutcome();
     syncPresentation();
   }
 
@@ -154,6 +171,10 @@ export function createFinalBroadcastPreviewScene({
       windowRef.addEventListener('resize', resize);
       syncPresentation();
       loadCast();
+      if (alreadyResolved) {
+        showOutcome();
+        syncPresentation();
+      }
     },
     exit() {
       if (!entered) return;

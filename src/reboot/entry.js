@@ -1,4 +1,5 @@
 import { createAppLifecycle } from './app/lifecycle.js';
+import { resolveCampaignSceneId } from './app/campaignSceneRouting.js';
 import { resolveBootScene } from './app/fixtures.js';
 import { createInputRouter } from './app/input.js';
 import { createQaSceneFixtures } from './app/qaSceneFixtures.js';
@@ -10,6 +11,7 @@ import { applyViewportFixture, configureRuntime, withRuntimeSettings } from './s
 import { createRenderer } from './render/renderer.js';
 import { createDualSchoolPreviewScene } from './render/dualSchoolPreviewScene.js';
 import { createFinalBroadcastPreviewScene } from './render/finalBroadcastPreviewScene.js';
+import { createCampaignChapterScene } from './render/campaignChapterScene.js';
 import { createSchoolNightScene } from './render/schoolNightScene.js';
 import {
   LEGACY_BACKUP_KEY, LEGACY_V3_KEY, V4_SAVE_KEY, V4_TEMP_KEY
@@ -34,6 +36,7 @@ const sceneUi = Object.freeze({
   health: root.querySelector('[data-combat-health]'), objective: root.querySelector('[data-route-objective]'),
   radio: root.querySelector('[data-radio-subtitle]'), radioSpeaker: root.querySelector('[data-radio-speaker]'),
   radioText: root.querySelector('[data-radio-text]'), result: root.querySelector('[data-chapter-result]'),
+  continueButton: root.querySelector('[data-campaign-continue]'),
   resultAction: root.querySelector('[data-result-action]'),
   resultConsequence: root.querySelector('[data-result-consequence]'), resultReversal: root.querySelector('[data-result-reversal]')
 });
@@ -47,11 +50,13 @@ const bossUiBridge = Object.freeze({
   onPatchResolved() {
     choosePatch = null;
     patchPanel.hidden = true;
+    sceneUi.continueButton.hidden = false;
   }
 });
 for (const button of patchPanel.querySelectorAll('[data-patch-id]')) {
   button.addEventListener('click', () => choosePatch?.(button.dataset.patchId));
 }
+sceneUi.continueButton.addEventListener('click', () => window.location.reload());
 const createScene = (
   startPosition = { x: 0, y: 0 }, encounterOptions = {}, storyOptions = null,
   bossOptions = { enabled: true }
@@ -75,6 +80,14 @@ const createScene = (
 );
 const sceneRegistry = createSceneRegistry([
   ['school-night', () => createScene()],
+  ...[2, 3, 4].map((chapter) => [`campaign-chapter-${chapter}`, () => createCampaignChapterScene({
+    campaign: session.getState(), canvas, chapter, input,
+    persist: (campaign) => session.update(() => campaign), renderer, ui: sceneUi
+  })]),
+  ['final-broadcast', () => createFinalBroadcastPreviewScene({
+    campaign: session.getState(), canvas, input,
+    persist: (campaign) => session.update(() => campaign), renderer, ui: sceneUi
+  })],
   ...createQaSceneFixtures({
     createDualSchoolScene: (initialLayer) => createDualSchoolPreviewScene({
       canvas, initialLayer, input, renderer, ui: sceneUi
@@ -92,7 +105,7 @@ const scheduler = Object.freeze({
 });
 const app = createAppLifecycle({ registry: sceneRegistry, scheduler });
 const sceneId = resolveBootScene({
-  defaultId: 'school-night',
+  defaultId: resolveCampaignSceneId(session.getState()),
   fixtureIds: sceneRegistry.list(),
   search: window.location.search,
   testHook
