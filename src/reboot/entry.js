@@ -1,9 +1,13 @@
 import { createAppLifecycle } from './app/lifecycle.js';
 import { resolveBootScene } from './app/fixtures.js';
 import { createInputRouter } from './app/input.js';
+import { createRebootSession } from './app/session.js';
 import { createSceneRegistry } from './app/sceneRegistry.js';
 import { createRenderer } from './render/renderer.js';
 import { createSchoolNightScene } from './render/schoolNightScene.js';
+import {
+  LEGACY_BACKUP_KEY, LEGACY_V3_KEY, V4_SAVE_KEY, V4_TEMP_KEY
+} from './save/repository.js';
 
 const root = document.querySelector('[data-reboot-root]');
 const canvas = root?.querySelector('[data-reboot-canvas]');
@@ -11,6 +15,10 @@ if (!root || !canvas) throw new Error('H-17 reboot root and canvas are required'
 
 const renderer = createRenderer(canvas);
 const input = createInputRouter({ target: window });
+const session = createRebootSession({ storage: window.localStorage });
+const testHook = window.__ETHICS_TEST_HOOK__ === true
+  || window.sessionStorage.getItem('h17.testHook') === 'true'
+  || new URLSearchParams(window.location.search).get('testHook') === 'h17';
 const sceneRegistry = createSceneRegistry([
   ['school-night', () => createSchoolNightScene({ canvas, input, renderer })],
   ['disposal-fixture', () => createSchoolNightScene({ canvas, input, renderer })]
@@ -24,9 +32,15 @@ const sceneId = resolveBootScene({
   defaultId: 'school-night',
   fixtureIds: sceneRegistry.list(),
   search: window.location.search,
-  testHook: window.__ETHICS_TEST_HOOK__ === true
+  testHook
 });
 const status = root.querySelector('[data-reboot-status]');
+const recoveryNotice = root.querySelector('[data-recovery-notice]');
+
+if (session.getRecoveryNotice()) {
+  recoveryNotice.hidden = false;
+  recoveryNotice.textContent = session.getRecoveryNotice();
+}
 
 function syncStatus() {
   const state = app.getState();
@@ -62,12 +76,64 @@ input.attach();
 app.start(sceneId);
 syncStatus();
 
-if (window.__ETHICS_TEST_HOOK__ === true) {
+if (testHook) {
+  const testPanel = root.querySelector('[data-test-storage]');
+  const testOutput = testPanel.querySelector('[data-test-output]');
+  const legacyFixture = JSON.stringify({
+    version: 3,
+    visitedTopics: ['privacy'],
+    settings: { sound: false, motion: 'reduced', quality: 'low' }
+  });
+  const syncTestOutput = () => {
+    testOutput.textContent = JSON.stringify({
+      backup: session.getLegacyBackup(),
+      legacy: window.localStorage.getItem(LEGACY_V3_KEY),
+      notice: session.getRecoveryNotice(),
+      save: session.getState()
+    });
+  };
+  testPanel.hidden = false;
+  testPanel.querySelector('[data-test-seed-v3]').addEventListener('click', () => {
+    window.__ethicsReboot.clearStorageForTest();
+    window.localStorage.setItem(LEGACY_V3_KEY, legacyFixture);
+    window.location.reload();
+  });
+  testPanel.querySelector('[data-test-checkpoint]').addEventListener('click', () => {
+    session.update((state) => ({
+      ...state,
+      chapterProgress: { completed: [], current: 1, checkpoint: 'chapter-1:first-arena' }
+    }));
+    syncTestOutput();
+  });
+  testPanel.querySelector('[data-test-corrupt]').addEventListener('click', () => {
+    window.localStorage.setItem(V4_SAVE_KEY, '{bad');
+    window.location.reload();
+  });
   window.__ethicsReboot = Object.freeze({
+    clearStorageForTest: () => {
+      for (const key of [LEGACY_BACKUP_KEY, LEGACY_V3_KEY, V4_SAVE_KEY, V4_TEMP_KEY]) {
+        window.localStorage.removeItem(key);
+      }
+    },
+    corruptV4ForTest: (raw) => window.localStorage.setItem(V4_SAVE_KEY, raw),
     getState: () => app.getState(),
+    getSaveState: () => session.getState(),
+    getRecoveryNotice: () => session.getRecoveryNotice(),
+    getLegacyBackup: () => session.getLegacyBackup(),
     pause: () => { app.pause(); syncStatus(); },
     restart: () => { app.restart(); syncStatus(); },
     resume: () => { app.resume(); syncStatus(); },
+    seedLegacyForTest: (raw) => {
+      window.localStorage.removeItem(LEGACY_BACKUP_KEY);
+      window.localStorage.removeItem(V4_SAVE_KEY);
+      window.localStorage.removeItem(V4_TEMP_KEY);
+      window.localStorage.setItem(LEGACY_V3_KEY, raw);
+    },
+    setCheckpointForTest: (checkpoint) => session.update((state) => ({
+      ...state,
+      chapterProgress: { completed: [], current: 1, checkpoint }
+    })),
     sceneId
   });
+  syncTestOutput();
 }

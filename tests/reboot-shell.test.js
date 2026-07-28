@@ -5,6 +5,7 @@ import test from 'node:test';
 import { createAppLifecycle } from '../src/reboot/app/lifecycle.js';
 import { resolveBootScene } from '../src/reboot/app/fixtures.js';
 import { createInputRouter } from '../src/reboot/app/input.js';
+import { createRebootSession } from '../src/reboot/app/session.js';
 import { createSceneRegistry } from '../src/reboot/app/sceneRegistry.js';
 import { createDisposableRegistry } from '../src/reboot/render/dispose.js';
 
@@ -39,6 +40,32 @@ function createKeyboardEvent(type, code) {
   Object.defineProperty(event, 'repeat', { value: false });
   return event;
 }
+
+function createMemoryStorage(entries = []) {
+  const values = new Map(entries);
+  return {
+    getItem: (key) => values.get(key) ?? null,
+    removeItem: (key) => values.delete(key),
+    setItem: (key, value) => values.set(key, value)
+  };
+}
+
+test('reboot session boots v4 storage and persists checkpoint changes', () => {
+  // Given: 실제 브라우저 localStorage와 같은 최소 저장소가 있다.
+  const storage = createMemoryStorage();
+  const first = createRebootSession({ storage });
+
+  // When: 진행 체크포인트를 저장하고 새 세션으로 다시 연다.
+  first.update((state) => ({
+    ...state,
+    chapterProgress: { completed: [], current: 1, checkpoint: 'chapter-1:first-arena' }
+  }));
+  const continued = createRebootSession({ storage });
+
+  // Then: v4 진행이 실제 부트 경계에서 이어진다.
+  assert.equal(continued.getState().chapterProgress.checkpoint, 'chapter-1:first-arena');
+  assert.equal(continued.getRecoveryNotice(), null);
+});
 
 test('app lifecycle owns one frame loop through pause, resume, and restart', () => {
   // Given: one valid scene factory and an inspectable animation scheduler.
@@ -180,4 +207,12 @@ test('Vite builds isolated legacy and reboot entries with one Three chunk rule',
   assert.match(vite, /input:\s*\{[\s\S]*main:[\s\S]*reboot:/);
   assert.match(vite, /node_modules\/three[\s\S]*return 'three'/);
   assert.doesNotMatch(rebootEntry, /(?:\.\.\/)+main\.js|\/src\/main\.js/);
+  assert.match(rebootEntry, /createRebootSession\(\{ storage: window\.localStorage \}\)/);
+  assert.match(rebootEntry, /sessionStorage\.getItem\('h17\.testHook'\) === 'true'/);
+  assert.match(rebootEntry, /URLSearchParams\(window\.location\.search\)[\s\S]*testHook[\s\S]*h17/);
+  assert.match(rebootEntry, /seedLegacyForTest/);
+  assert.match(rebootEntry, /corruptV4ForTest/);
+  assert.match(rebootHtml, /data-recovery-notice/);
+  assert.match(rebootHtml, /data-test-storage[\s\S]*data-test-seed-v3[\s\S]*data-test-checkpoint[\s\S]*data-test-corrupt[\s\S]*data-test-output/);
+  assert.match(rebootEntry, /data-test-seed-v3[\s\S]*data-test-checkpoint[\s\S]*data-test-corrupt/);
 });

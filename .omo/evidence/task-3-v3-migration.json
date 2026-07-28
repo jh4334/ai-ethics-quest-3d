@@ -1,0 +1,30 @@
+{
+  "date": "2026-07-28",
+  "tool": "in-app browser",
+  "url": "http://127.0.0.1:5173/reboot.html?testHook=h17",
+  "seed": {
+    "legacyVersion": 3,
+    "settings": {
+      "sound": false,
+      "motion": "reduced",
+      "quality": "low"
+    }
+  },
+  "observed": {
+    "backupEqualsLegacyBytes": true,
+    "migratedSettingsOnly": true,
+    "checkpointBeforeReload": "chapter-1:first-arena",
+    "checkpointAfterReload": "chapter-1:first-arena",
+    "corruptRecoveryCheckpoint": "chapter-1:start",
+    "corruptRecoveryNotice": "손상된 저장을 복구하고 새 게임을 시작했습니다.",
+    "recoveryNoticeVisible": true,
+    "consoleWarnings": 0,
+    "consoleErrors": 0
+  },
+  "cleanup": {
+    "browserTabFinalized": true,
+    "viteServerStopped": true,
+    "port5173Closed": true
+  },
+  "result": "PASS"
+}

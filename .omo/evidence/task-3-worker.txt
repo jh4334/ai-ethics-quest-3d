@@ -1,0 +1,88 @@
+Task 3 worker evidence — save v4 and consequence models
+Date: 2026-07-28 (Asia/Seoul)
+
+Scope receipt
+- Owned and changed only: src/reboot/state/**, src/reboot/save/**,
+  tests/reboot-save.test.js, tests/reboot-consequences.test.js, and this evidence file.
+- Existing shared-worktree changes were observed before work and left untouched.
+- No package, legacy source, entry, render, character, plan, boulder, or ledger file was edited.
+- No commit was created.
+
+Baseline before implementation
+Command:
+  node --test tests/worldData.test.js tests/story.test.js
+Result:
+  PASS — 17 tests, 0 failures, duration 307.2367ms.
+
+RED
+Command:
+  node --test tests/reboot-save.test.js tests/reboot-consequences.test.js
+Result:
+  EXPECTED RED — both new test files failed because the v4 state/save modules did
+  not exist yet (ERR_MODULE_NOT_FOUND for src/reboot/state/model.js). This confirmed
+  the production boundary required by the tests before implementation.
+
+GREEN and deterministic reruns
+Command (run twice after implementation/refactor):
+  node --test tests/reboot-save.test.js tests/reboot-consequences.test.js
+Results:
+  PASS #1 — 15 tests, 0 failures, duration 208.3369ms.
+  PASS #2 — 15 tests, 0 failures, duration 200.1755ms.
+
+Full regression
+Command:
+  npm.cmd test
+Result:
+  PASS — 249 tests, 0 failures, duration 1131.9734ms.
+  This was run in the shared dirty worktree and includes concurrently added reboot
+  combat/level tests; no unrelated file was changed to obtain the pass.
+
+Manual QA channel (exact executed command)
+Command:
+  node --input-type=module -e "import('./src/reboot/save/repository.js').then(async m => { class S { constructor(entries){this.v=new Map(entries)} getItem(k){return this.v.has(k)?this.v.get(k):null} setItem(k,v){this.v.set(k,v)} removeItem(k){this.v.delete(k)} } const original=JSON.stringify({version:3,visitedTopics:['privacy'],collectedFragments:['privacy'],settings:{sound:false,motion:'reduced',quality:'low'}},null,2); const s=new S([[m.LEGACY_V3_KEY,original]]); const repo=m.createSaveRepository(s); const first=repo.boot(); const progressed={...first.state,chapterProgress:{completed:[],current:1,checkpoint:'chapter-1:arena'}}; repo.write(progressed); const continued=m.createSaveRepository(s).boot(); const backupBefore=s.getItem(m.LEGACY_BACKUP_KEY); s.setItem(m.V4_SAVE_KEY,'{bad'); const recovered=m.createSaveRepository(s).boot(); const reset=m.createSaveRepository(s).reset(); const stored=s.getItem(m.V4_SAVE_KEY); const forbidden=Object.keys(JSON.parse(stored)).some(k=>/correct|wise|morality/i.test(k)); const pass=backupBefore===original&&s.getItem(m.LEGACY_BACKUP_KEY)===original&&s.getItem(m.LEGACY_V3_KEY)===original&&continued.state.chapterProgress.checkpoint==='chapter-1:arena'&&recovered.state.chapterProgress.checkpoint==='chapter-1:start'&&reset.chapterProgress.checkpoint==='chapter-1:start'&&!forbidden; console.log(JSON.stringify({status:pass?'PASS':'FAIL',backupByteLength:backupBefore.length,backupUnchanged:s.getItem(m.LEGACY_BACKUP_KEY)===original,continuedCheckpoint:continued.state.chapterProgress.checkpoint,recoveredCheckpoint:recovered.state.chapterProgress.checkpoint,resetCheckpoint:reset.chapterProgress.checkpoint,forbiddenTopLevelKey:forbidden,settings:continued.state.settings})); if(!pass) process.exitCode=1; })"
+Output:
+  {"status":"PASS","backupByteLength":190,"backupUnchanged":true,"continuedCheckpoint":"chapter-1:arena","recoveredCheckpoint":"chapter-1:start","resetCheckpoint":"chapter-1:start","forbiddenTopLevelKey":false,"settings":{"motion":"reduced","quality":"low","sound":false}}
+Binary result:
+  PASS — original v3 bytes stayed unchanged, the v4 checkpoint continued after
+  relaunch, corrupt v4 recovered to a safe new campaign, reset stayed safe, only
+  the approved settings migrated, and no prohibited result key was present.
+
+Static safety probe
+Command:
+  rg -n "Math\.random|correct|wise|morality" src/reboot/state src/reboot/save
+Result:
+  PASS — no matches.
+
+Pure LOC measurement (blank lines and // comments excluded)
+- src/reboot/state/consequences.js: 76
+- src/reboot/state/model.js: 105
+- src/reboot/state/resultSummary.js: 44
+- src/reboot/save/codec.js: 24
+- src/reboot/save/legacyMigration.js: 30
+- src/reboot/save/repository.js: 69
+Result: PASS — every production source file is below 250 pure LOC.
+
+Adversarial coverage
+- Empty storage: fresh immutable v4 state is stored.
+- Existing v3 value: original source and namespaced backup are byte-for-byte equal.
+- Repeated migration: second boot is a no-op and does not rewrite the backup/save.
+- Settings-only migration: progress, evidence, Trust, and PATCH-like legacy fields
+  do not cross; only sound, motion, and quality do.
+- Malformed JSON/schema and future schema: safe new campaign plus non-blocking notice.
+- Unknown evidence ID: rejected at the state boundary and normalized safely.
+- Corrupt v4 after reset: backup survives and the campaign recovers safely.
+- Interrupted write: primary bytes remain committed while validated temp bytes remain
+  available; a clean retry commits and removes temp.
+- Corrupted temp: cannot replace a valid committed save and is removed on boot.
+- Idempotent write: writing identical canonical state performs no new setItem calls.
+- Stale migration: a pre-existing backup is never replaced by a later legacy value.
+- Repeated reset/boot: first backup remains unchanged across every boundary.
+- Misleading success: exact stored strings, not only parsed values, were inspected.
+- Flake: focused tests passed twice in independent processes.
+- Dirty worktree isolation: unrelated concurrent reboot files were observed and preserved.
+- Prompt injection: N/A — no external or untrusted instruction-bearing content was read.
+- Hung command: N/A — every command completed normally; no server or wait loop was used.
+
+Cleanup receipt
+- No server was started, no port was opened, and no temporary script/file was created.
+- The in-memory manual-QA storage existed only inside the completed Node process.
