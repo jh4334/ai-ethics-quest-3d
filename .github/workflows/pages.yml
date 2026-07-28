@@ -9,6 +9,11 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      deploy_ref:
+        description: '배포할 검증 완료 태그 또는 커밋(비우면 main)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -24,6 +29,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.deploy_ref || github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -31,6 +38,7 @@ jobs:
       - name: 의존성 설치
         run: npm ci
       - name: 고정 Chromium 설치
+        if: inputs.deploy_ref == ''
         run: npx playwright install --with-deps chromium
       - name: 단위 테스트
         run: npm test
@@ -39,8 +47,10 @@ jobs:
       - name: 스모크 테스트
         run: npm run smoke
       - name: 수직 슬라이스 증거 게이트
+        if: inputs.deploy_ref == ''
         run: npm run slice:gate
       - name: reboot 브라우저·시각·오프라인 테스트
+        if: inputs.deploy_ref == ''
         run: npm run e2e
       - uses: actions/upload-pages-artifact@v3
         if: github.event_name != 'pull_request'

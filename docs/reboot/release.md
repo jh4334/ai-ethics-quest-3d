@@ -25,7 +25,7 @@ GitHub Pages는 `main`의 위 게이트가 모두 성공한 동일 커밋만 배
 롤백 기준 태그는 `pre-reboot-fa1ac50`이며 대상 커밋은 `fa1ac503d7d21dce0ff7c43b1268fd1207f24f4c`이다. 아래 명령은 Git 기록이나 브라우저 저장을 삭제하지 않고 해당 태그의 검증·배포 워크플로를 다시 실행한다.
 
 ```bash
-gh workflow run pages.yml --ref pre-reboot-fa1ac50
+gh workflow run pages.yml --ref main -f deploy_ref=pre-reboot-fa1ac50
 ```
 
 현재 `main`을 다시 배포하는 명령:

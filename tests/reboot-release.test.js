@@ -19,7 +19,7 @@ test('release docs record the exact non-destructive rollback and current five ch
   const readme = read('README.md');
   assert.match(release, /pre-reboot-fa1ac50/);
   assert.match(release, /fa1ac503d7d21dce0ff7c43b1268fd1207f24f4c/);
-  assert.match(release, /gh workflow run pages\.yml --ref pre-reboot-fa1ac50/);
+  assert.match(release, /gh workflow run pages\.yml --ref main -f deploy_ref=pre-reboot-fa1ac50/);
   assert.match(release, /h17\.null\.save\.v4/);
   assert.match(release, /h17\.legacy\.v3\.backup/);
   assert.doesNotMatch(release, /git reset --hard|localStorage\.clear\(\)/);
@@ -33,6 +33,8 @@ test('Pages CI gates unit, build, smoke, slice, browser, visual, and offline cov
   for (const command of ['npm test', 'npm run build', 'npm run smoke', 'npm run slice:gate', 'npm run e2e']) {
     assert.match(workflow, new RegExp(command.replaceAll(' ', '\\s+')));
   }
+  assert.match(workflow, /deploy_ref/);
+  assert.match(workflow, /ref: \$\{\{ inputs\.deploy_ref \|\| github\.ref \}\}/);
   assert.match(read('tests/reboot-e2e/reboot.spec.js'), /오프라인 재실행/);
   assert.match(read('playwright.config.js'), /reducedMotion: 'reduce'/);
   assert.match(read('tests/reboot-e2e/campaign.spec.js'), /운영 루트는 저장된 2장/);
