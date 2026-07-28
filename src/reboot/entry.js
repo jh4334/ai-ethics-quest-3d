@@ -30,6 +30,7 @@ if (testHook && searchParams.get('viewport') === 'touch') {
 const sceneUi = Object.freeze({
   action: root.querySelector('[data-combat-action]'),
   chain: root.querySelector('[data-combat-chain]'),
+  enemy: root.querySelector('[data-enemy-status]'),
   health: root.querySelector('[data-combat-health]'),
   objective: root.querySelector('[data-route-objective]')
 });
@@ -41,13 +42,22 @@ const routeFixtures = Object.freeze([
   ['route-pursuit', { x: 0, y: -76 }],
   ['route-gym', { x: 0, y: -104 }]
 ]);
-const createScene = (startPosition = { x: 0, y: 0 }) => (
-  createSchoolNightScene({ canvas, input, renderer, startPosition, ui: sceneUi })
+const encounterFixtures = Object.freeze([
+  ['enemy-mixed', { x: -7, y: -39 }, {}],
+  ['enemy-blocked', { x: -7, y: -39 }, {
+    blockAfterTick: 30,
+    delayedBlockers: [{ id: 'qa-locker', maxX: -4, maxZ: -37, minX: -6, minZ: -40 }]
+  }],
+  ['enemy-offscreen', { x: -7, y: -39 }, { offscreenAfterTick: 30 }]
+]);
+const createScene = (startPosition = { x: 0, y: 0 }, encounterOptions = {}) => (
+  createSchoolNightScene({ canvas, encounterOptions, input, renderer, startPosition, ui: sceneUi })
 );
 const sceneRegistry = createSceneRegistry([
   ['school-night', () => createScene()],
   ['disposal-fixture', () => createScene()],
-  ...routeFixtures.map(([id, startPosition]) => [id, () => createScene(startPosition)])
+  ...routeFixtures.map(([id, startPosition]) => [id, () => createScene(startPosition)]),
+  ...encounterFixtures.map(([id, startPosition, options]) => [id, () => createScene(startPosition, options)])
 ]);
 const scheduler = Object.freeze({
   cancel: (id) => window.cancelAnimationFrame(id),

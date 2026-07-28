@@ -103,7 +103,8 @@ test('school scene uses the imported character pipeline instead of primitive ava
   // Then: no capsule or other primitive avatar remains in the reboot runtime.
   assert.match(source, /createCharacterCast/);
   assert.match(source, /createSchoolRoute/);
-  assert.match(source, /createGameRuntime/);
+  assert.match(source, /createEncounterGameRuntime/);
+  assert.match(source, /createEnemyCast/);
   assert.match(source, /createCombatPresentationAdapter/);
   assert.match(source, /createCameraController[\s\S]*updateCameraController/);
   assert.match(source, /canvas\.dataset\.lastAction/);

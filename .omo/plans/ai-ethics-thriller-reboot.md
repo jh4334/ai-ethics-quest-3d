@@ -410,7 +410,7 @@ Primary references:
 
   **Commit**: YES | Message: `feat(level): author attendance-zero school route` | Files: `src/reboot/content/levels/*`, `src/reboot/level/*`, `src/reboot/camera/*`, `tests/reboot-level.test.js`
 
-- [ ] 6. Implement the Eraser and Stamper enemies plus two decision-led encounters
+- [x] 6. Implement the Eraser and Stamper enemies plus two decision-led encounters
 
   **What to do**: Create immutable enemy/move definitions and runtime instances. Eraser owns readable close pressure; Stamper owns reflected ranged commands. Separate perception, intent, motion, contact, presentation, and feedback. Compose a solo tutorial, then a mixed arena where reflecting Stamper shots breaks Eraser armor. Cap committed attackers by device class and create deterministic fixtures for every move/state.
 
@@ -425,9 +425,9 @@ Primary references:
   - [Enemy AI](https://github.com/MengTo/Skills/blob/21b278c62f49f3ce3d8c8ecbcc84cbcd534f3e49/agent-skills/game-development/tune-enemy-ai/SKILL.md) — perception/intent/motion boundary.
 
   **Acceptance Criteria**:
-  - [ ] Content validation covers unique IDs, legal timings/ranges, sockets, colliders, rewards, and feedback hooks.
-  - [ ] Deterministic tests cover acquire/loss, obstruction, reposition, attack, recover, interrupt, stagger, defeat/reset, and two-instance sharing.
-  - [ ] No more than 3 desktop or 2 mobile enemies may own committed attacks simultaneously.
+  - [x] Content validation covers unique IDs, legal timings/ranges, sockets, colliders, rewards, and feedback hooks.
+  - [x] Deterministic tests cover acquire/loss, obstruction, reposition, attack, recover, interrupt, stagger, defeat/reset, and two-instance sharing.
+  - [x] No more than 3 desktop or 2 mobile enemies may own committed attacks simultaneously.
 
   **QA Scenarios**:
   ```text

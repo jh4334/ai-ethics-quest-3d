@@ -27,8 +27,9 @@ function prepareModel(model, { tint, tintOutfit }, ownedMaterials) {
       const isSkin = /regular_(female|male)/i.test(material.name);
       if (tintOutfit && !isSkin && material.color) material.color.lerp(tintColor, 0.78);
       if (material.emissive) {
-        material.emissive.set(isSkin ? 0x18131a : 0x151b2b);
-        material.emissiveIntensity = isSkin ? 0.35 : 0.55;
+        if (isSkin) material.emissive.set(0x30242a);
+        else material.emissive.copy(tintColor);
+        material.emissiveIntensity = isSkin ? 0.45 : 0.55;
       }
       ownedMaterials.add(material);
       materials.push(material);

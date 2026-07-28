@@ -240,13 +240,16 @@ test('Vite builds isolated legacy and reboot entries with one Three chunk rule',
   for (const fixture of ['classroom', 'corridor', 'first-arena', 'memory', 'pursuit', 'gym']) {
     assert.match(rebootEntry, new RegExp(`route-${fixture}`));
   }
+  for (const fixture of ['enemy-mixed', 'enemy-blocked', 'enemy-offscreen']) {
+    assert.match(rebootEntry, new RegExp(fixture));
+  }
   assert.match(rebootEntry, /sessionStorage\.getItem\('h17\.testHook'\) === 'true'/);
   assert.match(rebootEntry, /URLSearchParams\(window\.location\.search\)[\s\S]*testHook[\s\S]*h17/);
   assert.match(rebootEntry, /viewport[\s\S]*touch[\s\S]*390px/);
   assert.match(rebootEntry, /seedLegacyForTest/);
   assert.match(rebootEntry, /corruptV4ForTest/);
   assert.match(rebootHtml, /data-recovery-notice/);
-  assert.match(rebootHtml, /data-combat-health[\s\S]*data-combat-action[\s\S]*data-combat-chain[\s\S]*data-route-objective/);
+  assert.match(rebootHtml, /data-combat-health[\s\S]*data-combat-action[\s\S]*data-combat-chain[\s\S]*data-enemy-status[\s\S]*data-route-objective/);
   assert.match(rebootHtml, /data-test-storage[\s\S]*data-test-seed-v3[\s\S]*data-test-checkpoint[\s\S]*data-test-corrupt[\s\S]*data-test-output/);
   assert.match(rebootEntry, /data-test-seed-v3[\s\S]*data-test-checkpoint[\s\S]*data-test-corrupt/);
 });

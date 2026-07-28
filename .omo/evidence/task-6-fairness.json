@@ -1,0 +1,43 @@
+{
+  "capturedAt": "2026-07-28T00:00:00+09:00",
+  "mixed": {
+    "data-eraser-armor": "0",
+    "data-armor-breaks": "1",
+    "data-reflections": "1",
+    "data-player-hits": "0",
+    "data-characters": "ready",
+    "data-enemies": "ready",
+    "data-character-count": "6",
+    "actualKey": "KeyK",
+    "telegraph": "windup:13",
+    "hp": "HP 100"
+  },
+  "blocked": {
+    "data-player-hits": "0",
+    "data-cancelled-attacks": "1",
+    "data-blocker-active": "true",
+    "data-last-enemy-event": "attack-cancelled",
+    "data-enemy-phases": "eraser-mixed:idle,stamper-mixed:reposition",
+    "data-characters": "ready",
+    "data-enemies": "ready",
+    "data-character-count": "6",
+    "data-combat-tick": "131",
+    "hp": "HP 100",
+    "logs": []
+  },
+  "offscreen": {
+    "data-player-hits": "0",
+    "data-cancelled-attacks": "1",
+    "data-offscreen-active": "true",
+    "data-last-enemy-event": "attack-cancelled",
+    "data-enemy-phases": "eraser-mixed:idle,stamper-mixed:reposition",
+    "data-characters": "ready",
+    "data-enemies": "ready",
+    "data-character-count": "6",
+    "data-combat-tick": "174",
+    "hp": "HP 100",
+    "logs": []
+  },
+  "visualArtifact": ".omo/evidence/task-6-mixed-arena.png",
+  "note": "Plan requested webm; deterministic state log plus PNG is stored because this browser surface exposes screenshots, not video capture."
+}
