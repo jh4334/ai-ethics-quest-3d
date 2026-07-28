@@ -1,4 +1,5 @@
-const ASSET_ROOT = '/assets/reboot/characters';
+// GitHub Pages의 저장소 하위 경로에서도 현재 문서를 기준으로 에셋을 찾는다.
+const ASSET_ROOT = './assets/reboot/characters';
 
 export const CHARACTER_ASSET_PATHS = Object.freeze({
   animationLibrary1: `${ASSET_ROOT}/animations/ual1-standard.glb`,

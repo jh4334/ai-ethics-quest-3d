@@ -85,7 +85,8 @@ test('runtime character assets exist locally and are documented as CC0', () => {
   // When: paths and provenance are checked from disk.
   // Then: the build is self-contained and every external pack is attributed.
   for (const path of Object.values(CHARACTER_ASSET_PATHS)) {
-    assert.equal(existsSync(new URL(`../public${path}`, import.meta.url)), true, path);
+    assert.match(path, /^\.\/assets\//, `배포 하위 경로를 보존해야 함: ${path}`);
+    assert.equal(existsSync(new URL(`../public/${path.slice(2)}`, import.meta.url)), true, path);
   }
   const licenses = readFileSync(new URL('../ASSET_LICENSES.md', import.meta.url), 'utf8');
   assert.match(licenses, /Universal Base Characters/i);
