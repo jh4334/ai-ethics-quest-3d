@@ -3,6 +3,9 @@ import { resolveBootScene } from './app/fixtures.js';
 import { createInputRouter } from './app/input.js';
 import { createRebootSession } from './app/session.js';
 import { createSceneRegistry } from './app/sceneRegistry.js';
+import { createTouchControls } from './input/touchControls.js';
+import { createVisibilityPause } from './input/visibilityPause.js';
+import { applyViewportFixture, configureRuntime, withRuntimeSettings } from './settings/runtime.js';
 import { createRenderer } from './render/renderer.js';
 import { createSchoolNightScene } from './render/schoolNightScene.js';
 import {
@@ -16,34 +19,23 @@ const root = document.querySelector('[data-reboot-root]');
 const canvas = root?.querySelector('[data-reboot-canvas]');
 if (!root || !canvas) throw new Error('H-17 reboot root and canvas are required');
 
-const renderer = createRenderer(canvas);
-const input = createInputRouter({ target: window });
 const session = createRebootSession({ storage: window.localStorage });
 const searchParams = new URLSearchParams(window.location.search);
 const testHook = window.__ETHICS_TEST_HOOK__ === true
   || window.sessionStorage.getItem('h17.testHook') === 'true'
   || searchParams.get('testHook') === 'h17';
-if (testHook && searchParams.get('viewport') === 'touch') {
-  root.style.width = '390px';
-  root.style.height = '720px';
-  root.style.minHeight = '720px';
-  canvas.style.width = '390px';
-  canvas.style.height = '720px';
-}
+const runtimeSettings = configureRuntime({ canvas, root, savedSettings: session.getState().settings, searchParams, testHook });
+const renderer = createRenderer(canvas, { quality: runtimeSettings.quality, windowRef: window });
+const input = createInputRouter({ target: window });
+const touchControls = createTouchControls({ input, root });
 const sceneUi = Object.freeze({
-  action: root.querySelector('[data-combat-action]'),
-  chain: root.querySelector('[data-combat-chain]'),
-  enemy: root.querySelector('[data-enemy-status]'),
-  feedback: root.querySelector('[data-feedback-prompts]'),
-  health: root.querySelector('[data-combat-health]'),
-  objective: root.querySelector('[data-route-objective]'),
-  radio: root.querySelector('[data-radio-subtitle]'),
-  radioSpeaker: root.querySelector('[data-radio-speaker]'),
-  radioText: root.querySelector('[data-radio-text]'),
-  result: root.querySelector('[data-chapter-result]'),
+  action: root.querySelector('[data-combat-action]'), chain: root.querySelector('[data-combat-chain]'),
+  enemy: root.querySelector('[data-enemy-status]'), feedback: root.querySelector('[data-feedback-prompts]'),
+  health: root.querySelector('[data-combat-health]'), objective: root.querySelector('[data-route-objective]'),
+  radio: root.querySelector('[data-radio-subtitle]'), radioSpeaker: root.querySelector('[data-radio-speaker]'),
+  radioText: root.querySelector('[data-radio-text]'), result: root.querySelector('[data-chapter-result]'),
   resultAction: root.querySelector('[data-result-action]'),
-  resultConsequence: root.querySelector('[data-result-consequence]'),
-  resultReversal: root.querySelector('[data-result-reversal]')
+  resultConsequence: root.querySelector('[data-result-consequence]'), resultReversal: root.querySelector('[data-result-reversal]')
 });
 const routeFixtures = Object.freeze([
   ['route-classroom', { x: 0, y: -1 }],
@@ -99,8 +91,11 @@ const createScene = (
     input,
     renderer,
     startPosition,
-    storyOptions: storyOptions ?? {
-      campaign: session.getState(),
+    storyOptions: storyOptions ? {
+      ...storyOptions,
+      campaign: withRuntimeSettings(storyOptions.campaign, runtimeSettings)
+    } : {
+      campaign: withRuntimeSettings(session.getState(), runtimeSettings),
       persist: (campaign) => session.update(() => campaign)
     },
     ui: sceneUi
@@ -150,6 +145,11 @@ function togglePause() {
   else app.pause();
   syncStatus();
 }
+const visibilityPause = createVisibilityPause({
+  documentRef: document,
+  pause: () => app.pause(),
+  sync: syncStatus
+});
 
 input.subscribe(({ action, active }) => {
   if (!active) return;
@@ -165,17 +165,22 @@ root.querySelector('[data-restart]')?.addEventListener('click', () => {
   syncStatus();
 });
 window.addEventListener('pagehide', () => {
+  visibilityPause.detach();
+  touchControls.detach();
   input.detach();
   app.destroy();
   renderer.dispose();
 }, { once: true });
 
 input.attach();
+touchControls.attach();
+visibilityPause.attach();
 app.start(sceneId);
 syncStatus();
 
 if (testHook) {
   const testPanel = root.querySelector('[data-test-storage]');
+  const viewportTools = root.querySelector('[data-test-viewport-tools]');
   const testOutput = testPanel.querySelector('[data-test-output]');
   const legacyFixture = JSON.stringify({
     version: 3,
@@ -191,6 +196,14 @@ if (testHook) {
     });
   };
   testPanel.hidden = searchParams.get('tools') === 'hidden';
+  viewportTools.hidden = searchParams.get('orientationTools') !== 'show';
+  for (const button of viewportTools.querySelectorAll('[data-test-viewport]')) {
+    button.addEventListener('click', () => {
+      if (applyViewportFixture({ canvas, name: button.dataset.testViewport, root })) {
+        window.dispatchEvent(new Event('resize'));
+      }
+    });
+  }
   testPanel.querySelector('[data-test-seed-v3]').addEventListener('click', () => {
     window.__ethicsReboot.clearStorageForTest();
     window.localStorage.setItem(LEGACY_V3_KEY, legacyFixture);
@@ -219,6 +232,7 @@ if (testHook) {
     getRecoveryNotice: () => session.getRecoveryNotice(),
     getLegacyBackup: () => session.getLegacyBackup(),
     getSceneDebugState: () => app.getSceneDebugState(),
+    getTouchDebugState: () => touchControls.getDebugState(),
     pause: () => { app.pause(); syncStatus(); },
     restart: () => { app.restart(); syncStatus(); },
     resume: () => { app.resume(); syncStatus(); },
@@ -227,6 +241,11 @@ if (testHook) {
       window.localStorage.removeItem(V4_SAVE_KEY);
       window.localStorage.removeItem(V4_TEMP_KEY);
       window.localStorage.setItem(LEGACY_V3_KEY, raw);
+    },
+    setViewportForTest: (name) => {
+      const changed = applyViewportFixture({ canvas, name, root });
+      if (changed) window.dispatchEvent(new Event('resize'));
+      return changed;
     },
     setCheckpointForTest: (checkpoint) => session.update((state) => ({
       ...state,

@@ -2,23 +2,21 @@ import * as THREE from 'three';
 
 import { createEncounterGameRuntime } from '../app/encounterGameRuntime.js';
 import { createBossGameRuntime } from '../app/bossGameRuntime.js';
-import { resolveBossVictory } from '../bosses/rewards.js';
+import { createPatchSelector } from '../app/patchSelection.js';
 import { addCameraShake, createCameraController, getFramingReport } from '../camera/controller.js';
 import { createCharacterCast } from '../characters/cast.js';
 import { chapterOneLevel } from '../content/levels/chapter1.js';
 import { createFeedbackDirector } from '../feedback/director.js';
 import { createFeedbackCounters } from '../feedback/counters.js';
 import { presentSchoolFeedback } from '../feedback/schoolFeedback.js';
+import { createScenePerformanceProbe } from '../perf/sceneProbe.js';
 import { createChapterOneDirector } from '../story/chapterOneDirector.js';
 import { createCombatPresentationAdapter } from './combatPresentation.js';
 import { createBossCast } from './bossCast.js';
 import { createDisposableRegistry } from './dispose.js';
 import { createEnemyCast } from './enemyCast.js';
 import { createSchoolRoute } from './schoolRoute.js';
-import {
-  closestRouteSegment, getBossCameraTargets, getEncounterCameraTargets, getSceneViewport,
-  updateSchoolCamera
-} from './schoolSceneCamera.js';
+import { closestRouteSegment, getBossCameraTargets, getEncounterCameraTargets, getSceneViewport, updateSchoolCamera } from './schoolSceneCamera.js';
 import { loadSchoolSceneCast } from './schoolSceneCastLoader.js';
 import { createSchoolSceneHud } from './schoolSceneHud.js';
 
@@ -32,7 +30,7 @@ export function createSchoolNightScene({
   scene.fog = new THREE.Fog(0x050918, 24, 55);
 
   const camera = new THREE.PerspectiveCamera(44, 1, 0.1, 90);
-  const route = resources.register(createSchoolRoute({ level: chapterOneLevel, scene }), 'school-route');
+  const route = resources.register(createSchoolRoute({ level: chapterOneLevel, lightLimit: 3, scene }), 'school-route');
   const cast = resources.register(createCharacterCast({ scene }), 'character-cast');
   const enemyCast = resources.register(createEnemyCast({ scene }), 'enemy-cast');
   const bossCast = bossOptions.enabled
@@ -55,6 +53,7 @@ export function createSchoolNightScene({
     consequencePath: story.getState().memoryOutcome ?? 'secure'
   }) : null;
   const feedback = resources.register(createFeedbackDirector({
+    capacity: renderer.userData.rebootQuality.feedbackCapacity,
     motion: story.getState().campaign.settings.motion,
     scene,
     sound: story.getState().campaign.settings.sound,
@@ -62,9 +61,9 @@ export function createSchoolNightScene({
   }), 'combat-feedback');
   const feedbackCounters = createFeedbackCounters();
   scene.add(new THREE.HemisphereLight(0xb5c6ff, 0x271626, 2.35));
+  const performanceProbe = createScenePerformanceProbe({ feedback, renderer, scene, windowRef });
 
-  let entered = false;
-  let unsubscribeInput = null;
+  let entered = false, unsubscribeInput = null;
   let currentSegment = closestRouteSegment(chapterOneLevel.segments, startPosition.y);
   let lastEvents = [];
   let lastEnemyEvents = [];
@@ -79,12 +78,14 @@ export function createSchoolNightScene({
     : getEncounterCameraTargets(lastFrame, route.routeCues[initialCueIndex], game.getState().encounter);
   let cameraState = createCameraController(activeTargets, getSceneViewport(canvas));
   const hud = createSchoolSceneHud({ canvas, ui });
+  const selectPatch = createPatchSelector({ bossGame, bossOptions, canvas, story, storyOptions });
 
   function resize() {
     const viewport = getSceneViewport(canvas);
     camera.aspect = viewport.width / viewport.height;
     camera.updateProjectionMatrix();
     renderer.setSize(viewport.width, viewport.height, false);
+    performanceProbe.reset();
   }
 
   function syncHud() {
@@ -102,6 +103,8 @@ export function createSchoolNightScene({
       lastEnemyEvents,
       lastEvents,
       offscreenActive: Number.isInteger(offscreenAfterTick) && encounter.tick >= offscreenAfterTick,
+      performanceState: performanceProbe.report(),
+      qualityProfile: renderer.userData.rebootQuality,
       radioLine: story.getRadioLine(),
       resultVisible,
       routeSegmentId: currentSegment.id,
@@ -114,6 +117,10 @@ export function createSchoolNightScene({
   function queueAction({ action, active }) {
     if (!active) return;
     feedback.resumeAudio();
+    if (action === 'camera-reset') {
+      cameraState = createCameraController(activeTargets, getSceneViewport(canvas));
+      return;
+    }
     if (action === 'purge') {
       story.memoryAction('purge');
       return;
@@ -122,18 +129,6 @@ export function createSchoolNightScene({
     const targetId = ['trace', 'secure'].includes(action) ? 'memory-backup' : null;
     game.queueAction(action, targetId);
     bossGame?.queueAction(action);
-  }
-
-  function selectPatch(patchId) {
-    if (!bossGame || bossGame.getState().status !== 'victory') return false;
-    const reward = resolveBossVictory(story.getState().campaign, bossGame.getState(), patchId);
-    storyOptions.persist?.(reward.state);
-    resultVisible = true;
-    bossOptions.onPatchResolved?.();
-    canvas.dataset.patchChoice = patchId;
-    canvas.dataset.savedChapter = String(reward.state.chapterProgress.current);
-    canvas.dataset.savedEvidenceCount = String(reward.state.evidence.length);
-    return true;
   }
 
   return Object.freeze({
@@ -181,6 +176,7 @@ export function createSchoolNightScene({
         }),
         enemies: enemyCast.getDebugState(),
         feedback: feedback.getDebugState(),
+        performance: performanceProbe.report(),
         enemyEventTypes: Object.freeze(lastEnemyEvents.map((event) => event.type)),
         encounter: game.getState().encounter,
         eventTypes: Object.freeze(lastEvents.map((event) => event.type)),
@@ -236,7 +232,9 @@ export function createSchoolNightScene({
         bossCast.update(delta, bossResult.state);
         if (!bossResolved && bossResult.state.status === 'victory') {
           bossResolved = story.completeBoss();
-          if (bossResolved) bossOptions.onPatchReady?.(selectPatch);
+          if (bossResolved) bossOptions.onPatchReady?.((patchId) => {
+            if (selectPatch(patchId)) resultVisible = true;
+          });
         }
       }
       const feedbackFrame = presentSchoolFeedback({
@@ -255,6 +253,7 @@ export function createSchoolNightScene({
       cameraState = cameraFrame.cameraState;
       syncHud();
       renderer.render(scene, camera);
+      performanceProbe.record(delta);
     }
   });
 }

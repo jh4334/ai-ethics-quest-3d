@@ -4,6 +4,7 @@ export const DEFAULT_BINDINGS = Object.freeze({
   ArrowRight: 'move-right',
   ArrowUp: 'move-up',
   Escape: 'pause',
+  KeyC: 'camera-reset',
   KeyE: 'trace',
   KeyF: 'secure',
   KeyJ: 'attack',
@@ -16,6 +17,20 @@ export const DEFAULT_BINDINGS = Object.freeze({
   KeyW: 'move-up',
   Space: 'dash'
 });
+
+const VALID_ACTIONS = new Set(Object.values(DEFAULT_BINDINGS));
+
+export function normalizeKeyboardBindings(overrides = {}) {
+  const bindings = { ...DEFAULT_BINDINGS };
+  for (const [code, action] of Object.entries(overrides)) {
+    if (!/^(?:Arrow(?:Down|Left|Right|Up)|Escape|Space|Key[A-Z])$/.test(code) || !VALID_ACTIONS.has(action)) continue;
+    for (const [knownCode, knownAction] of Object.entries(bindings)) {
+      if (knownAction === action) delete bindings[knownCode];
+    }
+    bindings[code] = action;
+  }
+  return Object.freeze(bindings);
+}
 
 export function createInputRouter({ bindings = DEFAULT_BINDINGS, target }) {
   const active = new Set();

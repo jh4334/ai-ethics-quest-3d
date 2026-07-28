@@ -46,7 +46,7 @@ function toCollider(entry) {
   });
 }
 
-export function createSchoolRoute({ level, scene }) {
+export function createSchoolRoute({ level, lightLimit = Number.POSITIVE_INFINITY, scene }) {
   if (!scene || typeof scene.add !== 'function') {
     throw new TypeError('학교 경로를 추가할 Three.js 장면이 필요합니다.');
   }
@@ -139,7 +139,8 @@ export function createSchoolRoute({ level, scene }) {
   addBoxes(group, geometry, cueMaterial, 'route-cue', cueBoxes);
   addBoxes(group, geometry, checkpointMaterial, 'checkpoint', checkpointBoxes);
 
-  for (const entry of level.layers.localLight) {
+  const renderedLights = level.layers.localLight.slice(0, Math.max(0, lightLimit));
+  for (const entry of renderedLights) {
     const light = new THREE.PointLight(entry.color, 1.35, 10, 2);
     light.position.set(entry.position.x, entry.position.y, entry.position.z);
     light.castShadow = false;
@@ -203,6 +204,7 @@ export function createSchoolRoute({ level, scene }) {
         encounterIds: level.layers.encounter.map((entry) => entry.id),
         localLightIds: localLights.map((entry) => entry.id),
         localLights,
+        renderedLightIds: renderedLights.map((entry) => entry.id),
         navigationIds: level.layers.navigation.map((entry) => entry.id),
         occluders,
         routeCues,

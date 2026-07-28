@@ -1,0 +1,220 @@
+{
+  "generatedAt": "2026-07-28T15:01:28.064Z",
+  "route": "boss-secure",
+  "input": {
+    "touchBossCompletion": [
+      {
+        "action": "반사",
+        "hp": "210"
+      },
+      {
+        "action": "반사",
+        "hp": "180"
+      },
+      {
+        "action": "추적",
+        "hp": "150"
+      },
+      {
+        "action": "추적",
+        "hp": "120"
+      },
+      {
+        "action": "공격",
+        "hp": "80"
+      },
+      {
+        "action": "공격",
+        "hp": "40"
+      },
+      {
+        "action": "공격",
+        "hp": "0"
+      }
+    ],
+    "cameraResetPreservedSave": true,
+    "virtualStick": {
+      "automatedBrowserDrag": "browser locator API does not expose dispatchEvent",
+      "deterministicUnitCoverage": true
+    },
+    "buttons": [
+      "공격",
+      "회피",
+      "반사",
+      "추적",
+      "보호",
+      "삭제",
+      "카메라",
+      "일시정지"
+    ]
+  },
+  "orientation": {
+    "portrait": {
+      "viewport": "portrait",
+      "p95": "16.7",
+      "drawCalls": "33",
+      "triangles": "54610",
+      "lights": "4",
+      "particles": "2",
+      "dpr": "1",
+      "quality": "low",
+      "logs": []
+    },
+    "landscape": {
+      "viewport": "landscape",
+      "hp": "240",
+      "tick": "1351",
+      "p95": "8.5",
+      "drawCalls": "29",
+      "triangles": "54542",
+      "lights": "4",
+      "particles": "4",
+      "dpr": "1",
+      "attackVisible": true,
+      "logs": []
+    },
+    "liveRotationPreservedState": {
+      "before": {
+        "hp": "240",
+        "tick": "1036"
+      },
+      "after": {
+        "viewport": "landscape",
+        "hp": "240",
+        "tick": "1351",
+        "p95": "8.5",
+        "drawCalls": "29",
+        "triangles": "54542",
+        "lights": "4",
+        "particles": "4",
+        "dpr": "1",
+        "attackVisible": true,
+        "logs": []
+      }
+    },
+    "completedRunRotation": {
+      "viewport": "landscape",
+      "rootStyle": "--fixture-width: 1180px; width: 1180px; height: 820px; min-height: 820px;",
+      "bossStatus": "victory",
+      "bossHp": "0",
+      "patchVisible": true,
+      "p95": "33.4",
+      "drawCalls": "25",
+      "triangles": "54380",
+      "lights": "4",
+      "particles": "0"
+    },
+    "patchSelection": {
+      "patchChoice": "reflect-arc",
+      "savedChapter": "2",
+      "savedEvidenceCount": "2",
+      "resultVisible": true,
+      "logs": []
+    },
+    "portraitRepeat": {
+      "heapBytes": 95345435,
+      "p95": 8.5,
+      "drawCalls": 31,
+      "triangles": 54542,
+      "lights": 4,
+      "particles": 2,
+      "dpr": 1,
+      "quality": "low"
+    }
+  },
+  "budgets": {
+    "p95FrameMs": {
+      "limit": 33.3,
+      "portrait": 16.7,
+      "landscape": 8.5
+    },
+    "drawCalls": {
+      "limit": 250,
+      "portrait": 33,
+      "landscape": 29
+    },
+    "triangles": {
+      "limit": 150000,
+      "portrait": 54610,
+      "landscape": 54542
+    },
+    "lights": {
+      "limit": 4,
+      "portrait": 4,
+      "landscape": 4
+    },
+    "feedbackParticles": {
+      "limit": 250,
+      "portrait": 2,
+      "landscape": 4
+    },
+    "dpr": {
+      "limit": 1.75,
+      "portrait": 1,
+      "landscape": 1
+    },
+    "simulationHz": 60,
+    "heapBytes": {
+      "limit": 134217728,
+      "portrait": 95345435
+    }
+  },
+  "persistedSave": {
+    "backup": "{\"version\":3,\"visitedTopics\":[\"privacy\"],\"settings\":{\"sound\":false,\"motion\":\"reduced\",\"quality\":\"low\"}}",
+    "legacy": "{\"version\":3,\"visitedTopics\":[\"privacy\"],\"settings\":{\"sound\":false,\"motion\":\"reduced\",\"quality\":\"low\"}}",
+    "notice": null,
+    "save": {
+      "schemaVersion": 4,
+      "integrity": {
+        "secured": 2,
+        "lost": 0
+      },
+      "exposure": {
+        "contained": 2,
+        "disclosed": 0
+      },
+      "trust": {
+        "dot": -8,
+        "haru": 12,
+        "lumen": 0,
+        "yoonseo": 0
+      },
+      "chapterProgress": {
+        "completed": [
+          1
+        ],
+        "current": 2,
+        "checkpoint": "chapter-2:start"
+      },
+      "patchChoice": "reflect-arc",
+      "evidence": [
+        {
+          "action": "secure",
+          "chapter": 1,
+          "evidenceId": "haru-memory-backup"
+        },
+        {
+          "action": "secure",
+          "chapter": 1,
+          "evidenceId": "player-approval-record"
+        }
+      ],
+      "settings": {
+        "motion": "reduced",
+        "quality": "low",
+        "sound": false
+      }
+    }
+  },
+  "consoleErrors": [],
+  "artifacts": [
+    ".omo/evidence/task-10-touch-playthrough.jpg",
+    ".omo/evidence/task-10-touch-landscape.jpg"
+  ],
+  "notes": [
+    "실제 터치 버튼으로 보스 전투 전 과정을 완료했다.",
+    "세로/가로 전환 뒤 전투와 저장 상태가 유지됐다.",
+    "브라우저 도구는 동영상 녹화를 제공하지 않아 실제 UI 조작 추적, 스크린샷, JSON 계측으로 대체했다.",
+    "Heap budget uses Chromium usedJSHeapSize and remains below 128 MiB."
+  ]
+}

@@ -26,7 +26,8 @@ export function createSchoolSceneHud({ canvas, ui = {} }) {
     sync({
       bossEvents = [], bossState = null, counters, encounter, feedbackPrompts = [], feedbackState, frame, lastEnemyEvents = [],
       lastEvents = [], routeSegmentId, storyOutcome = null, storyState, radioLine = null,
-      resultVisible = false, viewportMode, blockerActive = false, offscreenActive = false
+      resultVisible = false, viewportMode, blockerActive = false, offscreenActive = false,
+      performanceState, qualityProfile
     }) {
       if (ui.health) ui.health.textContent = `HP ${frame.hud.hp}`;
       if (ui.action) ui.action.textContent = frame.hud.action.toUpperCase();
@@ -64,6 +65,14 @@ export function createSchoolSceneHud({ canvas, ui = {} }) {
       canvas.dataset.feedbackPoolActive = String(feedbackState.pool.active);
       canvas.dataset.audioVoices = String(feedbackState.audio.activeVoices);
       canvas.dataset.musicLayer = feedbackState.audio.musicLayer;
+      canvas.dataset.p95FrameMs = String(performanceState.p95FrameMs);
+      canvas.dataset.drawCalls = String(performanceState.render.calls);
+      canvas.dataset.triangles = String(performanceState.render.triangles);
+      canvas.dataset.lightCount = String(performanceState.render.lights);
+      canvas.dataset.particleCount = String(performanceState.render.particles);
+      canvas.dataset.heapBytes = String(performanceState.render.heapBytes);
+      canvas.dataset.quality = storyState.campaign.settings.quality;
+      canvas.dataset.dpr = String(qualityProfile.dpr);
       if (bossState) {
         canvas.dataset.bossPhase = bossPhase;
         canvas.dataset.bossSuccesses = String(bossState.phaseSuccesses);

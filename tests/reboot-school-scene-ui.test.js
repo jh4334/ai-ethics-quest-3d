@@ -52,11 +52,19 @@ test('학교 HUD는 보스와 결말 상태를 사용자 화면과 QA 텔레메�
       promptCount: 2, promptKinds: ['reflect', 'chain-up']
     },
     frame: { hud: { action: 'reflect', chainLevel: 2, hp: 100 }, tick: 42 },
+    performanceState: {
+      p95FrameMs: 15.8,
+      render: { calls: 8, heapBytes: 1_000_000, lights: 2, particles: 6, triangles: 9000 }
+    },
+    qualityProfile: { dpr: 1 },
     radioLine: { speaker: 'DOT', textKo: '기록이 열렸어.' },
     resultVisible: true,
     routeSegmentId: 'gym-boss-arena',
     storyOutcome: { actionKo: '확보', reversalKo: '서명 발견', routeConsequenceKo: '추격 증가' },
-    storyState: { effects: { backupVisible: true, extraWave: true }, memoryOutcome: 'secure', phase: 'chapter-ending' },
+    storyState: {
+      campaign: { settings: { motion: 'reduced', quality: 'low', sound: false } },
+      effects: { backupVisible: true, extraWave: true }, memoryOutcome: 'secure', phase: 'chapter-ending'
+    },
     viewportMode: 'desktop'
   });
 
@@ -68,4 +76,6 @@ test('학교 HUD는 보스와 결말 상태를 사용자 화면과 QA 텔레메�
   assert.equal(canvas.dataset.stamperTelegraph, 'windup:12');
   assert.equal(canvas.dataset.feedbackPromptCount, '2');
   assert.equal(canvas.dataset.musicLayer, 'boss-chain');
+  assert.equal(canvas.dataset.p95FrameMs, '15.8');
+  assert.equal(canvas.dataset.quality, 'low');
 });

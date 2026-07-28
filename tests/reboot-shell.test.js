@@ -226,6 +226,7 @@ test('Vite builds isolated legacy and reboot entries with one Three chunk rule',
   const rebootHtml = readFileSync(new URL('../reboot.html', import.meta.url), 'utf8');
   const vite = readFileSync(new URL('../vite.config.js', import.meta.url), 'utf8');
   const rebootEntry = readFileSync(new URL('../src/reboot/entry.js', import.meta.url), 'utf8');
+  const runtimeSettings = readFileSync(new URL('../src/reboot/settings/runtime.js', import.meta.url), 'utf8');
 
   // When: their static entry contracts are inspected.
   // Then: legacy stays default, reboot is isolated, and both share the pinned Three chunk.
@@ -248,7 +249,8 @@ test('Vite builds isolated legacy and reboot entries with one Three chunk rule',
   assert.match(rebootEntry, /`boss-\$\{branch\}`/);
   assert.match(rebootEntry, /sessionStorage\.getItem\('h17\.testHook'\) === 'true'/);
   assert.match(rebootEntry, /URLSearchParams\(window\.location\.search\)[\s\S]*testHook[\s\S]*h17/);
-  assert.match(rebootEntry, /viewport[\s\S]*touch[\s\S]*390px/);
+  assert.match(runtimeSettings, /VIEWPORT_FIXTURES[\s\S]*landscape:[\s\S]*1180[\s\S]*portrait:[\s\S]*844[\s\S]*touch:[\s\S]*720/);
+  assert.match(rebootEntry, /createTouchControls[\s\S]*createVisibilityPause/);
   assert.match(rebootEntry, /seedLegacyForTest/);
   assert.match(rebootEntry, /corruptV4ForTest/);
   assert.match(rebootHtml, /data-recovery-notice/);
@@ -256,5 +258,6 @@ test('Vite builds isolated legacy and reboot entries with one Three chunk rule',
   assert.match(rebootHtml, /data-chapter-result[\s\S]*data-result-action[\s\S]*data-result-consequence[\s\S]*data-result-reversal/);
   assert.match(rebootHtml, /data-patch-picker[\s\S]*data-patch-id="reflect-arc"[\s\S]*data-patch-id="trace-speed"[\s\S]*data-patch-id="chain-persistence"/);
   assert.match(rebootHtml, /data-test-storage[\s\S]*data-test-seed-v3[\s\S]*data-test-checkpoint[\s\S]*data-test-corrupt[\s\S]*data-test-output/);
+  assert.match(rebootHtml, /data-test-viewport="portrait"[\s\S]*data-test-viewport="landscape"/);
   assert.match(rebootEntry, /data-test-seed-v3[\s\S]*data-test-checkpoint[\s\S]*data-test-corrupt/);
 });

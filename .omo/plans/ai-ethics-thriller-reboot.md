@@ -553,7 +553,7 @@ Primary references:
 
   **Commit**: YES | Message: `feat(feedback): layer readable combat vfx audio and hud` | Files: `src/reboot/feedback/*`, `src/reboot/audio/*`, `src/reboot/ui/*`, `src/reboot/reboot.css`, `tests/reboot-feedback.test.js`
 
-- [ ] 10. Make the complete slice playable on touch, reduced motion, and low quality
+- [x] 10. Make the complete slice playable on touch, reduced motion, and low quality
 
   **What to do**: Implement touch movement, attack, dash, reflect, TRACE target selection, pause, and camera reset with safe-area-aware layouts. Support landscape and portrait without resetting state. Provide reduced-motion alternatives, remappable keyboard defaults, captions, quality tiers, adaptive decorative effects, hidden-tab pause, and exact performance instrumentation for the representative mixed arena and boss.
 
@@ -568,9 +568,9 @@ Primary references:
   - [Optimize Three.js games](https://github.com/MengTo/Skills/blob/21b278c62f49f3ce3d8c8ecbcc84cbcd534f3e49/agent-skills/game-development/optimize-threejs-games/SKILL.md).
 
   **Acceptance Criteria**:
-  - [ ] Entire chapter completes at 1180×820 landscape and 390×844 portrait touch emulation.
-  - [ ] Representative scenes meet stated p95 frame, draw-call, triangle, light, particle, and heap budgets.
-  - [ ] Orientation/background return preserves combat/checkpoint state; reduced motion removes strong shake/flash without hiding gameplay meaning.
+  - [x] Entire chapter completes at 1180×820 landscape and 390×844 portrait touch emulation.
+  - [x] Representative scenes meet stated p95 frame, draw-call, triangle, light, particle, and heap budgets.
+  - [x] Orientation/background return preserves combat/checkpoint state; reduced motion removes strong shake/flash without hiding gameplay meaning.
 
   **QA Scenarios**:
   ```text
