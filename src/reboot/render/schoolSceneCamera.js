@@ -42,3 +42,21 @@ export function getBossCameraTargets(frame, routeCue) {
     traceTarget: boss
   };
 }
+
+export function updateSchoolCamera({
+  bossEnabled, camera, cameraState, currentSegment, delta, encounter, frame, routeCue, viewport
+}) {
+  const inBoss = bossEnabled && currentSegment.id === 'gym-boss-arena';
+  const targets = inBoss
+    ? getBossCameraTargets(frame, routeCue)
+    : getEncounterCameraTargets(frame, routeCue, encounter);
+  const next = updateCameraController(cameraState, targets, delta, viewport);
+  const combatFocus = (currentSegment.id === 'first-arena'
+    && encounter.enemies.some((enemy) => ['windup', 'active'].includes(enemy.phase))) || inBoss;
+  camera.position.set(next.position.x, next.position.y - (combatFocus ? 2 : 0), next.position.z - (combatFocus ? 5 : 0));
+  camera.fov = combatFocus ? 36 : next.fov;
+  camera.updateProjectionMatrix();
+  camera.lookAt(next.lookAt.x, next.lookAt.y, next.lookAt.z);
+  return Object.freeze({ cameraState: next, targets });
+}
+import { updateCameraController } from '../camera/controller.js';

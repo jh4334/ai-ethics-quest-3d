@@ -24,6 +24,7 @@
     .recovery { position: fixed; left: 50%; top: 82px; translate: -50% 0; max-width: min(90vw, 560px); margin: 0; padding: 10px 14px; border: 1px solid #f4c06d88; border-radius: 8px; color: #fff3d6; background: #101a36ee; text-align: center; }
     .radio { position: fixed; left: 50%; bottom: 64px; translate: -50% 0; width: min(88vw, 680px); margin: 0; padding: 10px 14px; border-left: 3px solid #5de0c1; color: #eef5ff; background: #050918d9; text-shadow: 0 2px 8px #000; }
     .radio strong { margin-right: 8px; color: #5de0c1; }
+    .feedback-prompts { position: fixed; right: 18px; bottom: max(74px, calc(env(safe-area-inset-bottom) + 62px)); max-width: min(42vw, 360px); margin: 0; padding: 7px 10px; border-right: 3px solid #f4c06d; color: #fff3d6; background: #050918c9; font-size: .78rem; text-align: right; text-shadow: 0 2px 8px #000; }
     .chapter-result { position: fixed; inset: 50% auto auto 50%; translate: -50% -50%; z-index: 3; width: min(88vw, 620px); padding: 22px; border: 1px solid #f4c06d88; border-radius: 12px; background: #081126f2; box-shadow: 0 20px 80px #000a; }
     .chapter-result h2 { margin: 0 0 14px; color: #f4c06d; }
     .chapter-result p { margin: 9px 0; color: #e9f0ff; line-height: 1.55; }
@@ -55,6 +56,7 @@
     <p class="objective" data-route-objective>교실 기록 단말로 이동</p>
     <p class="recovery" data-recovery-notice role="status" hidden></p>
     <p class="radio" data-radio-subtitle aria-live="polite" hidden><strong data-radio-speaker></strong><span data-radio-text></span></p>
+    <p class="feedback-prompts" data-feedback-prompts role="status" aria-live="polite" hidden></p>
     <section class="chapter-result" data-chapter-result hidden aria-label="1장 결과">
       <h2>00:17 — 출석번호 없음</h2>
       <p data-result-action></p>

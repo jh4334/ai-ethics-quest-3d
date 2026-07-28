@@ -47,6 +47,10 @@ test('학교 HUD는 보스와 결말 상태를 사용자 화면과 QA 텔레메�
     },
     counters: { armorBreaks: 1, cancelledAttacks: 0, playerHits: 0, reflections: 1 },
     encounter,
+    feedbackState: {
+      audio: { activeVoices: 2, musicLayer: 'boss-chain' }, pool: { active: 4 },
+      promptCount: 2, promptKinds: ['reflect', 'chain-up']
+    },
     frame: { hud: { action: 'reflect', chainLevel: 2, hp: 100 }, tick: 42 },
     radioLine: { speaker: 'DOT', textKo: '기록이 열렸어.' },
     resultVisible: true,
@@ -62,4 +66,6 @@ test('학교 HUD는 보스와 결말 상태를 사용자 화면과 QA 텔레메�
   assert.equal(canvas.dataset.bossEvent, 'mastery-success');
   assert.equal(canvas.dataset.memoryOutcome, 'secure');
   assert.equal(canvas.dataset.stamperTelegraph, 'windup:12');
+  assert.equal(canvas.dataset.feedbackPromptCount, '2');
+  assert.equal(canvas.dataset.musicLayer, 'boss-chain');
 });

@@ -517,7 +517,7 @@ Primary references:
 
   **Commit**: YES | Message: `feat(boss): add attendance proctor reversal` | Files: `src/reboot/content/bosses/*`, `src/reboot/boss/*`, `src/reboot/scenes/chapterEnd*`, `tests/reboot-boss.test.js`
 
-- [ ] 9. Add combat-readable VFX, reactive audio, HUD, and game-feel layers
+- [x] 9. Add combat-readable VFX, reactive audio, HUD, and game-feel layers
 
   **What to do**: Consume simulation events to render separate telegraph, contact, miss, reflect, weak-point, secure, chain-up, damage, and defeat cues. Pool transient meshes/materials and cap particles. Build procedural/browser-safe audio priority groups and three music layers driven by pursuit/combat/chain state. Create a minimal HUD for health, actions, TRACE target, SYNC CHAIN, boss phase, radio subtitles, and one-line checkpoint notices.
 
@@ -532,9 +532,9 @@ Primary references:
   - [Game VFX](https://github.com/MengTo/Skills/blob/21b278c62f49f3ce3d8c8ecbcc84cbcd534f3e49/agent-skills/game-development/create-game-vfx/SKILL.md) and [audio feedback](https://github.com/MengTo/Skills/blob/21b278c62f49f3ce3d8c8ecbcc84cbcd534f3e49/agent-skills/game-development/build-game-audio-feedback/SKILL.md).
 
   **Acceptance Criteria**:
-  - [ ] Every meaningful combat event maps to a visible cue; meaningful audio cues have visual/subtitle equivalents.
-  - [ ] Rapid repetition, pause/restart, 10 simultaneous hits, mute, hidden-tab return, and reduced motion leak no nodes/objects.
-  - [ ] HUD never shows more than three primary action prompts and leaves the combat center unobstructed at target viewports.
+  - [x] Every meaningful combat event maps to a visible cue; meaningful audio cues have visual/subtitle equivalents.
+  - [x] Rapid repetition, pause/restart, 10 simultaneous hits, mute, hidden-tab return, and reduced motion leak no nodes/objects.
+  - [x] HUD never shows more than three primary action prompts and leaves the combat center unobstructed at target viewports.
 
   **QA Scenarios**:
   ```text

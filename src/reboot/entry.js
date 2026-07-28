@@ -34,6 +34,7 @@ const sceneUi = Object.freeze({
   action: root.querySelector('[data-combat-action]'),
   chain: root.querySelector('[data-combat-chain]'),
   enemy: root.querySelector('[data-enemy-status]'),
+  feedback: root.querySelector('[data-feedback-prompts]'),
   health: root.querySelector('[data-combat-health]'),
   objective: root.querySelector('[data-route-objective]'),
   radio: root.querySelector('[data-radio-subtitle]'),

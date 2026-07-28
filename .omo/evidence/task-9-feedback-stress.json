@@ -1,0 +1,41 @@
+{
+  "capturedAt": "2026-07-28T14:45:59.685Z",
+  "automated": {
+    "command": "node --test tests/reboot-feedback.test.js x2",
+    "simulatedFrames": 18000,
+    "simulatedMinutesAt60Hz": 5,
+    "poolCapacity": 10,
+    "allocatedObjects": 10,
+    "activeAfterTenSimultaneous": 10,
+    "promptCap": 3,
+    "voiceCap": 4,
+    "muteActiveVoices": 0,
+    "hiddenTabActiveVoices": 0,
+    "sceneChildrenAfterDispose": 0,
+    "passesPerRun": 5
+  },
+  "browser": {
+    "telegraphAtPress": "windup:13",
+    "reflections": "1",
+    "playerHits": "1",
+    "hp": "HP 90",
+    "kinds": "reflect,weak-point,chain-up",
+    "pool": "6",
+    "promptCount": "3",
+    "promptText": "완벽 반사 · 약점 확인 · SYNC 상승 1",
+    "voices": "1",
+    "music": "ambient",
+    "status": "paused",
+    "logs": []
+  },
+  "visualArtifact": ".omo/evidence/task-9-feedback-sync.jpg",
+  "note": "브라우저 영상 API가 없어 실제 KeyK 상태 추적, 정지 화면, 결정적 18000프레임 스트레스를 함께 저장했다.",
+  "browserRestart": {
+    "status": "paused",
+    "pool": "0",
+    "promptCount": "0",
+    "voices": "0",
+    "characters": "ready",
+    "logs": []
+  }
+}

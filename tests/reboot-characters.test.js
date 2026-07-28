@@ -98,6 +98,7 @@ test('runtime character assets exist locally and are documented as CC0', () => {
 test('school scene uses the imported character pipeline instead of primitive avatars', () => {
   // Given: the authored school scene source.
   const source = readFileSync(new URL('../src/reboot/render/schoolNightScene.js', import.meta.url), 'utf8');
+  const cameraSource = readFileSync(new URL('../src/reboot/render/schoolSceneCamera.js', import.meta.url), 'utf8');
 
   // When: its player construction is inspected.
   // Then: no capsule or other primitive avatar remains in the reboot runtime.
@@ -106,7 +107,8 @@ test('school scene uses the imported character pipeline instead of primitive ava
   assert.match(source, /createEncounterGameRuntime/);
   assert.match(source, /createEnemyCast/);
   assert.match(source, /createCombatPresentationAdapter/);
-  assert.match(source, /createCameraController[\s\S]*updateCameraController/);
+  assert.match(source, /createCameraController[\s\S]*updateSchoolCamera/);
+  assert.match(cameraSource, /updateCameraController/);
   assert.match(source, /canvas\.dataset\.lastAction/);
   assert.doesNotMatch(source, /CapsuleGeometry|playerGeometry|playerMaterial/);
   assert.doesNotMatch(source, /new THREE\.PlaneGeometry/);

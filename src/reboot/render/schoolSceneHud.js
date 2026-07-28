@@ -24,7 +24,7 @@ function syncOutcome(ui, outcome) {
 export function createSchoolSceneHud({ canvas, ui = {} }) {
   return Object.freeze({
     sync({
-      bossEvents = [], bossState = null, counters, encounter, frame, lastEnemyEvents = [],
+      bossEvents = [], bossState = null, counters, encounter, feedbackPrompts = [], feedbackState, frame, lastEnemyEvents = [],
       lastEvents = [], routeSegmentId, storyOutcome = null, storyState, radioLine = null,
       resultVisible = false, viewportMode, blockerActive = false, offscreenActive = false
     }) {
@@ -46,6 +46,10 @@ export function createSchoolSceneHud({ canvas, ui = {} }) {
       if (ui.radio) ui.radio.hidden = radioLine === null;
       if (ui.radioSpeaker) ui.radioSpeaker.textContent = radioLine?.speaker ?? '';
       if (ui.radioText) ui.radioText.textContent = radioLine?.textKo ?? '';
+      if (ui.feedback) {
+        ui.feedback.hidden = feedbackPrompts.length === 0;
+        ui.feedback.textContent = feedbackPrompts.map((prompt) => prompt.label).join(' · ');
+      }
       if (ui.result && resultVisible) syncOutcome(ui, storyOutcome);
 
       canvas.dataset.combatTick = String(frame.tick);
@@ -55,6 +59,11 @@ export function createSchoolSceneHud({ canvas, ui = {} }) {
       canvas.dataset.memoryOutcome = storyState.memoryOutcome ?? 'none';
       canvas.dataset.extraWave = String(storyState.effects.extraWave);
       canvas.dataset.backupVisible = String(storyState.effects.backupVisible);
+      canvas.dataset.feedbackPromptCount = String(feedbackState.promptCount);
+      canvas.dataset.feedbackKinds = feedbackState.promptKinds.join(',');
+      canvas.dataset.feedbackPoolActive = String(feedbackState.pool.active);
+      canvas.dataset.audioVoices = String(feedbackState.audio.activeVoices);
+      canvas.dataset.musicLayer = feedbackState.audio.musicLayer;
       if (bossState) {
         canvas.dataset.bossPhase = bossPhase;
         canvas.dataset.bossSuccesses = String(bossState.phaseSuccesses);
