@@ -22,7 +22,8 @@ const BOSS_PHASES = Object.freeze([
 
 export const QA_SCENE_IDS = Object.freeze([
   'qa-tutorial', 'qa-arena', 'qa-consequence-secure', 'qa-consequence-purge',
-  ...BOSS_PHASES.map(([id]) => id), 'qa-result-secure', 'qa-corrupt-save', 'qa-low-performance'
+  ...BOSS_PHASES.map(([id]) => id), 'qa-result-secure', 'qa-corrupt-save', 'qa-low-performance',
+  'qa-dual-school-comfort', 'qa-dual-school-verified'
 ]);
 
 function endingOptions(branch) {
@@ -30,7 +31,7 @@ function endingOptions(branch) {
   return { campaign: fixture.campaign, persist: () => {}, showOutcome: true };
 }
 
-export function createQaSceneFixtures({ createScene, persist }) {
+export function createQaSceneFixtures({ createDualSchoolScene, createScene, persist }) {
   const bossCampaign = createChapterOneBossFixture('secure').campaign;
   return Object.freeze([
     ['disposal-fixture', () => createScene()],
@@ -55,6 +56,8 @@ export function createQaSceneFixtures({ createScene, persist }) {
     )]),
     ['qa-result-secure', () => createScene({ x: 0, y: -104 }, {}, endingOptions('secure'), { enabled: false })],
     ['qa-corrupt-save', () => createScene({ x: 0, y: -1 })],
-    ['qa-low-performance', () => createScene({ x: -7, y: -39 })]
+    ['qa-low-performance', () => createScene({ x: -7, y: -39 })],
+    ['qa-dual-school-comfort', () => createDualSchoolScene('comfort')],
+    ['qa-dual-school-verified', () => createDualSchoolScene('verified')]
   ]);
 }

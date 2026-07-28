@@ -43,7 +43,7 @@ const UAL2_ENEMY = Object.freeze({
   action: 'Melee_Hook',
   defeat: 'Hit_Knockback',
   hit: 'Hit_Knockback',
-  idle: 'Zombie_Idle_Loop',
+  idle: 'Idle_FoldArms_Loop',
   move: 'Zombie_Walk_Fwd_Loop'
 });
 

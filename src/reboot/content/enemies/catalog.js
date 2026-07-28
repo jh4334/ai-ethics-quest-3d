@@ -55,7 +55,59 @@ export const STAMPER_DEFINITION = deepFreeze({
   }]
 });
 
+export const COPYCAT_DEFINITION = deepFreeze({
+  id: 'copycat',
+  role: 'multiplying-source-trap',
+  stats: { maxHp: 60, speed: 0.18, turnRadians: 0.28 },
+  perception: { acquireRange: 9, lossRange: 11 },
+  collider: { height: 1.65, radius: 0.54 },
+  armor: { hits: 0, breaksOnKinds: [] },
+  reward: { id: 'copycat-source-found', onceOn: 'defeat' },
+  moves: [{
+    id: 'copycat-swipe',
+    kind: 'melee',
+    socket: 'source-hand',
+    timing: { activeTicks: 1, recoveryTicks: 20, windupTicks: 16 },
+    range: { max: 1.7, min: 0, preferred: 1.1 },
+    facingDot: 0.82,
+    requiredFacingTicks: 2,
+    damage: 9,
+    feedback: {
+      windup: 'copycat-swipe-windup',
+      contact: 'copycat-swipe-contact',
+      recover: 'copycat-swipe-recover'
+    }
+  }]
+});
+
+export const RECOMMENDER_DEFINITION = deepFreeze({
+  id: 'recommender',
+  role: 'spatial-layer-split',
+  stats: { maxHp: 70, speed: 0.14, turnRadians: 0.24 },
+  perception: { acquireRange: 10, lossRange: 12 },
+  collider: { height: 1.9, radius: 0.58 },
+  armor: { hits: 0, breaksOnKinds: [] },
+  reward: { id: 'recommender-route-open', onceOn: 'defeat' },
+  moves: [{
+    id: 'recommender-pulse',
+    kind: 'control',
+    socket: 'lens-core',
+    timing: { activeTicks: 2, recoveryTicks: 26, windupTicks: 24 },
+    range: { max: 6, min: 2, preferred: 4 },
+    facingDot: 0.78,
+    requiredFacingTicks: 3,
+    damage: 8,
+    feedback: {
+      windup: 'recommender-pulse-windup',
+      contact: 'recommender-pulse-contact',
+      recover: 'recommender-pulse-recover'
+    }
+  }]
+});
+
 export const ENEMY_DEFINITIONS = deepFreeze({
   eraser: ERASER_DEFINITION,
-  stamper: STAMPER_DEFINITION
+  stamper: STAMPER_DEFINITION,
+  copycat: COPYCAT_DEFINITION,
+  recommender: RECOMMENDER_DEFINITION
 });

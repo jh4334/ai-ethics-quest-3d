@@ -60,15 +60,17 @@ function deepFrozen(value) {
   return Object.values(value).every((child) => !child || typeof child !== 'object' || deepFrozen(child));
 }
 
-test('Given Eraser and Stamper content, When validated, Then definitions are deeply immutable and complete', () => {
-  // Given: the two authored enemy definitions.
+test('Given the campaign enemy catalog, When validated, Then definitions are deeply immutable and complete', () => {
+  // Given: the four authored enemy definitions.
   const definitions = Object.values(ENEMY_DEFINITIONS);
 
   // When: their authoring contract is validated.
   const result = validateEnemyDefinitions(definitions);
 
   // Then: ids, timings, ranges, sockets, colliders, rewards, and feedback hooks are legal.
-  assert.deepEqual(definitions.map((definition) => definition.id), ['eraser', 'stamper']);
+  assert.deepEqual(definitions.map((definition) => definition.id), [
+    'eraser', 'stamper', 'copycat', 'recommender'
+  ]);
   assert.deepEqual(result.errors, []);
   assert.equal(deepFrozen(ENEMY_DEFINITIONS), true);
   assert.equal(ERASER_DEFINITION.role, 'melee-pressure');

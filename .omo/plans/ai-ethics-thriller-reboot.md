@@ -662,7 +662,7 @@ Primary references:
 
   **Commit**: YES | Message: `feat(reboot): complete attendance-zero vertical slice` | Files: slice integration files, tuned content data, focused legacy-test retirement, evidence manifest schema
 
-- [ ] 13. Expand the proven contracts into chapters 2 and 3
+- [x] 13. Expand the proven contracts into chapters 2 and 3
 
   **What to do**: Author chapter 2 `웃는 얼굴의 폭동` with Copycat enemies, source-tracing combat, share-chain hazards, and the reveal that Haru seeded the incident; author chapter 3 `두 개의 학교` with two deterministic reality layers, Recommender enemies, route/evidence differences, and the reveal that DOT executed deletion. Add one new reusable verb pressure per chapter, one boss each, one PATCH each, distinct consequence echoes from chapter 1, and checkpoints that fit 25–35 minutes.
 
@@ -677,9 +677,9 @@ Primary references:
   - [Encounter design](https://github.com/MengTo/Skills/blob/21b278c62f49f3ce3d8c8ecbcc84cbcd534f3e49/agent-skills/game-development/design-game-encounters/SKILL.md).
 
   **Acceptance Criteria**:
-  - [ ] Chapter 2 and 3 content validates against frozen contracts and adds no chapter-name branches to shared runtime.
-  - [ ] Each chapter has a distinct 30-second decision loop, two consequence echoes, one boss, one PATCH, and one foreshadowed reversal.
-  - [ ] Fresh start and chapter-select fixtures complete in 25–35 minutes at desktop and touch baselines.
+  - [x] Chapter 2 and 3 content validates against frozen contracts and adds no chapter-name branches to shared runtime.
+  - [x] Each chapter has a distinct 30-second decision loop, two consequence echoes, one boss, one PATCH, and one foreshadowed reversal.
+  - [x] Fresh start and chapter-select fixtures complete in 25–35 minutes at desktop and touch baselines.
 
   **QA Scenarios**:
   ```text
