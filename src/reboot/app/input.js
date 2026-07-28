@@ -8,6 +8,7 @@ export const DEFAULT_BINDINGS = Object.freeze({
   KeyF: 'secure',
   KeyJ: 'attack',
   KeyK: 'reflect',
+  KeyQ: 'purge',
   KeyA: 'move-left',
   KeyD: 'move-right',
   KeyR: 'restart',

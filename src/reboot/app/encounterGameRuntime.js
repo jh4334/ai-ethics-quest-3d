@@ -16,12 +16,12 @@ function offsetEncounter(definition, origin) {
   };
 }
 
-function combatTargets(encounter) {
-  return encounter.enemies.map((enemy) => ({
+function combatTargets(encounter, extraTargets) {
+  return [...encounter.enemies.map((enemy) => ({
     hp: enemy.hp,
     id: enemy.id,
     position: { x: enemy.position.x, y: enemy.position.z }
-  }));
+  })), ...extraTargets];
 }
 
 function syncCombatTargets(combat, encounter) {
@@ -94,12 +94,13 @@ function releaseQueuedActions(actions, encounter) {
 export function createEncounterGameRuntime({
   blockers = [], deviceClass = 'desktop', encounterDefinition = MIXED_ARENA,
   encounterOrigin = { x: 0, z: -39 }, onScreen = true,
+  extraTargets = [{ hp: 100, id: 'memory-backup', position: { x: 0, y: -54 } }],
   startPosition = { x: 0, y: 0 }
 } = {}) {
   const authoredEncounter = offsetEncounter(encounterDefinition, encounterOrigin);
   const createInitial = () => {
     const encounter = createEncounter(authoredEncounter, { deviceClass });
-    const combat = createCombatState({ targets: combatTargets(encounter) });
+    const combat = createCombatState({ targets: combatTargets(encounter, extraTargets) });
     combat.player.position = { x: startPosition.x, y: startPosition.y };
     return { accumulator: 0, combat, encounter, pendingIncoming: [] };
   };
