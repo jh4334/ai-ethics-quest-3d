@@ -119,5 +119,13 @@
     </div>
   </main>
   <script type="module" src="/src/reboot/entry.js"></script>
+  <script>
+    const swDisabledForQa = new URLSearchParams(window.location.search).get('sw') === 'off';
+    if ('serviceWorker' in navigator && window.location.port !== '5173' && !swDisabledForQa) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
 </body>
 </html>

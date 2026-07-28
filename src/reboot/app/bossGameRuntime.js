@@ -30,8 +30,8 @@ function splitActions(queue, state) {
   return { deferred, ready };
 }
 
-export function createBossGameRuntime({ consequencePath = 'secure' } = {}) {
-  let state = createBossState(undefined, { consequencePath });
+export function createBossGameRuntime({ consequencePath = 'secure', initialState = null } = {}) {
+  let state = initialState ?? createBossState(undefined, { consequencePath });
   let accumulator = 0;
   let actionSequence = 0;
   let queue = [];

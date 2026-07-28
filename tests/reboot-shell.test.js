@@ -5,6 +5,7 @@ import test from 'node:test';
 import { createAppLifecycle } from '../src/reboot/app/lifecycle.js';
 import { resolveBootScene } from '../src/reboot/app/fixtures.js';
 import { DEFAULT_BINDINGS, createInputRouter } from '../src/reboot/app/input.js';
+import { QA_SCENE_IDS } from '../src/reboot/app/qaSceneFixtures.js';
 import { createRebootSession } from '../src/reboot/app/session.js';
 import { createSceneRegistry } from '../src/reboot/app/sceneRegistry.js';
 import { createDisposableRegistry } from '../src/reboot/render/dispose.js';
@@ -238,15 +239,9 @@ test('Vite builds isolated legacy and reboot entries with one Three chunk rule',
   assert.match(rebootEntry, /createRebootSession\(\{ storage: window\.localStorage \}\)/);
   assert.match(rebootEntry, /health:\s*root\.querySelector\('\[data-combat-health\]'\)/);
   assert.match(rebootEntry, /getSceneDebugState:\s*\(\) => app\.getSceneDebugState\(\)/);
-  for (const fixture of ['classroom', 'corridor', 'first-arena', 'memory', 'pursuit', 'gym']) {
-    assert.match(rebootEntry, new RegExp(`route-${fixture}`));
-  }
-  for (const fixture of ['enemy-mixed', 'enemy-blocked', 'enemy-offscreen']) {
-    assert.match(rebootEntry, new RegExp(fixture));
-  }
-  assert.match(rebootEntry, /\['secure', 'purge'\]\.map/);
-  assert.match(rebootEntry, /`story-\$\{branch\}-ending`/);
-  assert.match(rebootEntry, /`boss-\$\{branch\}`/);
+  assert.match(rebootEntry, /createQaSceneFixtures/);
+  assert.equal(QA_SCENE_IDS.includes('qa-tutorial'), true);
+  assert.equal(QA_SCENE_IDS.includes('qa-boss-phase-3'), true);
   assert.match(rebootEntry, /sessionStorage\.getItem\('h17\.testHook'\) === 'true'/);
   assert.match(rebootEntry, /URLSearchParams\(window\.location\.search\)[\s\S]*testHook[\s\S]*h17/);
   assert.match(runtimeSettings, /VIEWPORT_FIXTURES[\s\S]*landscape:[\s\S]*1180[\s\S]*portrait:[\s\S]*844[\s\S]*touch:[\s\S]*720/);

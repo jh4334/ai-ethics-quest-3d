@@ -1,6 +1,7 @@
 import { createAppLifecycle } from './app/lifecycle.js';
 import { resolveBootScene } from './app/fixtures.js';
 import { createInputRouter } from './app/input.js';
+import { createQaSceneFixtures } from './app/qaSceneFixtures.js';
 import { createRebootSession } from './app/session.js';
 import { createSceneRegistry } from './app/sceneRegistry.js';
 import { createTouchControls } from './input/touchControls.js';
@@ -8,9 +9,6 @@ import { createVisibilityPause } from './input/visibilityPause.js';
 import { applyViewportFixture, configureRuntime, withRuntimeSettings } from './settings/runtime.js';
 import { createRenderer } from './render/renderer.js';
 import { createSchoolNightScene } from './render/schoolNightScene.js';
-import {
-  createChapterOneBossFixture, createChapterOneEndingFixture
-} from './story/chapterOneDirector.js';
 import {
   LEGACY_BACKUP_KEY, LEGACY_V3_KEY, V4_SAVE_KEY, V4_TEMP_KEY
 } from './save/repository.js';
@@ -37,34 +35,6 @@ const sceneUi = Object.freeze({
   resultAction: root.querySelector('[data-result-action]'),
   resultConsequence: root.querySelector('[data-result-consequence]'), resultReversal: root.querySelector('[data-result-reversal]')
 });
-const routeFixtures = Object.freeze([
-  ['route-classroom', { x: 0, y: -1 }],
-  ['route-corridor', { x: 0, y: -18 }],
-  ['route-first-arena', { x: 0, y: -39 }],
-  ['route-memory', { x: 0, y: -54 }],
-  ['route-pursuit', { x: 0, y: -76 }],
-  ['route-gym', { x: 0, y: -104 }]
-]);
-const encounterFixtures = Object.freeze([
-  ['enemy-mixed', { x: -7, y: -39 }, {}],
-  ['enemy-blocked', { x: -7, y: -39 }, {
-    blockAfterTick: 30,
-    delayedBlockers: [{ id: 'qa-locker', maxX: -4, maxZ: -37, minX: -6, minZ: -40 }]
-  }],
-  ['enemy-offscreen', { x: -7, y: -39 }, { offscreenAfterTick: 30 }]
-]);
-const storyEndingFixtures = Object.freeze(['secure', 'purge'].map((branch) => {
-  const fixture = createChapterOneEndingFixture(branch);
-  return [`story-${branch}-ending`, { x: 0, y: -104 }, {
-    campaign: fixture.campaign,
-    persist: () => {},
-    showOutcome: true
-  }];
-}));
-const storyBossFixtures = Object.freeze(['secure', 'purge'].map((branch) => {
-  const fixture = createChapterOneBossFixture(branch);
-  return [`boss-${branch}`, { x: 0, y: -104 }, { campaign: fixture.campaign }];
-}));
 const patchPanel = root.querySelector('[data-patch-picker]');
 let choosePatch = null;
 const bossUiBridge = Object.freeze({
@@ -103,18 +73,10 @@ const createScene = (
 );
 const sceneRegistry = createSceneRegistry([
   ['school-night', () => createScene()],
-  ['disposal-fixture', () => createScene()],
-  ...routeFixtures.map(([id, startPosition]) => [id, () => createScene(startPosition)]),
-  ...encounterFixtures.map(([id, startPosition, options]) => [id, () => createScene(startPosition, options)]),
-  ...storyEndingFixtures.map(([id, startPosition, options]) => [
-    id, () => createScene(startPosition, {}, options, { enabled: false })
-  ]),
-  ...storyBossFixtures.map(([id, startPosition, options]) => [
-    id, () => createScene(startPosition, {}, {
-      ...options,
-      persist: (campaign) => session.update(() => campaign)
-    }, { enabled: true })
-  ])
+  ...createQaSceneFixtures({
+    createScene,
+    persist: (campaign) => session.update(() => campaign)
+  })
 ]);
 const scheduler = Object.freeze({
   cancel: (id) => window.cancelAnimationFrame(id),

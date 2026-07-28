@@ -297,7 +297,7 @@ test('pwa(루프2): 매니페스트·서비스워커·등록이 오프라인 주
   assert.match(manifest.icons[0].src, /icon\.svg/);
   // 서비스워커: 이동은 네트워크 우선(새 배포 즉시 반영), 에셋은 캐시 우선.
   assert.match(sw, /request\.mode === 'navigate'/);
-  assert.match(sw, /caches\.match\(request\)/);
+  assert.match(sw, /caches\.match\(request(?:,\s*\{[^}]+\})?\)/);
   assert.match(sw, /self\.skipWaiting\(\)/);
   // 등록: dev 서버(5173)에선 제외 — 개발 중 소스 캐시 사고 방지.
   assert.match(html, /serviceWorker/);

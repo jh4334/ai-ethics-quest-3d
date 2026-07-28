@@ -50,7 +50,8 @@ export function createSchoolNightScene({
   const combatView = createCombatPresentationAdapter();
   const story = createChapterOneDirector(storyOptions);
   const bossGame = bossOptions.enabled ? createBossGameRuntime({
-    consequencePath: story.getState().memoryOutcome ?? 'secure'
+    consequencePath: story.getState().memoryOutcome ?? 'secure',
+    initialState: bossOptions.initialState
   }) : null;
   const feedback = resources.register(createFeedbackDirector({
     capacity: renderer.userData.rebootQuality.feedbackCapacity,

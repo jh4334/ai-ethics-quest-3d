@@ -589,7 +589,7 @@ Primary references:
 
   **Commit**: YES | Message: `feat(reboot): complete mobile accessible performance baseline` | Files: `src/reboot/input/*`, `src/reboot/settings/*`, `src/reboot/reboot.css`, `src/reboot/perf/*`, `tests/reboot-input.test.js`
 
-- [ ] 11. Replace brittle checks with deterministic gameplay, visual, and offline QA
+- [x] 11. Replace brittle checks with deterministic gameplay, visual, and offline QA
 
   **What to do**: Make `npm test` discover nested reboot tests; provision Playwright/Chromium reproducibly in dev/CI; add stable fixture IDs for tutorial, arena, consequence branches, every boss phase, result screen, corrupt save, and low performance. Create focused reboot E2E, deterministic screenshots with small reviewed masks, console/error capture, performance JSON, and a service-worker install→offline reload→continue test. Keep legacy tests until Task 12 proves replacements.
 
@@ -604,9 +604,9 @@ Primary references:
   - [Playable web-game QA](https://github.com/MengTo/Skills/blob/21b278c62f49f3ce3d8c8ecbcc84cbcd534f3e49/agent-skills/game-development/test-playable-web-games/SKILL.md).
 
   **Acceptance Criteria**:
-  - [ ] One documented install command provides the exact browser used locally and in CI.
-  - [ ] `npm test`, build, smoke, focused reboot E2E, visual checks, and offline checks run without external `NODE_PATH`/`CHROMIUM_PATH` assumptions.
-  - [ ] Each fixture is unavailable in production unless the explicit test hook is enabled.
+  - [x] One documented install command provides the exact browser used locally and in CI.
+  - [x] `npm test`, build, smoke, focused reboot E2E, visual checks, and offline checks run without external `NODE_PATH`/`CHROMIUM_PATH` assumptions.
+  - [x] Each fixture is unavailable in production unless the explicit test hook is enabled.
 
   **QA Scenarios**:
   ```text
