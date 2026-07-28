@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 
+import { createCharacterCast } from '../characters/cast.js';
 import { createDisposableRegistry } from './dispose.js';
 
 export function createSchoolNightScene({ canvas, input, renderer, windowRef = window }) {
@@ -8,12 +9,12 @@ export function createSchoolNightScene({ canvas, input, renderer, windowRef = wi
   scene.background = new THREE.Color(0x050918);
   scene.fog = new THREE.Fog(0x050918, 24, 55);
 
-  const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 80);
-  camera.position.set(0, 8, 12);
-  camera.lookAt(0, 0, -2);
+  const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 80);
+  camera.position.set(0, 3.35, 7.7);
+  camera.lookAt(0, 1.15, 0.2);
 
   const floorGeometry = resources.register(new THREE.PlaneGeometry(18, 42), 'floor-geometry');
-  const floorMaterial = resources.register(new THREE.MeshStandardMaterial({ color: 0x101a36, roughness: 0.86 }), 'floor-material');
+  const floorMaterial = resources.register(new THREE.MeshStandardMaterial({ color: 0x162345, roughness: 0.86 }), 'floor-material');
   const floor = new THREE.Mesh(floorGeometry, floorMaterial);
   floor.rotation.x = -Math.PI / 2;
   floor.position.z = -8;
@@ -27,15 +28,11 @@ export function createSchoolNightScene({ canvas, input, renderer, windowRef = wi
     scene.add(wall);
   }
 
-  const playerGeometry = resources.register(new THREE.CapsuleGeometry(0.42, 0.8, 4, 8), 'player-geometry');
-  const playerMaterial = resources.register(new THREE.MeshStandardMaterial({ color: 0xf6a84b, emissive: 0x5b2108 }), 'player-material');
-  const player = new THREE.Mesh(playerGeometry, playerMaterial);
-  player.position.set(0, 0.82, 2);
-  scene.add(player);
+  const cast = resources.register(createCharacterCast({ scene }), 'character-cast');
 
-  scene.add(new THREE.HemisphereLight(0x799cff, 0x160d18, 1.25));
-  const memoryLight = new THREE.PointLight(0xffa445, 3.2, 13, 2);
-  memoryLight.position.set(0, 2.4, -5);
+  scene.add(new THREE.HemisphereLight(0xb5c6ff, 0x271626, 3.2));
+  const memoryLight = new THREE.PointLight(0xffa445, 7.4, 15, 2);
+  memoryLight.position.set(0, 2.8, 0);
   scene.add(memoryLight);
 
   let entered = false;
@@ -55,6 +52,13 @@ export function createSchoolNightScene({ canvas, input, renderer, windowRef = wi
       if (entered) return;
       entered = true;
       resize();
+      canvas.dataset.characters = 'loading';
+      cast.load().then(() => {
+        if (!entered) return;
+        const debug = cast.getDebugState();
+        canvas.dataset.characterCount = String(debug.loaded);
+        canvas.dataset.characters = debug.errors.length === 0 ? 'ready' : 'error';
+      });
       windowRef.addEventListener('resize', resize);
     },
     exit() {
@@ -68,11 +72,11 @@ export function createSchoolNightScene({ canvas, input, renderer, windowRef = wi
     update(delta) {
       const horizontal = Number(input.isActive('move-right')) - Number(input.isActive('move-left'));
       const vertical = Number(input.isActive('move-down')) - Number(input.isActive('move-up'));
-      player.position.x = THREE.MathUtils.clamp(player.position.x + horizontal * delta * 4, -4.3, 4.3);
-      player.position.z = THREE.MathUtils.clamp(player.position.z + vertical * delta * 4, -15, 4);
-      camera.position.x += (player.position.x - camera.position.x) * Math.min(delta * 5, 1);
-      camera.position.z += (player.position.z + 10 - camera.position.z) * Math.min(delta * 4, 1);
-      camera.lookAt(player.position.x, 0.5, player.position.z - 3);
+      cast.update(delta, { horizontal, vertical });
+      const playerPosition = cast.getPlayerPosition();
+      camera.position.x += (playerPosition.x - camera.position.x) * Math.min(delta * 5, 1);
+      camera.position.z += (playerPosition.z + 5.7 - camera.position.z) * Math.min(delta * 4, 1);
+      camera.lookAt(playerPosition.x, 1.15, playerPosition.z - 1.45);
       renderer.render(scene, camera);
     }
   });
