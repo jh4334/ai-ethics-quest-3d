@@ -144,7 +144,7 @@ test('Given Copycat and Recommender definitions, When validated, Then shared ene
 
   // Then: 장 이름 분기 없이 네 역할이 모두 유효하다.
   assert.deepEqual(definitions.map((definition) => definition.id), [
-    'eraser', 'stamper', 'copycat', 'recommender'
+    'eraser', 'stamper', 'copycat', 'recommender', 'approval'
   ]);
   assert.deepEqual(result.errors, []);
 });

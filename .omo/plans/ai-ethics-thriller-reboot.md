@@ -698,7 +698,7 @@ Primary references:
 
   **Commit**: YES | Message: `feat(campaign): add copycat and dual-school chapters` | Files: chapter 2/3 content, new reusable enemy/encounter/level modules, tests and fixtures
 
-- [ ] 14. Complete chapters 4 and 5, final boss, and consequence-driven endings
+- [x] 14. Complete chapters 4 and 5, final boss, and consequence-driven endings
 
   **What to do**: Build chapter 4 `3초 승인실` around reverse-running the approval pipeline, Approval support enemies, and a choice between fast shutdown and preserving emergency-support records. Restore the player's full approval memory. Build chapter 5 `마지막 방송` as a route to the old broadcast room, Haru reunion, and final LUMEN+DOT protection boss using every learned verb. Implement three earned resolution states: redacted verified broadcast when Integrity requirements and protected evidence are met; raw disclosure when proof exists but Exposure is high/curation incomplete; sealed incident when evidence is insufficient or player chooses containment. Endings show concrete people/world changes and never label a moral grade.
 
@@ -713,9 +713,9 @@ Primary references:
   - Task 8 boss phase/retry/reward contracts.
 
   **Acceptance Criteria**:
-  - [ ] All five chapters complete in 2–3 hours on the canonical normal route; chapter fixtures remain individually runnable.
-  - [ ] All three resolution states are reachable from documented action histories, produce distinct world/character outcomes, and save exactly once.
-  - [ ] Final combat demands mastered actions and consequence preparation, not hidden arithmetic or a last-minute correct answer.
+  - [x] All five chapters complete in 2–3 hours on the canonical normal route; chapter fixtures remain individually runnable.
+  - [x] All three resolution states are reachable from documented action histories, produce distinct world/character outcomes, and save exactly once.
+  - [x] Final combat demands mastered actions and consequence preparation, not hidden arithmetic or a last-minute correct answer.
 
   **QA Scenarios**:
   ```text

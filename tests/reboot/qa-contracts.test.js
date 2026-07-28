@@ -11,7 +11,8 @@ test('QA fixture는 튜토리얼부터 보스 전 단계와 복구 화면까지 
     'qa-tutorial', 'qa-arena', 'qa-consequence-secure', 'qa-consequence-purge',
     'qa-boss-phase-1', 'qa-boss-phase-2', 'qa-boss-phase-3',
     'qa-result-secure', 'qa-corrupt-save', 'qa-low-performance',
-    'qa-dual-school-comfort', 'qa-dual-school-verified'
+    'qa-dual-school-comfort', 'qa-dual-school-verified',
+    'qa-final-redacted', 'qa-final-raw', 'qa-final-sealed'
   ];
   assert.deepEqual(required.filter((id) => !QA_SCENE_IDS.includes(id)), []);
   assert.equal(new Set(QA_SCENE_IDS).size, QA_SCENE_IDS.length);

@@ -1,4 +1,4 @@
-import { CHAPTERS_2_3 } from '../content/chapters/catalog.js';
+import { CHAPTERS_2_3, CHAPTERS_2_5 } from '../content/chapters/catalog.js';
 import { deepFreeze, normalizeRebootState } from '../state/model.js';
 
 function issue(code, chapterId = null) {
@@ -37,7 +37,7 @@ export function validateChapterDefinitions(definitions) {
   return Object.freeze({ errors: Object.freeze(errors), valid: errors.length === 0 });
 }
 
-validateChapterDefinitions(CHAPTERS_2_3);
+validateChapterDefinitions(CHAPTERS_2_5);
 
 function memoryAction(state) {
   return state.evidence.find((record) => record.evidenceId === 'haru-memory-backup')?.action ?? 'purge';

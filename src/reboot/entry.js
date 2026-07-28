@@ -9,6 +9,7 @@ import { createVisibilityPause } from './input/visibilityPause.js';
 import { applyViewportFixture, configureRuntime, withRuntimeSettings } from './settings/runtime.js';
 import { createRenderer } from './render/renderer.js';
 import { createDualSchoolPreviewScene } from './render/dualSchoolPreviewScene.js';
+import { createFinalBroadcastPreviewScene } from './render/finalBroadcastPreviewScene.js';
 import { createSchoolNightScene } from './render/schoolNightScene.js';
 import {
   LEGACY_BACKUP_KEY, LEGACY_V3_KEY, V4_SAVE_KEY, V4_TEMP_KEY
@@ -77,6 +78,9 @@ const sceneRegistry = createSceneRegistry([
   ...createQaSceneFixtures({
     createDualSchoolScene: (initialLayer) => createDualSchoolPreviewScene({
       canvas, initialLayer, input, renderer, ui: sceneUi
+    }),
+    createFinalBroadcastScene: (endingId) => createFinalBroadcastPreviewScene({
+      canvas, endingId, input, renderer, ui: sceneUi
     }),
     createScene,
     persist: (campaign) => session.update(() => campaign)

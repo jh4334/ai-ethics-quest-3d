@@ -69,7 +69,7 @@ test('Given the campaign enemy catalog, When validated, Then definitions are dee
 
   // Then: ids, timings, ranges, sockets, colliders, rewards, and feedback hooks are legal.
   assert.deepEqual(definitions.map((definition) => definition.id), [
-    'eraser', 'stamper', 'copycat', 'recommender'
+    'eraser', 'stamper', 'copycat', 'recommender', 'approval'
   ]);
   assert.deepEqual(result.errors, []);
   assert.equal(deepFrozen(ENEMY_DEFINITIONS), true);

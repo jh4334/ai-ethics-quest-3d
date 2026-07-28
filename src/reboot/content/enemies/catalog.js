@@ -105,9 +105,35 @@ export const RECOMMENDER_DEFINITION = deepFreeze({
   }]
 });
 
+export const APPROVAL_DEFINITION = deepFreeze({
+  id: 'approval',
+  role: 'pipeline-support',
+  stats: { maxHp: 80, speed: 0.16, turnRadians: 0.26 },
+  perception: { acquireRange: 9, lossRange: 12 },
+  collider: { height: 1.9, radius: 0.6 },
+  armor: { hits: 1, breaksOnKinds: ['reflected-projectile'] },
+  reward: { id: 'approval-window-reversed', onceOn: 'armor-broken' },
+  moves: [{
+    id: 'approval-command',
+    kind: 'control',
+    socket: 'approval-terminal',
+    timing: { activeTicks: 2, recoveryTicks: 24, windupTicks: 22 },
+    range: { max: 6.5, min: 1.5, preferred: 4.5 },
+    facingDot: 0.8,
+    requiredFacingTicks: 3,
+    damage: 8,
+    feedback: {
+      windup: 'approval-command-windup',
+      contact: 'approval-command-contact',
+      recover: 'approval-command-recover'
+    }
+  }]
+});
+
 export const ENEMY_DEFINITIONS = deepFreeze({
   eraser: ERASER_DEFINITION,
   stamper: STAMPER_DEFINITION,
   copycat: COPYCAT_DEFINITION,
-  recommender: RECOMMENDER_DEFINITION
+  recommender: RECOMMENDER_DEFINITION,
+  approval: APPROVAL_DEFINITION
 });

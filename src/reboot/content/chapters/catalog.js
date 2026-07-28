@@ -93,3 +93,95 @@ export const CHAPTER_THREE = deepFreeze({
 });
 
 export const CHAPTERS_2_3 = deepFreeze([CHAPTER_TWO, CHAPTER_THREE]);
+
+export const CHAPTER_FOUR = deepFreeze({
+  id: 'chapter-4-three-second-approval',
+  order: 4,
+  titleKo: '3초 승인실',
+  loop: {
+    decision: 'inspect-and-reverse-approval-pipeline',
+    steps: ['read-deletion', 'reverse-approval', 'trace-score', 'preserve-or-shutdown'],
+    targetSeconds: 30
+  },
+  enemyIds: ['approval'],
+  evidenceId: 'support-record',
+  carryover: {
+    secure: {
+      encounterVariant: 'full-audit-pressure', evidenceAccess: 'timed-support-log',
+      dialogueCue: '보존한 로그가 3초 승인 큐의 순서를 복원한다.',
+      advantage: '승인 단계를 한 번 건너뛰어 역추적한다.', cost: '승인관 증원 하나가 보존 로그를 추격한다.'
+    },
+    purge: {
+      encounterVariant: 'reconstructed-approval', evidenceAccess: 'fragmented-support-log',
+      dialogueCue: '사라진 구간을 승인관의 응답 시간으로 역산한다.',
+      advantage: '보존 로그를 노리는 증원이 없다.', cost: '지원 기록을 세 단말에서 다시 대조해야 한다.'
+    }
+  },
+  consequenceEchoes: [
+    { id: 'support-records', secureKo: '긴급 지원 기록을 분리해 남겼다.', purgeKo: '빠른 중단과 함께 지원 기록도 닫혔다.' },
+    { id: 'approval-memory', secureKo: '플레이어가 누른 승인 시각이 온전히 돌아왔다.', purgeKo: '승인 기억은 복구됐지만 당시 검토 자료는 비어 있다.' }
+  ],
+  boss: {
+    id: 'approval-pipeline',
+    phases: [
+      { id: 'reverse-delete', response: 'reflect' },
+      { id: 'trace-score', response: 'trace' },
+      { id: 'break-approval', response: 'attack' }
+    ]
+  },
+  patchReward: { id: 'approval-rewind', verb: 'reflect', effect: 'one rejected command returns to its review window' },
+  reversal: {
+    foreshadowIds: ['three-second-target', 'yoonseo-policy-signature'],
+    revealId: 'linked-human-approval',
+    textKo: '윤서의 정책 승인과 플레이어가 누른 버튼이 같은 삭제 경로에 연결돼 있었다.'
+  },
+  timeline: { desktopMinutes: 31, touchMinutes: 33, chapterSelectMinutes: 30 }
+});
+
+export const CHAPTER_FIVE = deepFreeze({
+  id: 'chapter-5-final-broadcast',
+  order: 5,
+  titleKo: '마지막 방송',
+  loop: {
+    decision: 'master-protection-protocol-before-broadcast',
+    steps: ['reflect-shield', 'trace-consent', 'dash-relay', 'signal-core'],
+    targetSeconds: 30
+  },
+  enemyIds: [],
+  evidenceId: 'broadcast-queue',
+  carryover: {
+    secure: {
+      encounterVariant: 'protected-record-route', evidenceAccess: 'redaction-console',
+      dialogueCue: '보존한 기록이 방송 대기열에서 가림 처리 후보로 묶인다.',
+      advantage: '보호 프로토콜의 활성 창이 길어진다.', cost: '검증할 보호 기록이 한 묶음 더 남는다.'
+    },
+    purge: {
+      encounterVariant: 'missing-context-route', evidenceAccess: 'raw-or-seal-console',
+      dialogueCue: '누락된 기록 때문에 방송 대기열이 원본 공개와 봉인으로 갈라진다.',
+      advantage: '검토할 기록 묶음이 적다.', cost: '보호 프로토콜의 활성 창이 짧아진다.'
+    }
+  },
+  consequenceEchoes: [
+    { id: 'haru-return', secureKo: '하루가 가림 검증본에 직접 설명을 덧붙인다.', purgeKo: '하루가 빠진 맥락을 방송 전 직접 경고한다.' },
+    { id: 'dot-limit', secureKo: 'DOT가 동의 없는 삭제를 멈추는 제한을 받아들인다.', purgeKo: 'DOT의 삭제 권한은 검토가 끝날 때까지 봉인된다.' }
+  ],
+  boss: {
+    id: 'lumen-dot-protection-protocol',
+    phases: [
+      { id: 'reflect-shield', response: 'reflect' },
+      { id: 'trace-consent', response: 'trace' },
+      { id: 'dash-relay', response: 'dash' },
+      { id: 'signal-core', response: 'attack' }
+    ]
+  },
+  patchReward: { id: 'consent-window', verb: 'trace', effect: 'verified consent stays visible at the broadcast console' },
+  reversal: {
+    foreshadowIds: ['broadcast-waiting-list', 'shared-decision-path'],
+    revealId: 'responsibility-is-a-chain',
+    textKo: '삭제는 한 명의 명령이 아니라 점수·정책·승인·실행이 이어진 결정 경로였다.'
+  },
+  timeline: { desktopMinutes: 34, touchMinutes: 35, chapterSelectMinutes: 33 }
+});
+
+export const CHAPTERS_4_5 = deepFreeze([CHAPTER_FOUR, CHAPTER_FIVE]);
+export const CHAPTERS_2_5 = deepFreeze([...CHAPTERS_2_3, ...CHAPTERS_4_5]);
