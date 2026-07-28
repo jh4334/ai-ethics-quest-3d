@@ -4,6 +4,7 @@ import { MIXED_ARENA } from '../encounters/catalog.js';
 import { createEncounter, resetEncounter, stepEncounter } from '../encounters/runtime.js';
 
 const EDGE_ACTIONS = new Set(['attack', 'dash', 'reflect', 'trace', 'secure']);
+const ENCOUNTER_LEASH_RADIUS = 12;
 const MAX_FRAME_SECONDS = 0.25;
 
 function offsetEncounter(definition, origin) {
@@ -22,6 +23,12 @@ function combatTargets(encounter, extraTargets) {
     id: enemy.id,
     position: { x: enemy.position.x, y: enemy.position.z }
   })), ...extraTargets];
+}
+
+function playerZone(position, origin) {
+  return Math.hypot(position.x - origin.x, position.y - origin.z) <= ENCOUNTER_LEASH_RADIUS
+    ? 'arena'
+    : 'route';
 }
 
 function syncCombatTargets(combat, encounter) {
@@ -122,7 +129,7 @@ export function createEncounterGameRuntime({
       player: {
         id: 'player',
         position: { x: combatResult.state.player.position.x, z: combatResult.state.player.position.y },
-        zoneId: 'arena'
+        zoneId: playerZone(combatResult.state.player.position, encounterOrigin)
       }
     });
     syncCombatTargets(combatResult.state, encounterResult.state);

@@ -625,7 +625,7 @@ Primary references:
 
   **Commit**: YES | Message: `test(reboot): add deterministic browser visual and offline proof` | Files: `package.json`, lockfile, `.github/workflows/pages.yml`, `tests/reboot-e2e/*`, `tests/reboot-visual/*`, `tests/reboot-offline/*`, fixture modules
 
-- [ ] 12. Integrate and gate the 30-minute vertical slice before campaign expansion
+- [x] 12. Integrate and gate the 30-minute vertical slice before campaign expansion
 
   **What to do**: Wire Tasks 2–11 into one title-to-ending route, tune timings/damage/spawns/camera from recorded decisions, and execute two complete paths on desktop/touch. Produce an evidence packet with completion time, deaths, consequence delta, frame metrics, screenshots/video, console health, save/retry, reduced motion, and offline proof. Retire only legacy tests whose reboot replacements now prove the same platform contract. Freeze the slice content schema after the gate.
 
@@ -640,10 +640,10 @@ Primary references:
   - [Playable vertical slice](https://github.com/MengTo/Skills/blob/21b278c62f49f3ce3d8c8ecbcc84cbcd534f3e49/agent-skills/game-development/build-isometric-arpg/SKILL.md).
 
   **Acceptance Criteria**:
-  - [ ] Median scripted/agent playthrough is 25–35 minutes; first control ≤20s, first combat ≤3m, first consequence ≤10m.
-  - [ ] Both PURGE and SECURE routes reach distinct reports and the identical required signature cliffhanger.
-  - [ ] All automated, visual, performance, mobile, save/retry, reduced-motion, and offline gates pass with evidence.
-  - [ ] Expansion may proceed only if no P0/P1 gameplay issue remains and each weak system is fixed rather than deferred to more content.
+  - [x] Median scripted/agent playthrough is 25–35 minutes; first control ≤20s, first combat ≤3m, first consequence ≤10m.
+  - [x] Both PURGE and SECURE routes reach distinct reports and the identical required signature cliffhanger.
+  - [x] All automated, visual, performance, mobile, save/retry, reduced-motion, and offline gates pass with evidence.
+  - [x] Expansion may proceed only if no P0/P1 gameplay issue remains and each weak system is fixed rather than deferred to more content.
 
   **QA Scenarios**:
   ```text

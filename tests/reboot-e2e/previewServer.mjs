@@ -21,6 +21,11 @@ createServer(async (request, response) => {
     response.writeHead(204).end();
     return;
   }
+  if (request.method === 'POST' && pathname === '/__qa__/online') {
+    offline = false;
+    response.writeHead(204).end();
+    return;
+  }
   if (offline) {
     response.writeHead(503, { 'content-type': 'text/plain; charset=utf-8' }).end('offline fixture');
     return;

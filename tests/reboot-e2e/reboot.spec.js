@@ -4,6 +4,10 @@ import { copyFile } from 'node:fs/promises';
 const TEST_QUERY = 'testHook=h17&tools=hidden&motion=reduced&sound=off&sw=off';
 const OFFLINE_QUERY = TEST_QUERY.replace('&sw=off', '');
 
+test.afterEach(async ({ request }) => {
+  await request.post('/__qa__/online');
+});
+
 function captureErrors(page) {
   const errors = [];
   page.on('pageerror', (error) => errors.push(`page: ${error.message}`));

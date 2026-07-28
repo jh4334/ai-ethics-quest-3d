@@ -11,7 +11,8 @@
     "browser:install": "playwright install chromium",
     "preview:test": "node tests/reboot-e2e/previewServer.mjs",
     "e2e": "playwright test --config=playwright.config.js",
-    "e2e:legacy": "node tests/e2e-playthrough.mjs"
+    "e2e:legacy": "node tests/e2e-playthrough.mjs",
+    "slice:gate": "node scripts/verify-reboot-slice.mjs"
   },
   "dependencies": {
     "three": "0.185.0"

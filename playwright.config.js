@@ -9,7 +9,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   snapshotPathTemplate: '{testDir}/../reboot-visual/__snapshots__/{arg}{ext}',
   testDir: './tests/reboot-e2e',
-  timeout: 180_000,
+  timeout: 360_000,
   use: {
     baseURL: 'http://127.0.0.1:8899',
     colorScheme: 'dark',

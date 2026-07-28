@@ -14,6 +14,35 @@ function advance(runtime, ticks, environment = {}) {
   return { combatEvents, enemyEvents, state: runtime.getState() };
 }
 
+test('Given the player inside the authored arena, When combat advances, Then enemies acquire locally', () => {
+  // Given: 첫 전투 중앙에 선 플레이어와 원래 mixed arena.
+  const runtime = createEncounterGameRuntime({ startPosition: { x: 0, y: -39 } });
+
+  // When: 적 인지 루프가 시작된다.
+  const result = advance(runtime, 12);
+
+  // Then: 기존 근거리 교전은 그대로 유지된다.
+  assert.equal(result.state.encounter.enemies.some((enemy) => enemy.targetId === 'player'), true);
+});
+
+test('Given the player leaves the first arena, When the route continues, Then enemies cannot chase into later scenes', () => {
+  // Given: mixed arena 전투가 시작된 뒤 다음 복도로 달리는 플레이어.
+  const runtime = createEncounterGameRuntime({ startPosition: { x: 0, y: -39 } });
+  advance(runtime, 12);
+
+  // When: 플레이어가 기억 백업 구간보다 멀리 이동한다.
+  for (let tick = 0; tick < 360; tick += 1) {
+    runtime.update(1 / 60, { horizontal: 0, vertical: -1 });
+  }
+  const enemies = runtime.getState().encounter.enemies;
+
+  // Then: 첫 전투 적은 추적을 놓고 자기 전투 구역을 벗어나지 않는다.
+  assert.equal(enemies.every((enemy) => enemy.targetId === null), true);
+  assert.equal(enemies.every((enemy) => (
+    Math.hypot(enemy.position.x - enemy.spawn.position.x, enemy.position.z - enemy.spawn.position.z) <= 13
+  )), true);
+});
+
 test('같은 입력은 적과 플레이어가 결합된 동일한 60Hz 결과를 만든다', () => {
   const play = () => {
     const runtime = createEncounterGameRuntime({ startPosition: { x: -8, y: -39 } });

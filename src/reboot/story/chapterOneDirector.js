@@ -1,5 +1,6 @@
 import { createChapterOneStory, transitionChapterOne } from './chapterOneMachine.js';
 import { createChapterOneOutcome } from './chapterOneOutcome.js';
+import { createSliceTimeline } from '../slice/contract.js';
 
 function branchStory(branch) {
   let state = createChapterOneStory();
@@ -31,7 +32,12 @@ export function createChapterOneBossFixture(branch) {
 export function createChapterOneEndingFixture(branch) {
   if (!['purge', 'secure'].includes(branch)) throw new RangeError(`지원하지 않는 결말 경로: ${branch}`);
   const story = endingStory(branch);
-  return Object.freeze({ branch, campaign: story.campaign, outcome: createChapterOneOutcome(story) });
+  return Object.freeze({
+    branch,
+    campaign: story.campaign,
+    outcome: createChapterOneOutcome(story),
+    sliceTimeline: createSliceTimeline(branch)
+  });
 }
 
 export function createChapterOneDirector({ campaign, persist = () => {} } = {}) {

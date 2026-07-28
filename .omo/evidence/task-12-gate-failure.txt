@@ -1,0 +1,6 @@
+Command: node scripts/verify-reboot-slice.mjs <broken-manifest.json>
+Exit code: 1
+
+H-17 수직 슬라이스 게이트 실패: desktop-frame-budget, offline-gate, purge-route, touch-completion
+
+The CLI adapter was exercised by tests/reboot-slice-gate.test.js with one desktop SECURE run whose p95 was over budget, offline=false, and whose PURGE/touch run was missing. It reported all four failures in one pass.
