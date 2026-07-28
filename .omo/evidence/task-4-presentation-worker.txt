@@ -1,0 +1,61 @@
+Task 4 presentation worker evidence — combat simulation to render frame adapter
+Date: 2026-07-28 (Asia/Seoul)
+
+OWNERSHIP / ISOLATION
+- Edited only src/reboot/render/combatPresentation.js,
+  tests/reboot-combat-presentation.test.js, and this evidence file.
+- Did not edit schoolNightScene.js, entry.js, HTML, or another worker's files.
+- No sub-agent, commit, server, port, asset, or temporary script was created.
+
+BASELINE -> RED -> GREEN
+- Baseline command: npm.cmd test
+- Baseline result: PASS — 250 tests, 0 failures.
+- RED command: node --test tests/reboot-combat-presentation.test.js
+- RED result: intended SyntaxError because the empty production module did not
+  export buildCombatFrame; exit 1, 0 passing tests.
+- GREEN command: node --test tests/reboot-combat-presentation.test.js
+- GREEN result: PASS — 4 tests, 0 failures.
+- Focused repeat command:
+  1..2 | ForEach-Object { node --test tests/reboot-combat-presentation.test.js }
+- Focused repeat result: PASS twice — 4/4 then 4/4, 0 failures.
+
+IMPLEMENTED BOUNDARY
+- buildCombatFrame copies authoritative player/target HP and status from
+  combatSimulation state into plain {x,y,z} actor records usable by Three.
+- Events become one-shot action, target/player hit, normal/perfect REFLECT,
+  TRACE, SECURE, and SYNC CHAIN effects plus Korean HUD cues.
+- Event damage is presentation metadata only. A test supplies deliberately
+  conflicting event HP and verifies state HP wins and the input is not mutated.
+- createCombatPresentationAdapter deduplicates stable event identities, keeps a
+  bounded FIFO memory (default 256), suppresses transients while paused, resets
+  automatically on tick rollback, and also exposes an explicit reset().
+- The adapter imports no Three module and contains no contact/damage authority.
+
+MANUAL QA — exact Node invocation
+Command:
+  node --input-type=module -e "import { createCombatState, stepCombat } from './src/reboot/sim/combatSimulation.js'; import { createCombatPresentationAdapter } from './src/reboot/render/combatPresentation.js'; let state = createCombatState({ targets: [{ id: 'eraser', position: { x: 1, y: 0 }, hp: 100 }] }); const adapter = createCombatPresentationAdapter(); const schedule = new Map([[0, [{ type: 'attack' }]], [12, [{ type: 'trace', targetId: 'eraser' }]], [27, [{ type: 'secure', targetId: 'eraser' }]], [36, [{ type: 'reflect' }]], [39, [{ type: 'incoming', contactId: 'stamp-1', sourceId: 'stamper', position: { x: 1, y: 0 }, damage: 10 }]]]); const effects = []; const cues = []; for (let tick = 0; tick < 60; tick += 1) { const result = stepCombat(state, schedule.get(tick) ?? []); state = result.state; const frame = adapter.present(state, result.events); effects.push(...frame.effects); cues.push(...frame.hud.cues); } const ids = effects.map(effect => effect.id); const summary = { playerHp: state.player.hp, targetHp: state.targets[0].hp, chainLevel: state.chain.level, effectKinds: effects.map(effect => effect.kind), duplicateEffectIds: ids.length - new Set(ids).size, retained: adapter.retainedEventCount(), cues }; if (summary.playerHp !== 100 || summary.targetHp !== 88 || summary.chainLevel !== 3 || summary.duplicateEffectIds !== 0 || !summary.effectKinds.includes('perfect-reflect') || !summary.effectKinds.includes('trace') || !summary.effectKinds.includes('secure')) throw new Error(JSON.stringify(summary)); console.log(JSON.stringify(summary));"
+Output:
+  {"playerHp":100,"targetHp":88,"chainLevel":3,"effectKinds":["action","target-hit","chain","action","trace","action","secure","chain","action","perfect-reflect","chain"],"duplicateEffectIds":0,"retained":11,"cues":["신호 칼날 1","대상 피해 12","SYNC CHAIN 1","TRACE","TRACE 완료","SECURE","SECURE 완료","SYNC CHAIN 2","REFLECT","완벽 반사","SYNC CHAIN 3"]}
+Result: PASS — actual simulation events produced all required presentation cues,
+one perfect reflect, chain level 3, and zero duplicate effect IDs.
+
+ADVERSARIAL / CLEANUP RECEIPT
+- Malformed null and unknown events are ignored; 12 distinct valid events with
+  a memory limit of 4 render once while retainedEventCount remains exactly 4.
+- Repeated hit IDs render once; explicit reset and tick-rollback restart permit
+  a fresh combat to reuse deterministic IDs; paused frames expose zero effects.
+- Conflicting event HP cannot override authoritative state HP.
+- node --check passes for both changed JavaScript files.
+- rg -n "Math\.random|Date\.|performance\." src/reboot/render/combatPresentation.js
+  returned 0 matches.
+- Pure LOC: combatPresentation.js 168; reboot-combat-presentation.test.js 97.
+  Production is below the mandatory 250 pure-LOC ceiling.
+- No cleanup required: all Node processes terminated normally; no browser/server,
+  port, generated asset, cache, or temporary file was created.
+
+FULL VERIFICATION
+- npm.cmd run build: PASS — Vite built 75 modules; existing Three chunk-size
+  warning only.
+- npm.cmd run smoke: PASS — DOM marker and module wiring present.
+- npm.cmd test: PASS — 278 tests, 0 failures, including this worker's 4 tests
+  and the concurrently completed Task 6 enemy suite.

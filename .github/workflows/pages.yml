@@ -30,12 +30,18 @@ jobs:
           cache: npm
       - name: 의존성 설치
         run: npm ci
+      - name: 고정 Chromium 설치
+        run: npx playwright install --with-deps chromium
       - name: 단위 테스트
         run: npm test
       - name: 빌드
         run: npm run build
       - name: 스모크 테스트
         run: npm run smoke
+      - name: 수직 슬라이스 증거 게이트
+        run: npm run slice:gate
+      - name: reboot 브라우저·시각·오프라인 테스트
+        run: npm run e2e
       - uses: actions/upload-pages-artifact@v3
         if: github.event_name != 'pull_request'
         with:

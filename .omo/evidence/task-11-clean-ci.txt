@@ -1,0 +1,25 @@
+Task 11 clean CI reproduction — 2026-07-28
+
+Install contract
+- npm ci
+- npx playwright install --with-deps chromium (CI)
+- npm run browser:install (local)
+- @playwright/test 1.62.0, bundled Chromium 151.0.7922.34
+- No NODE_PATH or CHROMIUM_PATH override
+
+Clean-install gates
+- npm ci: PASS (19 packages installed from lockfile)
+- npm test: PASS (333/333, 0 skipped, 0 failed)
+- npm run build: PASS (117 modules transformed)
+- npm run smoke: PASS
+- npm audit --omit=dev: PASS (0 production vulnerabilities)
+- npm run e2e: PASS (3/3, one worker, 4.9 minutes)
+
+Browser proof
+- Production URL ignored QA fixture parameters without the explicit test hook.
+- Explicit fixtures opened tutorial/arena/consequence, all three boss phases, result, corrupt-save recovery, and low-performance states.
+- Secure result visual matched tests/reboot-visual/__snapshots__/secure-result.png.
+- Low-performance fixture exposed quality=low, DPR=1, renderer counters, lights, and a bounded headless p95 sample.
+- Offline scenario reached an online checkpoint, waited for the service worker and required character cache, switched the origin server to HTTP 503, reloaded, retained the checkpoint, loaded imported characters, and completed the boss through the deterministic K/K/E/E/J/J/J mastery sequence.
+- Offline recording: .omo/evidence/task-11-offline.webm
+- Console/page error capture remained empty in all critical scenarios.

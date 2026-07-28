@@ -1,0 +1,91 @@
+Task 6 — Eraser / Stamper pure enemy foundation evidence
+Date: 2026-07-28 (Asia/Seoul)
+
+SCOPE
+- Owned paths only: src/reboot/content/enemies/**, src/reboot/enemies/**,
+  src/reboot/encounters/**, tests/reboot-enemies.test.js, this evidence file.
+- No commits. No Three dependency. No Math.random. No runtime enemy-name branch.
+
+SUCCESS CONTRACT
+- Immutable Eraser close-pressure and Stamper reflectable-ranged definitions/runtime.
+- Separate perception -> intent -> motion -> contact -> feedback stages.
+- Deterministic solo tutorial and mixed arena; a reflected projectile opens Eraser armor
+  and grants its reward exactly once.
+- Blocker, zone, facing, offscreen, and windup fairness.
+- Acquire/loss/reposition/attack/recover/interrupt/stagger/defeat/reset and shared-definition
+  independence.
+- Committed attacker caps: desktop 3, mobile/touch 2.
+
+BASELINE
+Command: npm.cmd test
+Observed before Task 6 implementation: tests 251, pass 251, fail 0.
+Note: plain `npm test` is blocked by the machine PowerShell execution policy, so the Windows
+executable `npm.cmd` is the exact launcher used for every npm gate.
+
+RED
+Command: node --test tests/reboot-enemies.test.js
+Observed: tests 13, pass 0, fail 13.
+Primary failure: Error: Task 6 enemy foundation is not implemented.
+The missing API was caught intentionally before production files were added.
+
+GREEN — FOCUSED RUN 1
+Command: node --test tests/reboot-enemies.test.js
+Observed after final adversarial case: tests 14, pass 14, fail 0.
+
+GREEN — FOCUSED RUN 2
+Command: node --test tests/reboot-enemies.test.js
+Observed: tests 14, pass 14, fail 0, duration_ms 238.4016.
+
+FULL REGRESSION
+Command: npm.cmd test
+Observed: tests 280, pass 280, fail 0, duration_ms 760.409.
+
+BUILD
+Command: npm.cmd run build
+Observed: 75 modules transformed; built successfully in 503ms.
+Existing informational warning: the shared Three vendor chunk exceeds 500 kB.
+
+SMOKE
+Command: npm.cmd run smoke
+Observed: DOM smoke passed: AI Ethics Quest 3D marker and module wiring present.
+
+MANUAL QA — exact mixed-arena invocation
+Command:
+  node --input-type=module -e "import { MIXED_ARENA } from './src/reboot/encounters/catalog.js'; import { createEncounter, stepEncounter } from './src/reboot/encounters/runtime.js'; let state = createEncounter(MIXED_ARENA, { deviceClass: 'mobile' }); const eraser = state.enemies.find((enemy) => enemy.definition.role === 'melee-pressure'); const shot = { damage: 0, id: 'qa-shot', kind: 'reflected-projectile', sourceId: 'stamper-mixed', targetId: eraser.id }; const base = { blockers: [], effects: [], player: { id: 'player', position: { x: 8, z: 0 }, zoneId: 'arena' } }; const first = stepEncounter(state, { ...base, contacts: [shot] }); const second = stepEncounter(first.state, { ...base, contacts: [shot] }); const events = [...first.events, ...second.events]; console.log(JSON.stringify({ armor: second.state.enemies.find((enemy) => enemy.id === eraser.id).armor, armorBreaks: events.filter((event) => event.type === 'armor-broken').length, committed: second.state.enemies.filter((enemy) => enemy.phase === 'windup' || enemy.phase === 'active').length, rewards: events.filter((event) => event.type === 'reward-granted').length }));"
+Observed:
+  {"armor":0,"armorBreaks":1,"committed":0,"rewards":1}
+
+MANUAL QA — exact fairness invocation
+Command:
+  node --input-type=module -e "import { STAMPER_DEFINITION } from './src/reboot/content/enemies/catalog.js'; import { createEnemyInstance, stepEnemy } from './src/reboot/enemies/runtime.js'; let state = createEnemyInstance(STAMPER_DEFINITION, { facing: 3.141592653589793, id: 'qa-stamper', position: { x: 0, z: 0 }, zoneId: 'arena' }); const base = { blockers: [], effects: [], player: { id: 'player', position: { x: 6, z: 0 }, zoneId: 'arena' } }; let ticks = 0; while (state.phase !== 'windup' && ticks < 40) { state = stepEnemy(state, base).state; ticks += 1; } const blocked = stepEnemy(state, { ...base, blockers: [{ id: 'locker', maxX: 4, maxZ: 1, minX: 2, minZ: -1 }] }); console.log(JSON.stringify({ cancellation: blocked.events.map((event) => event.type), contact: blocked.events.some((event) => event.type === 'attack-contact'), phase: blocked.state.phase, turnTicksBeforeWindup: ticks }));"
+Observed:
+  {"cancellation":["attack-cancelled"],"contact":false,"phase":"reposition","turnTicksBeforeWindup":17}
+
+ADVERSARIAL EVIDENCE
+- Malformed definitions surface duplicate ID, timing, range, socket, collider, reward, and
+  feedback errors together.
+- Same-zone acquisition, cross-zone loss, real segment/AABB obstruction, opposite facing,
+  offscreen windup, duplicate reflected contact, per-device cap pressure, repeated replay,
+  two-instance sharing, and complete reset are covered in the focused suite.
+- Source scan command:
+  rg -n 'Math\.random|from .three.|definition\.id' src/reboot/content/enemies src/reboot/enemies src/reboot/encounters
+  Observed: NO_RANDOM_THREE_OR_IDENTITY_BRANCHES.
+- Runtime name scan command:
+  rg -n 'eraser|stamper' src/reboot/enemies src/reboot/encounters/runtime.js
+  Observed: NO_RUNTIME_ENEMY_NAME_BRANCHES.
+
+PURE LOC
+- Production files range from 13 to 75 pure LOC; every production file is below 200.
+- tests/reboot-enemies.test.js is 226 pure LOC: below the hard 250 ceiling, in the documented
+  warning band, with no further Task 6 edits planned. Split by pipeline/encounter behavior
+  before adding future cases.
+
+CLEANUP / ARCHITECTURAL REVIEW
+- Scan for debugger;, console.log, TODO DEBUG, HACK, XXX: NO_DEBUG_ARTIFACTS.
+- Single responsibilities: catalog, validation, perception, intent, motion, contact, feedback,
+  runtime orchestration, encounter content, and encounter scheduling remain separate.
+- Boundary purity: malformed authored content is handled by validateEnemyDefinitions; runtime
+  consumes validated immutable definitions.
+- No generic catch, ignored promise, stale debug file, temporary fixture, generated asset, or
+  external side effect was introduced.
+- All new behavior is locked by a failing-first focused test and the full regression suite.

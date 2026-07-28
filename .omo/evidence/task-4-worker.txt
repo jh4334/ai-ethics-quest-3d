@@ -1,0 +1,83 @@
+Task 4 worker evidence — deterministic fixed-step combat
+Date: 2026-07-28 (Asia/Seoul)
+
+OWNERSHIP / ISOLATION
+- Edited only: src/reboot/sim/**, src/reboot/combat/**,
+  src/reboot/content/actions.js, tests/reboot-combat.test.js, and this file.
+- Pre-existing/shared worktree changes in render, characters, level, save, state,
+  assets, and other tests were not edited or reverted.
+- No commit created.
+
+BASELINE (before production changes)
+Command:
+  node --test tests/corridorLogic.test.js tests/residueLogic.test.js
+Result:
+  PASS — 13 tests, 0 failures, duration 247.1805ms.
+
+RED -> GREEN RECEIPT
+- RED command: node --test tests/reboot-combat.test.js
+- RED result: intended ERR_MODULE_NOT_FOUND for the not-yet-created
+  src/reboot/content/actions.js contract; production code did not exist yet.
+- GREEN command: node --test tests/reboot-combat.test.js
+- GREEN result: PASS — 10 tests, 0 failures.
+- Flake rerun command:
+  1..2 | ForEach-Object { node --test tests/reboot-combat.test.js }
+- Flake rerun result: PASS twice — 10/10 then 10/10, 0 failures.
+
+IMPLEMENTED CONTRACT
+- 60Hz fixed-step simulation; render adapters only consume emitted events.
+- Explicit idle/startup/active/recovery, stagger, and defeat states.
+- Movement, three-hit SIGNAL BLADE, dash invulnerability, REFLECT timing,
+  TRACE -> SECURE, cooldowns, documented recovery cancels, bounded input buffer.
+- Per-action/per-target hit IDs, one hit per active window, direction/range checks,
+  multi-target resolution, pause/resume, and SYNC CHAIN levels 0..3.
+- Rendering-rate adapter treats move as held input and all other inputs as edge
+  input, retained across a zero-tick 120Hz frame and consumed once at 30/60/120Hz.
+- Canonical FNV-1a state hash and absolute-tick replay continuation.
+
+FOCUSED SCENARIOS
+- Early/late REFLECT: player-hit; perfect active timing: perfect-reflect.
+- Behind/out-of-range contact: player-hit, never reflected.
+- Hit interruption, explicit TRACE cancel, stagger, defeat, repeated/stale input.
+- Multi-target unique hit IDs and duplicate-contact suppression.
+- Pause freezes authoritative tick/position/buffer; resume is explicit.
+- Held movement and one-shot attack are equivalent at 30/60/120Hz.
+- Per-tick attack/dash/reflect spam cannot bypass startup+active commitment.
+- Same replay, rerun replay, and 40+70 interrupted replay have identical events/hash.
+- Malformed/unknown inputs are rejected without corrupting state.
+
+MANUAL QA — exact replay command
+Command:
+  node --input-type=module -e "import('./src/reboot/sim/replay.js').then(m => { import('./src/reboot/sim/combatSimulation.js').then(({ createCombatState }) => { const target = (id, x) => ({ id, position: { x, y: 0 }, hp: 100 }); const shot = { type: 'incoming', contactId: 'manual-shot-1', sourceId: 'stamper', position: { x: 3.2, y: 0 }, kind: 'projectile', damage: 10 }; const inputLog = [{ tick: 0, commands: [{ type: 'dash' }] }, { tick: 12, commands: [{ type: 'attack' }] }, { tick: 23, commands: [{ type: 'attack' }] }, { tick: 35, commands: [{ type: 'attack' }] }, { tick: 52, commands: [{ type: 'reflect' }] }, { tick: 55, commands: [shot] }, { tick: 65, commands: [{ type: 'trace', targetId: 'memory' }] }, { tick: 82, commands: [{ type: 'secure', targetId: 'memory' }] }]; const initialState = createCombatState({ targets: [target('enemy', 3.2), target('memory', 3.8)] }); const first = m.runReplay({ initialState, inputLog, ticks: 110 }); const second = m.runReplay({ initialState, inputLog, ticks: 110 }); const authority = first.events.filter(event => ['reflected', 'perfect-reflect'].includes(event.type)); const secureOrder = first.events.filter(event => ['traced', 'secured'].includes(event.type)).map(event => event.type); console.log(JSON.stringify({ chainLevel: first.state.chain.level, reflectCount: authority.length, uniqueContactCount: new Set(authority.map(event => event.contactId)).size, secureOrder, firstHash: first.hash, secondHash: second.hash, hashesEqual: first.hash === second.hash })); }); })"
+Output:
+  {"chainLevel":3,"reflectCount":1,"uniqueContactCount":1,"secureOrder":["traced","secured"],"firstHash":"d512a1de","secondHash":"d512a1de","hashesEqual":true}
+Result:
+  PASS — chain level 3; one authoritative reflect/contact; TRACE precedes
+  SECURE; second replay hash is identical.
+
+FIVE-MINUTE HEADLESS STRESS
+- 18,000 fixed ticks (5 simulated minutes) completed in about 0.93 seconds.
+- Output:
+  {"simulatedTicks":18000,"simulatedMinutes":5,"authoritativeContacts":9000,"duplicateContacts":0,"maxContactCache":61,"maxBufferedInputs":0}
+- PASS — zero duplicate authoritative contacts; transient caches/queues remained
+  below their fixed caps (contact memory cap 256, pending edge cap 16).
+
+FULL VERIFICATION
+- npm.cmd test: PASS — 249 tests, 0 failures.
+- npm.cmd run build: PASS — Vite built 57 modules (existing >500kB chunk warning only).
+- npm.cmd run smoke: PASS — DOM marker/module wiring present.
+- rg -n "Math\.random|Date\.|performance\." src/reboot/sim src/reboot/combat src/reboot/content/actions.js
+  PASS — 0 matches.
+- Pure LOC (nonblank/non-line-comment):
+  combatSimulation.js 124; fixedStep.js 36; replay.js 34;
+  actionMachine.js 99; contacts.js 105; geometry.js 20; actions.js 58;
+  reboot-combat.test.js 149. Every file is below 250.
+
+ADVERSARIAL / CLEANUP RECEIPT
+- Probed malformed and unknown commands, cancel/resume/pause, interruption-cleared
+  and expired buffers, per-tick spam, 30/60/120Hz, zero-tick edge retention,
+  duplicate contacts, multi-target hits, replay reruns/continuation, event ordering,
+  and final hashes.
+- Prompt injection: N/A; simulation ingests no text content.
+- No servers, ports, child processes, or temporary scripts were created; all node
+  commands terminated normally. No cleanup action required.

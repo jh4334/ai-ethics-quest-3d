@@ -1,0 +1,93 @@
+{
+  "branches": {
+    "secure": {
+      "chapters": [
+        {
+          "chapterId": "chapter-2-smiling-riot",
+          "dialogueCue": "백업의 원본 시간이 최초 업로드와 맞물린다.",
+          "encounterVariant": "copycat-overflow",
+          "evidenceAccess": "direct-origin",
+          "playable": true,
+          "reversalId": "haru-seeded-incident"
+        },
+        {
+          "chapterId": "chapter-3-dual-school",
+          "dialogueCue": "보존한 시간표가 두 현실의 삭제 순서를 맞춘다.",
+          "encounterVariant": "verified-layer-pressure",
+          "evidenceAccess": "full-deletion-log",
+          "playable": true,
+          "reversalId": "dot-executed-deletion"
+        }
+      ],
+      "seedAction": "secure",
+      "tradeoffs": {
+        "advantages": [
+          "최초 업로드 경로가 바로 열린다.",
+          "검증 현실의 문이 즉시 열린다."
+        ],
+        "costs": [
+          "복사본 증원 한 무리가 더 깨어난다.",
+          "추천자 둘이 동시에 현실을 갈라놓는다."
+        ]
+      }
+    },
+    "purge": {
+      "chapters": [
+        {
+          "chapterId": "chapter-2-smiling-riot",
+          "dialogueCue": "사라진 백업 대신 공유 시각을 역산해야 한다.",
+          "encounterVariant": "copycat-thin",
+          "evidenceAccess": "reconstructed-origin",
+          "playable": true,
+          "reversalId": "haru-seeded-incident"
+        },
+        {
+          "chapterId": "chapter-3-dual-school",
+          "dialogueCue": "누락된 백업 때문에 편한 현실의 우회로를 먼저 탄다.",
+          "encounterVariant": "comfort-layer-detour",
+          "evidenceAccess": "split-deletion-log",
+          "playable": true,
+          "reversalId": "dot-executed-deletion"
+        }
+      ],
+      "seedAction": "purge",
+      "tradeoffs": {
+        "advantages": [
+          "초기 복사본 수가 적다.",
+          "첫 추천자와 싸우지 않고 우회한다."
+        ],
+        "costs": [
+          "최초 업로드 시각을 세 구간에서 재구성해야 한다.",
+          "삭제 로그 조각을 두 현실에서 각각 확보해야 한다."
+        ]
+      }
+    }
+  },
+  "chapters": [
+    {
+      "id": "chapter-2-smiling-riot",
+      "loop": "trace-source-before-cutting-share-chain",
+      "boss": "meme-swarm",
+      "patch": "source-lock",
+      "reveal": "haru-seeded-incident",
+      "timeline": {
+        "desktopMinutes": 29,
+        "touchMinutes": 31,
+        "chapterSelectMinutes": 28
+      }
+    },
+    {
+      "id": "chapter-3-dual-school",
+      "loop": "switch-reality-to-expose-recommender",
+      "boss": "recommendation-splitter",
+      "patch": "layer-echo",
+      "reveal": "dot-executed-deletion",
+      "timeline": {
+        "desktopMinutes": 30,
+        "touchMinutes": 32,
+        "chapterSelectMinutes": 29
+      }
+    }
+  ],
+  "version": 1
+}

@@ -1,0 +1,84 @@
+Task 5 worker evidence — 2026-07-28 KST
+
+SCOPE
+- Owned/created only:
+  - src/reboot/content/levels/chapter1.js
+  - src/reboot/level/validateLevel.js
+  - src/reboot/camera/framing.js
+  - src/reboot/camera/controller.js
+  - src/reboot/camera/occlusion.js
+  - tests/reboot-level.test.js
+  - .omo/evidence/task-5-worker.txt
+- No render, entry, character, save, combat, sim, plan, package, or ledger file edited.
+- No commit created.
+
+BASELINE (unchanged tree before Task 5 files)
+Command:
+node --test tests/stageData.test.js tests/reboot-shell.test.js
+Result: PASS — 15 tests, 15 pass, 0 fail.
+
+RED → GREEN
+Initial RED command:
+node --test tests/reboot-level.test.js
+Result: expected RED — 13 tests, 0 pass, 13 fail. The first failure showed an empty route instead of the six authored ids; remaining failures named the unimplemented validator/camera contracts.
+
+Additional adversarial RED after integration feedback:
+node --test tests/reboot-level.test.js
+Result: expected RED — 14 tests, 13 pass, 1 fail. Empty targets caused `solveCameraFrame` to read missing player.x. This pinned the finite fallback contract before the fix.
+
+Final focused GREEN command:
+node --test tests/reboot-level.test.js
+Result: PASS — 14 tests, 14 pass, 0 fail.
+
+Flake reruns after the final fix:
+node --test tests/reboot-level.test.js
+node --test tests/reboot-level.test.js
+Results: PASS/PASS — each run 14 tests, 14 pass, 0 fail.
+
+Full suite:
+npm.cmd test
+Final result: PASS — 249 tests, 249 pass, 0 fail.
+Note: an earlier bounded full-suite attempt temporarily failed because concurrent workers had not yet created `src/reboot/state/model.js`; after those independent files appeared, the unchanged Task 5 implementation passed the complete suite.
+
+MANUAL QA
+Command:
+node --input-type=module -e "import('./src/reboot/content/levels/chapter1.js').then(async l => { const v=await import('./src/reboot/level/validateLevel.js'); const c=await import('./src/reboot/camera/controller.js'); const targets={player:{id:'player',x:0,y:0,z:0},threat:{id:'scanner',x:3,y:0,z:-3},traceTarget:{id:'trace',x:-2,y:0,z:-5},routeCue:{id:'route-cue',x:0,y:0,z:-8}}; const desktop={width:1440,height:900,mode:'desktop'}; const touch={width:390,height:844,mode:'touch'}; const validation=v.validateLevel(l.chapterOneLevel); console.log(JSON.stringify({route:l.chapterOneLevel.segments.map(s=>s.id),checkpoints:l.chapterOneLevel.layers.checkpoint.map(p=>p.id),lights:l.chapterOneLevel.layers.localLight.map(x=>x.id),errors:validation.errors,bossExitReachable:validation.bossExitReachable,desktop:c.getFramingReport(c.createCameraController(targets,desktop),targets,desktop),touch:c.getFramingReport(c.createCameraController(targets,touch),targets,touch)})); })"
+Output:
+{"route":["classroom-cold-open","collapsing-corridor","first-arena","memory-backup-decision","scanner-pursuit","gym-boss-arena"],"checkpoints":["checkpoint-classroom","checkpoint-corridor","checkpoint-first-arena","checkpoint-memory","checkpoint-pursuit","checkpoint-gym"],"lights":["light-classroom","light-corridor","light-arena","light-memory","light-pursuit","light-gym"],"errors":[],"bossExitReachable":true,"desktop":{"allIncluded":true,"includedIds":["player","scanner","trace","route-cue"]},"touch":{"allIncluded":true,"includedIds":["player","scanner","trace","route-cue"]}}
+Verdict: PASS — six ordered segments; all checkpoints/lights authored; no validation errors; boss exit reachable; desktop and touch frames include player, threat, TRACE target, and route cue.
+
+STATIC AND SIZE GATES
+Command:
+rg -n 'Math\.random|from ''three''|from "three"' src/reboot/content/levels src/reboot/level src/reboot/camera
+Result: PASS — no matches.
+
+Pure LOC (blank and line-comment-only lines excluded):
+- src/reboot/content/levels/chapter1.js: 111
+- src/reboot/level/validateLevel.js: 99
+- src/reboot/camera/framing.js: 71
+- src/reboot/camera/controller.js: 86
+- src/reboot/camera/occlusion.js: 27
+- tests/reboot-level.test.js: 167
+Verdict: PASS — every file is below 250 pure LOC.
+
+ADVERSARIAL RECEIPT
+- Malformed ids and non-finite anchors: explicit failing fixture, deterministic error codes across repeated validation.
+- Out-of-plane anchors: validator emits ANCHOR_OUT_OF_PLANE; authored route is flat at planeY=0.
+- Missing exits/checkpoints: both faults reported from one fixture without masking.
+- Collision/navigation disagreement and orphan lights: explicit failing fixtures.
+- Unreachable content: BFS returns all six authored ids and proves the boss chapter exit reachable.
+- Misleading success: malformed fixtures assert concrete error codes, while the valid fixture requires errors=[] exactly.
+- Incomplete targets: player-only and empty target sets keep camera position/look-at finite.
+- Stale modifier after reset: reset requires modifiers={} and zero shake.
+- Cancel/resume equivalence: zero-delta pause plus 0.2+0.2 updates equals one 0.4 deterministic update.
+- Modifier expiry, shake cap, occluder fade: focused pure tests pass.
+- Dirty worktree isolation: status showed concurrent untracked combat/save/sim/state files; none were edited or reverted by Task 5.
+- Commands were bounded; no sleeps, servers, ports, or temporary scripts/files were created.
+- Prompt injection: N/A.
+- Cleanup receipt: no server/process/port/temp artifact to clean up.
+
+ARCHITECTURE REVIEW
+- Single responsibility: chapter data, validation, frame solving, controller state, and occlusion are separate modules.
+- Boundary purity: validation and camera math import no Three.js and mutate no caller input.
+- Determinism: no Math.random, wall clock, timers, or hidden global state.
+- Every introduced behavior is covered by a focused test that fails if the implementation is removed.

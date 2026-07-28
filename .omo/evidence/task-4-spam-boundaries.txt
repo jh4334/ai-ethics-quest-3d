@@ -1,0 +1,10 @@
+Task 4 spam and commitment boundary evidence — 2026-07-28
+
+- Focused command: node --test tests/reboot-combat.test.js
+- Result: 10/10 PASS, repeated in independent processes.
+- Per-tick attack/dash/reflect input cannot bypass startup, active, or recovery.
+- A zero-tick 120Hz frame retains one edge; 30/60/120Hz consume it exactly once.
+- Five-minute / 18,000-tick stress: duplicate contacts 0, max contact cache 61/256.
+- Malformed and unknown commands are rejected without changing authoritative state.
+- Browser keyboard probe observed attack1, reflect, dash, TRACE, SECURE, and SYNC 3.
+- Verdict: PASS.

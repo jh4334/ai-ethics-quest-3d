@@ -1,0 +1,50 @@
+Task 7 — Attendance Zero story foundation
+Date: 2026-07-28
+
+Owned files
+- src/reboot/content/story/chapter1.js
+- src/reboot/story/validateStory.js
+- src/reboot/story/chapterOneMachine.js
+- src/reboot/story/chapterOneOutcome.js
+- tests/reboot-story.test.js
+
+RED
+- Command: node --test tests/reboot-story.test.js
+- Result: 0 passed, 6 failed.
+- Expected cause: explicit story validator, machine, and outcome stubs reported “not implemented”.
+
+GREEN 1
+- Command: node --test tests/reboot-story.test.js
+- Result: 6 passed, 0 failed.
+
+GREEN 2
+- Command: node --test tests/reboot-story.test.js
+- Result: 6 passed, 0 failed.
+
+Implemented contracts
+- Eleven immutable chapter beats encode the 00:00–30:00 route, short interruptible radio, two evidence records, and the post-boss reversal.
+- PURGE immediately records a lost backup and enters pursuit. TRACE enters a distinct checkpoint, requires the pressure wave to clear, then SECURE records the preserved backup.
+- The v4 campaign checkpoint and evidence record are the persisted source of truth; reconstruction restores phase, branch, world dressing, backup visibility, extra-wave cost, and boss callout.
+- Both branches reach the boss and approval record. PLAYER-ID first appears in approval-record-opened, which directly requires boss-defeated.
+- The result object names observed actions and concrete costs without correct/wrong, 정답/오답, 현명, or 실패 labels.
+
+Adversarial receipt
+- malformed input: duplicate triggers, unknown evidence, impossible exclusive prerequisites, invalid action/event, excessive line length, and excessive duration are rejected.
+- prompt injection: N/A; no external or model-authored text crosses this pure content boundary.
+- cancel/resume: TRACE and pressure-cleared use separate persisted checkpoints; SECURE cannot skip the pressure checkpoint.
+- stale state: serializeSave → parseStoredSave → createChapterOneStory reconstructs the secure route and effects.
+- dirty tree: only the assigned Task 7 paths were edited; concurrent Task 6 changes were not reverted.
+- hung operations: all state transitions are synchronous and bounded; no timers, network, or loops depend on wall time.
+- flaky behavior: focused suite passed twice with deterministic state and transcript ordering.
+- misleading success: assertions inspect v4 axes, Trust, world effects, transcript order, and exact evidence IDs rather than only non-null values.
+- repeated interruption: out-of-order boss and unsupported memory actions throw without mutating the initial state.
+
+Full regression
+- Command: npm test
+- Final result after concurrent Task 6 edits settled: 306 passed, 0 failed.
+
+Post-write review
+- Pure LOC: chapter1.js 139; validateStory.js 71; chapterOneMachine.js 140; chapterOneOutcome.js 35; reboot-story.test.js 139.
+- Math.random: absent from all Task 7 production paths.
+- git diff --check: passed for all assigned paths.
+- Single responsibility: content owns authored beats; validator owns graph boundaries; machine owns deterministic transitions; outcome owns report copy.

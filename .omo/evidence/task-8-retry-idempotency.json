@@ -1,0 +1,103 @@
+{
+  "capturedAt": "2026-07-28T14:32:54.351Z",
+  "actualKeys": [
+    "KeyK",
+    "KeyK",
+    "KeyE",
+    "KeyE",
+    "KeyJ",
+    "KeyJ",
+    "KeyJ"
+  ],
+  "masteryTrace": [
+    {
+      "key": "KeyK",
+      "phase": "reflect-scan",
+      "successes": "1",
+      "hp": "210",
+      "status": "active"
+    },
+    {
+      "key": "KeyK",
+      "phase": "trace-roster",
+      "successes": "0",
+      "hp": "180",
+      "status": "active"
+    },
+    {
+      "key": "KeyE",
+      "phase": "trace-roster",
+      "successes": "1",
+      "hp": "150",
+      "status": "active"
+    },
+    {
+      "key": "KeyE",
+      "phase": "approval-core",
+      "successes": "0",
+      "hp": "120",
+      "status": "active"
+    },
+    {
+      "key": "KeyJ",
+      "phase": "approval-core",
+      "successes": "1",
+      "hp": "80",
+      "status": "active"
+    },
+    {
+      "key": "KeyJ",
+      "phase": "approval-core",
+      "successes": "2",
+      "hp": "40",
+      "status": "active"
+    },
+    {
+      "key": "KeyJ",
+      "phase": "approval-core",
+      "successes": "3",
+      "hp": "0",
+      "status": "victory"
+    }
+  ],
+  "victory": {
+    "bossStatus": "victory",
+    "bossHp": "0",
+    "storyPhase": "chapter-ending",
+    "patchChoice": "reflect-arc",
+    "savedChapter": "2",
+    "savedEvidenceCount": "2",
+    "resultVisible": true,
+    "patchVisible": false,
+    "logs": []
+  },
+  "reload": {
+    "patchChoice": "reflect-arc",
+    "chapter": 2,
+    "completed": [
+      1
+    ],
+    "evidence": [
+      {
+        "action": "secure",
+        "chapter": 1,
+        "evidenceId": "haru-memory-backup"
+      },
+      {
+        "action": "secure",
+        "chapter": 1,
+        "evidenceId": "player-approval-record"
+      }
+    ],
+    "approvalRecords": 1,
+    "logs": []
+  },
+  "automatedRetryProbe": {
+    "command": "node --test tests/reboot-boss-game-runtime.test.js x2",
+    "retries": 3,
+    "finalStatus": "victory",
+    "processedActionIds": 7
+  },
+  "visualArtifact": ".omo/evidence/task-8-boss-clear.png",
+  "note": "브라우저 표면이 영상 녹화를 제공하지 않아 실제 키 입력 상태 추적과 PNG를 결정적 증거로 저장했다."
+}

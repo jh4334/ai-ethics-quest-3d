@@ -49,7 +49,7 @@ test('living world(Z1): 풀 흔들림·앰비언트 생물·블롭 그림자가 
   assert.match(mainSource, /swayPhase = instanceMatrix\[3\]\.x/);
   assert.match(mainSource, /uTime \* 1\.9 \+ swayPhase/);
   // 앰비언트 생물: 비트나비·소식 갈매기·굴뚝 연기 — elapsed 기반 결정적 궤도.
-  const lifeBlock = mainSource.match(/function createAmbientLife[\s\S]*?\n\}\n/)?.[0] ?? '';
+  const lifeBlock = mainSource.match(/function createAmbientLife[\s\S]*?\r?\n\}\r?\n/)?.[0] ?? '';
   assert.ok(lifeBlock.includes('butterflies'), 'createAmbientLife에 비트나비');
   assert.ok(lifeBlock.includes('gulls'), 'createAmbientLife에 갈매기');
   assert.ok(lifeBlock.includes('puffs'), 'createAmbientLife에 연기 퍼프');
@@ -229,7 +229,7 @@ test('first-control beat(R-루프1): 시네마틱 종료·스킵 후 첫 조작�
   // 첫 플레이 1회만(재방문 세이브에선 안 뜸).
   assert.match(mainSource, /firstControlBeatDone/);
   // finishPrologueCinematic이 비트를 호출(스킵·정상 종료 공통 경로).
-  assert.match(mainSource, /snapCamera\(game\.renderState\.camera, game\.player\.position\);\n  playFirstControlBeat/);
+  assert.match(mainSource, /snapCamera\(game\.renderState\.camera, game\.player\.position\);\r?\n  playFirstControlBeat/);
   assert.match(cssSrc, /@keyframes chipAttn/);
 });
 
@@ -239,10 +239,10 @@ test('bundle & 허브(루프E): three 벤더 청크 분리 + 허브 2부 소개 
   // Three.js를 별도 청크로 — 재배포 시 게임 코드만 재다운로드(PWA 캐시 세밀화).
   assert.match(vite, /manualChunks\(id\)/);
   assert.match(vite, /node_modules\/three/);
-  // 교사 허브: 2부 소개가 H-17 사건·6장 캠페인·오프라인을 반영.
-  assert.match(hub, /삭제된 학생 H-17/);
-  assert.match(hub, /6장 캠페인/);
-  assert.match(hub, /디지털 발자국·필터버블·AI 의존/);
+  // 교사 허브: 2부 소개가 현재 H-17 액션 스릴러·5장 캠페인·오프라인을 반영.
+  assert.match(hub, /H-17: NULL/);
+  assert.match(hub, /5장 캠페인/);
+  assert.match(hub, /Copycat 공유 폭동/);
   assert.match(hub, /무설치·오프라인/);
 });
 
@@ -284,7 +284,7 @@ test('touch dialog(루프1): 터치 기기에서 대화 버튼 타깃 확대 + �
   assert.match(coarseBlock, /\.panel-heading button \{[\s\S]*?min-height: 46px/);
   assert.match(coarseBlock, /\.finale-next \{[\s\S]*?min-height: 52px/);
   // 태블릿에서 대화창이 하단 스틱과 겹치지 않게 위치·높이 캡.
-  assert.match(cssSrc, /top: 40%;\n    max-height: min\(60vh, 560px\)/);
+  assert.match(cssSrc, /top: 40%;\r?\n    max-height: min\(60vh, 560px\)/);
 });
 
 test('pwa(루프2): 매니페스트·서비스워커·등록이 오프라인 주장(요약본)을 실제로 충족한다', () => {
@@ -297,7 +297,7 @@ test('pwa(루프2): 매니페스트·서비스워커·등록이 오프라인 주
   assert.match(manifest.icons[0].src, /icon\.svg/);
   // 서비스워커: 이동은 네트워크 우선(새 배포 즉시 반영), 에셋은 캐시 우선.
   assert.match(sw, /request\.mode === 'navigate'/);
-  assert.match(sw, /caches\.match\(request\)/);
+  assert.match(sw, /caches\.match\(request(?:,\s*\{[^}]+\})?\)/);
   assert.match(sw, /self\.skipWaiting\(\)/);
   // 등록: dev 서버(5173)에선 제외 — 개발 중 소스 캐시 사고 방지.
   assert.match(html, /serviceWorker/);
@@ -700,7 +700,7 @@ test('scene BGM: three procedural layers crossfade on dungeon/boss transitions (
 });
 
 test('mobile HUD stays minimal: one-line objective, small popups, clamped dungeon/boss panels', () => {
-  const mobile = cssSource.match(/@media \(pointer: coarse\), \(max-width: 760px\) \{[\s\S]*?\n\}\n/g)?.join('') ?? '';
+  const mobile = cssSource.match(/@media \(pointer: coarse\), \(max-width: 760px\) \{[\s\S]*?\r?\n\}\r?\n/g)?.join('') ?? '';
   // 목표 칩은 모바일에서 한 줄로(작은 화면에서 조작 공간 확보).
   assert.match(mobile, /\.objective-chip p:last-child \{[\s\S]*?-webkit-line-clamp: 1/);
   // 전투 팝업·던전 목표·보스 말풍선은 축소/클램프.

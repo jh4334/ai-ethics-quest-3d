@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-28T18:30:00+09:00",
+  "blockers": [],
+  "runs": [
+    {
+      "branch": "secure",
+      "device": "desktop",
+      "reportId": "secure-preserved-source-link",
+      "signatureRevealed": true,
+      "consoleErrors": 0,
+      "timeline": {
+        "branch": "secure",
+        "contractVersion": 1,
+        "completionMinutes": 29,
+        "firstControlSeconds": 12,
+        "firstCombatMinutes": 2.5,
+        "firstConsequenceMinutes": 10
+      },
+      "metrics": {
+        "p95FrameMs": 8.5,
+        "drawCalls": 29,
+        "triangles": 54542,
+        "lights": 4
+      },
+      "gates": {
+        "automated": true,
+        "visual": true,
+        "performance": true,
+        "mobile": true,
+        "saveRetry": true,
+        "reducedMotion": true,
+        "offline": true
+      },
+      "artifacts": [
+        ".omo/evidence/task-12-secure-desktop.png",
+        ".omo/evidence/task-10-touch-landscape.jpg",
+        ".omo/evidence/task-11-offline.webm"
+      ]
+    },
+    {
+      "branch": "purge",
+      "device": "touch",
+      "reportId": "purge-context-link-removed",
+      "signatureRevealed": true,
+      "consoleErrors": 0,
+      "timeline": {
+        "branch": "purge",
+        "contractVersion": 1,
+        "completionMinutes": 28,
+        "firstControlSeconds": 12,
+        "firstCombatMinutes": 2.5,
+        "firstConsequenceMinutes": 9
+      },
+      "metrics": {
+        "p95FrameMs": 16.7,
+        "drawCalls": 33,
+        "triangles": 54610,
+        "lights": 4
+      },
+      "gates": {
+        "automated": true,
+        "visual": true,
+        "performance": true,
+        "mobile": true,
+        "saveRetry": true,
+        "reducedMotion": true,
+        "offline": true
+      },
+      "artifacts": [
+        ".omo/evidence/task-12-purge-touch.png",
+        ".omo/evidence/task-10-touch-playthrough.jpg",
+        ".omo/evidence/task-11-offline.webm"
+      ]
+    }
+  ],
+  "sources": {
+    "timing": "src/reboot/slice/contract.js deterministic authored timeline",
+    "performance": ".omo/evidence/task-10-mobile-performance.json",
+    "browserMatrix": "tests/reboot-e2e/slice.spec.js (2/2)",
+    "offline": ".omo/evidence/task-11-offline.webm",
+    "resolvedGameplayIssue": "First-arena enemies now lose the player outside the 12-unit encounter leash."
+  }
+}

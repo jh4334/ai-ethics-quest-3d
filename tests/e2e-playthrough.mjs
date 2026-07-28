@@ -26,7 +26,7 @@ if (!existsSync(CHROMIUM)) {
   console.error(`e2e: 크로미움을 찾을 수 없습니다(${CHROMIUM}). CHROMIUM_PATH로 지정하세요.`);
   process.exit(2);
 }
-if (!existsSync(new URL('../dist/index.html', import.meta.url))) {
+if (!existsSync(new URL('../dist/legacy.html', import.meta.url))) {
   console.error('e2e: dist/가 없습니다. 먼저 npm run build를 실행하세요.');
   process.exit(2);
 }
@@ -57,7 +57,7 @@ try {
   p.on('pageerror', (e) => errs.push('PAGEERR: ' + e.message));
   p.on('console', (m) => { if (m.type() === 'error') errs.push('CON: ' + m.text()); });
   await p.addInitScript(() => { try { localStorage.clear(); } catch (e) {} window.__ETHICS_TEST_HOOK__ = true; });
-  await p.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: 'networkidle' });
+  await p.goto(`http://127.0.0.1:${PORT}/legacy.html`, { waitUntil: 'networkidle' });
   await p.waitForTimeout(900);
 
   const A = async (ms = 260) => { await p.evaluate(() => { const g = window.__ethicsGame; if (g.dungeon) g.dungeon.actionCooldown = 0; }); await p.keyboard.press('e'); await p.waitForTimeout(ms); };

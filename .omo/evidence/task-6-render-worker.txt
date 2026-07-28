@@ -1,0 +1,50 @@
+Task 6 적 시각화 작업자 검증 기록
+
+RED
+- 명령: node --test tests/reboot-enemy-render.test.js
+- 결과: FAIL 4/4
+- 원인: createEnemyCast / enemyAnimationState 미구현 경계가 의도대로 실패함
+
+GREEN 1
+- 명령: node --test tests/reboot-enemy-render.test.js
+- 결과: PASS 4/4, duration 138.0074ms
+
+GREEN 2 (반복 안정성)
+- 명령: node --test tests/reboot-enemy-render.test.js
+- 결과: PASS 4/4, duration 329.1294ms
+
+통합 API 보완 RED
+- 명령: node --test tests/reboot-enemy-render.test.js
+- 결과: FAIL 1/4
+- 원인: 루트 런타임의 raw enemyEvents(type) 입력이 cueId로 표시되지 않음
+
+통합 API 보완 GREEN 1/2
+- 명령: node --test tests/reboot-enemy-render.test.js (동일 테스트 2회 병렬 반복)
+- 결과: PASS 4/4, duration 147.8302ms / PASS 4/4, duration 148.8101ms
+- raw enemyEvents와 기존 feedback cue 모두 present(encounterState, events)에서 수용
+
+전체 스위트 참고
+- 명령: npm.cmd test
+- 결과: 289 PASS / 7 FAIL
+- 현재 병렬 작업 중인 Task 7 story 미구현 6건과 Task 8 boss 계약 1건만 실패
+- reboot-enemy-render 4건과 기존 Task 6 enemy foundation 14건은 모두 통과
+
+정적 검증
+- src/reboot/render/enemyCast.js pure LOC: 146 이하
+- tests/reboot-enemy-render.test.js pure LOC: 102
+- Math.random 없음
+- shadow caster / 신규 상시 light 없음
+- git diff --check 통과
+
+구현 계약
+- Eraser/Stamper 정의 ID를 기존 CC0 캐릭터 팩토리 프로필에 직접 연결
+- 권위 위치·방향·페이즈만 표시하며 피해 판정은 만들지 않음
+- idle/acquire/reposition/windup/active/recover/interrupt/stagger/defeat를 명시적으로 매핑
+- 최대 적 수, 중복 ID, 폐기 후 로드 경계를 검사
+- reset/dispose/getDebugState 제공, dispose 멱등성 검증
+
+자가 검토
+- 단일 책임: 적 런타임 상태를 Three 캐릭터 표현으로 투영
+- 경계: encounter 배열·상한·중복 ID를 load에서 검사
+- 변형 분기: switch로 모든 현재 페이즈를 명시하며 알 수 없는 페이즈는 오류
+- 렌더러는 권위 상태를 변경하지 않고 캐릭터 에셋의 애니메이션만 갱신
