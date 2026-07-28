@@ -1,0 +1,23 @@
+Task 15 final review — PASS
+
+1. Goal and constraints: PASS
+   All reboot story roles use documented CC0 imported character profiles. Determinism, privacy, save/report contracts, low-spec caps, and legacy access remain intact.
+2. QA: PASS
+   363/363 node tests, build, smoke, slice gate, CI browser/visual/offline matrix, and a production no-hook playthrough passed.
+3. Code quality: PASS
+   Pure campaign state remains separate from Three.js presentation. Production review fixed completed-ending replay, cross-platform screenshot text rasterization, and Pages-relative asset URLs.
+4. Security and resilience: PASS
+   No secrets or personal data were added. Production fixtures remain gated, saves validate atomically, service-worker offline read-back passes, and rollback preserves v4 bytes.
+5. Scope fidelity: PASS
+   Canonical H-17: NULL is five chapters, the old campaign is available only through the documented legacy route, and no unrelated worktree files were changed.
+
+Production evidence:
+- Character and enemy assets: ready, HTTP failures 0
+- Final screenshot: seven imported humanoid characters visible; HUD, objective, and subtitles readable
+- Representative arena: 37 draw calls, 81,380 triangles, 4 lights
+- Save continuation: chapter-3:start survived reload and offline launch
+- Rollback run: 30400602612
+- Restore run: 30400720730
+- Rollback preservation: chapter-3:rollback-preserved, 333 bytes, console errors 0
+
+The user limited delegation to three subagents. That cap was already reached, so the final five-lane review was performed locally without additional delegation.

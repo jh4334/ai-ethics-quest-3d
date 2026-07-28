@@ -10,13 +10,26 @@
     "h17.legacy.v3.backup",
     "ai-ethics-quest-3d/progress/h17-v4"
   ],
-  "rollbackCommand": "gh workflow run pages.yml --ref pre-reboot-fa1ac50",
+  "rollbackCommand": "gh workflow run pages.yml --ref main -f deploy_ref=pre-reboot-fa1ac50",
   "restoreCommand": "gh workflow run pages.yml --ref main",
   "localChecks": [
     "tag resolves to target commit",
     "legacy and reboot entries build together",
     "save repository preserves v3 backup across reset and corruption"
   ],
-  "productionRollbackRun": null,
-  "productionRestoreRun": null
+  "failedDirectTagRun": {
+    "id": 30400494575,
+    "reason": "github-pages environment rejects direct tag deployments"
+  },
+  "productionRollbackRun": 30400602612,
+  "productionRestoreRun": 30400720730,
+  "productionProof": {
+    "rollbackTitle": "AI 윤리 퀘스트 — 삭제된 학생 H-17",
+    "restoredTitle": "H-17: NULL — 삭제된 밤",
+    "restoredCharacters": "ready",
+    "restoredChapter": 3,
+    "preservedCheckpoint": "chapter-3:rollback-preserved",
+    "preservedSaveBytes": 333,
+    "consoleErrors": 0
+  }
 }

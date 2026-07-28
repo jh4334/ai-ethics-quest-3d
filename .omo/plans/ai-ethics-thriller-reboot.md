@@ -734,7 +734,7 @@ Primary references:
 
   **Commit**: YES | Message: `feat(campaign): complete approval room and final broadcast` | Files: chapter 4/5 content, Approval enemy, final boss, ending evaluator, tests and fixtures
 
-- [ ] 15. Cut over production, update PWA/docs, and verify the exact deployed commit
+- [x] 15. Cut over production, update PWA/docs, and verify the exact deployed commit
 
   **What to do**: Update `index.html` to the reboot entry after full gates pass; keep a clearly labeled legacy build route for rollback during one release cycle. Version the service-worker cache and precache every required hashed reboot asset. Replace public hub/README/gameplay instructions and canonical story/design docs; archive obsolete material without erasing history. Update teacher/activity materials only after game canon is frozen, framing them as optional reflection rather than in-game instruction. Record all imported/generated/reference-only assets and licenses. Deploy the exact verified commit, inspect production separately, and record rollback target.
 
@@ -750,10 +750,10 @@ Primary references:
   - [Ship web games](https://github.com/MengTo/Skills/blob/21b278c62f49f3ce3d8c8ecbcc84cbcd534f3e49/agent-skills/game-development/ship-web-games/SKILL.md).
 
   **Acceptance Criteria**:
-  - [ ] CI gates unit/build/smoke/E2E/visual/offline suites before Pages deployment.
-  - [ ] Production URL passes load, first input, representative combat, save/continue, responsive, reduced-motion, console, performance, and offline read-back on the deployed commit.
-  - [ ] Public docs name the five new chapters consistently, legacy canon is archived, and asset provenance is complete.
-  - [ ] Rollback commit/tag and one-command recovery procedure are recorded and tested without deleting user saves.
+  - [x] CI gates unit/build/smoke/E2E/visual/offline suites before Pages deployment.
+  - [x] Production URL passes load, first input, representative combat, save/continue, responsive, reduced-motion, console, performance, and offline read-back on the deployed commit.
+  - [x] Public docs name the five new chapters consistently, legacy canon is archived, and asset provenance is complete.
+  - [x] Rollback commit/tag and one-command recovery procedure are recorded and tested without deleting user saves.
 
   **QA Scenarios**:
   ```text
@@ -774,10 +774,10 @@ Primary references:
 
 ## Final Verification Wave
 
-- [ ] F1. **Plan compliance audit** — 모든 Must Have/Must NOT Have와 15개 Task의 증거를 대조한다.
-- [ ] F2. **Code quality review** — 책임별 모듈, 250 pure LOC, 결정적 상태, 자원 해제, 세이브 원자성을 검토한다.
-- [ ] F3. **Real browser QA** — 데스크톱/터치/축소 동작/오프라인에서 전체 캠페인을 완주하고 콘솔·성능 증거를 남긴다.
-- [ ] F4. **Scope fidelity check** — 퀴즈/설교/무단 외부 자산/백엔드/다크 패턴이 되돌아오지 않았음을 확인한다.
+- [x] F1. **Plan compliance audit** — 모든 Must Have/Must NOT Have와 15개 Task의 증거를 대조한다.
+- [x] F2. **Code quality review** — 책임별 모듈, 250 pure LOC, 결정적 상태, 자원 해제, 세이브 원자성을 검토한다.
+- [x] F3. **Real browser QA** — 데스크톱/터치/축소 동작/오프라인에서 전체 캠페인을 완주하고 콘솔·성능 증거를 남긴다.
+- [x] F4. **Scope fidelity check** — 퀴즈/설교/무단 외부 자산/백엔드/다크 패턴이 되돌아오지 않았음을 확인한다.
 
 ## Commit Strategy
 

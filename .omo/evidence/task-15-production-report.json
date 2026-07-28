@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "productionUrl": "https://jh4334.github.io/ai-ethics-quest-3d/reboot.html",
+  "verifiedRuntimeCommit": "e75d31002c8679fe4132c02de0bba7c764d9471c",
+  "restoredReleaseCommit": "a798c3a18382a91b3819538f2277419fe8b98424",
+  "characters": "ready",
+  "savedCheckpoint": "chapter-3:start",
+  "offlineChapter": 3,
+  "cache": "ethics-quest-h17-v10",
+  "finalScreenshot": ".omo/evidence/task-15-production-final.png",
+  "performance": {
+    "drawCalls": 37,
+    "triangles": 81380,
+    "lights": 4,
+    "p95FrameMs": 100
+  },
+  "touchStickVisible": true,
+  "touchAttackVisible": true,
+  "consoleErrors": 0,
+  "failedRequests": 0
+}
