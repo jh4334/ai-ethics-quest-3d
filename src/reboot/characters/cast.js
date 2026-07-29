@@ -9,8 +9,10 @@ const SCHOOL_CAST = Object.freeze([
   Object.freeze({ id: 'yoonseo', position: [-2.05, 0, -4.1], rotation: 0 })
 ]);
 
-export function createCharacterCast({ scene }) {
-  const factory = createCharacterFactory();
+export function createCharacterCast({ characterFactory = null, scene }) {
+  // 팩토리를 주입받으면 GLTF 파싱·GPU 업로드를 적·보스 캐스트와 공유한다(소유자만 폐기).
+  const factory = characterFactory ?? createCharacterFactory();
+  const ownsFactory = characterFactory === null;
   const root = new THREE.Group();
   root.name = 'reboot-character-cast';
   scene.add(root);
@@ -53,7 +55,7 @@ export function createCharacterCast({ scene }) {
     dispose() {
       if (disposed) return;
       disposed = true;
-      factory.dispose();
+      if (ownsFactory) factory.dispose();
       root.removeFromParent();
       anchors.clear();
       characters.clear();

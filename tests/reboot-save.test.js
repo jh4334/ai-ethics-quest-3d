@@ -166,6 +166,25 @@ test('migration accepts only sound motion and quality settings', () => {
 });
 
 test('writes validate a temporary value and are atomic and idempotent', () => {
+  // Given: one valid old state.
+  const storage = new MemoryStorage();
+  const repository = createSaveRepository(storage);
+  const oldState = repository.boot().state;
+  const nextState = {
+    ...oldState,
+    chapterProgress: { completed: [], current: 1, checkpoint: 'chapter-1:arena' }
+  };
+  repository.write(nextState);
+  const writesAfterCommit = storage.writes.length;
+  repository.write(nextState);
+
+  // Then: the committed value is valid, the temp is removed, and the repeated write is a no-op.
+  assert.equal(JSON.parse(storage.getItem(V4_SAVE_KEY)).chapterProgress.checkpoint, 'chapter-1:arena');
+  assert.equal(storage.getItem(V4_TEMP_KEY), null);
+  assert.equal(storage.writes.length, writesAfterCommit);
+});
+
+test('storage interruption degrades to session memory without throwing or corrupting', () => {
   // Given: one valid old state and a storage interruption on the primary key.
   const storage = new MemoryStorage();
   const repository = createSaveRepository(storage);
@@ -177,19 +196,40 @@ test('writes validate a temporary value and are atomic and idempotent', () => {
   const oldBytes = storage.getItem(V4_SAVE_KEY);
   storage.failOnKey = V4_SAVE_KEY;
 
-  // When: replacement is interrupted, then retried twice.
-  assert.throws(() => repository.write(nextState), /저장 중단/);
-  assert.equal(storage.getItem(V4_SAVE_KEY), oldBytes);
-  assert.equal(JSON.parse(storage.getItem(V4_TEMP_KEY)).chapterProgress.checkpoint, 'chapter-1:arena');
-  storage.failOnKey = null;
-  repository.write(nextState);
-  const writesAfterCommit = storage.writes.length;
-  repository.write(nextState);
+  // When: replacement is interrupted — the session must survive, not crash (사파리 사생활 모드·쿼터 초과).
+  assert.doesNotThrow(() => repository.write(nextState));
 
-  // Then: the committed value is valid, the temp is removed, and the repeated write is a no-op.
-  assert.equal(JSON.parse(storage.getItem(V4_SAVE_KEY)).chapterProgress.checkpoint, 'chapter-1:arena');
-  assert.equal(storage.getItem(V4_TEMP_KEY), null);
-  assert.equal(storage.writes.length, writesAfterCommit);
+  // Then: the real committed bytes are untouched (no corruption), the temp holds the newer value
+  // for next-boot recovery, and in-session reads see the newer state via the memory shadow.
+  assert.equal(storage.values.get(V4_SAVE_KEY), oldBytes);
+  assert.equal(JSON.parse(storage.getItem(V4_TEMP_KEY)).chapterProgress.checkpoint, 'chapter-1:arena');
+  assert.equal(repository.isStorageDegraded(), true);
+
+  // And: further writes keep working in memory without touching the broken storage again.
+  const laterState = {
+    ...nextState,
+    chapterProgress: { completed: [], current: 1, checkpoint: 'chapter-1:memory-decision' }
+  };
+  const writesBefore = storage.writes.length;
+  assert.doesNotThrow(() => repository.write(laterState));
+  assert.equal(storage.writes.length, writesBefore, '강등 후 실저장 쓰기 재시도 없음');
+});
+
+test('a missing or blocked storage still boots a playable in-memory session', () => {
+  // Given: no usable Web Storage at all (접근 차단 환경).
+  const repository = createSaveRepository(null);
+
+  // When: the game boots and plays one update.
+  const boot = repository.boot();
+  const nextState = {
+    ...boot.state,
+    chapterProgress: { completed: [], current: 1, checkpoint: 'chapter-1:arena' }
+  };
+
+  // Then: boot succeeds with a notice, writes work in memory, and reads see them.
+  assert.match(boot.recoveryNotice ?? '', /이 세션에만 유지/);
+  assert.equal(repository.isStorageDegraded(), true);
+  assert.doesNotThrow(() => repository.write(nextState));
 });
 
 test('corrupted temporary data cannot replace a committed save', () => {

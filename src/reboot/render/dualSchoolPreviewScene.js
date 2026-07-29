@@ -111,16 +111,25 @@ export function createDualSchoolPreviewScene({
   }
 
   async function loadCast() {
-    await Promise.all(CAST.map(async (entry) => {
+    // 완료 순서가 아니라 저작(CAST) 순서로 삽입한다 — characterIds 관측이 결정적이 되게.
+    const loaded = await Promise.all(CAST.map(async (entry) => {
       try {
         const character = await factory.create(entry.id);
-        if (!entered) return character.dispose();
-        anchors.get(entry.key).add(character.root);
-        characters.set(entry.key, character);
+        if (!entered) {
+          character.dispose();
+          return null;
+        }
+        return { character, entry };
       } catch (error) {
         if (entered) errors.push(`${entry.key}: ${error.message}`);
+        return null;
       }
     }));
+    for (const item of loaded) {
+      if (!item) continue;
+      anchors.get(item.entry.key).add(item.character.root);
+      characters.set(item.entry.key, item.character);
+    }
     if (entered) syncPresentation();
   }
 

@@ -134,7 +134,7 @@ try {
     dialog: !window.__ethicsUi.dialog.hidden,
     text: window.__ethicsUi.dialogBody?.innerText ?? ''
   }));
-  check(dockGate.mode === 'overworld' && dockGate.dialog && dockGate.text.includes('시련'), '부두 게이트(완료 전 출항 거부 대화)');
+  check(dockGate.mode === 'overworld' && dockGate.dialog && dockGate.text.includes('감사 코어'), '부두 게이트(완료 전 출항 거부 대화 — 증거 4개·감사 코어 안내)');
   await closeDlg();
 
   // ── 던전 공통 ──────────────────────────────────────
@@ -219,8 +219,8 @@ try {
     txt: window.__ethicsUi.dialogBody.textContent,
     rec: window.__ethicsGame.progress.fakeDotEvents
   }));
-  check(lureResult.txt.includes('가짜였다') && lureResult.rec.includes('fake-dot-lure:verify'),
-    '되묻기(말버릇 단서)로 가짜 판별 + 선택 기록');
+  check(lureResult.txt.includes('가짜를 꿰뚫어') && lureResult.txt.includes('기기 번호') && lureResult.rec.includes('fake-dot-lure:verify'),
+    '되묻기(기기 번호·원본 시간 확인)로 가짜 판별 + 선택 기록');
   await closeDlg();
 
   // ③ 저작권(이름표)
@@ -277,7 +277,7 @@ try {
   await closeDlg();
   await tp(0, 2.2); await p.waitForTimeout(1300);
   const pleaShown = await p.evaluate(() =>
-    !window.__ethicsUi.dialog.hidden && window.__ethicsUi.dialogBody.textContent.includes('코어를 열면 안 돼'));
+    !window.__ethicsUi.dialog.hidden && window.__ethicsUi.dialogBody.textContent.includes('조사는 끝났어'));
   check(pleaShown, '가짜 도트 만류 조우 발동(코어 앞)');
   await p.evaluate(() => { window.__ethicsUi.dialogBody.querySelector('[data-fakedot-choice="verify"]')?.click(); });
   await p.waitForTimeout(400);
@@ -358,7 +358,7 @@ try {
     overworldHidden: !window.__ethicsGame.renderState.overworld.visible,
     islands: window.__ethicsGame.voyage?.built.islands.length ?? 0,
     dest: window.__ethicsGame.voyage?.dest?.id,
-    bridge: !window.__ethicsUi.dialog.hidden && (window.__ethicsUi.dialogBody?.innerText ?? '').includes('네 친구가 남긴 잡음'),
+    bridge: !window.__ethicsUi.dialog.hidden && (window.__ethicsUi.dialogBody?.innerText ?? '').includes('결정이 만들어진 길'),
     introSeen: window.__ethicsGame.progress.voyageIntroSeen === true
   }));
   check(sail.mode === 'voyage' && sail.overworldHidden && sail.islands === 6, `항해 진입(섬 실루엣 ${sail.islands}개, 오버월드 숨김)`);
@@ -842,8 +842,8 @@ try {
   check(epilogue.read === 4 && epilogue.shower, `하루 감사 신호 4통 완독 → 별똥별 에필로그(읽음 ${epilogue.read})`);
   await p.evaluate(() => window.__ethicsUi.journalToggle?.click());
   await p.waitForTimeout(600);
-  const finaleNote = await p.evaluate(() => (window.__ethicsUi.journalContent?.innerText ?? '').includes('패스파인더'));
-  check(finaleNote, '항로 지도 완결 기록 + 3부 패스파인더 연결 안내');
+  const finaleNote = await p.evaluate(() => (window.__ethicsUi.journalContent?.innerText ?? '').includes('이의제기권을 되찾았습니다'));
+  check(finaleNote, '항로 지도 완결 기록(여섯 장 증거 검증 완주 문구)');
   await p.evaluate(() => window.__ethicsUi.journalClose?.click());
   await p.waitForTimeout(300);
 

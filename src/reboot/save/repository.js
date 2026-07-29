@@ -1,6 +1,7 @@
 import { createInitialRebootState, deepFreeze } from '../state/model.js';
 import { parseStoredSave, serializeSave } from './codec.js';
 import { migrateLegacySettings, preserveLegacyBackup } from './legacyMigration.js';
+import { createResilientStorage } from './resilientStorage.js';
 
 export const V4_SAVE_KEY = 'h17.null.save.v4';
 export const V4_TEMP_KEY = 'h17.null.save.v4.tmp';
@@ -11,11 +12,11 @@ function result(state, recoveryNotice = null) {
   return deepFreeze({ state, recoveryNotice });
 }
 
-export function createSaveRepository(storage) {
-  if (!storage || typeof storage.getItem !== 'function'
-    || typeof storage.setItem !== 'function' || typeof storage.removeItem !== 'function') {
-    throw new TypeError('Web Storage 호환 저장소가 필요합니다.');
-  }
+export function createSaveRepository(rawStorage) {
+  const usable = rawStorage && typeof rawStorage.getItem === 'function'
+    && typeof rawStorage.setItem === 'function' && typeof rawStorage.removeItem === 'function';
+  // 저장소가 없거나 막힌 환경에서도 게임은 켜져야 한다 — 강등 어댑터가 세션 메모리로 이어간다.
+  const storage = createResilientStorage(usable ? rawStorage : null);
 
   function write(state) {
     const serialized = serializeSave(state);
@@ -59,6 +60,9 @@ export function createSaveRepository(storage) {
     write(fresh);
     if (parsed.kind === 'future') return result(fresh, '지원하지 않는 저장 버전이라 새 게임을 시작했습니다.');
     if (parsed.kind === 'malformed') return result(fresh, '손상된 저장을 복구하고 새 게임을 시작했습니다.');
+    if (storage.isDegraded()) {
+      return result(fresh, '저장 공간을 쓸 수 없어 진행이 이 세션에만 유지됩니다.');
+    }
     return result(fresh);
   }
 
@@ -74,6 +78,7 @@ export function createSaveRepository(storage) {
   return Object.freeze({
     boot,
     getLegacyBackup: () => storage.getItem(LEGACY_BACKUP_KEY),
+    isStorageDegraded: () => storage.isDegraded(),
     reset,
     write
   });

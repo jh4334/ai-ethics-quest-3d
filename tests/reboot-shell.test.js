@@ -238,7 +238,8 @@ test('Vite builds isolated legacy and reboot entries with one Three chunk rule',
   assert.match(vite, /input:\s*\{[\s\S]*legacy:[\s\S]*main:[\s\S]*reboot:/);
   assert.match(vite, /node_modules\/three[\s\S]*return 'three'/);
   assert.doesNotMatch(rebootEntry, /(?:\.\.\/)+main\.js|\/src\/main\.js/);
-  assert.match(rebootEntry, /createRebootSession\(\{ storage: window\.localStorage \}\)/);
+  // 저장소는 안전 획득을 거친다 — localStorage 접근 자체가 throw하는 환경에서도 부팅(강등 폴백).
+  assert.match(rebootEntry, /createRebootSession\(\{ storage: safeLocalStorage\(window\) \}\)/);
   assert.match(rebootEntry, /health:\s*root\.querySelector\('\[data-combat-health\]'\)/);
   assert.match(rebootEntry, /getSceneDebugState:\s*\(\) => app\.getSceneDebugState\(\)/);
   assert.match(rebootEntry, /createQaSceneFixtures/);

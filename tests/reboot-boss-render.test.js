@@ -39,6 +39,7 @@ test('보스 캐스트는 반복 폐기에도 자원을 한 번만 정리한다'
   cast.dispose();
   cast.dispose();
 
-  assert.equal(factory.disposed, 1);
+  // 주입된(공유) 팩토리는 캐스트가 폐기하지 않는다 — 소유자(장면)의 몫.
+  assert.equal(factory.disposed, 0);
   assert.equal(scene.getObjectByName('attendance-proctor-cast'), undefined);
 });
