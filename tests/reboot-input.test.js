@@ -79,6 +79,7 @@ test('테스트 화면 회전은 캔버스 크기만 바꾸고 저장 설정을 
     searchParams: new URLSearchParams('?viewport=portrait&motion=reduced&quality=low&sound=off'),
     testHook: true
   });
+  assert.equal(root.dataset.touchMode, 'true');
   const rotated = applyViewportFixture({ canvas, name: 'landscape', root });
 
   assert.deepEqual(settings, { motion: 'reduced', quality: 'low', sound: false });
@@ -86,4 +87,5 @@ test('테스트 화면 회전은 캔버스 크기만 바꾸고 저장 설정을 
   assert.equal(root.style.width, '1180px');
   assert.equal(root.style.height, '820px');
   assert.equal(root.dataset.viewportFixture, 'landscape');
+  assert.equal(root.dataset.touchMode, 'false');
 });

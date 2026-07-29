@@ -35,6 +35,9 @@ test('모든 핵심 전투 결과는 색과 소리에만 의존하지 않는 고
     assert.ok(cue.tone.length > 0);
     assert.ok(Number.isInteger(cue.priority));
   }
+  assert.equal(cues.find((cue) => cue.kind === 'reflect').label, 'REFLECT · 명령 반송');
+  assert.equal(cues.find((cue) => cue.kind === 'weak-point').label, 'TRACE · 출처 표시');
+  assert.equal(cues.find((cue) => cue.kind === 'secure').label, 'SECURE · 원본 고정');
 });
 
 test('HUD는 우선순위가 높은 행동 신호를 최대 세 개만 노출한다', () => {

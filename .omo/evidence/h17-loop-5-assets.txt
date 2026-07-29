@@ -1,0 +1,17 @@
+H-17 Loop 5 runtime character asset audit
+Date: 2026-07-29 (Asia/Seoul)
+
+Result: PASS; no manifest or license correction was required in Loop 5.
+
+- CHARACTER_ASSET_PATHS declares 11 runtime roots: two animation GLBs, two full-body glTFs, four outfit glTFs, and three hair glTFs.
+- Disk-to-manifest audit is authoritative for transitive files: public/assets/reboot/characters contains 44 files and public/reboot-assets.json contains the same 44 character entries.
+- Missing from manifest: 0. Missing on disk: 0.
+- Base bodies and their BIN/textures are covered by ASSET_LICENSES.md `characters/base/*`, Quaternius Universal Base Characters, CC0 1.0.
+- Hair_Buns, Hair_Long, and Hair_SimpleParted glTF/BIN files have a precise dedicated Universal Base Characters CC0 row; their reused T_Hair textures remain covered by the base wildcard row.
+- Female/Male Peasant and Ranger glTF/BIN/textures are covered by `characters/outfits/*`, Quaternius Modular Character Outfits - Fantasy, CC0 1.0.
+- ual1-standard.glb and ual2-standard.glb each have an exact ASSET_LICENSES.md row for their corresponding Universal Animation Library, CC0 1.0.
+- Tests/reboot-characters.test.js independently verifies catalog roots exist and the CC0/license families are documented.
+
+Procedural-asset ruling:
+- DOT, character accessories, school route dressing, campaign landmarks, and finale props are generated at runtime from Three.js geometry/materials and do not load external asset files.
+- They therefore require no ASSET_LICENSES.md row. This ruling introduces no purchased or untracked asset.

@@ -5,6 +5,7 @@ import { createCharacterFactory } from '../characters/factory.js';
 import { chapterThreeLevel } from '../content/levels/chapter3.js';
 import { getSceneViewport } from './schoolSceneCamera.js';
 import { createDisposableRegistry } from './dispose.js';
+import { createCampaignLandmarks } from './campaignLandmarks.js';
 import { createSchoolRoute } from './schoolRoute.js';
 
 const CAST = Object.freeze([
@@ -32,6 +33,7 @@ export function createDualSchoolPreviewScene({
   camera.lookAt(0, 0.7, -22.5);
 
   const route = resources.register(createSchoolRoute({ level: chapterThreeLevel, lightLimit: 0, scene }), 'dual-route');
+  const landmarks = resources.register(createCampaignLandmarks({ scene, type: 'dual-school' }), 'dual-landmarks');
   const factory = resources.register(createCharacterFactory(), 'dual-cast');
   const geometry = resources.register(new THREE.BoxGeometry(1, 1, 1), 'dual-floor-geometry');
   const comfortMaterial = resources.register(new THREE.MeshStandardMaterial({
@@ -153,6 +155,7 @@ export function createDualSchoolPreviewScene({
         characterErrors: Object.freeze([...errors]),
         characterIds: Object.freeze([...characters.keys()]),
         enemies: state.enemies,
+        landmarks: landmarks.getDebugState(),
         route: route.getDebugState()
       });
     },

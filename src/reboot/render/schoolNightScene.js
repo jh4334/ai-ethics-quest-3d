@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { createEncounterGameRuntime } from '../app/encounterGameRuntime.js';
 import { createBossGameRuntime } from '../app/bossGameRuntime.js';
 import { createPatchSelector } from '../app/patchSelection.js';
-import { addCameraShake, createCameraController, getFramingReport } from '../camera/controller.js';
+import { addCameraShake, createCameraController } from '../camera/controller.js';
 import { createCharacterCast } from '../characters/cast.js';
 import { chapterOneLevel } from '../content/levels/chapter1.js';
 import { createFeedbackDirector } from '../feedback/director.js';
@@ -16,6 +16,7 @@ import { createBossCast } from './bossCast.js';
 import { createDisposableRegistry } from './dispose.js';
 import { createEnemyCast } from './enemyCast.js';
 import { createSchoolRoute } from './schoolRoute.js';
+import { createSchoolSceneDebugSnapshot } from './schoolSceneDebug.js';
 import { closestRouteSegment, getBossCameraTargets, getEncounterCameraTargets, getSceneViewport, updateSchoolCamera } from './schoolSceneCamera.js';
 import { loadSchoolSceneCast } from './schoolSceneCastLoader.js';
 import { createSchoolSceneHud } from './schoolSceneHud.js';
@@ -78,6 +79,7 @@ export function createSchoolNightScene({
     ? getBossCameraTargets(lastFrame, route.routeCues[initialCueIndex])
     : getEncounterCameraTargets(lastFrame, route.routeCues[initialCueIndex], game.getState().encounter);
   let cameraState = createCameraController(activeTargets, getSceneViewport(canvas));
+  let combatSafeArea = null;
   const hud = createSchoolSceneHud({ canvas, ui });
   const selectPatch = createPatchSelector({ bossGame, bossOptions, canvas, story, storyOptions });
 
@@ -165,25 +167,10 @@ export function createSchoolNightScene({
       windowRef.removeEventListener('resize', resize);
     },
     getDebugState() {
-      return Object.freeze({
-        boss: bossGame?.getState() ?? null,
-        camera: getFramingReport(cameraState, activeTargets, getSceneViewport(canvas)),
-        characters: cast.getDebugState(),
-        combat: Object.freeze({
-          action: lastFrame.hud.action,
-          chainLevel: lastFrame.hud.chainLevel,
-          hp: lastFrame.hud.hp,
-          tick: lastFrame.tick
-        }),
-        enemies: enemyCast.getDebugState(),
-        feedback: feedback.getDebugState(),
-        performance: performanceProbe.report(),
-        enemyEventTypes: Object.freeze(lastEnemyEvents.map((event) => event.type)),
-        encounter: game.getState().encounter,
-        eventTypes: Object.freeze(lastEvents.map((event) => event.type)),
-        route: route.getDebugState(),
-        routeSegmentId: currentSegment.id,
-        story: story.getState()
+      return createSchoolSceneDebugSnapshot({
+        activeTargets, bossGame, cameraState, canvas, cast, combatSafeArea, currentSegment,
+        enemyCast, feedback, game, lastEnemyEvents, lastEvents, lastFrame, performanceProbe,
+        route, story
       });
     },
     resourceCount() {
@@ -252,6 +239,7 @@ export function createSchoolNightScene({
       });
       activeTargets = cameraFrame.targets;
       cameraState = cameraFrame.cameraState;
+      combatSafeArea = cameraFrame.combatSafeArea;
       syncHud();
       renderer.render(scene, camera);
       performanceProbe.record(delta);

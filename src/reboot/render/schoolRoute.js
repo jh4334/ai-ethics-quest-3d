@@ -2,6 +2,7 @@ import * as THREE from 'three';
 
 import { validateLevel } from '../level/validateLevel.js';
 import { createDisposableRegistry } from './dispose.js';
+import { createSchoolRouteDressing } from './schoolRouteDressing.js';
 
 const ROUTE_COLORS = Object.freeze({
   checkpoint: 0x5de0c1,
@@ -138,6 +139,8 @@ export function createSchoolRoute({ level, lightLimit = Number.POSITIVE_INFINITY
   addBoxes(group, geometry, visualMaterial, 'visual', visualBoxes);
   addBoxes(group, geometry, cueMaterial, 'route-cue', cueBoxes);
   addBoxes(group, geometry, checkpointMaterial, 'checkpoint', checkpointBoxes);
+  const dressing = createSchoolRouteDressing({ level });
+  group.add(dressing.group);
 
   const renderedLights = level.layers.localLight.slice(0, Math.max(0, lightLimit));
   for (const entry of renderedLights) {
@@ -178,9 +181,15 @@ export function createSchoolRoute({ level, lightLimit = Number.POSITIVE_INFINITY
     ...entry,
     position: Object.freeze({ ...entry.position })
   })));
-  const triangleCount = geometry.index.count / 3
+  const baseTriangleCount = geometry.index.count / 3
     * (floorBoxes.length + wallBoxes.length + visualBoxes.length + cueBoxes.length + checkpointBoxes.length);
-  const budget = Object.freeze({ drawCalls: 5, resources: resources.size(), triangles: triangleCount });
+  const dressingDebug = dressing.getDebugState();
+  const budget = Object.freeze({
+    drawCalls: 5 + dressingDebug.budget.drawCalls,
+    dressing: dressingDebug.budget,
+    resources: resources.size() + dressingDebug.budget.resources,
+    triangles: baseTriangleCount + dressingDebug.budget.triangles
+  });
   let disposed = false;
   scene.add(group);
 
@@ -190,8 +199,9 @@ export function createSchoolRoute({ level, lightLimit = Number.POSITIVE_INFINITY
       if (disposed) return 0;
       disposed = true;
       group.removeFromParent();
+      const dressingCount = dressing.dispose();
       group.clear();
-      return resources.disposeAll();
+      return dressingCount + resources.disposeAll();
     },
     getDebugState() {
       return Object.freeze({
@@ -204,6 +214,7 @@ export function createSchoolRoute({ level, lightLimit = Number.POSITIVE_INFINITY
         encounterIds: level.layers.encounter.map((entry) => entry.id),
         localLightIds: localLights.map((entry) => entry.id),
         localLights,
+        landmarksBySegment: dressingDebug.landmarksBySegment,
         renderedLightIds: renderedLights.map((entry) => entry.id),
         navigationIds: level.layers.navigation.map((entry) => entry.id),
         occluders,

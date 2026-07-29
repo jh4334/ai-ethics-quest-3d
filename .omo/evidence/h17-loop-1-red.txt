@@ -1,0 +1,20 @@
+Command: node --test tests/reboot-characters.test.js
+Exit code: 1 (expected RED)
+
+✔ reboot roster replaces every story role with a licensed imported model profile
+✖ main cast identity metadata separates three visible humans from the DOT audit drone
+✖ character factory preserves mapped material color while loading the player face and hair
+✔ character animation priority is deterministic across combat and movement
+✔ character cast accepts the authoritative simulation pose without moving itself
+✔ runtime character assets exist locally and are documented as CC0
+✔ school scene uses the imported character pipeline instead of primitive avatars
+
+tests 7
+pass 5
+fail 2
+
+Failure 1: TypeError: Cannot read properties of undefined (reading 'kind')
+Reason: current main-cast profiles have no identity contract.
+
+Failure 2: AssertionError: false !== true at the Hair_SimpleParted runtime load assertion.
+Reason: current factory does not load a role-specific hair model and still globally recolors imported materials.

@@ -1,0 +1,62 @@
+H-17 Loop 1 cleanup and verification receipt
+Completed: 2026-07-29 (Asia/Seoul)
+
+Commands and exact results
+- node --test tests/reboot-characters.test.js (RED) -> exit 1; 7 tests, 5 pass, 2 fail for missing identity metadata and missing Hair_SimpleParted load.
+- node --test tests/reboot-characters.test.js; node --test tests/reboot-characters.test.js (GREEN final) -> exit 0 both runs; 7/7 pass twice (137.8946ms, 133.4217ms).
+- npm.cmd test -> exit 0; 365/365 pass, 0 fail (2336.9855ms final full run).
+- npm.cmd run build -> exit 0; Vite 8.1.0, 135 modules transformed, build completed in 984ms before final browser capture.
+- npm.cmd run smoke -> exit 0; "DOM smoke passed: H-17 reboot is canonical and legacy rollback remains wired".
+- node --test tests/reboot-characters.test.js tests/reboot-release.test.js tests/reboot/qa-contracts.test.js -> exit 0; 14/14 asset, license, release, and QA contract tests pass.
+- npx.cmd playwright test --config=playwright.config.js tests/reboot-e2e/h17-polish.spec.js -> exit 0; 2/2 pass (24.5s final capture), console/page errors 0.
+- git diff --check -> exit 0; no whitespace errors (only Git LF-to-CRLF working-copy notices).
+- rg -n "0\.78|material\.color\.lerp|emissiveIntensity = isSkin" src/reboot/characters/factory.js -> no matches.
+- Get-NetTCPConnection -LocalPort 8899 -State Listen -> 0 listeners.
+- Temporary extraction directory %TEMP%/h17-loop1-hair-extract -> removed after absolute-path safety verification; final Test-Path=False.
+
+Final screenshot dimensions
+- .omo/evidence/h17-loop-1-characters-desktop.png -> 1180x820
+- .omo/evidence/h17-loop-1-characters-mobile.png -> 390x844
+- .omo/evidence/h17-loop-1-baseline-desktop.png -> 1180x820
+- .omo/evidence/h17-loop-1-baseline-mobile.png -> 390x844
+
+Character debug identity summary
+- player: human / female body / simpleParted hair / peasant outfit / record-ring silhouette.
+- DOT: audit-drone / machine body / sensor face / scan-ring + twin-fin orb silhouette.
+- Haru: human / male body / long hair / Ranger outfit / wide pauldron silhouette; Male_Ranger_Head_Hood is hidden and covered by a focused runtime assertion.
+- Yoonseo: human / female body / buns hair / slimmed Ranger outfit / policy-tablet silhouette; hood and pauldrons are hidden.
+- Imported source texture maps and source material colors are cloned without global tint or emissive modification. Role color is limited to procedural ring, tablet, and drone sensor parts.
+
+Added runtime assets (all CC0, manifest-listed, license-covered)
+- public/assets/reboot/characters/base/Hair_Buns.gltf
+- public/assets/reboot/characters/base/Hair_Buns.bin
+- public/assets/reboot/characters/base/Hair_Long.gltf
+- public/assets/reboot/characters/base/Hair_Long.bin
+- public/assets/reboot/characters/base/Hair_SimpleParted.gltf
+- public/assets/reboot/characters/base/Hair_SimpleParted.bin
+
+Changed files owned by Loop 1
+- src/reboot/characters/catalog.js
+- src/reboot/characters/factory.js
+- src/reboot/characters/cast.js
+- public/reboot-assets.json
+- ASSET_LICENSES.md
+- tests/reboot-characters.test.js
+- tests/reboot-e2e/h17-polish.spec.js
+- the six runtime hair assets listed above
+- .omo/evidence/h17-loop-1-baseline.txt
+- .omo/evidence/h17-loop-1-red.txt
+- .omo/evidence/h17-loop-1-cleanup.txt
+- .omo/evidence/h17-loop-1-baseline-desktop.png
+- .omo/evidence/h17-loop-1-baseline-mobile.png
+- .omo/evidence/h17-loop-1-characters-desktop.png
+- .omo/evidence/h17-loop-1-characters-mobile.png
+
+Post-write review
+- Pure LOC: catalog.js 112, factory.js 233, cast.js 93, reboot-characters.test.js 164, h17-polish.spec.js 44.
+- factory.js is in the 200-250 warning band but remains under the ceiling and owns one character-assembly boundary. No further Loop 1 production additions are planned; a future character-presentation expansion should extract procedural presentations first.
+- No shadows, render targets, always-on lights, Math.random calls, combat hitbox changes, save/report schema changes, or personal data were added.
+
+Readability regression addendum
+- `.omo/evidence/h17-loop-1-readability-cleanup.txt` supersedes the original scale/material/camera verification figures after the requested live-camera readability pass.
+- Imported maps and base colors are still preserved, but mapped human materials now reuse their maps for a neutral bounded emissive lift (maximum 0.20), rather than remaining completely unmodified.

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { solveCameraFrame } from '../src/reboot/camera/framing.js';
 
 const unavailable = () => {
   throw new Error('Task 5 동작이 아직 구현되지 않았습니다.');
@@ -160,6 +161,22 @@ for (const viewport of [
     assert.deepEqual(report.includedIds.sort(), ['player', 'route-cue', 'scanner', 'trace']);
   });
 }
+
+test('school camera keeps the four-target frame close enough for readable main characters', () => {
+  // Given: the same representative targets used by desktop and touch inclusion checks.
+  const desktop = solveCameraFrame(representativeTargets, { height: 820, mode: 'desktop', width: 1180 });
+  const touch = solveCameraFrame(representativeTargets, { height: 844, mode: 'touch', width: 390 });
+
+  // When: the authored camera offsets from its shared look-at are measured.
+  const offsets = [desktop, touch].map((frame) => ({
+    distance: frame.position.z - frame.lookAt.z,
+    height: frame.position.y - frame.lookAt.y
+  }));
+
+  // Then: both frames stay close enough to render faces and hair without losing all four targets.
+  assert.ok(offsets[0].distance <= 17 && offsets[0].height <= 9);
+  assert.ok(offsets[1].distance <= 20.2 && offsets[1].height <= 10.2);
+});
 
 test('camera framing remains finite with player-only or empty target input', () => {
   // Given: optional targets are absent, and a reset may briefly have no player target.

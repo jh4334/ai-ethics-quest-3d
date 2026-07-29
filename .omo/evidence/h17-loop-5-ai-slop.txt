@@ -1,0 +1,36 @@
+H-17 Loop 5 behavior-locked AI-slop audit
+Date: 2026-07-29 (Asia/Seoul)
+
+Behavior lock before cleanup:
+- tests/reboot-e2e/h17-polish.spec.js: 9/9 passed after Loop 4.
+- npm test: 374/374 passed after Loop 4.
+- npm run build and npm run smoke passed after Loop 4.
+
+Audited production scope:
+- reboot.html
+- src/reboot/camera/framing.js
+- src/reboot/characters/{cast,catalog,factory,materialPresentation}.js
+- src/reboot/content/levels/chapter1.js
+- src/reboot/content/story/chapter1.js
+- src/reboot/feedback/cueMap.js
+- src/reboot/render/{campaignChapterScene,campaignLandmarks,dualSchoolPreviewScene,finalBroadcastPreviewScene,schoolNightScene,schoolRoute,schoolRouteDressing,schoolSceneCamera,schoolSceneDebug,schoolSceneHud}.js
+- src/reboot/settings/runtime.js
+- src/reboot/story/chapterOneOutcome.js
+
+Audit results:
+- Empty filler comments, tutorial narration, changelog-style source comments: none found.
+- console.log/debug, TODO/FIXME, empty catch blocks, suppression directives, and Math.random: none found.
+- Unsafe broad casts are not applicable to this vanilla-JS codebase; no type-suppression pattern was found.
+- Redundant defensive guards or fallbacks safe to remove: none proven.
+- Duplicate one-off helpers: none proven; shared landmark and material-presentation modules already own repeated behavior.
+- Oversized/mixed-responsibility module: schoolNightScene.js was 256 pure LOC. Only read-only debug snapshot assembly moved to schoolSceneDebug.js; public createSchoolNightScene and debug-state shape are unchanged.
+- Post-extraction pure LOC: schoolNightScene.js 239; schoolSceneDebug.js 31; finalBroadcastPreviewScene.js 246. All changed production JS modules remain within 250 pure LOC.
+
+Intentional skips under the behavior-lock rule:
+- Character-load try/catch blocks remain because individual GLTF failure is observable QA state and the scene must continue loading other roles.
+- Authored Korean story, cue, landmark, and silhouette constants remain explicit; compressing them would reduce educational readability without removing generated-code residue.
+- No renames, formatting sweep, generic abstraction, or adjacent refactor was performed.
+
+Verification after cleanup:
+- Focused school/character/route/UI unit set: 35/35 passed.
+- The full H17 and repository gates are recorded in h17-loop-5-cleanup.txt.

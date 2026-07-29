@@ -1,0 +1,8 @@
+H-17 Loop 5 RED evidence
+Command: npm.cmd exec -- playwright test tests/reboot-e2e/h17-polish.spec.js --grep "@final-" --reporter=line
+Result: 0 passed, 2 failed (expected RED)
+
+- @final-desktop reached the secure-route result, then failed because [data-chapter-result] had no role="status".
+- @final-mobile completed the purge protocol through pointer events, then failed for the same missing result status role.
+- Both scenarios explicitly enabled and confirmed prefers-reduced-motion: reduce before reaching the application gap.
+- The post-Loop-4 screenshot review also records the mobile continue/touch-action overlap; the GREEN run must prove those bounds no longer intersect.

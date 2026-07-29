@@ -7,7 +7,7 @@ export const VIEWPORT_FIXTURES = Object.freeze({
 export function applyViewportFixture({ canvas, name, root }) {
   const viewport = VIEWPORT_FIXTURES[name];
   if (!viewport) return false;
-  root.dataset.touchMode = 'true';
+  root.dataset.touchMode = name === 'landscape' ? 'false' : 'true';
   root.dataset.viewportFixture = name;
   root.style.setProperty('--fixture-width', `${viewport.width}px`);
   root.style.width = `${viewport.width}px`;

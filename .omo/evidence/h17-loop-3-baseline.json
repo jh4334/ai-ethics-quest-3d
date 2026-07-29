@@ -1,0 +1,501 @@
+{
+  "canvas": {
+    "drawCalls": 36,
+    "lights": 4,
+    "triangles": 84733
+  },
+  "route": {
+    "budget": {
+      "drawCalls": 5,
+      "resources": 6,
+      "triangles": 432
+    },
+    "checkpointIds": [
+      "checkpoint-classroom",
+      "checkpoint-corridor",
+      "checkpoint-first-arena",
+      "checkpoint-memory",
+      "checkpoint-pursuit",
+      "checkpoint-gym"
+    ],
+    "checkpoints": [
+      {
+        "id": "checkpoint-classroom",
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": 1
+        },
+        "segmentId": "classroom-cold-open"
+      },
+      {
+        "id": "checkpoint-corridor",
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": -9
+        },
+        "segmentId": "collapsing-corridor"
+      },
+      {
+        "id": "checkpoint-first-arena",
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": -33
+        },
+        "segmentId": "first-arena"
+      },
+      {
+        "id": "checkpoint-memory",
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": -51
+        },
+        "segmentId": "memory-backup-decision"
+      },
+      {
+        "id": "checkpoint-pursuit",
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": -64
+        },
+        "segmentId": "scanner-pursuit"
+      },
+      {
+        "id": "checkpoint-gym",
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": -95
+        },
+        "segmentId": "gym-boss-arena"
+      }
+    ],
+    "colliderIds": [
+      "collision-classroom",
+      "collision-corridor",
+      "collision-first-arena",
+      "collision-memory",
+      "collision-pursuit",
+      "collision-gym"
+    ],
+    "colliders": [
+      {
+        "bounds": {
+          "maxX": 6,
+          "maxZ": 6,
+          "minX": -6,
+          "minZ": -6
+        },
+        "id": "collision-classroom",
+        "segmentId": "classroom-cold-open",
+        "surface": "flat"
+      },
+      {
+        "bounds": {
+          "maxX": 3,
+          "maxZ": -6,
+          "minX": -3,
+          "minZ": -30
+        },
+        "id": "collision-corridor",
+        "segmentId": "collapsing-corridor",
+        "surface": "flat"
+      },
+      {
+        "bounds": {
+          "maxX": 9,
+          "maxZ": -30,
+          "minX": -9,
+          "minZ": -48
+        },
+        "id": "collision-first-arena",
+        "segmentId": "first-arena",
+        "surface": "flat"
+      },
+      {
+        "bounds": {
+          "maxX": 6,
+          "maxZ": -48,
+          "minX": -6,
+          "minZ": -61
+        },
+        "id": "collision-memory",
+        "segmentId": "memory-backup-decision",
+        "surface": "flat"
+      },
+      {
+        "bounds": {
+          "maxX": 4,
+          "maxZ": -61,
+          "minX": -4,
+          "minZ": -91
+        },
+        "id": "collision-pursuit",
+        "segmentId": "scanner-pursuit",
+        "surface": "flat"
+      },
+      {
+        "bounds": {
+          "maxX": 13,
+          "maxZ": -91,
+          "minX": -13,
+          "minZ": -119
+        },
+        "id": "collision-gym",
+        "segmentId": "gym-boss-arena",
+        "surface": "flat"
+      }
+    ],
+    "disposed": false,
+    "encounterIds": [
+      "encounter-corridor-collapse",
+      "encounter-first-trace",
+      "encounter-memory-choice",
+      "encounter-scanner-chase",
+      "encounter-gym-boss"
+    ],
+    "localLightIds": [
+      "light-classroom",
+      "light-corridor",
+      "light-arena",
+      "light-memory",
+      "light-pursuit",
+      "light-gym"
+    ],
+    "localLights": [
+      {
+        "color": "#f3b36c",
+        "id": "light-classroom",
+        "position": {
+          "x": 0,
+          "y": 2.8,
+          "z": 0
+        },
+        "segmentId": "classroom-cold-open",
+        "visualId": "visual-classroom-lamps"
+      },
+      {
+        "color": "#d74732",
+        "id": "light-corridor",
+        "position": {
+          "x": 0,
+          "y": 2.4,
+          "z": -18
+        },
+        "segmentId": "collapsing-corridor",
+        "visualId": "visual-corridor-emergency"
+      },
+      {
+        "color": "#6aa9ff",
+        "id": "light-arena",
+        "position": {
+          "x": 0,
+          "y": 4,
+          "z": -39
+        },
+        "segmentId": "first-arena",
+        "visualId": "visual-arena-projector"
+      },
+      {
+        "color": "#f3b36c",
+        "id": "light-memory",
+        "position": {
+          "x": 0,
+          "y": 2.2,
+          "z": -54
+        },
+        "segmentId": "memory-backup-decision",
+        "visualId": "visual-memory-terminal"
+      },
+      {
+        "color": "#d74732",
+        "id": "light-pursuit",
+        "position": {
+          "x": 0,
+          "y": 2.5,
+          "z": -76
+        },
+        "segmentId": "scanner-pursuit",
+        "visualId": "visual-scanner-beacons"
+      },
+      {
+        "color": "#6aa9ff",
+        "id": "light-gym",
+        "position": {
+          "x": 0,
+          "y": 5,
+          "z": -104
+        },
+        "segmentId": "gym-boss-arena",
+        "visualId": "visual-gym-scoreboard"
+      }
+    ],
+    "renderedLightIds": [
+      "light-classroom",
+      "light-corridor",
+      "light-arena"
+    ],
+    "navigationIds": [
+      "nav-classroom",
+      "nav-corridor",
+      "nav-first-arena",
+      "nav-memory",
+      "nav-pursuit",
+      "nav-gym"
+    ],
+    "occluders": [
+      {
+        "bounds": {
+          "maxX": -6,
+          "maxY": 3.6,
+          "maxZ": 6,
+          "minX": -6.279999999999999,
+          "minY": 0,
+          "minZ": -6
+        },
+        "id": "collision-classroom:wall-left"
+      },
+      {
+        "bounds": {
+          "maxX": 6.279999999999999,
+          "maxY": 3.6,
+          "maxZ": 6,
+          "minX": 6,
+          "minY": 0,
+          "minZ": -6
+        },
+        "id": "collision-classroom:wall-right"
+      },
+      {
+        "bounds": {
+          "maxX": -3,
+          "maxY": 3.6,
+          "maxZ": -6,
+          "minX": -3.2800000000000002,
+          "minY": 0,
+          "minZ": -30
+        },
+        "id": "collision-corridor:wall-left"
+      },
+      {
+        "bounds": {
+          "maxX": 3.2800000000000002,
+          "maxY": 3.6,
+          "maxZ": -6,
+          "minX": 3,
+          "minY": 0,
+          "minZ": -30
+        },
+        "id": "collision-corridor:wall-right"
+      },
+      {
+        "bounds": {
+          "maxX": -9,
+          "maxY": 3.6,
+          "maxZ": -30,
+          "minX": -9.280000000000001,
+          "minY": 0,
+          "minZ": -48
+        },
+        "id": "collision-first-arena:wall-left"
+      },
+      {
+        "bounds": {
+          "maxX": 9.280000000000001,
+          "maxY": 3.6,
+          "maxZ": -30,
+          "minX": 9,
+          "minY": 0,
+          "minZ": -48
+        },
+        "id": "collision-first-arena:wall-right"
+      },
+      {
+        "bounds": {
+          "maxX": -6,
+          "maxY": 3.6,
+          "maxZ": -48,
+          "minX": -6.279999999999999,
+          "minY": 0,
+          "minZ": -61
+        },
+        "id": "collision-memory:wall-left"
+      },
+      {
+        "bounds": {
+          "maxX": 6.279999999999999,
+          "maxY": 3.6,
+          "maxZ": -48,
+          "minX": 6,
+          "minY": 0,
+          "minZ": -61
+        },
+        "id": "collision-memory:wall-right"
+      },
+      {
+        "bounds": {
+          "maxX": -3.9999999999999996,
+          "maxY": 3.6,
+          "maxZ": -61,
+          "minX": -4.279999999999999,
+          "minY": 0,
+          "minZ": -91
+        },
+        "id": "collision-pursuit:wall-left"
+      },
+      {
+        "bounds": {
+          "maxX": 4.279999999999999,
+          "maxY": 3.6,
+          "maxZ": -61,
+          "minX": 3.9999999999999996,
+          "minY": 0,
+          "minZ": -91
+        },
+        "id": "collision-pursuit:wall-right"
+      },
+      {
+        "bounds": {
+          "maxX": -13,
+          "maxY": 3.6,
+          "maxZ": -91,
+          "minX": -13.280000000000001,
+          "minY": 0,
+          "minZ": -119
+        },
+        "id": "collision-gym:wall-left"
+      },
+      {
+        "bounds": {
+          "maxX": 13.280000000000001,
+          "maxY": 3.6,
+          "maxZ": -91,
+          "minX": 13,
+          "minY": 0,
+          "minZ": -119
+        },
+        "id": "collision-gym:wall-right"
+      }
+    ],
+    "routeCues": [
+      {
+        "fromSegmentId": "classroom-cold-open",
+        "id": "route-cue-classroom-cold-open",
+        "kind": "segment",
+        "position": {
+          "x": 0,
+          "y": 0.03,
+          "z": -4.8
+        },
+        "to": "collapsing-corridor"
+      },
+      {
+        "fromSegmentId": "collapsing-corridor",
+        "id": "route-cue-collapsing-corridor",
+        "kind": "segment",
+        "position": {
+          "x": 0,
+          "y": 0.03,
+          "z": -28.8
+        },
+        "to": "first-arena"
+      },
+      {
+        "fromSegmentId": "first-arena",
+        "id": "route-cue-first-arena",
+        "kind": "segment",
+        "position": {
+          "x": 0,
+          "y": 0.03,
+          "z": -46.8
+        },
+        "to": "memory-backup-decision"
+      },
+      {
+        "fromSegmentId": "memory-backup-decision",
+        "id": "route-cue-memory-backup-decision",
+        "kind": "segment",
+        "position": {
+          "x": 0,
+          "y": 0.03,
+          "z": -59.8
+        },
+        "to": "scanner-pursuit"
+      },
+      {
+        "fromSegmentId": "scanner-pursuit",
+        "id": "route-cue-scanner-pursuit",
+        "kind": "segment",
+        "position": {
+          "x": 0,
+          "y": 0.03,
+          "z": -89.8
+        },
+        "to": "gym-boss-arena"
+      },
+      {
+        "fromSegmentId": "gym-boss-arena",
+        "id": "route-cue-gym-boss-arena",
+        "kind": "chapter-exit",
+        "position": {
+          "x": 0,
+          "y": 0.03,
+          "z": -117.8
+        },
+        "to": "chapter-one-complete"
+      }
+    ],
+    "segmentIds": [
+      "classroom-cold-open",
+      "collapsing-corridor",
+      "first-arena",
+      "memory-backup-decision",
+      "scanner-pursuit",
+      "gym-boss-arena"
+    ],
+    "visualIds": [
+      "visual-classroom-lamps",
+      "visual-corridor-emergency",
+      "visual-arena-projector",
+      "visual-memory-terminal",
+      "visual-scanner-beacons",
+      "visual-gym-scoreboard"
+    ],
+    "visuals": [
+      {
+        "id": "visual-classroom-lamps",
+        "kind": "classroom",
+        "segmentId": "classroom-cold-open"
+      },
+      {
+        "id": "visual-corridor-emergency",
+        "kind": "corridor",
+        "segmentId": "collapsing-corridor"
+      },
+      {
+        "id": "visual-arena-projector",
+        "kind": "arena",
+        "segmentId": "first-arena"
+      },
+      {
+        "id": "visual-memory-terminal",
+        "kind": "decision",
+        "segmentId": "memory-backup-decision"
+      },
+      {
+        "id": "visual-scanner-beacons",
+        "kind": "pursuit",
+        "segmentId": "scanner-pursuit"
+      },
+      {
+        "id": "visual-gym-scoreboard",
+        "kind": "boss-arena",
+        "segmentId": "gym-boss-arena"
+      }
+    ]
+  }
+}

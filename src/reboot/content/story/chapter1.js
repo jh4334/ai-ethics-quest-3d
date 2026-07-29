@@ -24,8 +24,8 @@ export const chapterOneStory = deepFreeze({
       requiresAll: [],
       requiresAny: [],
       radio: [
-        { speaker: '하루·녹음', textKo: 'DOT가 내가 없었다고 말하면, 도망쳐. 출석부보다 복도부터 믿어.', durationMs: 4700, interruptible: true },
-        { speaker: 'DOT', textKo: '등록되지 않은 음성입니다. 발신자도 학생도 존재하지 않습니다.', durationMs: 4200, interruptible: true }
+        { speaker: '하루·녹음', textKo: '내가 출석 서버에 검증용 백업을 숨겼어. DOT가 없다고 하면 복도로 뛰어.', durationMs: 4700, interruptible: true },
+        { speaker: 'DOT', textKo: '나는 출석 동기화를 맡은 감사 AI야. 내 동기화가 ‘존재하지 않음’을 밀었어. 내가 역추적할게.', durationMs: 5200, interruptible: true }
       ]
     },
     {
@@ -46,7 +46,8 @@ export const chapterOneStory = deepFreeze({
       requiresAll: ['corridor-cleared'],
       requiresAny: [],
       radio: [
-        { speaker: 'DOT', textKo: '지우개와 도장기가 같은 명령 번호를 써. 발신지는 체육관이야.', durationMs: 4100, interruptible: true }
+        { speaker: 'DOT', textKo: '지우개와 도장기가 같은 명령 번호를 써. 발신지는 체육관이야.', durationMs: 4100, interruptible: true },
+        { speaker: 'DOT', textKo: '윤서의 ‘처리 보류’ 메모도 남아 있어. 체육관 승인 기록과 대조하자.', durationMs: 4300, interruptible: true }
       ]
     },
     {
@@ -56,7 +57,7 @@ export const chapterOneStory = deepFreeze({
       requiresAll: ['first-arena-cleared'],
       requiresAny: [],
       radio: [
-        { speaker: 'DOT', textKo: '오염 표적 안에서 하루의 백업 신호가 나와. TRACE를 유지해.', durationMs: 4100, interruptible: true }
+        { speaker: 'DOT', textKo: '하루가 직접 숨긴 백업 신호야. TRACE로 원본 시간을 확인해.', durationMs: 4100, interruptible: true }
       ]
     },
     {
@@ -66,7 +67,7 @@ export const chapterOneStory = deepFreeze({
       requiresAll: ['memory-traced'],
       requiresAny: [],
       radio: [
-        { speaker: 'DOT', textKo: '원본 연결을 붙잡았어. 대신 감독관이 증원을 보냈어.', durationMs: 3600, interruptible: true }
+        { speaker: 'DOT', textKo: 'TRACE로 원본 연결을 확인했어. 대신 감독관이 증원을 보냈어.', durationMs: 3900, interruptible: true }
       ]
     },
     {
@@ -78,7 +79,7 @@ export const chapterOneStory = deepFreeze({
       evidenceId: 'haru-memory-backup',
       radio: [
         { speaker: '하루·백업', textKo: '승인 기록은 체육관 출석 서버에 따로 남겼어. 이름보다 시간을 봐.', durationMs: 4500, interruptible: true },
-        { speaker: 'DOT', textKo: '백업은 남았지만 위치도 드러났어. 스캐너가 이쪽을 본다.', durationMs: 3900, interruptible: true }
+        { speaker: 'DOT', textKo: '네 선택은 기록됐어. 원본은 남았지만 위치도 드러났어.', durationMs: 3900, interruptible: true }
       ]
     },
     {
@@ -89,7 +90,7 @@ export const chapterOneStory = deepFreeze({
       requiresAny: [],
       evidenceId: 'haru-memory-backup',
       radio: [
-        { speaker: 'DOT', textKo: '표적 소거 완료. 추격 경로가 짧아졌어. 출처 연결도 끊겼어.', durationMs: 4200, interruptible: true }
+        { speaker: 'DOT', textKo: '네 선택은 기록됐어. PURGE로 추격은 짧아졌고 출처 연결은 끊겼어.', durationMs: 4400, interruptible: true }
       ]
     },
     {

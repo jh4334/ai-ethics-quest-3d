@@ -10,6 +10,7 @@ import {
 } from '../src/reboot/characters/catalog.js';
 import { chooseCharacterAnimation } from '../src/reboot/characters/animationState.js';
 import { createCharacterCast } from '../src/reboot/characters/cast.js';
+import { createCharacterFactory } from '../src/reboot/characters/factory.js';
 
 const REQUIRED_CHARACTER_IDS = [
   'player',
@@ -27,23 +28,126 @@ const REQUIRED_CHARACTER_IDS = [
   'lumen'
 ];
 
-test('reboot roster replaces every story role with a licensed imported model profile', () => {
+test('reboot roster gives every story role an explicit licensed or procedural profile', () => {
   // Given: the complete reboot story roster.
   const rosterIds = Object.keys(CHARACTER_ROSTER).sort();
 
   // When: each authored role is inspected.
-  // Then: every role points to imported body, outfit, palette, and animation data.
+  // Then: human roles point to imported models while DOT is the explicit procedural machine.
   assert.deepEqual(rosterIds, [...REQUIRED_CHARACTER_IDS].sort());
   for (const id of REQUIRED_CHARACTER_IDS) {
     const profile = getCharacterProfile(id);
     assert.equal(profile.id, id);
-    assert.match(profile.body, /^(female|male)$/);
-    assert.match(profile.outfit, /^(peasant|ranger)$/);
+    if (id === 'dot') {
+      assert.equal(profile.body, null);
+      assert.equal(profile.outfit, null);
+    } else {
+      assert.match(profile.body, /^(female|male)$/);
+      assert.match(profile.outfit, /^(peasant|ranger)$/);
+    }
     assert.match(profile.tint, /^#[0-9a-f]{6}$/i);
-    assert.ok(profile.scale >= 0.8 && profile.scale <= 1.25);
+    assert.ok(profile.scale >= 0.8 && profile.scale <= 1.31);
     assert.deepEqual(Object.keys(profile.animations).sort(), ['action', 'defeat', 'hit', 'idle', 'move']);
   }
   assert.throws(() => getCharacterProfile('missing-role'), /missing-role/);
+});
+
+test('main cast identity metadata separates three visible humans from the DOT audit drone', () => {
+  // Given: the four characters shown together in the live school camera.
+  const mainCast = ['player', 'dot', 'haru', 'yoonseo'].map(getCharacterProfile);
+
+  // When: their authored identity contracts are compared.
+  const humans = mainCast.filter((profile) => profile.identity.kind === 'human');
+  const signatures = mainCast.map((profile) => [
+    profile.identity.kind,
+    profile.identity.face,
+    profile.identity.hair,
+    profile.identity.outfit,
+    profile.identity.silhouette
+  ].join(':'));
+
+  // Then: the humans have visible, different hair/outfit silhouettes and DOT is a machine.
+  assert.equal(humans.length, 3);
+  assert.equal(new Set(humans.map((profile) => profile.identity.hair)).size, 3);
+  assert.equal(new Set(signatures).size, 4);
+  assert.equal(getCharacterProfile('dot').identity.kind, 'audit-drone');
+  assert.equal(getCharacterProfile('dot').body, null);
+  assert.equal(getCharacterProfile('dot').outfit, null);
+});
+
+test('main cast presentation stays large and texture-lit enough for the live school camera', () => {
+  // Given: the four characters viewed together at desktop and mobile gameplay distance.
+  const mainCast = ['player', 'dot', 'haru', 'yoonseo'].map(getCharacterProfile);
+  const humans = mainCast.filter((profile) => profile.identity.kind === 'human');
+
+  // When: their authored presentation bounds are inspected.
+  // Then: humans gain modest visual scale and neutral mapped-material lift without a tint wash.
+  assert.equal(humans.every((profile) => profile.scale === 1.3), true);
+  assert.equal(getCharacterProfile('dot').scale >= 1.05, true);
+  for (const profile of humans) {
+    assert.deepEqual(Object.keys(profile.presentation).sort(), ['hairEmissive', 'outfitEmissive', 'skinEmissive']);
+    assert.ok(profile.presentation.outfitEmissive >= 0.08);
+    assert.ok(profile.presentation.skinEmissive > profile.presentation.outfitEmissive);
+    assert.ok(profile.presentation.hairEmissive >= profile.presentation.skinEmissive);
+    assert.ok(Math.max(...Object.values(profile.presentation)) <= 0.22);
+  }
+});
+
+test('character factory preserves mapped material color while loading the player face and hair', async (t) => {
+  // Given: mapped body, outfit, and hair sources with an unmodified neutral base color.
+  const loadedUrls = [];
+  const makeMesh = (name) => {
+    const texture = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
+    texture.needsUpdate = true;
+    const material = new THREE.MeshStandardMaterial({ color: 0x778899, map: texture });
+    material.name = name;
+    return new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), material);
+  };
+  const loader = {
+    async loadAsync(url) {
+      loadedUrls.push(url);
+      const scene = new THREE.Group();
+      if (url.includes('/Hair_')) {
+        scene.add(makeMesh('MI_Hair_1'));
+      } else if (url.includes('/base/')) {
+        scene.add(makeMesh('MI_Regular_Female'), makeMesh('MI_Eyes'));
+      } else if (url.includes('/outfits/')) {
+        const outfit = makeMesh(url.includes('Ranger') ? 'MI_Ranger' : 'MI_Peasant');
+        if (url.includes('Male_Ranger')) outfit.name = 'Male_Ranger_Head_Hood';
+        scene.add(outfit);
+      }
+      const animations = ['Interact', 'Death01', 'Hit_Chest', 'Idle_Loop', 'Jog_Fwd_Loop']
+        .map((name) => new THREE.AnimationClip(name, 1, []));
+      return { animations, scene };
+    }
+  };
+  const factory = createCharacterFactory({ loader });
+  t.after(() => factory.dispose());
+
+  // When: the player presentation is assembled.
+  const character = await factory.create('player');
+  const materials = [];
+  character.root.traverse((object) => {
+    if (!object.isMesh) return;
+    const entries = Array.isArray(object.material) ? object.material : [object.material];
+    materials.push(...entries);
+  });
+
+  // Then: face, outfit, and hair maps survive without a global role-color wash.
+  const importedMaterials = materials.filter((material) => material.name);
+  assert.equal(loadedUrls.some((url) => url.endsWith('/Hair_SimpleParted.gltf')), true);
+  assert.equal(importedMaterials.length >= 4, true);
+  assert.equal(importedMaterials.every((material) => material.map?.isTexture), true);
+  assert.equal(importedMaterials.every((material) => material.color.getHex() === 0x778899), true);
+  assert.equal(importedMaterials.every((material) => material.emissiveMap === material.map), true);
+  assert.equal(importedMaterials.every((material) => material.emissive.getHex() === 0xffffff), true);
+  assert.equal(importedMaterials.every((material) => material.emissiveIntensity <= 0.22), true);
+  const materialByName = Object.fromEntries(importedMaterials.map((material) => [material.name, material]));
+  assert.ok(materialByName.MI_Hair_1.emissiveIntensity > materialByName.MI_Peasant.emissiveIntensity);
+  assert.ok(materialByName.MI_Regular_Female.emissiveIntensity > materialByName.MI_Peasant.emissiveIntensity);
+
+  const haru = await factory.create('haru');
+  assert.equal(haru.root.getObjectByName('Male_Ranger_Head_Hood').visible, false);
 });
 
 test('character animation priority is deterministic across combat and movement', () => {
@@ -89,6 +193,15 @@ test('runtime character assets exist locally and are documented as CC0', () => {
     assert.equal(existsSync(new URL(`../public/${path.slice(2)}`, import.meta.url)), true, path);
   }
   const licenses = readFileSync(new URL('../ASSET_LICENSES.md', import.meta.url), 'utf8');
+  const manifest = JSON.parse(readFileSync(new URL('../public/reboot-assets.json', import.meta.url), 'utf8'));
+  for (const name of ['Hair_Buns', 'Hair_Long', 'Hair_SimpleParted']) {
+    for (const extension of ['bin', 'gltf']) {
+      const path = `./assets/reboot/characters/base/${name}.${extension}`;
+      assert.equal(existsSync(new URL(`../public/${path.slice(2)}`, import.meta.url)), true, path);
+      assert.equal(manifest.includes(path), true, `${path} manifest`);
+    }
+    assert.match(licenses, new RegExp(name));
+  }
   assert.match(licenses, /Universal Base Characters/i);
   assert.match(licenses, /Modular Character Outfits - Fantasy/i);
   assert.match(licenses, /Universal Animation Library(?: 2)?/i);

@@ -1,0 +1,18 @@
+H-17 Loop 2 failing-first evidence
+Captured: 2026-07-29 (Asia/Seoul)
+
+Command 1
+node --test tests/reboot-story.test.js tests/reboot-story-director.test.js tests/reboot-campaign-chapters.test.js
+Exit code: 1 (expected RED)
+Result: 21 tests, 20 pass, 1 fail.
+Failure: "chapter one establishes agency and responsibility before the protected signature reveal"
+Reason: the early transcript has no DOT line identifying its attendance-sync/audit role. The same contract will next require Yoonseo and player-choice cues after DOT is fixed.
+
+Command 2
+node --test tests/reboot-school-scene-ui.test.js tests/reboot-feedback.test.js
+Exit code: 1 (expected RED)
+Result: 7 tests, 5 pass, 2 fail.
+Failure 1: expected "REFLECT · 명령 반송", actual "완벽 반사".
+Failure 2: expected a chapter-ending objective matching /선택.*승인 기록/, actual "출석 감독관과 대면".
+
+The failures identify missing role responsibility, action semantics, and result-stage HUD context rather than syntax/import errors.

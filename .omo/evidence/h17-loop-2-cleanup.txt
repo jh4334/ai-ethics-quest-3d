@@ -1,0 +1,50 @@
+H-17 Loop 2 — Story and HUD Readability cleanup
+Date: 2026-07-29 (Asia/Seoul)
+
+Scope
+- Story copy: src/reboot/content/story/chapter1.js
+- Route HUD: src/reboot/render/schoolSceneHud.js
+- Result hierarchy: src/reboot/story/chapterOneOutcome.js
+- Action cue labels: src/reboot/feedback/cueMap.js
+- Responsive layout: reboot.html
+- Contracts: tests/reboot-story.test.js, tests/reboot-school-scene-ui.test.js,
+  tests/reboot-feedback.test.js, tests/reboot-e2e/h17-polish.spec.js
+
+Narrative beats verified
+- Haru states her own backup action and gives an immediate route.
+- DOT names its audit role, admits its sync pushed the missing-state result, and offers to trace it.
+- Yoonseo's hold memo foreshadows the approval record without exposing the protected signature.
+- TRACE / SECURE / PURGE cues name both the player's action and its consequence.
+- PLAYER-ID remains behind boss-defeated -> approval-record-opened.
+- No moral score, right/wrong label, punishment copy, extra modal, or extra chapter was added.
+
+Text budgets
+- 11 beats / 17 interruptible radio lines.
+- Authored range: 23–54 characters and 3100–5200 ms.
+- Contract budget: at most 74 characters and 1200–6200 ms; validation passed.
+
+Evidence
+- Baseline: h17-loop-2-baseline-desktop.png, h17-loop-2-baseline-mobile.png,
+  h17-loop-2-baseline.txt
+- RED: h17-loop-2-red.txt
+- Final: h17-loop-2-story-desktop.png (1180x820),
+  h17-loop-2-story-mobile.png (390x844)
+- Manual image review: objective, radio, feedback, result semantics, and touch controls are legible.
+- Automated bounds: radio/feedback, radio/touch actions, and result/touch actions do not overlap;
+  result headings and paragraphs do not overflow.
+- Browser console and page errors: 0 in final scenarios.
+
+Verification
+- Focused Node contracts twice: 28/28 passed on both runs.
+- npm test: 366/366 passed.
+- npm run build: passed; Vite transformed 135 modules.
+- npm run smoke: passed.
+- Playwright @loop2: 2/2 passed.
+- Full tests/reboot-e2e/h17-polish.spec.js: 4/4 passed, including Loop 1 regression.
+- git diff --check: passed (line-ending notices only).
+- Pure JS modules remain below 250 lines (largest changed test: 168; largest changed source: 140).
+
+Cleanup
+- No temporary Loop 2 test or source files remain.
+- Existing unrelated dirty evidence was preserved unchanged by this loop.
+- No commit, push, deployment, or ULW state edit was performed.

@@ -36,6 +36,21 @@ test('story content validates deterministic triggers, evidence, and radio budget
   assert.equal(validated.beats.every((beat) => beat.radio.every((line) => line.interruptible)), true);
 });
 
+test('chapter one establishes agency and responsibility before the protected signature reveal', () => {
+  // Given: every playable radio line before the approval record opens.
+  const earlyLines = chapterOneStory.beats
+    .filter((beat) => beat.triggerId !== 'approval-record-opened' && beat.order < 8)
+    .flatMap((beat) => beat.radio);
+  const earlyText = earlyLines.map((line) => `${line.speaker}: ${line.textKo}`).join('\n');
+
+  // When / Then: each role has one terse, non-spoiler responsibility cue.
+  assert.match(earlyText, /하루[^\n]*(숨겼|남겼|공개)/);
+  assert.match(earlyText, /DOT[^\n]*(감사 AI|동기화.*맡)/);
+  assert.match(earlyText, /윤서[^\n]*(보류|메모|정책)/);
+  assert.match(earlyText, /(네 선택|선택[^\n]*기록)/);
+  assert.doesNotMatch(earlyText, /PLAYER-ID|플레이어의 학생 ID/);
+});
+
 test('story validation rejects duplicate, missing, impossible, spoiler, and oversized content', () => {
   // Given: one valid graph and independent malformed variants.
   const duplicate = { ...chapterOneStory, beats: [...chapterOneStory.beats, chapterOneStory.beats[0]] };
@@ -130,7 +145,7 @@ test('purge path reaches the boss quickly and keeps the missing context visible'
   assert.equal(story.effects.backupVisible, false);
   assert.equal(story.effects.extraWave, false);
   assert.equal(story.phase, 'chapter-ending');
-  assert.match(outcome.routeConsequenceKo, /출처 연결은 함께 사라졌다/);
+  assert.match(outcome.routeConsequenceKo, /백업 내용과 출처 연결은 사라졌다/);
   assert.doesNotMatch(JSON.stringify(outcome), /correct|wrong|정답|오답|현명|실패/i);
 });
 

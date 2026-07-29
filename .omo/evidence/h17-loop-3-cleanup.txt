@@ -1,0 +1,74 @@
+H-17 Loop 3 — School Environment Dressing cleanup
+Date: 2026-07-29 (Asia/Seoul)
+
+Changed files
+- src/reboot/content/levels/chapter1.js
+  Authored semantic landmarkIds on the six existing visual records; no segment, route, collision, navigation, encounter, checkpoint, or local-light value changed.
+- src/reboot/render/schoolRouteDressing.js
+  Added deterministic render-only recipes, five shared materials, one shared box geometry, five InstancedMesh batches, semantic debug state, budgets, and idempotent disposal.
+- src/reboot/render/schoolRoute.js
+  Connected the owned dressing lifecycle and aggregated debug/budget data.
+- tests/reboot-route-render.test.js
+  Added landmark, differentiation, generic-route isolation, budget, determinism, ownership, and disposal contracts.
+- tests/reboot-e2e/h17-polish.spec.js
+  Added Loop 3 desktop/mobile live-browser scenarios and screenshots.
+- .omo/evidence/h17-loop-3-* baseline, RED, final images, and this receipt.
+
+Semantic landmarks
+- classroom-cold-open: teacher terminal, student desk rows, side-wall board, clock silhouette.
+- collapsing-corridor: locker banks, room-number cues, emergency sign.
+- first-arena: projector source, source grid, damaged desk perimeter.
+- memory-backup-decision: backup terminal, server rack, evidence frame.
+- scanner-pursuit: paired scanner beacons and repeated gate rhythm.
+- gym-boss-arena: court markings, scoreboard, broadcast door, approval server.
+
+Determinism and ownership
+- 97 authored box instances; no random or time-based layout.
+- Chapter-one records opt in through landmarkIds plus the existing visual kind.
+- Shared route users without landmarkIds allocate 0 dressing draws, instances, resources, and triangles.
+- Dressing owns and disposes its geometry/materials once; route disposal remains idempotent.
+- Collision/navigation bounds, encounter positions, camera math, story/progress/report state, and six authored local-light records are unchanged.
+
+Route budget before -> after
+- draw calls: 5 -> 10 (limit 18)
+- triangles: 432 -> 1,596 (limit 5,000)
+- owned GPU resources: 6 -> 12
+- live chapter-one rendered route lights: 3 -> 3; scene light total remains at most 4
+- dressing portion: 5 draws, 97 instances, 1,164 triangles, 6 resources
+
+Verification
+- RED: 6/9 passed, with 3 expected missing-contract failures; data-ownership edge RED later exposed 6 unused generic-route resources.
+- Focused final route tests: 10/10 passed twice (231.0924 ms and 357.0715 ms).
+- npm test: 369/369 passed, 0 failed, 2748.1001 ms.
+- npm run build: passed; Vite transformed 136 modules.
+- npm run smoke: passed.
+- Full tests/reboot-e2e/h17-polish.spec.js: 6/6 passed; console/page errors 0.
+- git diff --check: passed (line-ending notices only).
+- Added-line/source scan: no Math.random, new lights, shadows, render targets, shadow maps, or fog in Loop 3 dressing changes.
+- Port 8899 listeners after verification: 0.
+
+Evidence
+- Baseline: h17-loop-3-baseline-desktop.png (1180x820), h17-loop-3-baseline-mobile.png (390x844), h17-loop-3-baseline.json, h17-loop-3-baseline.txt.
+- RED: h17-loop-3-red.txt.
+- Final required: h17-loop-3-school-desktop.png (1180x820), h17-loop-3-school-mobile.png (390x844).
+- Additional views: h17-loop-3-school-memory.png, h17-loop-3-school-gym.png, h17-loop-3-school-boss.png.
+
+Visual assessment
+- Arena grid/projector and damaged desk perimeter are immediately distinct from the corridor and memory room.
+- Mobile classroom keeps the central route open; the board and clock sit on the left side wall rather than reading as a fake barrier.
+- Navy moonlight remains dominant, while amber, teal, blue, and emergency-red emissive material accents prevent landmark silhouettes from crushing into black.
+- HUD, radio, player, objective, and touch actions remain readable and non-overlapping.
+
+Known limitation
+- route-gym uses the same encounter-oriented framing rather than a dedicated environment overview. The scoreboard, broadcast door, approval server, and court are visible at the upper/side edges, and semantic browser assertions verify all four; no camera-math exception was added.
+
+Size review
+- schoolRoute.js: 219 pure LOC (warning band; remains route orchestration only).
+- schoolRouteDressing.js: 201 pure LOC (warning band; most lines are the single immutable prop recipe table).
+- No file exceeds the 250 pure-LOC ceiling. Any future additions should split recipe data from the renderer before expanding these modules.
+
+Cleanup
+- No temporary baseline test remains in the Playwright spec.
+- No runtime asset file or license/asset-manifest entry was added in Loop 3.
+- Existing unrelated dirty files and Loop 1–2 evidence were preserved.
+- No commit, push, deployment, or ULW state edit was performed.

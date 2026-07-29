@@ -16,15 +16,15 @@
     .status { margin: .35rem 0 0; color: #d9e4ff; font-size: .9rem; }
     .combat-hud { display: flex; gap: 10px; margin-top: 8px; color: #d9e4ff; font-size: .78rem; }
     .combat-hud span { padding: 4px 7px; border: 1px solid #7b91bf66; border-radius: 5px; background: #050918aa; }
-    .objective { position: fixed; top: max(112px, calc(env(safe-area-inset-top) + 96px)); left: 50%; translate: -50% 0; margin: 0; color: #fff3d6; font-size: clamp(.82rem, 2vw, 1rem); text-shadow: 0 2px 8px #000; }
+    .objective { position: fixed; top: max(112px, calc(env(safe-area-inset-top) + 96px)); left: 50%; translate: -50% 0; max-width: min(72vw, 620px); margin: 0; padding: 6px 10px; border-radius: 6px; color: #fff3d6; background: #050918b8; font-size: clamp(.82rem, 2vw, 1rem); line-height: 1.35; text-align: center; text-shadow: 0 2px 8px #000; }
     .actions { display: flex; gap: 8px; pointer-events: auto; }
     button { min-width: 48px; min-height: 44px; padding: 8px 12px; border: 1px solid #7b91bf; border-radius: 8px; color: #fff; background: #101a36dd; font: inherit; }
     button:focus-visible { outline: 3px solid #f4c06d; outline-offset: 2px; }
     .hint { position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); translate: -50% 0; margin: 0; color: #d9e4ff; font-size: .82rem; text-align: center; text-shadow: 0 2px 8px #000; }
     .recovery { position: fixed; left: 50%; top: 82px; translate: -50% 0; max-width: min(90vw, 560px); margin: 0; padding: 10px 14px; border: 1px solid #f4c06d88; border-radius: 8px; color: #fff3d6; background: #101a36ee; text-align: center; }
-    .radio { position: fixed; left: 50%; bottom: 64px; translate: -50% 0; width: min(88vw, 680px); margin: 0; padding: 10px 14px; border-left: 3px solid #5de0c1; color: #eef5ff; background: #050918d9; text-shadow: 0 2px 8px #000; }
+    .radio { position: fixed; left: 50%; bottom: 64px; translate: -50% 0; z-index: 4; width: min(88vw, 680px); margin: 0; padding: 10px 14px; border-left: 3px solid #5de0c1; color: #eef5ff; background: #050918e8; line-height: 1.45; text-shadow: 0 2px 8px #000; }
     .radio strong { margin-right: 8px; color: #5de0c1; }
-    .feedback-prompts { position: fixed; right: 18px; bottom: max(74px, calc(env(safe-area-inset-bottom) + 62px)); max-width: min(42vw, 360px); margin: 0; padding: 7px 10px; border-right: 3px solid #f4c06d; color: #fff3d6; background: #050918c9; font-size: .78rem; text-align: right; text-shadow: 0 2px 8px #000; }
+    .feedback-prompts { position: fixed; right: 18px; bottom: max(142px, calc(env(safe-area-inset-bottom) + 130px)); z-index: 4; max-width: min(42vw, 360px); margin: 0; padding: 7px 10px; border-right: 3px solid #f4c06d; color: #fff3d6; background: #050918e3; font-size: .78rem; line-height: 1.4; text-align: right; text-shadow: 0 2px 8px #000; }
     .touch-controls { display: none; position: fixed; inset: auto 0 max(14px, env(safe-area-inset-bottom)); z-index: 5; pointer-events: none; }
     .touch-stick { position: absolute; left: max(18px, env(safe-area-inset-left)); bottom: 0; width: 132px; height: 132px; border: 2px solid #8ba5d077; border-radius: 50%; background: #08112699; pointer-events: auto; touch-action: none; }
     .touch-stick::before, .touch-stick::after { content: ''; position: absolute; background: #a9bce944; pointer-events: none; }
@@ -38,8 +38,9 @@
     @media (pointer: coarse), (max-width: 760px) {
       .touch-controls { display: block; }
       .hint { display: none; }
-      .feedback-prompts { bottom: 160px; max-width: 54vw; }
-      .radio { bottom: 162px; }
+      .objective { top: max(142px, calc(env(safe-area-inset-top) + 126px)); max-width: calc(100vw - 40px); }
+      .feedback-prompts { bottom: 244px; max-width: 70vw; }
+      .radio { bottom: 172px; width: calc(100vw - 40px); }
       .combat-hud { max-width: 52vw; flex-wrap: wrap; }
     }
     [data-touch-mode="true"] .touch-controls { display: block; }
@@ -47,15 +48,32 @@
     [data-touch-mode="true"] .hud { right: auto; width: calc(var(--fixture-width) - 32px); }
     [data-touch-mode="true"] .touch-actions { right: auto; left: calc(var(--fixture-width) - 282px); }
     [data-touch-mode="true"] .feedback-prompts { right: auto; left: calc(var(--fixture-width) - min(42vw, 360px) - 18px); }
+    [data-touch-mode="true"] .radio { width: min(calc(100vw - 40px), 600px); }
     .chapter-result { position: fixed; inset: 50% auto auto 50%; translate: -50% -50%; z-index: 3; width: min(88vw, 620px); padding: 22px; border: 1px solid #f4c06d88; border-radius: 12px; background: #081126f2; box-shadow: 0 20px 80px #000a; }
     .chapter-result h2 { margin: 0 0 14px; color: #f4c06d; }
     .chapter-result p { margin: 9px 0; color: #e9f0ff; line-height: 1.55; }
+    .chapter-result [data-result-action] { color: #fff3d6; font-weight: 700; }
+    .chapter-result [data-result-consequence] { padding-top: 9px; border-top: 1px solid #7b91bf55; }
+    .chapter-result [data-result-reversal] { color: #a9d9ff; }
+    body:has(.chapter-result:not([hidden])) .objective,
+    body:has(.chapter-result:not([hidden])) .radio,
+    body:has(.chapter-result:not([hidden])) .hint,
+    body:has(.chapter-result:not([hidden])) .feedback-prompts { display: none; }
+    @media (pointer: coarse), (max-width: 760px) {
+      .chapter-result { top: calc(50% - 34px); width: calc(100vw - 48px); max-height: calc(100svh - 300px); overflow: auto; padding: 18px; }
+      .chapter-result h2 { font-size: 1.25rem; }
+      .chapter-result p { font-size: .94rem; line-height: 1.45; }
+    }
     .patch-picker { position: fixed; left: 50%; bottom: 28px; translate: -50% 0; z-index: 4; padding: 12px; border: 1px solid #5de0c188; border-radius: 10px; background: #081126ee; }
     .patch-picker p { margin: 0 0 8px; color: #5de0c1; text-align: center; }
     .campaign-continue { position: fixed; left: 50%; bottom: 28px; translate: -50% 0; z-index: 6; border-color: #f4c06d; background: #332611ee; }
+    @media (pointer: coarse), (max-width: 760px) {
+      .campaign-continue { bottom: max(148px, calc(env(safe-area-inset-bottom) + 134px)); }
+    }
     .test-storage { position: fixed; left: 12px; bottom: 12px; z-index: 4; max-width: min(92vw, 700px); padding: 8px; border: 1px dashed #6aa9ff; background: #050918ee; }
     .test-storage pre { max-height: 110px; overflow: auto; margin: 8px 0 0; color: #bfe8ff; font-size: 11px; white-space: pre-wrap; }
     .viewport-tools { position: fixed; left: 50%; top: 10px; translate: -50% 0; z-index: 8; display: flex; gap: 6px; }
+    .viewport-tools[hidden] { display: none; }
     .viewport-tools button { min-height: 34px; padding: 4px 8px; font-size: .7rem; }
   </style>
 </head>
@@ -82,7 +100,7 @@
     <p class="recovery" data-recovery-notice role="status" hidden></p>
     <p class="radio" data-radio-subtitle aria-live="polite" hidden><strong data-radio-speaker></strong><span data-radio-text></span></p>
     <p class="feedback-prompts" data-feedback-prompts role="status" aria-live="polite" hidden></p>
-    <section class="chapter-result" data-chapter-result hidden aria-label="1장 결과">
+    <section class="chapter-result" data-chapter-result hidden aria-label="1장 결과" role="status" aria-live="polite" aria-atomic="true">
       <h2>00:17 — 출석번호 없음</h2>
       <p data-result-action></p>
       <p data-result-consequence></p>

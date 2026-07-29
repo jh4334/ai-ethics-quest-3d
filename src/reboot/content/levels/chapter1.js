@@ -78,12 +78,12 @@ export const chapterOneLevel = {
       { bounds: { maxX: 13, maxZ: -91, minX: -13, minZ: -119 }, id: 'nav-gym', segmentId: 'gym-boss-arena' }
     ],
     visual: [
-      { id: 'visual-classroom-lamps', kind: 'classroom', segmentId: 'classroom-cold-open' },
-      { id: 'visual-corridor-emergency', kind: 'corridor', segmentId: 'collapsing-corridor' },
-      { id: 'visual-arena-projector', kind: 'arena', segmentId: 'first-arena' },
-      { id: 'visual-memory-terminal', kind: 'decision', segmentId: 'memory-backup-decision' },
-      { id: 'visual-scanner-beacons', kind: 'pursuit', segmentId: 'scanner-pursuit' },
-      { id: 'visual-gym-scoreboard', kind: 'boss-arena', segmentId: 'gym-boss-arena' }
+      { id: 'visual-classroom-lamps', kind: 'classroom', landmarkIds: ['classroom-teacher-terminal', 'classroom-student-desks', 'classroom-board', 'classroom-clock'], segmentId: 'classroom-cold-open' },
+      { id: 'visual-corridor-emergency', kind: 'corridor', landmarkIds: ['corridor-locker-banks', 'corridor-room-number', 'corridor-emergency-sign'], segmentId: 'collapsing-corridor' },
+      { id: 'visual-arena-projector', kind: 'arena', landmarkIds: ['arena-projector-source', 'arena-source-grid', 'arena-damaged-desk-perimeter'], segmentId: 'first-arena' },
+      { id: 'visual-memory-terminal', kind: 'decision', landmarkIds: ['memory-backup-terminal', 'memory-server-rack', 'memory-evidence-frame'], segmentId: 'memory-backup-decision' },
+      { id: 'visual-scanner-beacons', kind: 'pursuit', landmarkIds: ['pursuit-scanner-beacons', 'pursuit-gate-rhythm'], segmentId: 'scanner-pursuit' },
+      { id: 'visual-gym-scoreboard', kind: 'boss-arena', landmarkIds: ['gym-court-markings', 'gym-scoreboard', 'gym-broadcast-door', 'gym-approval-server'], segmentId: 'gym-boss-arena' }
     ],
     encounter: [
       { id: 'encounter-corridor-collapse', kind: 'escape', segmentId: 'collapsing-corridor' },

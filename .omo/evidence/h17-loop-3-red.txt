@@ -1,0 +1,24 @@
+H-17 Loop 3 RED — 2026-07-29
+
+Command
+node --test tests/reboot-route-render.test.js
+
+Result
+- tests: 9
+- passed: 6
+- failed: 3
+- duration: 341.5532 ms
+
+Expected failures
+1. Segment landmark contract failed because `debug.landmarksBySegment` did not exist.
+2. Segment differentiation contract failed because semantic landmark signatures did not exist.
+3. Route budget detail failed because `budget.dressing` did not exist.
+
+Existing collision, light ownership, determinism, malformed-data rejection, and idempotent disposal tests remained green.
+The failures therefore isolate the missing procedural school-dressing/debug contract rather than a fixture or import error.
+
+Data-ownership edge RED
+- After adding chapter-one `landmarkIds`, the shared renderer was tested with those fields removed.
+- Result: 9 passed / 1 failed because the empty route still allocated 6 unused dressing resources.
+- Expected `{ drawCalls: 0, instances: 0, resources: 0, triangles: 0 }`; actual resources were 6.
+- The resource allocation was moved behind authored landmark resolution; the final focused suite passes 10/10.

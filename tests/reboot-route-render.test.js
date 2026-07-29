@@ -10,6 +10,15 @@ function createRoute(level = chapterOneLevel) {
   return { route: createSchoolRoute({ level, scene }), scene };
 }
 
+const REQUIRED_LANDMARKS = Object.freeze({
+  'classroom-cold-open': ['classroom-teacher-terminal', 'classroom-student-desks', 'classroom-board', 'classroom-clock'],
+  'collapsing-corridor': ['corridor-locker-banks', 'corridor-room-number', 'corridor-emergency-sign'],
+  'first-arena': ['arena-projector-source', 'arena-source-grid', 'arena-damaged-desk-perimeter'],
+  'memory-backup-decision': ['memory-backup-terminal', 'memory-server-rack', 'memory-evidence-frame'],
+  'scanner-pursuit': ['pursuit-scanner-beacons', 'pursuit-gate-rhythm'],
+  'gym-boss-arena': ['gym-court-markings', 'gym-scoreboard', 'gym-broadcast-door', 'gym-approval-server']
+});
+
 test('Given chapter one data, When the route is built, Then every authored layer has explicit debug state', () => {
   // Given: the six-segment chapter-one school level.
   const { route, scene } = createRoute();
@@ -28,6 +37,51 @@ test('Given chapter one data, When the route is built, Then every authored layer
   assert.deepEqual(debug.encounterIds, chapterOneLevel.layers.encounter.map((entry) => entry.id));
   assert.equal(debug.occluders.length, chapterOneLevel.segments.length * 2);
   assert.equal(debug.routeCues.length, chapterOneLevel.segments.length);
+});
+
+test('Given six visual kinds, When route dressing is built, Then every segment exposes its school landmarks', () => {
+  // Given: each chapter-one segment has an authored visual kind.
+  const { route } = createRoute();
+
+  // When: semantic dressing state is inspected.
+  const landmarksBySegment = route.getDebugState().landmarksBySegment;
+
+  // Then: each segment exposes the complete landmark language expected for its role.
+  assert.deepEqual(Object.keys(landmarksBySegment), chapterOneLevel.segments.map((segment) => segment.id));
+  for (const [segmentId, expectedIds] of Object.entries(REQUIRED_LANDMARKS)) {
+    assert.deepEqual(landmarksBySegment[segmentId].map((landmark) => landmark.id), expectedIds);
+    assert.deepEqual(
+      chapterOneLevel.layers.visual.find((visual) => visual.segmentId === segmentId).landmarkIds,
+      expectedIds
+    );
+  }
+});
+
+test('Given route landmark metadata, When segments are compared, Then all six visual signatures differ', () => {
+  // Given: one independently built complete route.
+  const { route } = createRoute();
+
+  // When: each segment's semantic roles form a stable signature.
+  const signatures = Object.values(route.getDebugState().landmarksBySegment)
+    .map((landmarks) => landmarks.map((landmark) => landmark.role).join('|'));
+
+  // Then: no two school spaces depend on the same prop vocabulary.
+  assert.equal(signatures.length, chapterOneLevel.segments.length);
+  assert.equal(new Set(signatures).size, signatures.length);
+});
+
+test('Given a route without landmark authoring, When it renders, Then chapter-one dressing does not leak', () => {
+  // Given: a valid route whose visual layer does not opt into semantic landmarks.
+  const generic = structuredClone(chapterOneLevel);
+  generic.layers.visual.forEach((visual) => { delete visual.landmarkIds; });
+
+  // When: the shared school-route renderer builds that route.
+  const { route } = createRoute(generic);
+  const dressing = route.getDebugState().budget.dressing;
+
+  // Then: no chapter-one instance, draw call, or GPU resource is allocated.
+  assert.deepEqual(dressing, { drawCalls: 0, instances: 0, resources: 0, triangles: 0 });
+  assert.equal(Object.values(route.getDebugState().landmarksBySegment).every((entries) => entries.length === 0), true);
 });
 
 test('Given authored collision and navigation, When meshes are built, Then walkability stays flat and data-owned', () => {
@@ -82,9 +136,13 @@ test('Given a low-spec route budget, When all six segments render, Then draw cal
   const budget = route.getDebugState().budget;
 
   // Then: instancing keeps both budgets far below scene-level caps.
-  assert.ok(budget.drawCalls <= 5, budget.drawCalls);
-  assert.ok(budget.triangles <= 500, budget.triangles);
-  assert.equal(route.group.children.filter((object) => object.isInstancedMesh).length, budget.drawCalls);
+  assert.ok(budget.drawCalls <= 18, budget.drawCalls);
+  assert.ok(budget.triangles <= 5000, budget.triangles);
+  assert.ok(budget.dressing.drawCalls <= 6, budget.dressing.drawCalls);
+  assert.ok(budget.dressing.instances <= 120, budget.dressing.instances);
+  const instancedMeshes = [];
+  route.group.traverse((object) => { if (object.isInstancedMesh) instancedMeshes.push(object); });
+  assert.equal(instancedMeshes.length, budget.drawCalls);
 });
 
 test('Given the same level twice, When routes are built, Then debug state is deterministic', () => {

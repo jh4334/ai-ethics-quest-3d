@@ -1,0 +1,23 @@
+H-17 Loop 2 story and HUD baseline
+Captured: 2026-07-29 (Asia/Seoul)
+
+Commands and results
+- npx.cmd playwright test --config=playwright.config.js tests/reboot-e2e/h17-polish.spec.js --grep "@loop2-baseline" -> PASS (2/2, 19.3s)
+- Browser console/page errors -> 0
+
+Current narrative findings
+- Haru warns the player and later says he kept a separate approval record, so some agency is present.
+- DOT helps track commands but does not state its institutional role in attendance synchronization.
+- Yoonseo has no non-spoiler cue in the chapter-one playable transcript.
+- The memory choice objective lists keys but does not say the player's choice is recorded or what TRACE/PURGE changes.
+- Route result copy reports events but does not visually separate player action, consequence, and unresolved question.
+- Protected PLAYER-ID timing is currently correct and must remain unchanged.
+
+Current layout findings
+- Desktop qa-arena: the right-aligned feedback prompt overlaps the radio subtitle.
+- Mobile qa-consequence-secure: the route objective touches the wrapped ARMOR status chip.
+- The mobile result card itself remains above touch controls, but its three paragraphs have weak hierarchy.
+
+Evidence
+- .omo/evidence/h17-loop-2-baseline-desktop.png (1180x820, qa-arena)
+- .omo/evidence/h17-loop-2-baseline-mobile.png (390x844, qa-consequence-secure, low quality)

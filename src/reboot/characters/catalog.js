@@ -7,6 +7,9 @@ export const CHARACTER_ASSET_PATHS = Object.freeze({
   femaleBody: `${ASSET_ROOT}/base/Superhero_Female_FullBody.gltf`,
   femalePeasant: `${ASSET_ROOT}/outfits/Female_Peasant.gltf`,
   femaleRanger: `${ASSET_ROOT}/outfits/Female_Ranger.gltf`,
+  hairBuns: `${ASSET_ROOT}/base/Hair_Buns.gltf`,
+  hairLong: `${ASSET_ROOT}/base/Hair_Long.gltf`,
+  hairSimpleParted: `${ASSET_ROOT}/base/Hair_SimpleParted.gltf`,
   maleBody: `${ASSET_ROOT}/base/Superhero_Male_FullBody.gltf`,
   malePeasant: `${ASSET_ROOT}/outfits/Male_Peasant.gltf`,
   maleRanger: `${ASSET_ROOT}/outfits/Male_Ranger.gltf`
@@ -33,6 +36,12 @@ export const ANIMATION_ASSETS = Object.freeze({
   ual2: CHARACTER_ASSET_PATHS.animationLibrary2
 });
 
+export const HAIR_ASSETS = Object.freeze({
+  buns: CHARACTER_ASSET_PATHS.hairBuns,
+  long: CHARACTER_ASSET_PATHS.hairLong,
+  simpleParted: CHARACTER_ASSET_PATHS.hairSimpleParted
+});
+
 const UAL1 = Object.freeze({
   action: 'Interact',
   defeat: 'Death01',
@@ -48,24 +57,63 @@ const UAL2_ENEMY = Object.freeze({
   move: 'Zombie_Walk_Fwd_Loop'
 });
 
-function createProfile({ animations = UAL1, body, id, label, library = 'ual1', outfit, scale = 1, tint }) {
+const DEFAULT_PRESENTATION = Object.freeze({
+  hairEmissive: 0.14,
+  outfitEmissive: 0.08,
+  skinEmissive: 0.12
+});
+
+function createProfile({
+  accessory = 'none', animations = UAL1, body, face = 'visible', hair = null,
+  hiddenParts = [], id, kind = 'human', label, library = 'ual1', outfit,
+  presentation = DEFAULT_PRESENTATION, scale = 1, silhouette = `${body}-${outfit}`, tint
+}) {
   return Object.freeze({
     animations,
     body,
+    hair,
+    hiddenParts: Object.freeze([...hiddenParts]),
     id,
+    identity: Object.freeze({
+      accessory,
+      body: body ?? 'machine',
+      face,
+      hair: hair ?? 'none',
+      kind,
+      outfit: outfit ?? 'none',
+      silhouette
+    }),
     label,
     library,
     outfit,
+    presentation: Object.freeze({ ...presentation }),
     scale,
     tint
   });
 }
 
 export const CHARACTER_ROSTER = Object.freeze({
-  player: createProfile({ id: 'player', label: '기록자', body: 'female', outfit: 'ranger', scale: 0.98, tint: '#315f92' }),
-  dot: createProfile({ id: 'dot', label: 'DOT', body: 'female', outfit: 'ranger', scale: 0.84, tint: '#28b8c7' }),
-  haru: createProfile({ id: 'haru', label: '하루', body: 'male', outfit: 'ranger', scale: 0.98, tint: '#3e5e7c' }),
-  yoonseo: createProfile({ id: 'yoonseo', label: '윤서', body: 'female', outfit: 'ranger', scale: 0.9, tint: '#7b579a' }),
+  player: createProfile({
+    accessory: 'record-ring', body: 'female', hair: 'simpleParted', id: 'player', label: '기록자',
+    outfit: 'peasant', presentation: { hairEmissive: 0.2, outfitEmissive: 0.12, skinEmissive: 0.17 },
+    scale: 1.3, silhouette: 'parted-hair-record-ring', tint: '#4aaee8'
+  }),
+  dot: createProfile({
+    accessory: 'scan-ring', body: null, face: 'sensor', id: 'dot', kind: 'audit-drone', label: 'DOT',
+    outfit: null, scale: 1.1, silhouette: 'orb-ring-twin-fin', tint: '#35d2dc'
+  }),
+  haru: createProfile({
+    accessory: 'shoulder-pauldron', body: 'male', hair: 'long', hiddenParts: ['Head_Hood'],
+    id: 'haru', label: '하루', outfit: 'ranger',
+    presentation: { hairEmissive: 0.19, outfitEmissive: 0.11, skinEmissive: 0.16 }, scale: 1.3,
+    silhouette: 'long-hair-wide-pauldron', tint: '#e18b43'
+  }),
+  yoonseo: createProfile({
+    accessory: 'policy-tablet', body: 'female', hair: 'buns', hiddenParts: ['Acc_Pauldrons', 'Head_Hood'],
+    id: 'yoonseo', label: '윤서', outfit: 'ranger',
+    presentation: { hairEmissive: 0.2, outfitEmissive: 0.12, skinEmissive: 0.17 }, scale: 1.3,
+    silhouette: 'twin-buns-policy-tablet', tint: '#b58ad9'
+  }),
   'student-a': createProfile({ id: 'student-a', label: '학생 A', body: 'male', outfit: 'peasant', scale: 0.88, tint: '#3d6c64' }),
   'student-b': createProfile({ id: 'student-b', label: '학생 B', body: 'female', outfit: 'peasant', scale: 0.86, tint: '#72576f' }),
   eraser: createProfile({ id: 'eraser', label: '삭제자', body: 'male', outfit: 'ranger', scale: 1.02, tint: '#582d44', library: 'ual2', animations: UAL2_ENEMY }),

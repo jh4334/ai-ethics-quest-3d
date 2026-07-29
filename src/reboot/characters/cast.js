@@ -61,6 +61,15 @@ export function createCharacterCast({ scene }) {
     getDebugState() {
       return Object.freeze({
         errors: Object.freeze([...errors]),
+        identities: Object.freeze(SCHOOL_CAST.flatMap(({ id }) => {
+          const character = characters.get(id);
+          return character ? [Object.freeze({
+            id,
+            ...character.profile.identity,
+            presentation: character.profile.presentation,
+            visualScale: character.profile.scale
+          })] : [];
+        })),
         loaded: characters.size,
         total: SCHOOL_CAST.length
       });

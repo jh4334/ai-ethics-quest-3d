@@ -1,0 +1,34 @@
+H-17 G007 final privacy audit
+Date: 2026-07-29 (Asia/Seoul)
+
+Scope
+- 22 H17-authored evidence text/JSON files, including this receipt.
+- 1 H17 plan file.
+- 3 ULW handoff text/JSON/JSONL files.
+- 2 changed documentation/manifest files.
+- Binary screenshots and videos were scanned by file selection only and were not rewritten.
+- Pre-existing task-prefixed binary evidence was not modified by G007.
+
+Scan method
+- PowerShell Select-String simple-match scan for the configured local account token, Windows and macOS user-profile root signatures, and the local affiliation marker.
+- Case-insensitive regex scan for email-address patterns.
+- Regex scan for phone-like numeric patterns.
+- The scan was repeated after redaction and after adding this receipt.
+
+Exact remediation
+- Matches before fix: 1.
+- File: .omo/evidence/h17-loop-1-cleanup.txt, temporary extraction receipt.
+- Fix: replaced the absolute account-specific temporary directory with `%TEMP%/h17-loop1-hair-extract`.
+
+Final results
+- Local account token: 0 matches.
+- User-profile root signatures: 0 matches.
+- Local affiliation marker: 0 matches.
+- Email patterns: 0 matches.
+- Phone-like patterns: 0 matches.
+- Remaining privacy findings: 0.
+
+Verification commands and results
+- Select-String simple/regex scan over the 28-file scope, with sensitive match tokens supplied only at execution time: exit 0; all categories 0.
+- node --test tests/reboot-characters.test.js: exit 0; 8/8 passed.
+- git diff --check: exit 0; no whitespace errors (Windows line-ending notices only).

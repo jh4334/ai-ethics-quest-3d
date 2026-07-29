@@ -1,0 +1,59 @@
+H-17 Loop 5 cleanup and five-loop release receipt
+Date: 2026-07-29 (Asia/Seoul)
+
+Loop 5 baseline and RED
+- Post-Loop-4 references: h17-loop-5-baseline-desktop.png (79,845 bytes), h17-loop-5-baseline-mobile.png (61,905 bytes).
+- Baseline behavior lock: H17 9/9, npm test 374/374, build, and smoke were green.
+- h17-loop-5-red.txt records 0/2 expected failures after both real endings reached the missing result status-role contract.
+
+Implemented release fixes
+- chapter-result is an atomic polite status live region.
+- Mobile campaign continuation sits above the touch-action grid; result copy and controls do not overlap.
+- The outcome state hides the desktop keyboard hint so it cannot collide with the focused continuation button.
+- Hidden QA orientation controls now remain visually hidden.
+- Test-hook landscape fixtures use genuine desktop controls (`data-touch-mode=false`); portrait/touch fixtures retain touch mode.
+- schoolNightScene debug snapshot assembly moved, without changing its API or state shape, to schoolSceneDebug.js.
+
+Final route evidence
+- @final-desktop SECURE: keyboard-only protocol, Tab focus order, reduced motion, visible live labels, no overlap, console/page errors 0.
+- @final-mobile PURGE: pointer-event protocol, eight >=50x52 touch targets, reduced motion, result/continue separation, console/page errors 0.
+- h17-loop-5-final-desktop.png (94,645 bytes): genuine desktop/keyboard frame, no touch overlay or QA tools.
+- h17-loop-5-final-mobile.png (60,668 bytes): readable purge result with continuation above touch controls.
+- Focused final matrix: 2/2 passed.
+- Full tests/reboot-e2e/h17-polish.spec.js: 11/11 passed in 2.9 minutes.
+- A diagnostic full run before rebuilding exposed two expected stale assertions (landscape still expecting touch UI, and pre-build hint CSS); both were corrected and the final 11/11 run is authoritative.
+
+Asset and license audit
+- Character disk files: 44; public/reboot-assets.json character entries: 44.
+- Missing manifest entries: 0; missing disk files: 0.
+- Catalog roots: 11, covered by precise Universal Base Characters, Modular Character Outfits, UAL1, and UAL2 CC0 rows.
+- Procedural DOT/accessory/school/campaign/finale geometry loads no external file and needs no license row.
+- Detailed receipt: h17-loop-5-assets.txt. No Loop 5 asset/license correction was required.
+
+Behavior-locked cleanup audit
+- Detailed receipt: h17-loop-5-ai-slop.txt.
+- Only mandatory cleanup: schoolNightScene.js 256 -> 239 pure LOC; schoolSceneDebug.js 31 pure LOC.
+- Every changed H17 production JS file is <=250 pure LOC.
+- No changed-source console.log/debug, TODO/FIXME, empty catch, suppression, or Math.random match.
+- Learning-report/progress/print protected files are untouched.
+
+Release gates
+- Focused school/input/character/route/UI set: 41/41 passed.
+- npm test: 374/374 passed, 0 failed.
+- npm run build: passed; Vite transformed 139 modules.
+- npm run smoke: passed; canonical reboot and legacy rollback remain wired.
+- npm run slice:gate -- .omo/evidence/h17-five-loop-slice-manifest.json: passed.
+- Slice manifest contains SECURE desktop + PURGE touch, distinct report IDs, signatureRevealed=true for both, every required gate=true, blockers=[], and no P0/P1 findings.
+- git diff --check: passed (only existing Windows LF->CRLF notices).
+- Port 8899 listener check: none remained; no process cleanup was needed.
+
+Five-loop inventory
+1. Loop 1 — live-camera character readability: distinct hair/silhouettes, neutral mapped-material lift, larger readable cast, combat-safe framing.
+2. Loop 2 — story readability: action-linked Korean cues, radio/feedback hierarchy, distinct SECURE/PURGE consequence copy.
+3. Loop 3 — school identity: six deterministic chapter-one landmark signatures within low-spec budgets.
+4. Loop 4 — campaign identity: share-chain, dual-school, approval-room, and secure/purge finale landmarks with touch-safe staging.
+5. Loop 5 — release closure: final desktop/touch accessibility routes, manifest gate, exhaustive asset/license audit, and behavior-locked slop cleanup.
+
+Final disposition
+- P0: 0. P1: 0. Release blockers: 0.
+- No commit, push, PR, deployment, or unrelated user-file cleanup was performed.

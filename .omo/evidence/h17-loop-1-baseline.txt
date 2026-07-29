@@ -1,0 +1,19 @@
+H-17 Loop 1 character baseline
+Captured: 2026-07-29 (Asia/Seoul)
+
+Commands and results
+- npm.cmd run build -> PASS (Vite 8.1.0, 135 modules transformed)
+- npx.cmd playwright test --config=playwright.config.js tests/reboot-e2e/h17-polish.spec.js --grep "@loop1-baseline" -> PASS (2/2, 17.2s)
+- Browser console/page errors -> 0
+
+Current roster/factory findings
+- player, DOT, Haru, and Yoonseo all use the Ranger outfit family.
+- DOT is a scaled female Ranger humanoid rather than a non-humanoid audit AI.
+- prepareModel lerps every non-skin material 78% toward one role tint.
+- prepareModel applies a uniform emissive wash to skin and non-skin materials.
+- No main-cast hair identity metadata or runtime hair source is registered.
+- At the live quarter-view camera, the four cast members read as similarly hooded shadow figures distinguished mainly by tint.
+
+Evidence
+- .omo/evidence/h17-loop-1-baseline-desktop.png (1180x820, qa-tutorial)
+- .omo/evidence/h17-loop-1-baseline-mobile.png (390x844, qa-arena, low quality)

@@ -1,0 +1,29 @@
+H-17 Loop 3 baseline — 2026-07-29
+
+Fixtures
+- Desktop 1180x820: qa-arena, landscape.
+- Mobile 390x844: qa-tutorial, low quality, portrait.
+- Console/page errors: 0 in both captures.
+
+Route debug budget before dressing
+- drawCalls: 5
+- triangles: 432
+- owned GPU resources: 6
+- rendered local lights: 3; authored local-light records: 6
+
+Observed scene-level metrics at the arena fixture
+- drawCalls: 36
+- triangles: 84,733
+- lights: 4
+
+Visual findings
+- All six segments use the same flat navy floor and paired wall silhouette.
+- Segment identity is carried by one small luminous rectangle per area.
+- Classroom has no desk/board/terminal language; arena has no projector/source-grid perimeter.
+- Near-black walls and background merge at distance, especially on the mobile classroom view.
+- Route, player, HUD, and controls remain functional; this loop must preserve their geometry and layout.
+
+Evidence
+- .omo/evidence/h17-loop-3-baseline-desktop.png
+- .omo/evidence/h17-loop-3-baseline-mobile.png
+- .omo/evidence/h17-loop-3-baseline.json

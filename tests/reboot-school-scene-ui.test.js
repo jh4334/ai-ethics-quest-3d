@@ -69,6 +69,7 @@ test('학교 HUD는 보스와 결말 상태를 사용자 화면과 QA 텔레메�
   });
 
   assert.equal(ui.enemy.textContent, 'REFLECT 180');
+  assert.match(ui.objective.textContent, /선택.*승인 기록/);
   assert.equal(ui.result.hidden, false);
   assert.equal(ui.resultReversal.textContent, '서명 발견');
   assert.equal(canvas.dataset.bossEvent, 'mastery-success');

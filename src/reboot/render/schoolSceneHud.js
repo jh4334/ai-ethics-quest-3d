@@ -1,10 +1,17 @@
 const OBJECTIVES = Object.freeze({
-  'classroom-cold-open': '교실 기록 단말로 이동',
-  'collapsing-corridor': '무너지는 복도를 통과',
-  'first-arena': '지우개 요원의 빈틈을 추적',
-  'memory-backup-decision': '하루의 기억 백업을 확보',
-  'scanner-pursuit': '스캐너 추격을 따돌리기',
-  'gym-boss-arena': '출석 감독관과 대면'
+  'classroom-cold-open': '하루가 숨긴 백업 단서 찾기',
+  'collapsing-corridor': '빈 출석 기록의 발신지 추적',
+  'first-arena': '지우개·도장기 명령 번호 추적',
+  'memory-backup-decision': '하루 백업의 원본 시간 확인',
+  'scanner-pursuit': '남긴 기록을 따라 체육관으로 이동',
+  'gym-boss-arena': '승인 기록을 잠근 감독관과 대면'
+});
+
+const PHASE_OBJECTIVES = Object.freeze({
+  'chapter-ending': '내 선택과 승인 기록 확인',
+  'memory-decision': '선택은 기록됨 · TRACE로 검증 / PURGE로 단축',
+  'memory-secure-ready': '검증 완료 · SECURE로 원본 고정',
+  'memory-traced': 'TRACE 유지 · 원본 연결 확인 중'
 });
 
 function syncBoss(ui, bossState) {
@@ -40,10 +47,7 @@ export function createSchoolSceneHud({ canvas, ui = {} }) {
         ui.enemy.textContent = `ARMOR ${eraser?.armor ?? 0}`;
       }
 
-      if (ui.objective) ui.objective.textContent = OBJECTIVES[routeSegmentId];
-      if (storyState.phase === 'memory-decision' && ui.objective) {
-        ui.objective.textContent = 'Q PURGE · E TRACE → F SECURE';
-      }
+      if (ui.objective) ui.objective.textContent = PHASE_OBJECTIVES[storyState.phase] ?? OBJECTIVES[routeSegmentId];
       if (ui.radio) ui.radio.hidden = radioLine === null;
       if (ui.radioSpeaker) ui.radioSpeaker.textContent = radioLine?.speaker ?? '';
       if (ui.radioText) ui.radioText.textContent = radioLine?.textKo ?? '';

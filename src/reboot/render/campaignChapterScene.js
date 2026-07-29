@@ -7,6 +7,7 @@ import { chapterTwoLevel } from '../content/levels/chapter2.js';
 import { chapterThreeLevel } from '../content/levels/chapter3.js';
 import { chapterFourLevel } from '../content/levels/chapter4.js';
 import { createDisposableRegistry } from './dispose.js';
+import { createCampaignLandmarks } from './campaignLandmarks.js';
 import { createSchoolRoute } from './schoolRoute.js';
 import { getSceneViewport } from './schoolSceneCamera.js';
 
@@ -17,6 +18,7 @@ const CONFIGS = Object.freeze({
 });
 const POSITIONS = Object.freeze([[0, 0, -17], [-3, 0, -23], [3, 0, -23]]);
 const COLORS = Object.freeze([0x5de0c1, 0x6aa9ff, 0xd74732]);
+const LANDMARK_TYPES = Object.freeze({ 2: 'share-chain', 3: 'dual-school', 4: 'approval-room' });
 
 export function createCampaignChapterScene({
   campaign, canvas, chapter, input, persist, renderer, ui = {}, windowRef = window
@@ -32,6 +34,7 @@ export function createCampaignChapterScene({
   camera.position.set(0, 6.2, -9.5);
   camera.lookAt(0, 0.7, -23);
   const route = resources.register(createSchoolRoute({ level: config.level, lightLimit: 0, scene }), 'campaign-route');
+  const landmarks = resources.register(createCampaignLandmarks({ scene, type: LANDMARK_TYPES[chapter] }), 'campaign-landmarks');
   const factory = resources.register(createCharacterFactory(), 'campaign-cast');
   const ringGeometry = resources.register(new THREE.RingGeometry(1.45, 1.72, 32), 'campaign-ring-geometry');
   const ringMaterial = resources.register(new THREE.MeshBasicMaterial({
@@ -154,7 +157,10 @@ export function createCampaignChapterScene({
       windowRef.removeEventListener('resize', resize);
     },
     getDebugState() {
-      return Object.freeze({ actionIndex, awaitingDecision, completed, errors: Object.freeze([...errors]), route: route.getDebugState() });
+      return Object.freeze({
+        actionIndex, awaitingDecision, completed, errors: Object.freeze([...errors]),
+        landmarks: landmarks.getDebugState(), route: route.getDebugState()
+      });
     },
     update(delta) {
       for (const character of characters.values()) character.update(delta, { acting: !awaitingDecision && !completed });

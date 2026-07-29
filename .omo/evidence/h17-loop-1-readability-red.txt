@@ -1,0 +1,59 @@
+H-17 Loop 1 readability regression RED — 2026-07-29
+
+Command
+node --test tests/reboot-characters.test.js
+
+Result
+- tests: 8
+- passed: 6
+- failed: 2
+- duration: 132.2326 ms
+
+Expected failures
+1. Main-cast live-camera presentation failed because human scales were only 1.00–1.04 instead of the bounded 1.14–1.20 range and no material-presentation metadata existed.
+2. Mapped-material presentation failed because imported maps were preserved but not reused as neutral emissive maps; skin/hair/outfit had no bounded differentiated lift.
+
+Identity, animation, authoritative pose, asset/license, and imported-pipeline tests remained green.
+
+Second readability RED — 2026-07-29
+
+Command
+node --test tests/reboot-characters.test.js tests/reboot-level.test.js
+
+Result
+- tests: 23
+- passed: 21
+- failed: 2
+- duration: 147.8658 ms
+
+Expected failures
+1. Main-cast human scales were 1.16–1.18, below the newly required 1.28–1.30 live-camera range.
+2. Representative desktop and touch camera offsets exceeded the readability limits (desktop 18/9, touch 21/10.2) while the existing four-target inclusion checks remained green.
+
+Final lower-bound RED — 2026-07-29
+
+Command
+node --test tests/reboot-characters.test.js tests/reboot-level.test.js
+
+Result
+- tests: 23
+- passed: 21
+- failed: 2
+- duration: 208.7061 ms
+
+Expected failures
+1. Haru and Yoonseo remained at 1.29/1.28 instead of the final uniform 1.30 main-human scale.
+2. The first corrected frame remained outside the tighter lower-bound limits (desktop 17, touch 20.2); all pre-existing inclusion, lifecycle, identity, and material tests stayed green.
+
+Combat safe-area RED — 2026-07-29
+
+Command
+npx playwright test --config=playwright.config.js tests/reboot-e2e/h17-polish.spec.js -g '@loop1-mobile'
+
+Result
+- tests: 1
+- passed: 0
+- failed: 1
+- expected `debug.camera.combatSafeArea.mode === 'arena'`, received `undefined`
+
+The failing browser contract proves that the live camera did not expose or verify complete player/threat/telegraph bounds above the touch controls.

@@ -39,8 +39,8 @@ export function solveCameraFrame(targets, viewport, modifiers = {}) {
     z: clamp(centerZ - chase * 0.7, player.z - lookLimit, player.z + lookLimit)
   };
   const spread = Math.max((maxX - minX) * 1.25, (maxZ - minZ) * 0.78);
-  const distance = clamp((touch ? 19 : 15) + spread - chase * 1.4 + boss * 2.8, 14, touch ? 29 : 25);
-  const height = clamp((touch ? 11.5 : 9.8) + spread * 0.12 - chase * 0.5 + boss, 8.5, 14);
+  const distance = clamp((touch ? 14.7 : 11.4) + spread * 0.85 - chase * 1.4 + boss * 6.5, 12, touch ? 28 : 24);
+  const height = clamp((touch ? 9.2 : 8) + spread * 0.1 - chase * 0.5 + boss * 2.9, 7.5, 14);
 
   return {
     fov: touch ? 52 : 44,

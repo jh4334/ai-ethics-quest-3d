@@ -1,0 +1,14 @@
+H-17 Loop 4 visual baseline — 2026-07-29
+
+Captured at fixed Playwright viewports before production implementation.
+
+Desktop 1180x820
+- h17-loop-4-baseline-share-chain.png: generic blue corridor, one ring, three characters; no source trace or copy chain.
+- h17-loop-4-baseline-dual-school.png: two flat colored slabs; no mirrored schools or unequal record state.
+- h17-loop-4-baseline-approval-room.png: same generic corridor/ring as chapter 2; no dossiers, conveyor, or review terminal.
+- h17-loop-4-baseline-finale-desktop.png: open blue floor and ring; no broadcast booth, evidence beam, public feed, or separated stages.
+
+Mobile 390x844
+- h17-loop-4-baseline-finale-secure-mobile.png
+- h17-loop-4-baseline-finale-purge-mobile.png
+- both branches were visually identical before the render-only landmark layer.

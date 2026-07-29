@@ -1,0 +1,26 @@
+H-17 Loop 4 RED receipt — 2026-07-29
+
+Focused command
+node --test tests/reboot-campaign-landmarks.test.js
+
+Focused result
+- tests: 3
+- passed: 0
+- failed: 3
+- duration: 115.0821 ms
+- expected failure: createCampaignLandmarks was undefined, so semantic differentiation, deterministic budget, and owned disposal contracts all failed.
+
+Browser command
+npx playwright test --config=playwright.config.js tests/reboot-e2e/h17-polish.spec.js -g '@loop4'
+
+Browser result
+- tests: 3
+- passed: 0
+- failed: 3
+- desktop campaign/finale debug had no `landmarks` contract.
+- corrected mobile RED (after removing an unrelated DPR expectation) failed because secure/purge finale debug variants were undefined.
+- all baseline screenshots were captured before semantic assertions.
+
+Mobile finale framing RED
+- after landmark GREEN, `@loop4-mobile` failed because `debug.finaleFrame.allIncluded` was undefined.
+- the new contract requires actual projected bounds for player plus the Haru/DOT/LUMEN platforms before outcome capture.

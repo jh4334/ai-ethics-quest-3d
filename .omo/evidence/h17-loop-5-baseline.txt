@@ -1,0 +1,10 @@
+H-17 Loop 5 post-Loop-4 baseline
+Date: 2026-07-29 (Asia/Seoul)
+
+- Behavior lock: tests/reboot-e2e/h17-polish.spec.js passed 9/9 after Loop 4.
+- Full lock: npm test passed 374/374; npm run build and npm run smoke passed.
+- Desktop reference: h17-loop-5-baseline-desktop.png is the accepted secure finale frame.
+- Mobile reference: h17-loop-5-baseline-mobile.png is the accepted purge finale frame.
+- Visual gap: the mobile campaign-continue button occupies the touch-action row after the result opens.
+- Semantic gap: the visible chapter result has an accessible label but no status/live-region semantics.
+- No desktop scene-composition gap was found; Loop 5 therefore keeps the accepted 3D staging unchanged.

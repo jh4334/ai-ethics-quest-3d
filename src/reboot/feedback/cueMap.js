@@ -7,9 +7,9 @@ const CUE_STYLE = Object.freeze({
   telegraph: { label: '공격 예고', priority: 40, shape: 'ring', tone: 'warning' },
   contact: { label: '접촉', priority: 55, shape: 'cross', tone: 'impact' },
   miss: { label: '빗나감', priority: 45, shape: 'broken-ring', tone: 'miss' },
-  reflect: { label: '완벽 반사', priority: 75, shape: 'diamond', tone: 'reflect' },
-  'weak-point': { label: '약점 확인', priority: 70, shape: 'reticle', tone: 'trace' },
-  secure: { label: '기록 확보', priority: 80, shape: 'lock', tone: 'secure' },
+  reflect: { label: 'REFLECT · 명령 반송', priority: 75, shape: 'diamond', tone: 'reflect' },
+  'weak-point': { label: 'TRACE · 출처 표시', priority: 70, shape: 'reticle', tone: 'trace' },
+  secure: { label: 'SECURE · 원본 고정', priority: 80, shape: 'lock', tone: 'secure' },
   'chain-up': { label: 'SYNC 상승', priority: 65, shape: 'chevron', tone: 'chain' },
   damage: { label: '피격', priority: 90, shape: 'slash', tone: 'damage' },
   defeat: { label: '기록 종료', priority: 100, shape: 'shatter', tone: 'defeat' }

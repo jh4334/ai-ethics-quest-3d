@@ -6,6 +6,7 @@ import { createFinaleFixture } from '../campaign/finaleFixtures.js';
 import { createCharacterFactory } from '../characters/factory.js';
 import { chapterFiveLevel } from '../content/levels/chapter5.js';
 import { createDisposableRegistry } from './dispose.js';
+import { createCampaignLandmarks } from './campaignLandmarks.js';
 import { createSchoolRoute } from './schoolRoute.js';
 import { getSceneViewport } from './schoolSceneCamera.js';
 
@@ -21,6 +22,40 @@ const PHASE_COLORS = Object.freeze({
   'signal-core': 0xd74732,
   'trace-consent': 0x6aa9ff
 });
+const FINAL_FRAME_SUBJECTS = Object.freeze([
+  Object.freeze({ halfX: 0.8, halfZ: 0.8, id: 'player', top: 2.8, x: 0, z: -60 }),
+  Object.freeze({ halfX: 1.3, halfZ: 1.5, id: 'haru-platform', top: 2.8, x: -4.3, z: -68 }),
+  Object.freeze({ halfX: 1.1, halfZ: 1.3, id: 'dot-platform', top: 2.5, x: -1.4, z: -70 }),
+  Object.freeze({ halfX: 1.4, halfZ: 1.5, id: 'lumen-platform', top: 2.8, x: 2.2, z: -70 })
+]);
+
+function inspectFinaleFrame(camera, viewport) {
+  camera.updateMatrixWorld(true);
+  const safeRect = Object.freeze({
+    bottom: viewport.height - (viewport.mode === 'touch' ? 154 : 24),
+    left: viewport.mode === 'touch' ? 8 : 24,
+    right: viewport.width - (viewport.mode === 'touch' ? 8 : 24),
+    top: viewport.mode === 'touch' ? 120 : 70
+  });
+  const bounds = FINAL_FRAME_SUBJECTS.map((subject) => {
+    const points = [];
+    for (const x of [-subject.halfX, subject.halfX]) for (const y of [0, subject.top]) {
+      for (const z of [-subject.halfZ, subject.halfZ]) {
+        const point = camera.position.clone().set(subject.x + x, y, subject.z + z).project(camera);
+        points.push({ depth: point.z, x: (point.x + 1) * viewport.width / 2, y: (1 - point.y) * viewport.height / 2 });
+      }
+    }
+    return Object.freeze({
+      bottom: Math.max(...points.map((point) => point.y)), id: subject.id,
+      left: Math.min(...points.map((point) => point.x)), right: Math.max(...points.map((point) => point.x)),
+      top: Math.min(...points.map((point) => point.y)), visibleDepth: points.every((point) => Math.abs(point.depth) <= 1)
+    });
+  });
+  const inside = (box) => box.visibleDepth && box.left >= safeRect.left && box.right <= safeRect.right
+    && box.top >= safeRect.top && box.bottom <= safeRect.bottom;
+  const includedIds = Object.freeze(bounds.filter(inside).map(({ id }) => id));
+  return Object.freeze({ allIncluded: includedIds.length === bounds.length, bounds: Object.freeze(bounds), includedIds, safeRect });
+}
 
 export function createFinalBroadcastPreviewScene({
   campaign = null, canvas, endingId = null, input, persist, renderer, ui = {}, windowRef = window
@@ -35,6 +70,9 @@ export function createFinalBroadcastPreviewScene({
   camera.position.set(0, 6.4, -51.5);
   camera.lookAt(0, 0.7, -68);
   const route = resources.register(createSchoolRoute({ level: chapterFiveLevel, lightLimit: 0, scene }), 'final-route');
+  const landmarks = resources.register(createCampaignLandmarks({
+    scene, type: 'finale', variant: endingId === 'sealed' ? 'purge' : 'secure'
+  }), 'final-landmarks');
   const factory = resources.register(createCharacterFactory(), 'final-cast');
   const ringGeometry = resources.register(new THREE.RingGeometry(2.1, 2.45, 40), 'protocol-ring-geometry');
   const ringMaterial = resources.register(new THREE.MeshBasicMaterial({
@@ -76,8 +114,12 @@ export function createFinalBroadcastPreviewScene({
 
   function resize() {
     const viewport = getSceneViewport(canvas);
+    const touch = viewport.mode === 'touch';
+    camera.fov = touch ? 58 : 44;
+    camera.position.set(touch ? -1 : 0, touch ? 8 : 6.4, touch ? -44.5 : -51.5);
     camera.aspect = viewport.width / viewport.height;
     camera.updateProjectionMatrix();
+    camera.lookAt(touch ? -1 : 0, touch ? 1.2 : 0.7, touch ? -68.5 : -68);
     renderer.setSize(viewport.width, viewport.height, false);
   }
 
@@ -187,6 +229,8 @@ export function createFinalBroadcastPreviewScene({
       return Object.freeze({
         characterErrors: Object.freeze([...errors]),
         characterIds: Object.freeze([...characters.keys()]),
+        finaleFrame: inspectFinaleFrame(camera, getSceneViewport(canvas)),
+        landmarks: landmarks.getDebugState(),
         outcome,
         protocol,
         route: route.getDebugState()

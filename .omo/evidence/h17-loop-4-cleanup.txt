@@ -1,0 +1,64 @@
+H-17 Loop 4 campaign/finale visual differentiation cleanup receipt
+Completed: 2026-07-29 (Asia/Seoul)
+
+Outcome
+- Chapter 2 is now a share-chain space: source trace beam/terminal, connected copy nodes, and red clone outputs.
+- Chapter 3 is now a dual-school space in both production and QA preview paths: mirrored violet/cyan schools, central layer divider, and visibly unequal record stacks.
+- Chapter 4 is now an approval room: queued dossiers, red approval conveyor, Yoonseo review terminal, and approval gate.
+- Chapter 5 is now a broadcast finale: separate Haru/DOT/LUMEN platforms, broadcast booth, evidence beam, and public feed.
+- Secure public feed uses connected cyan panels; purge uses separated red shutter panels. Only render/debug state changes; story IDs, progress/report schema, collision, and gameplay authority are unchanged.
+
+Render budgets
+- share-chain: 4 draw calls, 11 instances, 240 triangles, 5 owned resources.
+- dual-school: 4 draw calls, 10 instances, 120 triangles, 5 owned resources.
+- approval-room: 4 draw calls, 11 instances, 132 triangles, 5 owned resources.
+- finale secure: 5 draw calls, 11 instances, 132 triangles, 6 owned resources.
+- finale purge: 6 draw calls, 11 instances, 132 triangles, 7 owned resources.
+- The layer owns one root, shared geometries/materials, deterministic InstancedMesh batches, idempotent disposal, and semantic debug IDs.
+
+Mobile finale contract
+- Touch camera uses FOV 58 at (-1, 8, -44.5), looking at (-1, 1.2, -68.5); desktop framing is unchanged.
+- Live projected bounds require player plus complete Haru/DOT/LUMEN platforms inside the safe area above touch actions.
+- Both secure and purge fixtures complete reflect/trace/dash/attack at authored timing, open the outcome card, assert result-card/touch-action non-overlap, and verify every heading/paragraph fits before capture.
+
+RED evidence
+- `.omo/evidence/h17-loop-4-red.txt`: landmark factory missing (0/3), browser landmark debug missing (0/3), and mobile projected-frame debug missing.
+- `.omo/evidence/h17-loop-4-baseline.txt`: first-look baseline interpretation.
+
+Baseline correction record
+- The first GREEN browser run still wrote to `baseline-*` paths and overwrote the initial captures.
+- GREEN images were preserved under final names, scene landmark connections were temporarily detached, and all six baseline images were recaptured from the original generic scenes.
+- Connections were immediately restored, final E2E paths were changed to non-baseline names, and the complete GREEN suite was rerun.
+- Baseline/final SHA-256 prefixes differ for every paired image, confirming the evidence sets are no longer identical. No temporary disconnection remains in source.
+
+Final verification
+- Focused campaign/landmark/finale/QA tests: 24/24 pass twice (542.5558 ms, 639.4877 ms).
+- `npm.cmd test`: 374/374 pass, 0 fail, 3376.0028 ms.
+- `npm.cmd run build`: exit 0; Vite 8.1.0, 138 modules transformed, 1.04 s.
+- `npm.cmd run smoke`: exit 0; canonical H-17 reboot and legacy rollback wiring passed.
+- Full `h17-polish.spec.js`: 9/9 pass in 2.7 minutes; Loop 1–3 regressions remained green and every scenario asserted zero page/console errors.
+- `git diff --check`: exit 0; only expected LF-to-CRLF notices.
+- Source scan: no Math.random, new light, shadow caster, or render target in `campaignLandmarks.js`.
+- Port 8899: no LISTENING entry after browser cleanup.
+
+Final visual evidence
+- `.omo/evidence/h17-loop-4-share-chain-desktop.png` — 1180x820.
+- `.omo/evidence/h17-loop-4-dual-school-desktop.png` — 1180x820.
+- `.omo/evidence/h17-loop-4-campaign-desktop.png` — 1180x820 approval room.
+- `.omo/evidence/h17-loop-4-finale-desktop.png` — 1180x820 broadcast staging.
+- `.omo/evidence/h17-loop-4-finale-secure-mobile.png` — 390x844 readable secure outcome.
+- `.omo/evidence/h17-loop-4-finale-purge-mobile.png` — 390x844 readable purge outcome.
+
+Changed files owned by Loop 4
+- `src/reboot/render/campaignLandmarks.js` (new).
+- `src/reboot/render/campaignChapterScene.js`.
+- `src/reboot/render/dualSchoolPreviewScene.js`.
+- `src/reboot/render/finalBroadcastPreviewScene.js`.
+- `tests/reboot-campaign-landmarks.test.js` (new).
+- `tests/reboot-e2e/h17-polish.spec.js`.
+- `.omo/evidence/h17-loop-4-*` only. Existing user-owned `task-*` evidence was not modified by Loop 4.
+
+Post-write review
+- Pure LOC: campaignLandmarks 143, campaignChapterScene 160, dualSchoolPreviewScene 155, finalBroadcastPreviewScene 246; every production file remains within the 250-line ceiling.
+- Finale scene is in the 200–250 warning band; no further production additions should be made there without extracting the projected-frame helper.
+- Remaining limitation: landmarks deliberately use low-cost geometric blockout language rather than authored text/signage or external assets. The semantic silhouettes and branch color/state are distinct, but this is not a high-detail environment-art pass.
