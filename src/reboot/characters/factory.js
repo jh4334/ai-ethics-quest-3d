@@ -83,6 +83,10 @@ export function createCharacterFactory({ loader = new GLTFLoader() } = {}) {
         registerCharacterSourceResources(gltf, sourceResources);
         if (disposed) disposeCharacterSourceResources(sourceResources);
         return gltf;
+      }, (error) => {
+        // 실패한 프로미스를 캐시에 남기면 같은 장면 안에서 재시도가 영영 막힌다 — 지우고 전파.
+        cache.delete(url);
+        throw error;
       });
       cache.set(url, pending);
     }

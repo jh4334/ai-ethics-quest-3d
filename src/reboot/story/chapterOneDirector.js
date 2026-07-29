@@ -44,7 +44,8 @@ export function createChapterOneDirector({ campaign, persist = () => {} } = {}) 
   let story = createChapterOneStory(campaign);
   let radio = [];
   let radioElapsedMs = 0;
-  let pressureTicks = 0;
+  // 압력 게이트 기준점 — 프레임 수가 아니라 시뮬 고정 틱(60Hz)으로 잰다(기기 간 재현성).
+  let pressureAnchorTick = null;
 
   function transition(event) {
     const transcriptLength = story.transcript.length;
@@ -72,8 +73,13 @@ export function createChapterOneDirector({ campaign, persist = () => {} } = {}) 
       transition({ action: 'trace', type: 'memory-action' });
     }
     if (story.phase === 'memory-traced') {
-      pressureTicks += 1;
-      if (pressureTicks >= 90) transition({ triggerId: 'backup-pressure-cleared', type: 'trigger' });
+      const tick = encounter?.tick;
+      if (Number.isFinite(tick)) {
+        if (pressureAnchorTick === null) pressureAnchorTick = tick;
+        if (tick - pressureAnchorTick >= 90) transition({ triggerId: 'backup-pressure-cleared', type: 'trigger' });
+      }
+    } else {
+      pressureAnchorTick = null;
     }
     if (story.phase === 'memory-secure-ready' && combatEvents.some((event) => event.type === 'secured')) {
       transition({ action: 'secure', type: 'memory-action' });

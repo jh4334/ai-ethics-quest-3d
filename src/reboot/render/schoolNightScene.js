@@ -5,6 +5,7 @@ import { createBossGameRuntime } from '../app/bossGameRuntime.js';
 import { createPatchSelector } from '../app/patchSelection.js';
 import { addCameraShake, createCameraController } from '../camera/controller.js';
 import { createCharacterCast } from '../characters/cast.js';
+import { createCharacterFactory } from '../characters/factory.js';
 import { chapterOneLevel } from '../content/levels/chapter1.js';
 import { createFeedbackDirector } from '../feedback/director.js';
 import { createFeedbackCounters } from '../feedback/counters.js';
@@ -32,10 +33,13 @@ export function createSchoolNightScene({
 
   const camera = new THREE.PerspectiveCamera(44, 1, 0.1, 90);
   const route = resources.register(createSchoolRoute({ level: chapterOneLevel, lightLimit: 3, scene }), 'school-route');
-  const cast = resources.register(createCharacterCast({ scene }), 'character-cast');
-  const enemyCast = resources.register(createEnemyCast({ scene }), 'enemy-cast');
+  // 캐릭터·적·보스가 GLTF 캐시를 공유한다 — 같은 애니메이션 GLB·텍스처를 세 번 파싱하지 않게.
+  // 캐스트들보다 먼저 등록해 역순 해제에서 마지막에 폐기된다.
+  const characterFactory = resources.register(createCharacterFactory(), 'shared-character-factory');
+  const cast = resources.register(createCharacterCast({ characterFactory, scene }), 'character-cast');
+  const enemyCast = resources.register(createEnemyCast({ characterFactory, scene }), 'enemy-cast');
   const bossCast = bossOptions.enabled
-    ? resources.register(createBossCast({ scene }), 'boss-cast')
+    ? resources.register(createBossCast({ characterFactory, scene }), 'boss-cast')
     : null;
   const {
     blockAfterTick = null,
@@ -67,6 +71,10 @@ export function createSchoolNightScene({
 
   let entered = false, unsubscribeInput = null;
   let currentSegment = closestRouteSegment(chapterOneLevel.segments, startPosition.y);
+  // 쓰러짐 복귀 — defeat는 영구 상태가 아니라 대기 후 체크포인트(장면 시작) 재기동.
+  // 시뮬 고정 틱으로 재며(150틱 = 2.5초), 이야기(story)·보스 재도전 카운트는 유지된다(무처벌).
+  const RESPAWN_DELAY_TICKS = 150;
+  let respawnAtTick = null;
   let lastEvents = [];
   let lastEnemyEvents = [];
   let lastBossEvents = [];
@@ -154,6 +162,9 @@ export function createSchoolNightScene({
       loadSchoolSceneCast({
         bossCast, canvas, cast, encounter: game.getState().encounter, enemyCast,
         isEntered: () => entered
+      }).catch(() => {
+        // 로드 실패는 dataset으로만 알린다 — unhandled rejection(콘솔 에러) 금지.
+        if (entered) canvas.dataset.characters = 'error';
       });
       windowRef.addEventListener('resize', resize);
       syncHud();
@@ -183,14 +194,20 @@ export function createSchoolNightScene({
         && game.getState().combat.tick >= blockAfterTick;
       const offscreenActive = Number.isInteger(offscreenAfterTick)
         && game.getState().combat.tick >= offscreenAfterTick;
-      const result = game.update(
-        delta,
-        { horizontal, vertical },
-        {
-          blockers: blockerActive ? delayedBlockers : undefined,
-          onScreen: offscreenActive ? false : undefined
+      let result = game.update(delta, { horizontal, vertical }, {
+        blockers: blockerActive ? delayedBlockers : undefined,
+        onScreen: offscreenActive ? false : undefined
+      });
+      if (result.state.combat.player.status === 'defeated') {
+        if (respawnAtTick === null) respawnAtTick = result.state.combat.tick + RESPAWN_DELAY_TICKS;
+        if (result.state.combat.tick >= respawnAtTick) {
+          game.reset();
+          respawnAtTick = null;
+          result = game.update(0, { horizontal: 0, vertical: 0 }, {});
         }
-      );
+      } else {
+        respawnAtTick = null;
+      }
       lastEvents = result.combatEvents;
       lastEnemyEvents = result.enemyEvents;
       feedbackCounters.record(result.combatEvents, result.enemyEvents);
@@ -228,7 +245,9 @@ export function createSchoolNightScene({
       const feedbackFrame = presentSchoolFeedback({
         bossGame, currentSegment, feedback, frame: lastFrame, lastBossEvents, result
       });
-      feedbackPrompts = feedbackFrame.prompts;
+      feedbackPrompts = respawnAtTick !== null
+        ? [...feedbackFrame.prompts, { id: 'respawn-wait', label: '신호가 끊겼다… 체크포인트에서 다시 일어난다' }]
+        : feedbackFrame.prompts;
       if (feedbackFrame.shake > 0) cameraState = addCameraShake(cameraState, feedbackFrame.shake);
       feedback.update(delta);
       const cueIndex = chapterOneLevel.segments.findIndex((segment) => segment.id === currentSegment.id);

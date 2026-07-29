@@ -19,7 +19,7 @@ test('감독기는 이동과 전투 관찰을 저장 가능한 1장 단계로 �
   assert.equal(saves.at(-1).chapterProgress.checkpoint, 'chapter-1:memory-decision');
 });
 
-test('TRACE 압력은 90틱 뒤에만 SECURE 준비 상태가 된다', () => {
+test('TRACE 압력은 시뮬 90틱 뒤에만 SECURE 준비 상태가 된다 (프레임레이트 무관)', () => {
   const director = createChapterOneDirector();
   director.start();
   director.observe({ segmentId: 'first-arena' });
@@ -27,10 +27,22 @@ test('TRACE 압력은 90틱 뒤에만 SECURE 준비 상태가 된다', () => {
     encounter: { enemies: [{ phase: 'defeat' }] }, segmentId: 'first-arena'
   });
   director.observe({ combatEvents: [{ type: 'traced' }], segmentId: 'memory-backup-decision' });
-  for (let tick = 0; tick < 88; tick += 1) director.observe({ segmentId: 'memory-backup-decision' });
-  assert.equal(director.getState().phase, 'memory-traced');
-  director.observe({ segmentId: 'memory-backup-decision' });
+  // 저프레임(한 프레임에 여러 틱)이라도 시뮬 틱 기준 90틱을 채워야 열린다.
+  director.observe({ encounter: { tick: 100 }, segmentId: 'memory-backup-decision' });
+  director.observe({ encounter: { tick: 189 }, segmentId: 'memory-backup-decision' });
+  assert.equal(director.getState().phase, 'memory-traced', '89틱 경과 — 아직 잠김');
+  director.observe({ encounter: { tick: 190 }, segmentId: 'memory-backup-decision' });
   assert.equal(director.getState().phase, 'memory-secure-ready');
+  // 고프레임(틱 없이 반복 호출)로는 절대 열리지 않는다 — 호출 횟수 의존 금지.
+  const highFps = createChapterOneDirector();
+  highFps.start();
+  highFps.observe({ segmentId: 'first-arena' });
+  highFps.observe({ encounter: { enemies: [{ phase: 'defeat' }] }, segmentId: 'first-arena' });
+  highFps.observe({ combatEvents: [{ type: 'traced' }], segmentId: 'memory-backup-decision' });
+  for (let i = 0; i < 200; i += 1) {
+    highFps.observe({ encounter: { tick: 50 }, segmentId: 'memory-backup-decision' });
+  }
+  assert.equal(highFps.getState().phase, 'memory-traced', '틱이 멈춰 있으면 호출 횟수와 무관하게 잠김');
 });
 
 test('두 결말 fixture는 같은 반전을 다른 비용으로 보여 준다', () => {

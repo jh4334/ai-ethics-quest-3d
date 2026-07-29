@@ -36,10 +36,13 @@ function copyPosition(position) {
 }
 
 export function createEnemyCast({
-  characterFactory = createCharacterFactory(),
+  characterFactory = null,
   maxEnemies = 8,
   scene
 }) {
+  // 팩토리를 주입받으면 GLTF 캐시를 다른 캐스트와 공유한다 — 소유자만 폐기.
+  const ownsFactory = characterFactory === null;
+  characterFactory = characterFactory ?? createCharacterFactory();
   if (!scene?.isScene) throw new TypeError('적 캐스트에는 Three.js Scene이 필요합니다.');
   if (!Number.isInteger(maxEnemies) || maxEnemies < 1) throw new RangeError('maxEnemies는 1 이상의 정수여야 합니다.');
 
@@ -128,7 +131,7 @@ export function createEnemyCast({
     dispose() {
       if (disposed) return;
       disposed = true;
-      characterFactory.dispose();
+      if (ownsFactory) characterFactory.dispose();
       root.removeFromParent();
     },
     getDebugState() {

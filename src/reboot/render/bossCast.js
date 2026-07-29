@@ -9,10 +9,13 @@ const PHASE_COLORS = Object.freeze({
 });
 
 export function createBossCast({
-  characterFactory = createCharacterFactory(),
+  characterFactory = null,
   position = { x: 0, z: -104 },
   scene
 }) {
+  // 팩토리를 주입받으면 GLTF 캐시를 다른 캐스트와 공유한다 — 소유자만 폐기.
+  const ownsFactory = characterFactory === null;
+  characterFactory = characterFactory ?? createCharacterFactory();
   if (!scene?.isScene) throw new TypeError('보스 캐스트에는 Three.js Scene이 필요합니다.');
   const root = new THREE.Group();
   root.name = 'attendance-proctor-cast';
@@ -58,7 +61,7 @@ export function createBossCast({
     dispose() {
       if (disposed) return;
       disposed = true;
-      characterFactory.dispose();
+      if (ownsFactory) characterFactory.dispose();
       ringGeometry.dispose();
       ringMaterial.dispose();
       root.removeFromParent();

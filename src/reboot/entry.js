@@ -16,12 +16,13 @@ import { createSchoolNightScene } from './render/schoolNightScene.js';
 import {
   LEGACY_BACKUP_KEY, LEGACY_V3_KEY, V4_SAVE_KEY, V4_TEMP_KEY
 } from './save/repository.js';
+import { safeLocalStorage } from './save/resilientStorage.js';
 
 const root = document.querySelector('[data-reboot-root]');
 const canvas = root?.querySelector('[data-reboot-canvas]');
 if (!root || !canvas) throw new Error('H-17 reboot root and canvas are required');
 
-const session = createRebootSession({ storage: window.localStorage });
+const session = createRebootSession({ storage: safeLocalStorage(window) });
 const searchParams = new URLSearchParams(window.location.search);
 const testHook = window.__ETHICS_TEST_HOOK__ === true
   || window.sessionStorage.getItem('h17.testHook') === 'true'
