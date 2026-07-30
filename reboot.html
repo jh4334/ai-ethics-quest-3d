@@ -15,7 +15,15 @@
     .title { margin: 0; color: #f4c06d; font-size: clamp(1rem, 3vw, 1.5rem); letter-spacing: .08em; text-shadow: 0 2px 12px #000; }
     .status { margin: .35rem 0 0; color: #d9e4ff; font-size: .9rem; }
     .combat-hud { display: flex; gap: 10px; margin-top: 8px; color: #d9e4ff; font-size: .78rem; }
-    .combat-hud span { padding: 4px 7px; border: 1px solid #7b91bf66; border-radius: 5px; background: #050918aa; }
+    .combat-hud > span { padding: 4px 7px; border: 1px solid #7b91bf66; border-radius: 5px; background: #050918aa; }
+    /* 채움형 게이지 — HP는 붉은/호박, 시그널은 시안. 라벨 글씨는 채움 위에서도 또렷하게. */
+    .combat-hud .gauge { position: relative; min-width: 118px; overflow: hidden; transition: box-shadow .35s ease-out; }
+    .gauge-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; border-radius: 4px; transition: width .18s ease-out; pointer-events: none; }
+    .gauge-hp .gauge-fill { background: linear-gradient(90deg, #a63d33, #e08a3f); }
+    .gauge-signal .gauge-fill { background: linear-gradient(90deg, #1d7d8f, #5de0c1); }
+    .gauge-label { position: relative; color: #fff; font-style: normal; font-weight: 700; letter-spacing: .04em; text-shadow: 0 1px 3px #000c; }
+    /* 시그널 부족(signal-blocked) 깜빡임 — 클래스는 이벤트 프레임에만 붙고, 꺼질 때 transition으로만 잦아든다. */
+    .gauge-blocked { box-shadow: 0 0 0 2px #ff6b6bcc, 0 0 14px #ff6b6b99; transition: none; }
     .objective { position: fixed; top: max(112px, calc(env(safe-area-inset-top) + 96px)); left: 50%; translate: -50% 0; max-width: min(72vw, 620px); margin: 0; padding: 6px 10px; border-radius: 6px; color: #fff3d6; background: #050918b8; font-size: clamp(.82rem, 2vw, 1rem); line-height: 1.35; text-align: center; text-shadow: 0 2px 8px #000; }
     .actions { display: flex; gap: 8px; pointer-events: auto; }
     button { min-width: 48px; min-height: 44px; padding: 8px 12px; border: 1px solid #7b91bf; border-radius: 8px; color: #fff; background: #101a36dd; font: inherit; }
@@ -85,7 +93,8 @@
         <h1 class="title">H-17: NULL</h1>
         <p class="status" data-reboot-status aria-live="polite">학교 기록 연결 중</p>
         <div class="combat-hud" aria-label="전투 상태">
-          <span data-combat-health>HP 100</span>
+          <span class="gauge gauge-hp" data-combat-health><i class="gauge-fill" data-combat-health-fill></i><b class="gauge-label" data-combat-health-label>HP 100</b></span>
+          <span class="gauge gauge-signal" data-combat-signal><i class="gauge-fill" data-combat-signal-fill></i><b class="gauge-label" data-combat-signal-label>SIGNAL 100</b></span>
           <span data-combat-action>READY</span>
           <span data-combat-chain>SYNC 0</span>
           <span data-enemy-status>ARMOR 1</span>

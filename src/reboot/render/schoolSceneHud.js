@@ -1,3 +1,5 @@
+import { PLAYER_RULES } from '../content/actions.js';
+
 const OBJECTIVES = Object.freeze({
   'classroom-cold-open': '하루가 숨긴 백업 단서 찾기',
   'collapsing-corridor': '빈 출석 기록의 발신지 추적',
@@ -13,6 +15,20 @@ const PHASE_OBJECTIVES = Object.freeze({
   'memory-secure-ready': '검증 완료 · SECURE로 원본 고정',
   'memory-traced': 'TRACE 유지 · 원본 연결 확인 중'
 });
+
+// 게이지 채움 너비(%) — 0~100으로 자른 정수 문자열. 값이 없으면 null.
+function fillPercent(value, max) {
+  if (!Number.isFinite(value) || !(max > 0)) return null;
+  return `${Math.max(0, Math.min(100, Math.round((value / max) * 100)))}%`;
+}
+
+// 텍스트 칩(구형) ↔ 채움 바(신형) 겸용 — 라벨 span이 있으면 라벨만 갱신해 바 구조를 보존한다.
+function syncGauge(ui, { container, fill, label }, text, width, blocked = null) {
+  if (ui[label]) ui[label].textContent = text;
+  else if (ui[container]) ui[container].textContent = text;
+  if (ui[fill]?.style && width !== null) ui[fill].style.width = width;
+  if (blocked !== null && ui[container]?.classList) ui[container].classList.toggle('gauge-blocked', blocked);
+}
 
 function syncBoss(ui, bossState) {
   const phase = bossState.definition.phases[bossState.phaseIndex];
@@ -36,7 +52,19 @@ export function createSchoolSceneHud({ canvas, ui = {} }) {
       resultVisible = false, viewportMode, blockerActive = false, offscreenActive = false,
       performanceState, qualityProfile
     }) {
-      if (ui.health) ui.health.textContent = `HP ${frame.hud.hp}`;
+      syncGauge(
+        ui, { container: 'health', fill: 'healthFill', label: 'healthLabel' },
+        `HP ${frame.hud.hp}`, fillPercent(frame.hud.hp, PLAYER_RULES.maxHp)
+      );
+      if (Number.isFinite(frame.hud.signal)) {
+        syncGauge(
+          ui, { container: 'signal', fill: 'signalFill', label: 'signalLabel' },
+          `SIGNAL ${frame.hud.signal}`, fillPercent(frame.hud.signal, PLAYER_RULES.maxSignal),
+          // 게이지 부족 깜빡임 — signal-blocked 이벤트가 있는 프레임에만 클래스가 붙는다(타이머 없음).
+          lastEvents.some((event) => event.type === 'signal-blocked')
+        );
+        canvas.dataset.playerSignal = String(frame.hud.signal);
+      }
       if (ui.action) ui.action.textContent = frame.hud.action.toUpperCase();
       if (ui.chain) ui.chain.textContent = `SYNC ${frame.hud.chainLevel}`;
 

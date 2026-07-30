@@ -27,7 +27,7 @@ function cloneState(state) {
   };
 }
 
-export function createCombatState({ targets = [], hp = PLAYER_RULES.maxHp } = {}) {
+export function createCombatState({ targets = [], hp = PLAYER_RULES.maxHp, signal = PLAYER_RULES.maxSignal } = {}) {
   return {
     version: 1,
     tick: 0,
@@ -45,6 +45,7 @@ export function createCombatState({ targets = [], hp = PLAYER_RULES.maxHp } = {}
     transient: { processedContacts: [] },
     player: {
       hp: Math.max(0, Math.min(PLAYER_RULES.maxHp, hp)),
+      signal: Math.max(0, Math.min(PLAYER_RULES.maxSignal, signal)),
       status: hp <= 0 ? 'defeated' : 'active',
       position: { x: 0, y: 0 },
       facing: { x: 1, y: 0 },
@@ -116,8 +117,13 @@ export function stepCombat(currentState, commands = []) {
     events.push({ type: 'paused', tick: state.tick });
     return { state, events };
   }
+  const signalBefore = state.player.signal;
   for (const name of Object.keys(state.player.cooldowns)) {
     state.player.cooldowns[name] = Math.max(0, state.player.cooldowns[name] - 1);
+  }
+  // 시그널 자연 회복 — 60틱(1초)마다 +4. 틱 경계에서만 더하므로 렌더 주기와 무관하게 결정적이다.
+  if (state.player.status === 'active' && (state.tick + 1) % PLAYER_RULES.signalRegenTicks === 0) {
+    state.player.signal = Math.min(PLAYER_RULES.maxSignal, state.player.signal + PLAYER_RULES.signalRegenAmount);
   }
   for (const target of state.targets) target.staggerTicks = Math.max(0, target.staggerTicks - 1);
   if (state.player.buffer && state.player.buffer.expiresTick < state.tick) state.player.buffer = null;
@@ -127,6 +133,10 @@ export function stepCombat(currentState, commands = []) {
   resolveBlade(state, events);
   resolveInvestigation(state, events);
   advanceAction(state.player, state.tick, events);
+  // 이 틱에서 시그널이 변했으면 HUD가 구독할 단일 이벤트로 알린다.
+  if (state.player.signal !== signalBefore) {
+    events.push({ type: 'signal-changed', previous: signalBefore, signal: state.player.signal, tick: state.tick });
+  }
   state.tick += 1;
   return { state, events };
 }

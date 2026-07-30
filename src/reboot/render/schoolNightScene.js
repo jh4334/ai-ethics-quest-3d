@@ -17,6 +17,7 @@ import { createCombatPresentationAdapter } from './combatPresentation.js';
 import { createBossCast } from './bossCast.js';
 import { createDisposableRegistry } from './dispose.js';
 import { createEnemyCast } from './enemyCast.js';
+import { createEnemyHpBars } from './enemyHpBars.js';
 import { createSchoolAtmosphere } from './schoolAtmosphere.js';
 import { createSchoolRoute } from './schoolRoute.js';
 import { createSchoolSceneDebugSnapshot } from './schoolSceneDebug.js';
@@ -41,6 +42,8 @@ export function createSchoolNightScene({
   const characterFactory = resources.register(createCharacterFactory(), 'shared-character-factory');
   const cast = resources.register(createCharacterCast({ characterFactory, scene }), 'character-cast');
   const enemyCast = resources.register(createEnemyCast({ characterFactory, scene }), 'enemy-cast');
+  // 적 머리 위 HP 링 — 빌보드 평면 2장/적, 라이트·그림자·렌더타깃 0.
+  const enemyHpBars = resources.register(createEnemyHpBars({ scene }), 'enemy-hp-bars');
   const bossCast = bossOptions.enabled
     ? resources.register(createBossCast({ characterFactory, scene }), 'boss-cast')
     : null;
@@ -90,6 +93,8 @@ export function createSchoolNightScene({
   let resultVisible = storyOptions.showOutcome === true;
   let feedbackPrompts = [];
   let lastFrame = combatView.present(game.getState().combat, []);
+  // 시그널 게이지는 표현 계약(frame.hud)에 직접 꽂는다 — 순수 심의 player.signal이 유일한 출처.
+  lastFrame.hud.signal = game.getState().combat.player.signal;
   const initialCueIndex = chapterOneLevel.segments.findIndex((segment) => segment.id === currentSegment.id);
   let activeTargets = bossGame && currentSegment.id === 'gym-boss-arena'
     ? getBossCameraTargets(lastFrame, route.routeCues[initialCueIndex])
@@ -223,6 +228,7 @@ export function createSchoolNightScene({
       lastEnemyEvents = result.enemyEvents;
       feedbackCounters.record(result.combatEvents, result.enemyEvents);
       lastFrame = combatView.present(result.state.combat, result.combatEvents);
+      lastFrame.hud.signal = result.state.combat.player.signal;
       // 타격감(GF1): 검격 궤적 + 명중·격파 히트스톱.
       sinceAttackSeconds += delta;
       for (const event of result.combatEvents) {
@@ -239,6 +245,7 @@ export function createSchoolNightScene({
       }
       bladeTrail.update(delta);
       enemyCast.present(result.state.encounter, result.enemyEvents);
+      enemyHpBars.sync(result.state.encounter);
       cast.setPlayerState({
         action: result.state.combat.player.action.name,
         facing: result.state.combat.player.facing,
@@ -294,6 +301,8 @@ export function createSchoolNightScene({
       activeTargets = cameraFrame.targets;
       cameraState = cameraFrame.cameraState;
       combatSafeArea = cameraFrame.combatSafeArea;
+      // 카메라 확정 후 빌보드 회전 — HP 링이 항상 화면을 향한다.
+      enemyHpBars.face(camera);
       syncHud();
       renderer.render(scene, camera);
       performanceProbe.record(delta);

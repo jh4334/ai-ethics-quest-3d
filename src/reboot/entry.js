@@ -34,7 +34,10 @@ const touchControls = createTouchControls({ input, root });
 const sceneUi = Object.freeze({
   action: root.querySelector('[data-combat-action]'), chain: root.querySelector('[data-combat-chain]'),
   enemy: root.querySelector('[data-enemy-status]'), feedback: root.querySelector('[data-feedback-prompts]'),
-  health: root.querySelector('[data-combat-health]'), objective: root.querySelector('[data-route-objective]'),
+  health: root.querySelector('[data-combat-health]'), healthFill: root.querySelector('[data-combat-health-fill]'),
+  healthLabel: root.querySelector('[data-combat-health-label]'), objective: root.querySelector('[data-route-objective]'),
+  signal: root.querySelector('[data-combat-signal]'), signalFill: root.querySelector('[data-combat-signal-fill]'),
+  signalLabel: root.querySelector('[data-combat-signal-label]'),
   radio: root.querySelector('[data-radio-subtitle]'), radioSpeaker: root.querySelector('[data-radio-speaker]'),
   radioText: root.querySelector('[data-radio-text]'), result: root.querySelector('[data-chapter-result]'),
   continueButton: root.querySelector('[data-campaign-continue]'),

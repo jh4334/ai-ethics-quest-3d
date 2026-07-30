@@ -29,6 +29,18 @@ function cooldownReady(player, name) {
   return !Object.hasOwn(player.cooldowns, name) || player.cooldowns[name] <= 0;
 }
 
+function signalCost(commandType) {
+  return PLAYER_RULES.signalCosts[commandType] ?? 0;
+}
+
+// 시그널이 소모량보다 적으면 행동을 시작하지 않고 signal-blocked 이벤트만 낸다(행동 자체를 거부).
+function blockOnSignal(player, commandType, tick, events) {
+  const cost = signalCost(commandType);
+  if (player.signal >= cost) return false;
+  events.push({ type: 'signal-blocked', action: commandType, cost, signal: player.signal, tick });
+  return true;
+}
+
 export function canStartAction(player, commandType, tick) {
   const name = requestedAction(player, commandType, tick);
   if (!Object.hasOwn(ACTIONS, name) || ['stagger', 'defeat'].includes(name)) return false;
@@ -38,6 +50,8 @@ export function canStartAction(player, commandType, tick) {
 export function startAction(player, command, tick, events) {
   const name = requestedAction(player, command.type, tick);
   if (!canStartAction(player, command.type, tick)) return false;
+  if (blockOnSignal(player, command.type, tick, events)) return false;
+  player.signal -= signalCost(command.type);
   player.nextActionId += 1;
   player.action = {
     name, instanceId: player.nextActionId, elapsed: 0, hitTargets: [],
@@ -71,6 +85,8 @@ export function acceptCommittedInput(player, command, tick, events) {
   const definition = ACTIONS[action.name];
   const phase = actionPhase(action);
   if (phase === 'recovery' && definition.cancelInto.includes(command.type)) {
+    // 시그널 부족이면 회복 중 행동을 취소부터 하지 않는다 — 빈손(idle)로 끊기는 것을 방지.
+    if (blockOnSignal(player, command.type, tick, events)) return false;
     events.push({
       type: 'action-cancelled', action: action.name,
       instanceId: action.instanceId, reason: command.type, tick
