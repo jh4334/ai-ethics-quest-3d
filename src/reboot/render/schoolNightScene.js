@@ -17,6 +17,7 @@ import { createCombatPresentationAdapter } from './combatPresentation.js';
 import { createBossCast } from './bossCast.js';
 import { createDisposableRegistry } from './dispose.js';
 import { createEnemyCast } from './enemyCast.js';
+import { createSchoolAtmosphere } from './schoolAtmosphere.js';
 import { createSchoolRoute } from './schoolRoute.js';
 import { createSchoolSceneDebugSnapshot } from './schoolSceneDebug.js';
 import { closestRouteSegment, getBossCameraTargets, getEncounterCameraTargets, getSceneViewport, updateSchoolCamera } from './schoolSceneCamera.js';
@@ -34,6 +35,7 @@ export function createSchoolNightScene({
 
   const camera = new THREE.PerspectiveCamera(44, 1, 0.1, 90);
   const route = resources.register(createSchoolRoute({ level: chapterOneLevel, lightLimit: 3, scene }), 'school-route');
+  resources.register(createSchoolAtmosphere({ level: chapterOneLevel, scene }), 'school-atmosphere');
   // 캐릭터·적·보스가 GLTF 캐시를 공유한다 — 같은 애니메이션 GLB·텍스처를 세 번 파싱하지 않게.
   // 캐스트들보다 먼저 등록해 역순 해제에서 마지막에 폐기된다.
   const characterFactory = resources.register(createCharacterFactory(), 'shared-character-factory');
