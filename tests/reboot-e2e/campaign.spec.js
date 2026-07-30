@@ -98,6 +98,9 @@ async function fightCampaignChapter(page, canvas, verbKeys) {
   await expect(canvas).toHaveAttribute('data-campaign-enemies-alive', '0');
 }
 
+// S3c: LUMEN 압박 펄스 — 윈드업(data-protocol-pulse=windup)이 보이면 단계 키보다 먼저 K로
+// 방어한다(reflect-shield에서는 방어가 우선 소비되므로 다음 반복에서 단계 키를 다시 누른다).
+// 폴 간격은 윈드업 창(30틱 = 0.5초)보다 짧게 유지해 무방비 명중·단계 리셋을 피한다.
 async function masterFinale(page, canvas) {
   const sequence = [
     ['reflect-shield', 'k'],
@@ -107,8 +110,16 @@ async function masterFinale(page, canvas) {
   ];
   for (const [phase, key] of sequence) {
     await expect(canvas).toHaveAttribute('data-protocol-phase', phase);
-    await expect.poll(async () => Number(await canvas.getAttribute('data-protocol-phase-tick')) >= 18).toBe(true);
-    await page.keyboard.press(key);
+    await expect.poll(async () => {
+      if (await canvas.getAttribute('data-protocol-status') !== 'active') return 'cleared';
+      if (await canvas.getAttribute('data-protocol-phase') !== phase) return 'cleared';
+      if (await canvas.getAttribute('data-protocol-pulse') === 'windup') {
+        await page.keyboard.press('k');
+      } else if (Number(await canvas.getAttribute('data-protocol-phase-tick')) >= 18) {
+        await page.keyboard.press(key);
+      }
+      return 'pending';
+    }, { intervals: [120], timeout: 30_000 }).toBe('cleared');
   }
   await expect(canvas).toHaveAttribute('data-protocol-status', 'victory');
   await expect(page.locator('[data-chapter-result]')).toBeVisible();
