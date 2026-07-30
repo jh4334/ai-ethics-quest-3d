@@ -70,6 +70,34 @@ test('Given route landmark metadata, When segments are compared, Then all six vi
   assert.equal(new Set(signatures).size, signatures.length);
 });
 
+test('Given the corridor segment, When the route is built, Then notice panels whiten toward the deep end', () => {
+  // Given: '지워지는 중' 서사를 벽이 말해야 하는 1장 복도(시나리오 v2 S2).
+  const { route } = createRoute();
+
+  // When: 백화 게시물 패널 계약을 관측한다.
+  const noticeFade = route.getDebugState().noticeFade;
+
+  // Then: 복도 양쪽 6장씩, 절반이 백화되고 안쪽으로 갈수록 단조 증가한다.
+  assert.equal(noticeFade.panelCount, 12);
+  assert.equal(noticeFade.whitenedCount, 6);
+  for (const sideKey of ['-left-', '-right-']) {
+    const ordered = noticeFade.panels
+      .filter((panel) => panel.id.includes(sideKey))
+      .sort((a, b) => b.z - a.z); // 입구(z가 큰 쪽) → 깊은 곳 순
+    assert.equal(ordered[0].whiten, 0);
+    assert.equal(ordered.at(-1).whiten, 1);
+    for (let index = 1; index < ordered.length; index += 1) {
+      assert.ok(ordered[index].whiten >= ordered[index - 1].whiten);
+    }
+  }
+
+  // And: 그라데이션은 라이트가 아니라 인스턴스 색으로 실려 있다(드로콜 +1).
+  const mesh = route.group.getObjectByName('school-route-notice-fade');
+  assert.ok(mesh?.isInstancedMesh);
+  assert.equal(mesh.count, 12);
+  assert.ok(mesh.instanceColor);
+});
+
 test('Given a route without landmark authoring, When it renders, Then chapter-one dressing does not leak', () => {
   // Given: a valid route whose visual layer does not opt into semantic landmarks.
   const generic = structuredClone(chapterOneLevel);

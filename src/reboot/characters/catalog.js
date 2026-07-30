@@ -103,24 +103,27 @@ export const CHARACTER_ROSTER = Object.freeze({
     outfit: null, scale: 1.1, silhouette: 'orb-ring-twin-fin', tint: '#35d2dc'
   }),
   haru: createProfile({
-    accessory: 'shoulder-pauldron', body: 'male', hair: 'long', hiddenParts: ['Head_Hood'],
+    // 기존 견갑(outfit 자체 파츠)은 유지하고, 하루 톤의 스카프를 목에 더한다.
+    accessory: 'scarf-pauldron', body: 'male', hair: 'long', hiddenParts: ['Head_Hood'],
     id: 'haru', label: '하루', outfit: 'ranger',
     presentation: { hairEmissive: 0.19, outfitEmissive: 0.11, skinEmissive: 0.16 }, scale: 1.3,
-    silhouette: 'long-hair-wide-pauldron', tint: '#e18b43'
+    silhouette: 'long-hair-scarf-pauldron', tint: '#e18b43'
   }),
   yoonseo: createProfile({
-    accessory: 'policy-tablet', body: 'female', hair: 'buns', hiddenParts: ['Acc_Pauldrons', 'Head_Hood'],
+    // 정책 태블릿에 어깨를 가로지르는 얇은 라인을 더해 '정책 담당' 실루엣을 굳힌다.
+    accessory: 'policy-tablet-line', body: 'female', hair: 'buns', hiddenParts: ['Acc_Pauldrons', 'Head_Hood'],
     id: 'yoonseo', label: '윤서', outfit: 'ranger',
     presentation: { hairEmissive: 0.2, outfitEmissive: 0.12, skinEmissive: 0.17 }, scale: 1.3,
-    silhouette: 'twin-buns-policy-tablet', tint: '#b58ad9'
+    silhouette: 'twin-buns-policy-tablet-line', tint: '#b58ad9'
   }),
   'student-a': createProfile({ id: 'student-a', label: '학생 A', body: 'male', outfit: 'peasant', scale: 0.88, tint: '#3d6c64' }),
   'student-b': createProfile({ id: 'student-b', label: '학생 B', body: 'female', outfit: 'peasant', scale: 0.86, tint: '#72576f' }),
-  eraser: createProfile({ id: 'eraser', label: '삭제자', body: 'male', outfit: 'ranger', scale: 1.02, tint: '#582d44', library: 'ual2', animations: UAL2_ENEMY }),
-  stamper: createProfile({ id: 'stamper', label: '도장꾼', body: 'female', outfit: 'ranger', scale: 1, tint: '#8a3d35', library: 'ual2', animations: UAL2_ENEMY }),
-  copycat: createProfile({ id: 'copycat', label: '복제자', body: 'male', outfit: 'peasant', scale: 0.96, tint: '#514078', library: 'ual2', animations: UAL2_ENEMY }),
-  recommender: createProfile({ id: 'recommender', label: '추천자', body: 'female', outfit: 'ranger', scale: 1.04, tint: '#294f6f', library: 'ual2', animations: UAL2_ENEMY }),
-  approval: createProfile({ id: 'approval', label: '승인관', body: 'male', outfit: 'ranger', scale: 1.08, tint: '#6f5428', library: 'ual2', animations: UAL2_ENEMY }),
+  // 적 5종은 몸·의상만으로는 겹치므로 장별 역할이 한눈에 읽히는 고유 실루엣을 액세서리로 만든다.
+  eraser: createProfile({ accessory: 'wide-arm-panels', id: 'eraser', label: '삭제자', body: 'male', outfit: 'ranger', scale: 1.02, silhouette: 'eraser-wide-arm-panels', tint: '#582d44', library: 'ual2', animations: UAL2_ENEMY }),
+  stamper: createProfile({ accessory: 'stamp-head', id: 'stamper', label: '도장꾼', body: 'female', outfit: 'ranger', scale: 1, silhouette: 'stamper-stamp-head', tint: '#8a3d35', library: 'ual2', animations: UAL2_ENEMY }),
+  copycat: createProfile({ accessory: 'twin-afterimage', id: 'copycat', label: '복제자', body: 'male', outfit: 'peasant', scale: 0.96, silhouette: 'copycat-twin-afterimage', tint: '#514078', library: 'ual2', animations: UAL2_ENEMY }),
+  recommender: createProfile({ accessory: 'split-tint-panel', id: 'recommender', label: '추천자', body: 'female', outfit: 'ranger', scale: 1.04, silhouette: 'recommender-split-tint', tint: '#294f6f', library: 'ual2', animations: UAL2_ENEMY }),
+  approval: createProfile({ accessory: 'gate-epaulet', id: 'approval', label: '승인관', body: 'male', outfit: 'ranger', scale: 1.08, silhouette: 'approval-gate-epaulet', tint: '#6f5428', library: 'ual2', animations: UAL2_ENEMY }),
   'attendance-proctor': createProfile({ id: 'attendance-proctor', label: '출석 감독관', body: 'male', outfit: 'ranger', scale: 1.22, tint: '#25283b', library: 'ual2', animations: UAL2_ENEMY }),
   lumen: createProfile({ id: 'lumen', label: '루멘', body: 'female', outfit: 'ranger', scale: 0.98, tint: '#d29b42' })
 });

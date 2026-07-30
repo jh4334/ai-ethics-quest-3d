@@ -128,7 +128,8 @@ export function createCampaignChapterScene({
   async function loadCast() {
     await Promise.all(anchors.map(async ({ anchor, id, key }) => {
       try {
-        const character = await factory.create(id);
+        // DOT는 3장 이후 균열 표식을 단다(시나리오 v2 — 동기화 사고의 흔적).
+        const character = await factory.create(id, { fractured: id === 'dot' && chapter >= 3 });
         if (!entered) return character.dispose();
         anchor.add(character.root);
         characters.set(key, character);
@@ -172,6 +173,7 @@ export function createCampaignChapterScene({
     },
     update(delta) {
       radio.update(delta);
+      landmarks.update?.(delta); // 4장 컨베이어 서류 등 랜드마크 순환(elapsed 순수 함수)
       for (const character of characters.values()) character.update(delta, { acting: !awaitingDecision && !completed });
       renderer.render(scene, camera);
     }

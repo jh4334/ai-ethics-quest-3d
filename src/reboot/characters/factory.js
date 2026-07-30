@@ -22,24 +22,135 @@ function addMesh(parent, geometry, material, ownedGeometries, ownedMaterials) {
   return mesh;
 }
 
-function addRoleAccessory(profile, root, ownedGeometries, ownedMaterials) {
-  const material = new THREE.MeshStandardMaterial({
-    color: profile.tint,
-    emissive: profile.tint,
+// 3장 배경의 좌우 대비 톤(호박 vs 시안)을 추천자의 반반 패널에도 재사용한다.
+const SPLIT_PANEL_TINTS = Object.freeze({ left: '#e0a04a', right: '#35d2dc' });
+
+function createAccessoryMaterial(color, overrides = {}) {
+  return new THREE.MeshStandardMaterial({
+    color,
+    emissive: color,
     emissiveIntensity: 0.16,
     metalness: 0.15,
-    roughness: 0.48
+    roughness: 0.48,
+    ...overrides
   });
-  if (profile.identity.accessory === 'record-ring') {
-    const ring = addMesh(root, new THREE.TorusGeometry(0.28, 0.045, 8, 18), material, ownedGeometries, ownedMaterials);
-    ring.position.set(0.36, 1.2, 0.02);
-    ring.rotation.y = Math.PI / 2;
-  } else if (profile.identity.accessory === 'policy-tablet') {
-    const tablet = addMesh(root, new THREE.BoxGeometry(0.24, 0.36, 0.055), material, ownedGeometries, ownedMaterials);
-    tablet.position.set(-0.38, 1.02, 0.02);
-    tablet.rotation.z = -0.16;
-  } else {
-    material.dispose();
+}
+
+function addRoleAccessory(profile, root, ownedGeometries, ownedMaterials) {
+  switch (profile.identity.accessory) {
+    case 'record-ring': {
+      const ring = addMesh(root, new THREE.TorusGeometry(0.28, 0.045, 8, 18), createAccessoryMaterial(profile.tint), ownedGeometries, ownedMaterials);
+      ring.position.set(0.36, 1.2, 0.02);
+      ring.rotation.y = Math.PI / 2;
+      break;
+    }
+    case 'policy-tablet-line': {
+      // 정책 태블릿 + 어깨를 가로지르는 얇은 라인.
+      const material = createAccessoryMaterial(profile.tint);
+      const tablet = addMesh(root, new THREE.BoxGeometry(0.24, 0.36, 0.055), material, ownedGeometries, ownedMaterials);
+      tablet.position.set(-0.38, 1.02, 0.02);
+      tablet.rotation.z = -0.16;
+      const line = addMesh(root, new THREE.BoxGeometry(0.62, 0.035, 0.05), material, ownedGeometries, ownedMaterials);
+      line.position.set(0, 1.4, 0.08);
+      line.rotation.z = 0.1;
+      break;
+    }
+    case 'scarf-pauldron': {
+      // 기존 견갑은 의상 파츠 그대로 두고, 하루 톤 스카프(목 링 + 앞자락)를 더한다.
+      const material = createAccessoryMaterial(profile.tint, { emissiveIntensity: 0.2, roughness: 0.62 });
+      const scarf = addMesh(root, new THREE.TorusGeometry(0.16, 0.055, 8, 16), material, ownedGeometries, ownedMaterials);
+      scarf.position.set(0, 1.42, 0.01);
+      scarf.rotation.x = Math.PI / 2;
+      const tail = addMesh(root, new THREE.BoxGeometry(0.09, 0.3, 0.035), material, ownedGeometries, ownedMaterials);
+      tail.position.set(0.07, 1.24, 0.14);
+      tail.rotation.z = -0.14;
+      break;
+    }
+    case 'wide-arm-panels': {
+      // 지우개 — 양옆으로 넓적한 판 형태의 팔 패널.
+      const material = createAccessoryMaterial(profile.tint);
+      const panelGeometry = new THREE.BoxGeometry(0.14, 0.56, 0.34);
+      for (const side of [-1, 1]) {
+        const panel = addMesh(root, panelGeometry, material, ownedGeometries, ownedMaterials);
+        panel.position.set(side * 0.44, 1.02, 0);
+        panel.rotation.z = side * 0.1;
+      }
+      break;
+    }
+    case 'stamp-head': {
+      // 도장기 — 머리 위 도장 헤드(원기둥)와 손잡이.
+      const material = createAccessoryMaterial(profile.tint);
+      const head = addMesh(root, new THREE.CylinderGeometry(0.17, 0.19, 0.12, 12), material, ownedGeometries, ownedMaterials);
+      head.position.set(0, 1.86, 0);
+      const handle = addMesh(root, new THREE.CylinderGeometry(0.045, 0.045, 0.22, 8), material, ownedGeometries, ownedMaterials);
+      handle.position.set(0, 2.03, 0);
+      break;
+    }
+    case 'twin-afterimage': {
+      // 카피캣 — 몸 옆에 살짝 어긋난 반투명 잔상 패널로 쌍둥이 틴트를 낸다.
+      const material = createAccessoryMaterial(profile.tint, {
+        depthWrite: false, emissiveIntensity: 0.24, opacity: 0.42, transparent: true
+      });
+      const afterimage = addMesh(root, new THREE.BoxGeometry(0.3, 0.92, 0.14), material, ownedGeometries, ownedMaterials);
+      afterimage.position.set(0.27, 0.92, -0.09);
+      afterimage.rotation.y = 0.18;
+      break;
+    }
+    case 'split-tint-panel': {
+      // 추천자 — 가슴에 왼쪽 호박·오른쪽 시안으로 갈라진 반반 패널.
+      const halfGeometry = new THREE.BoxGeometry(0.13, 0.3, 0.05);
+      const halves = [
+        { color: SPLIT_PANEL_TINTS.left, x: -0.068 },
+        { color: SPLIT_PANEL_TINTS.right, x: 0.068 }
+      ];
+      for (const half of halves) {
+        const panel = addMesh(root, halfGeometry, createAccessoryMaterial(half.color, { emissiveIntensity: 0.24 }), ownedGeometries, ownedMaterials);
+        panel.position.set(half.x, 1.16, 0.16);
+      }
+      break;
+    }
+    case 'gate-epaulet': {
+      // 승인관 — 양어깨에 관문 기둥 모양 견장(기둥 + 갓돌).
+      const material = createAccessoryMaterial(profile.tint);
+      const pillarGeometry = new THREE.BoxGeometry(0.09, 0.3, 0.09);
+      const capGeometry = new THREE.BoxGeometry(0.15, 0.05, 0.15);
+      for (const side of [-1, 1]) {
+        const pillar = addMesh(root, pillarGeometry, material, ownedGeometries, ownedMaterials);
+        pillar.position.set(side * 0.3, 1.52, 0);
+        const cap = addMesh(root, capGeometry, material, ownedGeometries, ownedMaterials);
+        cap.position.set(side * 0.3, 1.69, 0);
+      }
+      break;
+    }
+    default:
+      break;
+  }
+}
+
+// 3장 이후의 DOT — 어긋난 어두운 판과 가는 발광 균열 선으로 '금 간 신뢰'를 몸체에 새긴다.
+function addFractureMarks(profile, drone, ownedGeometries, ownedMaterials) {
+  const plateMaterial = new THREE.MeshStandardMaterial({ color: 0x16222b, metalness: 0.42, roughness: 0.6 });
+  const crackMaterial = new THREE.MeshStandardMaterial({
+    color: 0x0c1418, emissive: profile.tint, emissiveIntensity: 0.85, metalness: 0.2, roughness: 0.4
+  });
+  const plateSpecs = [
+    { position: [0.17, 0.15, 0.25], rotation: [0.32, 0.42, -0.22], size: [0.17, 0.13, 0.03] },
+    { position: [-0.2, -0.11, 0.22], rotation: [-0.24, -0.5, 0.3], size: [0.14, 0.11, 0.03] }
+  ];
+  for (const spec of plateSpecs) {
+    const plate = addMesh(drone, new THREE.BoxGeometry(...spec.size), plateMaterial, ownedGeometries, ownedMaterials);
+    plate.position.set(...spec.position);
+    plate.rotation.set(...spec.rotation);
+  }
+  const crackSpecs = [
+    { position: [0.05, 0.06, 0.3], rotation: [0, 0.14, 0.62], size: [0.28, 0.014, 0.014] },
+    { position: [-0.08, -0.05, 0.3], rotation: [0, -0.1, -0.48], size: [0.2, 0.012, 0.012] },
+    { position: [0.12, -0.14, 0.26], rotation: [0.2, 0.3, 0.9], size: [0.16, 0.012, 0.012] }
+  ];
+  for (const spec of crackSpecs) {
+    const crack = addMesh(drone, new THREE.BoxGeometry(...spec.size), crackMaterial, ownedGeometries, ownedMaterials);
+    crack.position.set(...spec.position);
+    crack.rotation.set(...spec.rotation);
   }
 }
 
@@ -93,7 +204,8 @@ export function createCharacterFactory({ loader = new GLTFLoader() } = {}) {
     return cache.get(url);
   }
 
-  async function create(id) {
+  // fractured=true는 3장 이후 DOT에만 균열 표식을 붙인다. 기본값이면 기존 호출과 완전히 동일하다.
+  async function create(id, { fractured = false } = {}) {
     if (disposed) throw new Error('폐기된 캐릭터 팩토리는 사용할 수 없습니다.');
     const profile = getCharacterProfile(id);
     const root = new THREE.Group();
@@ -105,6 +217,7 @@ export function createCharacterFactory({ loader = new GLTFLoader() } = {}) {
 
     if (profile.identity.kind === 'audit-drone') {
       const drone = buildAuditDrone(profile, ownedGeometries, ownedMaterials);
+      if (fractured) addFractureMarks(profile, drone, ownedGeometries, ownedMaterials);
       root.add(drone);
       let elapsed = 0;
       const character = Object.freeze({

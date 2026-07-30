@@ -132,6 +132,7 @@ export function createFinalBroadcastPreviewScene({
     const finalized = finalizeCampaign(fixture.campaign, { decision });
     outcome = finalized.outcome;
     persist?.(finalized.state);
+    landmarks.setOnAir?.(true); // 결말 확정 — ON AIR 사인 점등(시나리오 v2: 5장 방)
     // 결말 대본 + 공통 에필로그(DOT의 권한 반납) — 도덕 낙인 없이 인물의 목소리로 닫는다.
     radio.play(
       [...(script.endings?.[outcome.id] ?? []), ...(script.epilogue ?? [])],
@@ -203,7 +204,8 @@ export function createFinalBroadcastPreviewScene({
     // 완료 순서가 아니라 저작(CAST) 순서로 삽입한다 — characterIds 관측이 결정적이 되게.
     const loaded = await Promise.all(CAST.map(async (entry) => {
       try {
-        const character = await factory.create(entry.id);
+        // DOT는 3장 이후 균열 표식을 단다(시나리오 v2 — 동기화 사고의 흔적).
+        const character = await factory.create(entry.id, { fractured: entry.id === 'dot' });
         if (!entered) {
           character.dispose();
           return null;
