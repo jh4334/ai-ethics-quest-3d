@@ -228,7 +228,12 @@ test('@loop4-desktop separates share-chain dual-school and approval-room spaces'
   ];
   const captures = [];
   for (const [fixture, type, landmarkId, filename] of fixtures) {
-    await openFixture(page, fixture, '&quality=low&viewport=landscape');
+    const canvas = await openFixture(page, fixture, '&quality=low&viewport=landscape');
+    // S3b — 2~4장 방은 이제 실전투 방이다: 첫 웨이브 적이 살아서 스폰돼 있어야 한다.
+    if (fixture.startsWith('campaign-chapter')) {
+      expect(Number(await canvas.getAttribute('data-campaign-enemies-alive'))).toBeGreaterThanOrEqual(1);
+      await expect(canvas).toHaveAttribute('data-campaign-step', '0');
+    }
     captures.push({ debug: await page.evaluate(() => window.__ethicsReboot.getSceneDebugState()), landmarkId, type });
     await page.screenshot({ path: `.omo/evidence/${filename}` });
   }
