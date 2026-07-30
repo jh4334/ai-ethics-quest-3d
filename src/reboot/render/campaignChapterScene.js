@@ -8,6 +8,7 @@ import { chapterThreeLevel } from '../content/levels/chapter3.js';
 import { chapterFourLevel } from '../content/levels/chapter4.js';
 import { createDisposableRegistry } from './dispose.js';
 import { createCampaignLandmarks } from './campaignLandmarks.js';
+import { createSceneRadio } from './sceneRadio.js';
 import { createSchoolRoute } from './schoolRoute.js';
 import { getSceneViewport } from './schoolSceneCamera.js';
 
@@ -52,6 +53,9 @@ export function createCampaignChapterScene({
 
   const castRoot = new THREE.Group();
   scene.add(castRoot);
+  // 시나리오 v2 — 도입·동사 단계·반전 컷을 무전 자막으로 흘린다(정본: docs/reboot/시나리오-v2.md).
+  const radio = createSceneRadio(ui);
+  const script = content.sceneScript ?? { briefing: [], reversalScript: [], stepCues: [] };
   const characters = new Map();
   const errors = [];
   let actionIndex = 0;
@@ -103,6 +107,7 @@ export function createCampaignChapterScene({
     if (ui.resultConsequence) ui.resultConsequence.textContent = content.reversal.textKo;
     if (ui.resultReversal) ui.resultReversal.textContent = '다음 장에서도 이 결과가 전투와 증거 접근을 바꿉니다.';
     if (ui.continueButton) ui.continueButton.hidden = false;
+    radio.play(script.reversalScript, { interrupt: true }); // 반전 컷 — 결정 직후 즉시
   }
 
   function queueAction({ action, active }) {
@@ -114,6 +119,7 @@ export function createCampaignChapterScene({
       return;
     }
     if (action !== config.actions[actionIndex]) return;
+    radio.play([script.stepCues?.[actionIndex]].filter(Boolean), { interrupt: true }); // 방금 한 동사의 의미를 즉시 한 줄로
     actionIndex += 1;
     awaitingDecision = actionIndex === config.actions.length;
     syncPresentation();
@@ -136,6 +142,7 @@ export function createCampaignChapterScene({
   return Object.freeze({
     dispose() {
       unsubscribeInput?.();
+      radio.clear();
       ring.removeFromParent();
       castRoot.removeFromParent();
       resources.disposeAll();
@@ -147,6 +154,7 @@ export function createCampaignChapterScene({
       unsubscribeInput = input.subscribe(queueAction);
       windowRef.addEventListener('resize', resize);
       syncPresentation();
+      radio.play(script.briefing);
       loadCast();
     },
     exit() {
@@ -163,6 +171,7 @@ export function createCampaignChapterScene({
       });
     },
     update(delta) {
+      radio.update(delta);
       for (const character of characters.values()) character.update(delta, { acting: !awaitingDecision && !completed });
       renderer.render(scene, camera);
     }

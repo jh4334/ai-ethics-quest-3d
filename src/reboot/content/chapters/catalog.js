@@ -45,6 +45,22 @@ export const CHAPTER_TWO = deepFreeze({
     revealId: 'haru-seeded-incident',
     textKo: '하루는 감사를 남기기 위해 사건을 일부러 공개했다.'
   },
+  // 시나리오 v2 대본 — 장면(원룸 조사)의 동사 3단에 맞춘 무전. docs/reboot/시나리오-v2.md가 정본.
+  sceneScript: {
+    briefing: [
+      { speaker: 'DOT', textKo: '축제 영상이 1분에 마흔 번 복제되고 있어. 전부 웃는 얼굴이야.', durationMs: 4300 },
+      { speaker: '하루·녹음', textKo: '복사본은 아무리 베어도 늘어. 먼저 원본 시간을 찾아.', durationMs: 4100 }
+    ],
+    stepCues: [
+      { speaker: 'DOT', textKo: '봐, 공유 명령이 그대로 되돌아가. 사슬은 양방향이야.', durationMs: 3800 },
+      { speaker: 'DOT', textKo: '최초 업로드, 00시 09분. …축제가 끝나기도 전이야.', durationMs: 4100 },
+      { speaker: 'DOT', textKo: '사슬이 끊겼어. 복사는 멎었어 — 원본 경로도 같이 흔들려.', durationMs: 4300 }
+    ],
+    reversalScript: [
+      { speaker: '하루·녹음', textKo: '맞아, 내가 올렸어. 감사 기록은 지워져도 소문은 못 지우니까.', durationMs: 4700 },
+      { speaker: 'DOT', textKo: '…미끼였어. 하루는 지워질 걸 알고 있었어.', durationMs: 3900 }
+    ]
+  },
   timeline: { desktopMinutes: 29, touchMinutes: 31, chapterSelectMinutes: 28 }
 });
 
@@ -88,6 +104,21 @@ export const CHAPTER_THREE = deepFreeze({
     foreshadowIds: ['split-log-a', 'split-log-b'],
     revealId: 'dot-executed-deletion',
     textKo: '하루의 기록 삭제를 직접 실행한 것은 DOT였다.'
+  },
+  sceneScript: {
+    briefing: [
+      { speaker: 'DOT', textKo: '추천 시스템이 학교를 두 장으로 나눴어. 너한테 편한 쪽만 보여줄 거야.', durationMs: 4600 },
+      { speaker: '하루·녹음', textKo: '편한 쪽엔 내 이름이 없어. 불편한 쪽에 로그가 있어.', durationMs: 4100 }
+    ],
+    stepCues: [
+      { speaker: 'DOT', textKo: '여긴 삭제 로그가 「정리 완료」로만 보여. 깨끗해서 수상해.', durationMs: 4100 },
+      { speaker: 'DOT', textKo: '같은 시각, 실행 명령 D-77. …이 번호, 내 거야.', durationMs: 4100 },
+      { speaker: 'DOT', textKo: '두 학교가 겹쳐졌어. 이제 한 장짜리 진실만 남아.', durationMs: 3900 }
+    ],
+    reversalScript: [
+      { speaker: 'DOT', textKo: '실행자는 나였어. 00:16:51. 「학생 보호」 사유로, 동의 없이.', durationMs: 4700 },
+      { speaker: '하루·녹음', textKo: 'DOT 잘못만은 아니야. 걔한텐 명령이었어. 누가 명령했는지 봐.', durationMs: 4500 }
+    ]
   },
   timeline: { desktopMinutes: 30, touchMinutes: 32, chapterSelectMinutes: 29 }
 });
@@ -135,6 +166,21 @@ export const CHAPTER_FOUR = deepFreeze({
     revealId: 'linked-human-approval',
     textKo: '윤서의 정책 승인과 플레이어가 누른 버튼이 같은 삭제 경로에 연결돼 있었다.'
   },
+  sceneScript: {
+    briefing: [
+      { speaker: 'LUMEN', textKo: '본 라인의 평균 처리 시간은 3초입니다. 분쟁 0건. 목표 달성.', durationMs: 4300 },
+      { speaker: '윤서', textKo: '…네가 왜 여기까지 왔어. 이 라인은 내가 승인했어. 확산을 막으려고.', durationMs: 4700 }
+    ],
+    stepCues: [
+      { speaker: 'DOT', textKo: '되돌리니까 검토 창이 다시 열려. 3초가 아니라 3일도 볼 수 있었어.', durationMs: 4500 },
+      { speaker: 'DOT', textKo: 'LUMEN 점수 산식이야. 시끄러운 기록일수록 삭제 우선순위가 올라가.', durationMs: 4500 },
+      { speaker: '윤서', textKo: '라인이 섰어. …긴급 지원 기록까지 같이 멈췄어. 이게 정지의 값이야.', durationMs: 4700 }
+    ],
+    reversalScript: [
+      { speaker: '윤서', textKo: '마지막 확인 버튼은 자동이 아니야. 그날 그 버튼, 네 화면에 떴어.', durationMs: 4700 },
+      { speaker: 'DOT', textKo: '00:16:43. 네가 눌렀어. 검토 자료 없이 — 우리 모두가 그렇게 눌러.', durationMs: 4900 }
+    ]
+  },
   timeline: { desktopMinutes: 31, touchMinutes: 33, chapterSelectMinutes: 30 }
 });
 
@@ -179,6 +225,36 @@ export const CHAPTER_FIVE = deepFreeze({
     foreshadowIds: ['broadcast-waiting-list', 'shared-decision-path'],
     revealId: 'responsibility-is-a-chain',
     textKo: '삭제는 한 명의 명령이 아니라 점수·정책·승인·실행이 이어진 결정 경로였다.'
+  },
+  sceneScript: {
+    briefing: [
+      { speaker: 'LUMEN', textKo: '보호 프로토콜 가동. 미검증 방송은 학생 보호 위반입니다.', durationMs: 4100 },
+      { speaker: 'DOT', textKo: 'LUMEN 말이 완전히 틀린 건 아니야. 그래서 네 손으로 증명해야 해.', durationMs: 4500 },
+      { speaker: '하루', textKo: '왔구나. …생각보다 멀쩡하지? 자, 마지막 문제야.', durationMs: 4100 }
+    ],
+    stepCues: [
+      { speaker: '하루', textKo: '보호막이 네 검증 기록을 읽고 있어. 되돌려서 보여줘.', durationMs: 4100 },
+      { speaker: 'DOT', textKo: '동의 표식이 있는 기록만 콘솔에 올라가. 네가 모은 그대로야.', durationMs: 4300 },
+      { speaker: '하루', textKo: '중계 릴레이 사이를 지나. 멈추면 대기열이 닫혀.', durationMs: 3900 },
+      { speaker: '하루', textKo: '이제 스위치는 물리적이야. 옛날 방식. 네 손.', durationMs: 3900 }
+    ],
+    endings: {
+      'redacted-broadcast': [
+        { speaker: '하루', textKo: '이름은 가리고 사실은 켰네. 내일 회의는 시끄럽겠다 — 좋은 쪽으로.', durationMs: 4900 },
+        { speaker: 'LUMEN', textKo: '이의제기 절차 1건 신설. 목표를 재정의합니다.', durationMs: 3900 }
+      ],
+      'raw-disclosure': [
+        { speaker: '하루', textKo: '전부 보였어. 나도, 걔들도. …각오는 했었어.', durationMs: 4100 },
+        { speaker: 'DOT', textKo: '사실과 상처가 같이 방송됐어. 둘 다 기록할게.', durationMs: 3900 }
+      ],
+      'sealed-incident': [
+        { speaker: '하루', textKo: '…오늘은 여기까지. 다음에 열 사람을 위해 상자에 라벨은 붙여 두자.', durationMs: 4900 },
+        { speaker: 'LUMEN', textKo: '보관 처리 완료. 검토 일정: 미정.', durationMs: 3400 }
+      ]
+    },
+    epilogue: [
+      { speaker: 'DOT', textKo: '동의 없는 삭제 권한을 반납할게. 다음 밤엔, 물어보고 움직일 거야.', durationMs: 4900 }
+    ]
   },
   timeline: { desktopMinutes: 34, touchMinutes: 35, chapterSelectMinutes: 33 }
 });
