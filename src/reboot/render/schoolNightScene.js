@@ -12,6 +12,7 @@ import { createFeedbackCounters } from '../feedback/counters.js';
 import { presentSchoolFeedback } from '../feedback/schoolFeedback.js';
 import { createScenePerformanceProbe } from '../perf/sceneProbe.js';
 import { createChapterOneDirector } from '../story/chapterOneDirector.js';
+import { createBladeTrail } from './bladeTrail.js';
 import { createCombatPresentationAdapter } from './combatPresentation.js';
 import { createBossCast } from './bossCast.js';
 import { createDisposableRegistry } from './dispose.js';
@@ -41,6 +42,7 @@ export function createSchoolNightScene({
   const bossCast = bossOptions.enabled
     ? resources.register(createBossCast({ characterFactory, scene }), 'boss-cast')
     : null;
+  const bladeTrail = resources.register(createBladeTrail({ scene }), 'blade-trail');
   const {
     blockAfterTick = null,
     delayedBlockers = [],
@@ -75,6 +77,10 @@ export function createSchoolNightScene({
   // 시뮬 고정 틱으로 재며(150틱 = 2.5초), 이야기(story)·보스 재도전 카운트는 유지된다(무처벌).
   const RESPAWN_DELAY_TICKS = 150;
   let respawnAtTick = null;
+  // 타격감(GF1) — 명중 순간 시뮬을 벽시계 기준으로만 잠깐 멈춘다(틱 순서 불변 = 결정성 유지).
+  let hitStop = 0;
+  // 조작 온보딩 — 적이 코앞인데 한동안 공격이 없으면 공격 키를 짚어 준다.
+  let sinceAttackSeconds = 0;
   let lastEvents = [];
   let lastEnemyEvents = [];
   let lastBossEvents = [];
@@ -194,7 +200,10 @@ export function createSchoolNightScene({
         && game.getState().combat.tick >= blockAfterTick;
       const offscreenActive = Number.isInteger(offscreenAfterTick)
         && game.getState().combat.tick >= offscreenAfterTick;
-      let result = game.update(delta, { horizontal, vertical }, {
+      // 히트스톱 동안 시뮬만 벽시계 기준으로 멈춘다(렌더·카메라·피드백은 계속).
+      const stopped = hitStop > 0;
+      if (stopped) hitStop = Math.max(0, hitStop - delta);
+      let result = game.update(stopped ? 0 : delta, { horizontal, vertical }, {
         blockers: blockerActive ? delayedBlockers : undefined,
         onScreen: offscreenActive ? false : undefined
       });
@@ -212,6 +221,21 @@ export function createSchoolNightScene({
       lastEnemyEvents = result.enemyEvents;
       feedbackCounters.record(result.combatEvents, result.enemyEvents);
       lastFrame = combatView.present(result.state.combat, result.combatEvents);
+      // 타격감(GF1): 검격 궤적 + 명중·격파 히트스톱.
+      sinceAttackSeconds += delta;
+      for (const event of result.combatEvents) {
+        if (event.type === 'action-started' && String(event.action).startsWith('attack')) {
+          bladeTrail.trigger(lastFrame.player.position, lastFrame.player.facing, result.state.combat.chain.level);
+          sinceAttackSeconds = 0;
+        } else if (event.type === 'target-defeated') {
+          hitStop = Math.min(0.12, hitStop + 0.11);
+        } else if (event.type === 'target-hit') {
+          hitStop = Math.min(0.12, hitStop + 0.055);
+        } else if (event.type === 'player-hit') {
+          hitStop = Math.min(0.12, hitStop + 0.07);
+        }
+      }
+      bladeTrail.update(delta);
       enemyCast.present(result.state.encounter, result.enemyEvents);
       cast.setPlayerState({
         action: result.state.combat.player.action.name,
@@ -248,6 +272,15 @@ export function createSchoolNightScene({
       feedbackPrompts = respawnAtTick !== null
         ? [...feedbackFrame.prompts, { id: 'respawn-wait', label: '신호가 끊겼다… 체크포인트에서 다시 일어난다' }]
         : feedbackFrame.prompts;
+      // 조작 온보딩 — 교전권(원거리 포함, 리시 반경 12) 안에 살아 있는 적이 있는데
+      // 4초 넘게 공격이 없으면 공격 키를 짚어 준다.
+      const foeNearby = result.state.encounter.enemies.some((enemy) => (
+        enemy.phase !== 'defeat'
+        && Math.hypot(enemy.position.x - lastFrame.player.position.x, enemy.position.z - lastFrame.player.position.z) < 12
+      ));
+      if (foeNearby && sinceAttackSeconds > 4 && respawnAtTick === null) {
+        feedbackPrompts = [...feedbackPrompts, { id: 'hint-attack', label: 'SIGNAL BLADE — J 키 (터치: ⚔)' }];
+      }
       if (feedbackFrame.shake > 0) cameraState = addCameraShake(cameraState, feedbackFrame.shake);
       feedback.update(delta);
       const cueIndex = chapterOneLevel.segments.findIndex((segment) => segment.id === currentSegment.id);
