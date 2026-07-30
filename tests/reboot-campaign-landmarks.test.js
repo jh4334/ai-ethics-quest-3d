@@ -7,13 +7,16 @@ const { createCampaignLandmarks } = landmarksModule;
 
 const EXPECTED = Object.freeze({
   'approval-room': ['approval-dossier-queue', 'approval-conveyor', 'approval-yoonseo-terminal',
-    'approval-review-gate', 'approval-marquee-panel', 'approval-flow-documents'],
+    'approval-review-gate', 'approval-marquee-panel', 'approval-flow-documents',
+    'approval-file-shelves', 'approval-ceiling-pipes'],
   'dual-school': ['dual-comfort-school', 'dual-verified-school', 'dual-unequal-records',
-    'dual-sync-pillar', 'dual-log-cabinets'],
+    'dual-sync-pillar', 'dual-log-cabinets',
+    'dual-comfort-desk-row', 'dual-verified-desk-row', 'dual-ceiling-truss'],
   finale: ['finale-haru-stage', 'finale-dot-stage', 'finale-lumen-stage', 'finale-broadcast-booth', 'finale-evidence-beam', 'finale-public-feed',
     'finale-console-desk', 'finale-console-monitors', 'finale-wall-clock', 'finale-onair-sign'],
   'share-chain': ['share-source-trace', 'share-copy-chain', 'share-clone-output',
-    'share-poster-wall', 'share-chain-links', 'share-copy-piles']
+    'share-poster-wall', 'share-chain-links', 'share-copy-piles',
+    'share-perimeter-lockers', 'share-ceiling-truss']
 });
 
 test('campaign landmark layer gives chapters two through five distinct semantic spaces', () => {

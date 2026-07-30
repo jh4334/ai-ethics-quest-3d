@@ -7,6 +7,7 @@ import {
   getRoomWaveEncounter, isRoomWaveCleared
 } from '../campaign/roomWaves.js';
 import { createCharacterFactory } from '../characters/factory.js';
+import { walkableRectsFromLevel } from '../level/walkableBounds.js';
 import { PLAYER_RULES } from '../content/actions.js';
 import { CHAPTERS_2_5 } from '../content/chapters/catalog.js';
 import { chapterTwoLevel } from '../content/levels/chapter2.js';
@@ -111,13 +112,16 @@ export function createCampaignChapterScene({
 
   // 방 전투 런타임 — 1장과 같은 60Hz 고정틱. 웨이브·리스폰마다 현재 웨이브 정의로 다시 심는다.
   const deviceClass = getSceneViewport(canvas).mode;
+  // 통행 경계 — 장 레벨의 collision 레이어에서 유도(방 원점 주변 세그먼트 포함 전 구간).
+  const walkable = walkableRectsFromLevel(config.level);
   function createWaveRuntime(startPosition) {
     return createEncounterGameRuntime({
       deviceClass,
       encounterDefinition: getRoomWaveEncounter(chapter, waveProgress.waveIndex),
       encounterOrigin: ROOM_ENCOUNTER_ORIGIN,
       extraTargets: [],
-      startPosition
+      startPosition,
+      walkable
     });
   }
   let game = createWaveRuntime(ROOM_START_POSITION);

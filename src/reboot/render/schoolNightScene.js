@@ -8,6 +8,7 @@ import { createCharacterCast } from '../characters/cast.js';
 import { createCharacterFactory } from '../characters/factory.js';
 import { chapterOneLevel } from '../content/levels/chapter1.js';
 import { createFeedbackDirector } from '../feedback/director.js';
+import { walkableRectsFromLevel } from '../level/walkableBounds.js';
 import { createFeedbackCounters } from '../feedback/counters.js';
 import { presentSchoolFeedback } from '../feedback/schoolFeedback.js';
 import { createScenePerformanceProbe } from '../perf/sceneProbe.js';
@@ -57,6 +58,8 @@ export function createSchoolNightScene({
   const game = createEncounterGameRuntime({
     deviceClass: getSceneViewport(canvas).mode,
     startPosition,
+    // 통행 경계 — 레벨 collision 레이어에서 유도. 복도·아레나·체육관 전 구간 밖으로 못 나간다.
+    walkable: walkableRectsFromLevel(chapterOneLevel),
     ...runtimeEncounterOptions
   });
   const combatView = createCombatPresentationAdapter();
