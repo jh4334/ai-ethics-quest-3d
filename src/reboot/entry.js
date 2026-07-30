@@ -28,6 +28,15 @@ const testHook = window.__ETHICS_TEST_HOOK__ === true
   || window.sessionStorage.getItem('h17.testHook') === 'true'
   || searchParams.get('testHook') === 'h17';
 const runtimeSettings = configureRuntime({ canvas, root, savedSettings: session.getState().settings, searchParams, testHook });
+// 터치 레이아웃 판정(S4a) — QA 뷰포트 fixture가 이미 정했으면 그대로 두고,
+// 실기기에서는 CSS 표시 조건과 같은 기준(coarse 포인터·좁은 화면)으로 data-touch-mode를 맞춘다.
+const touchLayoutQuery = window.matchMedia('(pointer: coarse), (max-width: 760px)');
+const syncTouchMode = () => {
+  if (root.dataset.viewportFixture) return;
+  root.dataset.touchMode = touchLayoutQuery.matches ? 'true' : 'false';
+};
+syncTouchMode();
+touchLayoutQuery.addEventListener?.('change', syncTouchMode);
 const renderer = createRenderer(canvas, { quality: runtimeSettings.quality, windowRef: window });
 const input = createInputRouter({ target: window });
 const touchControls = createTouchControls({ input, root });

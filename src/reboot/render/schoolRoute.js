@@ -140,6 +140,25 @@ export function createSchoolRoute({ level, lightLimit = Number.POSITIVE_INFINITY
       scale: { x: 0.28, y: 3.6, z: depth }
     }));
   });
+  // 경로 양 끝 마감벽 — 끝 세그먼트 너머의 검은 허공이 화면에 드러나지 않게 닫는다.
+  // 같은 인스턴스드 메시에 들어가므로 드로콜 증가 0, 통행 경계(끝 inset 0.6)와도 겹치지 않는다.
+  const routeStart = collision.reduce((best, entry) => (
+    entry.walkableBounds.maxZ > best.walkableBounds.maxZ ? entry : best
+  ));
+  const routeEnd = collision.reduce((best, entry) => (
+    entry.walkableBounds.minZ < best.walkableBounds.minZ ? entry : best
+  ));
+  for (const [entry, z, cap] of [
+    [routeStart, routeStart.walkableBounds.maxZ + 0.14, 'north'],
+    [routeEnd, routeEnd.walkableBounds.minZ - 0.14, 'south']
+  ]) {
+    const bounds = entry.walkableBounds;
+    wallBoxes.push({
+      id: `${entry.id}:wall-${cap}-cap`,
+      position: { x: (bounds.minX + bounds.maxX) / 2, y: level.planeY + 1.8, z },
+      scale: { x: bounds.maxX - bounds.minX + 0.56, y: 3.6, z: 0.28 }
+    });
+  }
   const visualBySegment = new Map(level.layers.visual.map((entry) => [entry.segmentId, entry]));
   const lightBySegment = new Map(level.layers.localLight.map((entry) => [entry.segmentId, entry]));
   const visualBoxes = level.segments.map((segment) => {

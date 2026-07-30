@@ -35,7 +35,10 @@ test('Given chapter one data, When the route is built, Then every authored layer
   assert.deepEqual(debug.visualIds, chapterOneLevel.layers.visual.map((entry) => entry.id));
   assert.deepEqual(debug.localLightIds, chapterOneLevel.layers.localLight.map((entry) => entry.id));
   assert.deepEqual(debug.encounterIds, chapterOneLevel.layers.encounter.map((entry) => entry.id));
-  assert.equal(debug.occluders.length, chapterOneLevel.segments.length * 2);
+  // 세그먼트마다 좌우 벽 2 + 경로 양 끝 마감벽 2(허공 노출 차단).
+  assert.equal(debug.occluders.length, chapterOneLevel.segments.length * 2 + 2);
+  assert.ok(debug.occluders.some((entry) => entry.id.endsWith('wall-north-cap')));
+  assert.ok(debug.occluders.some((entry) => entry.id.endsWith('wall-south-cap')));
   assert.equal(debug.routeCues.length, chapterOneLevel.segments.length);
 });
 

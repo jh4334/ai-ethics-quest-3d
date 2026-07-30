@@ -3,10 +3,14 @@ import * as THREE from 'three';
 import { createDisposableRegistry } from './dispose.js';
 
 // 학교의 밤 분위기 — 무지 박스 지형을 '복도'로 읽히게 하는 결정적 드레싱.
-// 체커 바닥 타일 + 벽 킥라인 몰딩 + 창문·달빛 풀. 전부 InstancedMesh/고정표 —
-// 무작위 0, 추가 라이트 0, 드로콜 +5 이내(저사양 예산 준수).
+// 체커 바닥 타일 + 벽 킥라인 몰딩 + 창문·달빛 풀 + 천장 보 + 벽가 수납장.
+// 전부 InstancedMesh/고정표 — 무작위 0, 추가 라이트 0, 드로콜 +6 이내(저사양 예산 준수).
 const TILE = 2; // 타일 한 변(유닛)
 const WINDOW_SPACING = 4.6; // 창문 간격(z)
+const BEAM_SPACING = 5.2; // 천장 보 간격(z) — 창문과 어긋나게 두어 리듬이 겹치지 않는다
+const CABINET_SPACING = 3.4; // 벽가 수납장 간격(z)
+// 이미 벽면 가구가 저작된 세그먼트(복도 사물함·추격 게이트)는 수납장을 겹쳐 놓지 않는다.
+const CABINET_SKIP_KINDS = new Set(['corridor', 'pursuit']);
 
 function segmentRects(level) {
   return level.layers.collision.map((entry) => entry.walkableBounds);
@@ -44,6 +48,48 @@ function windowSpots(rects, planeY) {
           wallX: side === -1 ? rect.minX + 0.02 : rect.maxX - 0.02,
           side,
           y: planeY,
+          z
+        });
+      }
+    }
+  }
+  return spots;
+}
+
+// 천장 보 — 낮은 모바일 카메라(수평에 가까운 시야)에서 화면 상단을 채우는 가로 구조물.
+function beamSpots(rects, planeY) {
+  const spots = [];
+  for (const rect of rects) {
+    const depth = rect.maxZ - rect.minZ;
+    const count = Math.floor(depth / BEAM_SPACING);
+    for (let index = 0; index < count; index += 1) {
+      spots.push({
+        width: rect.maxX - rect.minX + 0.28,
+        x: (rect.minX + rect.maxX) / 2,
+        y: planeY + 3.35,
+        z: rect.minZ + (index + 0.5) * BEAM_SPACING
+      });
+    }
+  }
+  return spots;
+}
+
+// 벽가 수납장 줄 — 통행 경계 inset(0.6) 안쪽 여유 공간에만 놓여 이동을 막지 않는다.
+// (수납장 두께 0.5, 벽에서 0.07~0.57 사이 — 플레이어 클램프 한계 0.6보다 벽 쪽이다.)
+function cabinetSpots(level, planeY) {
+  const kindBySegment = new Map(level.layers.visual.map((entry) => [entry.segmentId, entry.kind]));
+  const spots = [];
+  for (const entry of level.layers.collision) {
+    if (CABINET_SKIP_KINDS.has(kindBySegment.get(entry.segmentId))) continue;
+    const rect = entry.walkableBounds;
+    const depth = rect.maxZ - rect.minZ;
+    const count = Math.floor(depth / CABINET_SPACING);
+    for (let index = 0; index < count; index += 1) {
+      const z = rect.minZ + (index + 0.5) * CABINET_SPACING;
+      for (const side of [-1, 1]) {
+        spots.push({
+          x: side === -1 ? rect.minX + 0.32 : rect.maxX - 0.32,
+          y: planeY + 0.81,
           z
         });
       }
@@ -135,18 +181,50 @@ export function createSchoolAtmosphere({ level, scene }) {
   });
   group.add(pools);
 
+  // ④ 천장 보 — 세그먼트 폭을 가로지르는 어두운 남색 보. 낮은 카메라에서 '실내 천장'을 만든다.
+  const beams = beamSpots(rects, planeY);
+  const beamMaterial = resources.register(new THREE.MeshStandardMaterial({
+    color: 0x1c2c50, emissive: 0x0a1430, emissiveIntensity: 0.4, roughness: 0.88
+  }), 'beam-material');
+  const beamMesh = new THREE.InstancedMesh(moldingGeometry, beamMaterial, beams.length);
+  beamMesh.name = 'atmosphere-ceiling-beams';
+  fillInstances(beamMesh, (index, position, quaternion, scale) => {
+    const beam = beams[index];
+    position.set(beam.x, beam.y, beam.z);
+    quaternion.identity();
+    scale.set(beam.width, 0.18, 0.34);
+  });
+  group.add(beamMesh);
+
+  // ⑤ 벽가 수납장 줄 — 교실·아레나·기억·체육관 구간의 벽을 따라 낮은 가구 실루엣을 세운다.
+  const cabinets = cabinetSpots(level, planeY);
+  const cabinetMaterial = resources.register(new THREE.MeshStandardMaterial({
+    color: 0x2c3f66, emissive: 0x101c38, emissiveIntensity: 0.38, roughness: 0.82
+  }), 'cabinet-material');
+  const cabinetMesh = new THREE.InstancedMesh(moldingGeometry, cabinetMaterial, cabinets.length);
+  cabinetMesh.name = 'atmosphere-wall-cabinets';
+  fillInstances(cabinetMesh, (index, position, quaternion, scale) => {
+    const cabinet = cabinets[index];
+    position.set(cabinet.x, cabinet.y, cabinet.z);
+    quaternion.identity();
+    scale.set(0.5, 1.62, 1.6);
+  });
+  group.add(cabinetMesh);
+
   scene.add(group);
   let disposed = false;
   return Object.freeze({
     dispose() {
       if (disposed) return;
       disposed = true;
-      for (const mesh of [tiles, molding, windows, pools]) mesh.dispose();
+      for (const mesh of [tiles, molding, windows, pools, beamMesh, cabinetMesh]) mesh.dispose();
       group.removeFromParent();
       resources.disposeAll();
     },
     getDebugState() {
       return Object.freeze({
+        beamCount: beamMesh.count,
+        cabinetCount: cabinetMesh.count,
         disposed,
         moldingCount: molding.count,
         poolCount: pools.count,

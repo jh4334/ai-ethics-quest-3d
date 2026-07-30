@@ -71,7 +71,7 @@ export function stepEnemy(enemy, context) {
   }
   const perception = perceiveEnemy(contacted.state, context);
   const intent = decideEnemyIntent(contacted.state, perception, { canCommit: context.canCommit });
-  const state = applyEnemyMotion(contacted.state, intent);
+  const state = applyEnemyMotion(contacted.state, intent, context.walkable);
   const events = freezeEvents([...contactEvents, ...transitionEvents(contacted.state, state, intent)]);
   const feedback = createEnemyFeedback(events, enemy.definition);
   return Object.freeze({ events, feedback, intent, perception, state });

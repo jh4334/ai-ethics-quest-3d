@@ -1,3 +1,4 @@
+import { clampToWalkable } from '../level/walkableBounds.js';
 import { patchEnemyState } from './state.js';
 
 function turnToward(current, target, maximum) {
@@ -25,7 +26,7 @@ function advanceDisabled(enemy) {
   return patchEnemyState(enemy, { phaseTick: enemy.phaseTick + 1 });
 }
 
-export function applyEnemyMotion(enemy, intent) {
+export function applyEnemyMotion(enemy, intent, walkable = []) {
   const cooldownTicks = Math.max(0, enemy.cooldownTicks - 1);
   if (intent.type === 'acquire') {
     return patchEnemyState(enemy, { cooldownTicks, lastIntent: intent.type, phase: 'acquire', targetId: intent.targetId });
@@ -36,12 +37,18 @@ export function applyEnemyMotion(enemy, intent) {
   if (intent.type === 'reposition') {
     const sign = intent.distance < intent.preferred ? -1 : 1;
     const speed = enemy.definition.stats.speed * sign;
+    // 통행 경계 — 뒷걸음(sign=-1) 포함 어떤 reposition도 경계 합집합 밖으로 나가지 않는다.
+    const next = clampToWalkable(
+      enemy.position.x + intent.direction.x * speed,
+      enemy.position.z + intent.direction.z * speed,
+      walkable
+    );
     return patchEnemyState(enemy, {
       cooldownTicks,
       faceTicks: 0,
       lastIntent: intent.type,
       phase: 'reposition',
-      position: { x: enemy.position.x + intent.direction.x * speed, z: enemy.position.z + intent.direction.z * speed }
+      position: { x: next.x, z: next.z }
     });
   }
   if (intent.type === 'face') {

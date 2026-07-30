@@ -6,6 +6,7 @@ import {
   pruneContacts, resolveBlade, resolveIncoming, resolveInvestigation
 } from '../combat/contacts.js';
 import { normalizeDirection, quantize } from '../combat/geometry.js';
+import { clampToWalkable } from '../level/walkableBounds.js';
 
 const ACTION_INPUTS = new Set(['attack', 'dash', 'reflect', 'trace', 'secure']);
 
@@ -27,11 +28,16 @@ function cloneState(state) {
   };
 }
 
-export function createCombatState({ targets = [], hp = PLAYER_RULES.maxHp, signal = PLAYER_RULES.maxSignal } = {}) {
+export function createCombatState({
+  targets = [], hp = PLAYER_RULES.maxHp, signal = PLAYER_RULES.maxSignal, walkable = []
+} = {}) {
   return {
     version: 1,
     tick: 0,
     paused: false,
+    // 통행 가능 경계 — {minX, maxX, minZ, maxZ} 사각형 목록(월드 좌표, z = position.y).
+    // 비어 있으면 클램프하지 않는다(기존 픽스처·리플레이와의 호환).
+    walkable: Object.freeze(walkable.map((rect) => Object.freeze({ ...rect }))),
     chain: { points: 0, level: 0 },
     targets: targets.map((entry) => ({
       id: entry.id,
@@ -71,6 +77,15 @@ function applyMovement(state, command) {
   state.player.facing = direction;
   state.player.position.x = quantize(state.player.position.x + direction.x * PLAYER_RULES.movePerTick);
   state.player.position.y = quantize(state.player.position.y + direction.y * PLAYER_RULES.movePerTick);
+}
+
+// 통행 경계 클램프 — 이동·대시가 끝난 뒤 매 틱 한 번, 플레이어를 경계 합집합 안으로 되민다.
+// player.position.y가 월드 z다. 경계가 없으면 아무 일도 하지 않는다(결정적 순수 연산).
+function clampPlayerToWalkable(state) {
+  if (!Array.isArray(state.walkable) || state.walkable.length === 0) return;
+  const clamped = clampToWalkable(state.player.position.x, state.player.position.y, state.walkable);
+  state.player.position.x = clamped.x;
+  state.player.position.y = clamped.z;
 }
 
 function applyDashMotion(state) {
@@ -130,6 +145,7 @@ export function stepCombat(currentState, commands = []) {
   pruneContacts(state);
   processCommands(state, safeCommands.filter((command) => !['pause', 'resume'].includes(command?.type)), events);
   applyDashMotion(state);
+  clampPlayerToWalkable(state);
   resolveBlade(state, events);
   resolveInvestigation(state, events);
   advanceAction(state.player, state.tick, events);

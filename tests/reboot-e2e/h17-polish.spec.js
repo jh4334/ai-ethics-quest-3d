@@ -359,11 +359,16 @@ test('@final-mobile completes the purge route with touch and unobstructed access
   const canvas = await openFixture(page, 'qa-final-sealed', '&quality=low&viewport=portrait');
   expect(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true);
 
-  const touchButtons = page.locator('.touch-actions [data-touch-action]');
+  // S4a 버튼 다이어트 — 1차 4개(부채꼴)·맥락 2개(결정 시 표시)·보조 2개(우상단)로 나뉘어도
+  // 8개 버튼 전부 DOM에 남아 터치·dispatchEvent 경로가 유지된다.
+  const touchButtons = page.locator('[data-touch-controls] [data-touch-action]');
   await expect(touchButtons).toHaveCount(8);
+  await expect(page.locator('.touch-actions [data-touch-action]')).toHaveCount(4);
   const touchTargetsPass = await touchButtons.evaluateAll((buttons) => buttons.every((button) => {
     const bounds = button.getBoundingClientRect();
-    return bounds.width >= 50 && bounds.height >= 52;
+    // 1차·맥락 버튼은 52px 이상, 보조(카메라·정지) 버튼도 44px 이상 터치 타깃을 유지한다.
+    const minSize = button.closest('.touch-utils') ? 44 : 52;
+    return bounds.width >= minSize && bounds.height >= minSize;
   }));
   expect(touchTargetsPass).toBe(true);
   await masterFinaleWithTouch(page, canvas);
