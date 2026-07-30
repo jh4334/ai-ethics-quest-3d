@@ -73,8 +73,15 @@ export function createFeedbackDirector({
       pool.present(lastCues, collectPositions(frame, encounter, inBoss), { reducedMotion });
       audio.setMusicState({ chainLevel: frame.hud.chainLevel, inBoss, inPursuit });
       audio.consume(lastCues);
+      // 타격감(GF1): 명중·격파에도 소폭 셰이크 — 피격(0.24)보다는 항상 약하게(원인 판별 가능).
       const shake = reducedMotion ? 0 : lastCues.reduce((amount, cue) => (
-        Math.max(amount, cue.kind === 'damage' ? 0.24 : cue.kind === 'reflect' ? 0.14 : 0)
+        Math.max(
+          amount,
+          cue.kind === 'damage' ? 0.24
+            : cue.kind === 'defeat' ? 0.2
+              : cue.kind === 'reflect' ? 0.14
+                : cue.kind === 'contact' ? 0.07 : 0
+        )
       ), 0);
       return Object.freeze({ cues: lastCues, prompts, shake });
     },

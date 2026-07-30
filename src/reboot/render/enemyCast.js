@@ -73,6 +73,8 @@ export function createEnemyCast({
         entry.cueId = typeof cue.cueId === 'string'
           ? cue.cueId
           : typeof cue.type === 'string' ? cue.type : null;
+        // 타격감(GF1): 피해 큐는 스케일 펀치로 몸에 새긴다 — 맞았다는 게 보인다.
+        if (['enemy-damaged', 'armor-broken', 'enemy-staggered'].includes(entry.cueId)) entry.punch = 0.16;
       }
     }
     for (const enemy of encounter.enemies) {
@@ -158,7 +160,16 @@ export function createEnemyCast({
     },
     update(delta) {
       if (disposed) return;
-      for (const entry of entries.values()) entry.character?.update(delta, entry.animation);
+      for (const entry of entries.values()) {
+        entry.character?.update(delta, entry.animation);
+        // 피격 스케일 펀치 감쇠 — 0.16초 동안 부풀었다 제자리로.
+        if (entry.punch > 0) {
+          entry.punch = Math.max(0, entry.punch - Math.max(0, Math.min(0.1, delta)));
+          entry.anchor.scale.setScalar(1 + (entry.punch / 0.16) * 0.18);
+        } else if (entry.anchor.scale.x !== 1) {
+          entry.anchor.scale.setScalar(1);
+        }
+      }
     }
   });
 }
