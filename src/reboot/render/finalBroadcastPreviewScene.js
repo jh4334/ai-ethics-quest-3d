@@ -4,9 +4,11 @@ import { createBroadcastProtocolState, stepBroadcastProtocol } from '../bosses/b
 import { finalizeCampaign } from '../campaign/endingEvaluator.js';
 import { createFinaleFixture } from '../campaign/finaleFixtures.js';
 import { createCharacterFactory } from '../characters/factory.js';
+import { CHAPTER_FIVE } from '../content/chapters/catalog.js';
 import { chapterFiveLevel } from '../content/levels/chapter5.js';
 import { createDisposableRegistry } from './dispose.js';
 import { createCampaignLandmarks } from './campaignLandmarks.js';
+import { createSceneRadio } from './sceneRadio.js';
 import { createSchoolRoute } from './schoolRoute.js';
 import { getSceneViewport } from './schoolSceneCamera.js';
 
@@ -98,6 +100,9 @@ export function createFinalBroadcastPreviewScene({
   const characters = new Map();
   const errors = [];
   let protocol = createBroadcastProtocolState(fixture.campaign);
+  // 시나리오 v2 — 도입·프로토콜 단계·결말 대본을 무전 자막으로(정본: docs/reboot/시나리오-v2.md).
+  const radio = createSceneRadio(ui);
+  const script = CHAPTER_FIVE.sceneScript ?? {};
   let outcome = null;
   let accumulator = 0;
   let entered = false;
@@ -127,6 +132,11 @@ export function createFinalBroadcastPreviewScene({
     const finalized = finalizeCampaign(fixture.campaign, { decision });
     outcome = finalized.outcome;
     persist?.(finalized.state);
+    // 결말 대본 + 공통 에필로그(DOT의 권한 반납) — 도덕 낙인 없이 인물의 목소리로 닫는다.
+    radio.play(
+      [...(script.endings?.[outcome.id] ?? []), ...(script.epilogue ?? [])],
+      { interrupt: true }
+    );
     if (ui.result) {
       ui.result.hidden = false;
       const heading = ui.result.querySelector('h2');
@@ -172,6 +182,7 @@ export function createFinalBroadcastPreviewScene({
     }
     if (protocol.status !== 'active') return;
     if (!['reflect', 'trace', 'dash', 'attack'].includes(action)) return;
+    const phaseBefore = protocol.phaseIndex;
     const result = stepBroadcastProtocol(protocol, {
       actions: [{
         id: `${protocol.tick}:${action}`,
@@ -180,6 +191,10 @@ export function createFinalBroadcastPreviewScene({
       }]
     });
     protocol = result.state;
+    // 프로토콜 한 단계를 넘었을 때 그 동사의 의미를 무전으로(시나리오 v2).
+    if (protocol.phaseIndex > phaseBefore || protocol.status === 'victory') {
+      radio.play([script.stepCues?.[phaseBefore]].filter(Boolean), { interrupt: true });
+    }
     if (protocol.status === 'victory' && fixture.decision) showOutcome();
     syncPresentation();
   }
@@ -210,6 +225,7 @@ export function createFinalBroadcastPreviewScene({
   return Object.freeze({
     dispose() {
       unsubscribeInput?.();
+      radio.clear();
       ring.removeFromParent();
       castRoot.removeFromParent();
       resources.disposeAll();
@@ -225,6 +241,8 @@ export function createFinalBroadcastPreviewScene({
       if (alreadyResolved) {
         showOutcome();
         syncPresentation();
+      } else {
+        radio.play(script.briefing);
       }
     },
     exit() {
@@ -246,6 +264,7 @@ export function createFinalBroadcastPreviewScene({
       });
     },
     update(delta) {
+      radio.update(delta);
       if (protocol.status === 'active') {
         accumulator += Math.min(Math.max(delta, 0), 0.1) * 60;
         while (accumulator >= 1 && protocol.status === 'active') {

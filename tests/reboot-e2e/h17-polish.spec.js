@@ -131,7 +131,7 @@ test('@loop2-desktop keeps story cues readable during arena actions', async ({ p
   const touchControls = page.locator('[data-touch-controls]');
   await expect(objective).toContainText('명령 번호 추적');
   await expect(radio).toBeVisible();
-  await expect(radio).toContainText('검증용 백업');
+  await expect(radio).toContainText('명단에 없어');
   await page.keyboard.press('e');
   await page.keyboard.press('k');
   await page.keyboard.press('j');
