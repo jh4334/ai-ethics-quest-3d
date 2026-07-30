@@ -37,6 +37,67 @@ async function openFinale(page, ending) {
   return canvas;
 }
 
+// 2~4장 방 실전투 헬퍼 — 페이지 안 루프에서 실제 KeyboardEvent를 입력 라우터로 흘려
+// 살아 있는 가장 가까운 적을 향해 이동을 유지하고(마지막 이동 방향 = 칼날·반사 조준)
+// 동사 키·공격 키를 반복한다. CDP 키 왕복(키당 수백 ms)로는 다인 웨이브의 피해 교환을
+// 못 따라가 리스폰 루프에 빠지므로 조준·연타는 페이지 안에서 굴린다. 주기는 rAF가 아니라
+// 짧은 타임아웃 — 헤드리스 저사양에서 rAF는 6~10fps로 떨어져 프레임당 시뮬 틱이 몰리므로,
+// 매 반복 공격을 큐에 채워야 씹히지 않는다. 단계 전진 단언은 Playwright 쪽에서 유지한다.
+async function clearCampaignWave(page, canvas, verbKey, clearedWaves) {
+  await page.evaluate(async ({ targetStep, verbCode }) => {
+    const dispatch = (type, code) => window.dispatchEvent(
+      new KeyboardEvent(type, { bubbles: true, cancelable: true, code })
+    );
+    const held = new Set();
+    const hold = (code, active) => {
+      if (active && !held.has(code)) { held.add(code); dispatch('keydown', code); }
+      else if (!active && held.has(code)) { held.delete(code); dispatch('keyup', code); }
+    };
+    const tap = (code) => { dispatch('keydown', code); dispatch('keyup', code); };
+    const sceneCanvas = document.querySelector('[data-reboot-canvas]');
+    const nextBeat = () => new Promise((resolve) => setTimeout(resolve, 16));
+    const deadline = performance.now() + 60_000;
+    let beat = 0;
+    try {
+      while (performance.now() < deadline) {
+        if (Number(sceneCanvas.dataset.campaignStep) >= targetStep) return;
+        const debug = window.__ethicsReboot.getSceneDebugState();
+        const target = debug.enemies.find((enemy) => enemy.phase !== 'defeat');
+        if (target) {
+          // 전투 시뮬 좌표: player.position.y = 월드 z. 1.2보다 멀면 적 방향 축 키를 유지한다.
+          const dx = target.position.x - debug.player.position.x;
+          const dz = target.position.z - debug.player.position.y;
+          const far = Math.hypot(dx, dz) > 1.2;
+          hold('KeyD', far && dx > 0.4);
+          hold('KeyA', far && dx < -0.4);
+          hold('KeyS', far && dz > 0.4);
+          hold('KeyW', far && dz < -0.4);
+          tap('KeyJ');
+          if (beat % 20 === 10) tap(verbCode);
+        }
+        beat += 1;
+        await nextBeat();
+      }
+    } finally {
+      for (const code of [...held]) dispatch('keyup', code);
+    }
+  }, { targetStep: clearedWaves, verbCode: verbKey });
+  await expect.poll(
+    async () => Number(await canvas.getAttribute('data-campaign-step')),
+    { timeout: 10_000 }
+  ).toBeGreaterThanOrEqual(clearedWaves);
+}
+
+// 웨이브 i 전멸 = 단계 i+1 — 세 웨이브를 모두 깨면 결정 단계(F/Q)가 열린다.
+async function fightCampaignChapter(page, canvas, verbKeys) {
+  await expect(canvas).toHaveAttribute('data-campaign-step', '0');
+  for (const [wave, verbKey] of verbKeys.entries()) {
+    await clearCampaignWave(page, canvas, verbKey, wave + 1);
+  }
+  await expect(canvas).toHaveAttribute('data-campaign-expected-action', 'decision');
+  await expect(canvas).toHaveAttribute('data-campaign-enemies-alive', '0');
+}
+
 async function masterFinale(page, canvas) {
   const sequence = [
     ['reflect-shield', 'k'],
@@ -59,6 +120,8 @@ test('운영 루트는 저장된 2장을 열고 전투 결정 뒤 3장으로 계
     motion: 'reduced', quality: 'low', sound: false
   }), 2, 'chapter-2:start');
   await page.addInitScript((bytes) => {
+    // 실전투 헬퍼가 __ethicsReboot 디버그 훅으로 적 위치를 읽는다(운영 URL은 그대로 유지).
+    sessionStorage.setItem('h17.testHook', 'true');
     if (sessionStorage.getItem('h17.production-seeded') !== 'true') {
       localStorage.setItem('h17.null.save.v4', bytes);
       sessionStorage.setItem('h17.production-seeded', 'true');
@@ -71,7 +134,9 @@ test('운영 루트는 저장된 2장을 열고 전투 결정 뒤 3장으로 계
   await expect(canvas).toHaveAttribute('data-campaign-chapter', '2');
   await expect(canvas).toHaveAttribute('data-characters', 'ready', { timeout: 60_000 });
 
-  for (const key of ['k', 'e', 'j', 'f']) await page.keyboard.press(key);
+  // 실전투 — 2장 웨이브 동사 순서(REFLECT·TRACE·ATTACK)대로 세 웨이브를 전멸시킨 뒤 F로 보존한다.
+  await fightCampaignChapter(page, canvas, ['KeyK', 'KeyE', 'KeyJ']);
+  await page.keyboard.press('KeyF');
   await expect(canvas).toHaveAttribute('data-campaign-completed', 'true');
   await expect(page.locator('[data-campaign-continue]')).toBeVisible();
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('h17.null.save.v4')));
