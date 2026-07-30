@@ -12,6 +12,37 @@ const ROUTE_COLORS = Object.freeze({
   wall: 0x111b35
 });
 
+// 1장 복도 백화 — 게시물 패널이 복도 안쪽으로 갈수록 하얗게 '지워지는 중'(시나리오 v2 S2 계약).
+// 인스턴스 색만 바꾼다: 신규 라이트·렌더타깃 0, 드로콜 +1.
+const NOTICE_FADE = Object.freeze({
+  baseColor: 0xc7b394, // 붙어 있는 게시물 종이 톤
+  fadedColor: 0xf8f8f4, // 지워진 백지 톤
+  panelsPerSide: 6
+});
+
+function buildNoticePanels(level, collision) {
+  const panels = [];
+  for (const visual of level.layers.visual) {
+    if (visual.kind !== 'corridor') continue;
+    const bounds = collision.find((entry) => entry.segmentId === visual.segmentId).walkableBounds;
+    const depth = bounds.maxZ - bounds.minZ;
+    for (let index = 0; index < NOTICE_FADE.panelsPerSide; index += 1) {
+      const progress = index / (NOTICE_FADE.panelsPerSide - 1); // 0=입구, 1=가장 깊은 곳
+      const whiten = progress <= 0.5 ? 0 : (progress - 0.5) * 2; // 뒤쪽 절반만 점점 백화
+      const z = bounds.maxZ - (index + 0.5) * (depth / NOTICE_FADE.panelsPerSide);
+      for (const side of [-1, 1]) {
+        panels.push({
+          id: `notice-${visual.segmentId}-${side === -1 ? 'left' : 'right'}-${index}`,
+          position: { x: side === -1 ? bounds.minX + 0.18 : bounds.maxX - 0.18, y: level.planeY + 2.75, z },
+          scale: { x: 0.08, y: 0.9, z: 1.35 },
+          whiten
+        });
+      }
+    }
+  }
+  return panels;
+}
+
 function centerOf(bounds) {
   return {
     x: (bounds.minX + bounds.maxX) / 2,
@@ -139,6 +170,36 @@ export function createSchoolRoute({ level, lightLimit = Number.POSITIVE_INFINITY
   addBoxes(group, geometry, visualMaterial, 'visual', visualBoxes);
   addBoxes(group, geometry, cueMaterial, 'route-cue', cueBoxes);
   addBoxes(group, geometry, checkpointMaterial, 'checkpoint', checkpointBoxes);
+
+  // 게시물 패널(복도 세그먼트에만) — 인스턴스 색으로 백화 그라데이션을 칠한다.
+  const noticePanels = buildNoticePanels(level, collision);
+  let noticeMesh = null;
+  if (noticePanels.length > 0) {
+    const noticeMaterial = makeMaterial('route-notice-material', {
+      color: 0xffffff, emissive: 0x232b3f, emissiveIntensity: 0.55, roughness: 0.82
+    });
+    noticeMesh = new THREE.InstancedMesh(geometry, noticeMaterial, noticePanels.length);
+    const matrix = new THREE.Matrix4();
+    const baseColor = new THREE.Color(NOTICE_FADE.baseColor);
+    const fadedColor = new THREE.Color(NOTICE_FADE.fadedColor);
+    const paint = new THREE.Color();
+    noticePanels.forEach((panel, index) => {
+      matrix.compose(
+        new THREE.Vector3(panel.position.x, panel.position.y, panel.position.z),
+        new THREE.Quaternion(),
+        new THREE.Vector3(panel.scale.x, panel.scale.y, panel.scale.z)
+      );
+      noticeMesh.setMatrixAt(index, matrix);
+      paint.copy(baseColor).lerp(fadedColor, panel.whiten);
+      noticeMesh.setColorAt(index, paint);
+    });
+    noticeMesh.instanceMatrix.needsUpdate = true;
+    noticeMesh.instanceColor.needsUpdate = true;
+    noticeMesh.name = 'school-route-notice-fade';
+    noticeMesh.userData.routeRole = 'notice-fade';
+    noticeMesh.userData.sourceIds = noticePanels.map((panel) => panel.id);
+    group.add(noticeMesh);
+  }
   const dressing = createSchoolRouteDressing({ level });
   group.add(dressing.group);
 
@@ -182,13 +243,22 @@ export function createSchoolRoute({ level, lightLimit = Number.POSITIVE_INFINITY
     position: Object.freeze({ ...entry.position })
   })));
   const baseTriangleCount = geometry.index.count / 3
-    * (floorBoxes.length + wallBoxes.length + visualBoxes.length + cueBoxes.length + checkpointBoxes.length);
+    * (floorBoxes.length + wallBoxes.length + visualBoxes.length + cueBoxes.length
+      + checkpointBoxes.length + noticePanels.length);
   const dressingDebug = dressing.getDebugState();
   const budget = Object.freeze({
-    drawCalls: 5 + dressingDebug.budget.drawCalls,
+    drawCalls: 5 + (noticeMesh ? 1 : 0) + dressingDebug.budget.drawCalls,
     dressing: dressingDebug.budget,
     resources: resources.size() + dressingDebug.budget.resources,
     triangles: baseTriangleCount + dressingDebug.budget.triangles
+  });
+  // 백화 서사 계약 — 패널 수·백화 정도를 관측 가능하게(결정성 검증용, 가변값 없음).
+  const noticeFade = Object.freeze({
+    panelCount: noticePanels.length,
+    panels: Object.freeze(noticePanels.map((panel) => Object.freeze({
+      id: panel.id, whiten: panel.whiten, z: panel.position.z
+    }))),
+    whitenedCount: noticePanels.filter((panel) => panel.whiten > 0).length
   });
   let disposed = false;
   scene.add(group);
@@ -215,6 +285,7 @@ export function createSchoolRoute({ level, lightLimit = Number.POSITIVE_INFINITY
         localLightIds: localLights.map((entry) => entry.id),
         localLights,
         landmarksBySegment: dressingDebug.landmarksBySegment,
+        noticeFade,
         renderedLightIds: renderedLights.map((entry) => entry.id),
         navigationIds: level.layers.navigation.map((entry) => entry.id),
         occluders,

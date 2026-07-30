@@ -75,6 +75,104 @@ test('main cast identity metadata separates three visible humans from the DOT au
   assert.equal(getCharacterProfile('dot').outfit, null);
 });
 
+test('enemy roster gives each of the five foes a distinct accessory-driven silhouette', () => {
+  // Given: 장별 적 5종(삭제자·도장꾼·복제자·추천자·승인관)의 프로필.
+  const enemyIds = ['eraser', 'stamper', 'copycat', 'recommender', 'approval'];
+  const profiles = enemyIds.map(getCharacterProfile);
+
+  // When: 실루엣 문자열과 액세서리 계약을 비교한다.
+  const silhouettes = profiles.map((profile) => profile.identity.silhouette);
+  const accessories = profiles.map((profile) => profile.identity.accessory);
+
+  // Then: 다섯 실루엣이 서로 다르고, 몸-의상 기본값에 기대지 않으며, 액세서리가 모두 존재한다.
+  assert.equal(new Set(silhouettes).size, enemyIds.length);
+  assert.equal(new Set(accessories).size, enemyIds.length);
+  for (const profile of profiles) {
+    assert.notEqual(profile.identity.accessory, 'none');
+    assert.notEqual(profile.identity.silhouette, `${profile.body}-${profile.outfit}`);
+  }
+});
+
+test('enemy accessories attach as shadowless procedural meshes that survive dispose', async (t) => {
+  // Given: 기존 팩토리 테스트와 같은 mock 로더로 적 5종을 조립한다.
+  const makeMesh = (name) => {
+    const texture = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
+    texture.needsUpdate = true;
+    const material = new THREE.MeshStandardMaterial({ color: 0x778899, map: texture });
+    material.name = name;
+    return new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), material);
+  };
+  const loader = {
+    async loadAsync(url) {
+      const scene = new THREE.Group();
+      if (url.includes('/base/')) {
+        scene.add(makeMesh('MI_Regular'), makeMesh('MI_Eyes'));
+      } else if (url.includes('/outfits/')) {
+        scene.add(makeMesh(url.includes('Ranger') ? 'MI_Ranger' : 'MI_Peasant'));
+      }
+      const animations = [
+        'Interact', 'Death01', 'Hit_Chest', 'Idle_Loop', 'Jog_Fwd_Loop',
+        'Melee_Hook', 'Hit_Knockback', 'Idle_FoldArms_Loop', 'Zombie_Walk_Fwd_Loop'
+      ].map((name) => new THREE.AnimationClip(name, 1, []));
+      return { animations, scene };
+    }
+  };
+  const factory = createCharacterFactory({ loader });
+  t.after(() => factory.dispose());
+
+  for (const id of ['eraser', 'stamper', 'copycat', 'recommender', 'approval']) {
+    // When: 각 적을 생성해 GLTF 재질(name 있음)이 아닌 프로시저럴 액세서리 메시를 찾는다.
+    const character = await factory.create(id);
+    const accessoryMeshes = [];
+    character.root.traverse((object) => {
+      if (object.isMesh && !object.material.name) accessoryMeshes.push(object);
+    });
+
+    // Then: 액세서리 메시가 실제로 붙어 있고 그림자 캐스터가 아니며 dispose가 안전하다.
+    assert.ok(accessoryMeshes.length >= 1, `${id} 액세서리 메시가 없음`);
+    for (const mesh of accessoryMeshes) {
+      assert.equal(mesh.castShadow, false);
+      assert.equal(mesh.receiveShadow, false);
+    }
+    character.dispose();
+    character.dispose();
+  }
+});
+
+test('fractured DOT gains crack marks over the default drone without breaking dispose', async (t) => {
+  // Given: DOT는 GLTF를 전혀 로드하지 않으므로 로더 호출 자체가 실패해야 한다.
+  const loader = {
+    async loadAsync() {
+      throw new Error('DOT 드론은 GLTF를 로드하지 않아야 합니다.');
+    }
+  };
+  const factory = createCharacterFactory({ loader });
+  t.after(() => factory.dispose());
+  const countMeshes = (character) => {
+    let count = 0;
+    character.root.traverse((object) => {
+      if (object.isMesh) count += 1;
+    });
+    return count;
+  };
+
+  // When: 기본 DOT와 균열 표식 DOT를 나란히 만든다.
+  const plain = await factory.create('dot');
+  const fractured = await factory.create('dot', { fractured: true });
+
+  // Then: 균열 표식만큼 메시가 늘고, 전부 그림자 없이 붙으며, 이중 dispose도 안전하다.
+  assert.ok(countMeshes(fractured) > countMeshes(plain));
+  fractured.root.traverse((object) => {
+    if (!object.isMesh) return;
+    assert.equal(object.castShadow, false);
+    assert.equal(object.receiveShadow, false);
+  });
+  fractured.update(1 / 60);
+  fractured.dispose();
+  fractured.dispose();
+  plain.dispose();
+});
+
 test('main cast presentation stays large and texture-lit enough for the live school camera', () => {
   // Given: the four characters viewed together at desktop and mobile gameplay distance.
   const mainCast = ['player', 'dot', 'haru', 'yoonseo'].map(getCharacterProfile);
