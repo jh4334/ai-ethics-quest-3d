@@ -17,6 +17,7 @@ export function createSchoolSceneDebugSnapshot({
       action: lastFrame.hud.action,
       chainLevel: lastFrame.hud.chainLevel,
       hp: lastFrame.hud.hp,
+      signal: lastFrame.hud.signal ?? null,
       tick: lastFrame.tick
     }),
     enemies: enemyCast.getDebugState(),

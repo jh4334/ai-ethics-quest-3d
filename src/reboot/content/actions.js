@@ -57,5 +57,13 @@ export const PLAYER_RULES = Object.freeze({
   contactMemoryTicks: 120,
   maxContactMemory: 256,
   comboGraceTicks: 8,
-  chainThresholds: Object.freeze([1, 3, 6])
+  chainThresholds: Object.freeze([1, 3, 6]),
+  // 시그널 게이지 — 회피·반사·추적의 자원. 정수 연산만 사용한다(부동소수 드리프트 금지).
+  // attack·secure는 소모 0: 저학년이 자원 고갈로 아무것도 못 하는 상황을 만들지 않는다.
+  maxSignal: 100,
+  signalCosts: Object.freeze({ attack: 0, dash: 25, reflect: 20, secure: 0, trace: 15 }),
+  signalHitGain: 10,
+  signalPerfectReflectGain: 25,
+  signalRegenTicks: 60,
+  signalRegenAmount: 4
 });

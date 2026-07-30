@@ -12,6 +12,11 @@ function raiseChain(state, points, reason, events) {
   if (state.chain.level > previous) events.push({ type: 'chain-raised', level: state.chain.level, reason, tick: state.tick });
 }
 
+// 시그널 회복 — 정수 덧셈 후 상한(maxSignal)에서 자른다.
+function gainSignal(player, amount) {
+  player.signal = Math.min(PLAYER_RULES.maxSignal, player.signal + amount);
+}
+
 function rememberContact(state, contactId) {
   const known = state.transient.processedContacts.some((entry) => entry.id === contactId);
   if (known) return false;
@@ -51,6 +56,7 @@ export function resolveIncoming(state, contact, events) {
       hitId: `${action.instanceId}:${contact.sourceId}:${contact.contactId}`, tick: state.tick
     });
     raiseChain(state, perfect ? 2 : 1, type, events);
+    if (perfect) gainSignal(player, PLAYER_RULES.signalPerfectReflectGain);
     return true;
   }
   const damage = Number.isFinite(contact.damage) ? Math.max(0, contact.damage) : 0;
@@ -82,6 +88,7 @@ export function resolveBlade(state, events) {
     events.push({ type: 'target-hit', targetId: target.id, hitId, damage: definition.damage, hp: target.hp, tick: state.tick });
     if (target.defeated) events.push({ type: 'target-defeated', targetId: target.id, tick: state.tick });
     raiseChain(state, 1, 'target-hit', events);
+    gainSignal(state.player, PLAYER_RULES.signalHitGain);
   }
 }
 
