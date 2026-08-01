@@ -2,6 +2,7 @@ import * as THREE from 'three';
 
 import { createEncounterGameRuntime } from '../app/encounterGameRuntime.js';
 import { createBossGameRuntime } from '../app/bossGameRuntime.js';
+import { bossGuidancePrompts, createBossGuidance } from '../bosses/guidance.js';
 import { createPatchSelector } from '../app/patchSelection.js';
 import { addCameraShake, createCameraController } from '../camera/controller.js';
 import { createCharacterCast } from '../characters/cast.js';
@@ -25,6 +26,7 @@ import { createSchoolSceneDebugSnapshot } from './schoolSceneDebug.js';
 import { closestRouteSegment, getBossCameraTargets, getEncounterCameraTargets, getSceneViewport, updateSchoolCamera } from './schoolSceneCamera.js';
 import { loadSchoolSceneCast } from './schoolSceneCastLoader.js';
 import { createSchoolSceneHud } from './schoolSceneHud.js';
+import { createSceneRadio } from './sceneRadio.js';
 
 export function createSchoolNightScene({
   bossOptions = {}, canvas, encounterOptions = {}, input, renderer,
@@ -68,6 +70,10 @@ export function createSchoolNightScene({
     consequencePath: story.getState().memoryOutcome ?? 'secure',
     initialState: bossOptions.initialState
   }) : null;
+  // 보스 안내 무전(S5) — DOM 없이 순수 큐로 굴리고, HUD가 현재 줄을 그린다.
+  // 우선순위: 스토리 radioLine이 비어 있을 때만 표시·소진(스토리 무전 계약 불변).
+  const bossGuidance = createBossGuidance();
+  const bossRadio = createSceneRadio();
   const feedback = resources.register(createFeedbackDirector({
     capacity: renderer.userData.rebootQuality.feedbackCapacity,
     motion: story.getState().campaign.settings.motion,
@@ -132,7 +138,7 @@ export function createSchoolNightScene({
       offscreenActive: Number.isInteger(offscreenAfterTick) && encounter.tick >= offscreenAfterTick,
       performanceState: performanceProbe.report(),
       qualityProfile: renderer.userData.rebootQuality,
-      radioLine: story.getRadioLine(),
+      radioLine: story.getRadioLine() ?? bossRadio.getCurrentLine(),
       resultVisible,
       routeSegmentId: currentSegment.id,
       storyOutcome: resultVisible ? story.getOutcome() : null,
@@ -156,6 +162,17 @@ export function createSchoolNightScene({
     const targetId = ['trace', 'secure'].includes(action) ? 'memory-backup' : null;
     game.queueAction(action, targetId);
     bossGame?.queueAction(action);
+    // 오입력 재안내(S5) — 보스 아레나에서 단계 동사와 다른 입력이 오면 한 줄(3초 스팸 방지).
+    // 진입 대본이 아직 안 나갔으면 끊지 않고 뒤에 잇는다(해법 설명이 먼저).
+    if (bossGame && currentSegment.id === 'gym-boss-arena') {
+      const retryLine = bossGuidance.noteMismatch(action, bossGame.getState());
+      if (retryLine) {
+        const current = bossRadio.getCurrentLine();
+        const entryPending = (current && String(current.id).startsWith('boss-entry-'))
+          || bossRadio.getDebugState().queued > 0;
+        bossRadio.play([retryLine], { interrupt: !entryPending });
+      }
+    }
   }
 
   return Object.freeze({
@@ -271,6 +288,9 @@ export function createSchoolNightScene({
         lastBossEvents = bossResult.events;
         bossCast.present(bossResult.state, bossResult.events);
         bossCast.update(delta, bossResult.state);
+        // 진입·단계 전환·격려 무전(S5) — 최신 단계 안내가 묵은 재안내를 끊고 나온다(장면당 1회씩).
+        const guidanceLines = bossGuidance.observe({ events: bossResult.events, state: bossResult.state });
+        if (guidanceLines.length > 0) bossRadio.play(guidanceLines, { interrupt: true });
         if (!bossResolved && bossResult.state.status === 'victory') {
           bossResolved = story.completeBoss();
           if (bossResolved) bossOptions.onPatchReady?.((patchId) => {
@@ -284,6 +304,13 @@ export function createSchoolNightScene({
       feedbackPrompts = respawnAtTick !== null
         ? [...feedbackFrame.prompts, { id: 'respawn-wait', label: '신호가 끊겼다… 체크포인트에서 다시 일어난다' }]
         : feedbackFrame.prompts;
+      // 보스 동사 프롬프트(S5) — 빔 윈드업·명단 등장·코어 개방 동안 눌러야 할 키를 짚는다.
+      if (bossGame && currentSegment.id === 'gym-boss-arena') {
+        feedbackPrompts = [...feedbackPrompts, ...bossGuidancePrompts(bossGame.getState())];
+      }
+      // 보스 안내 무전 시간 흐름 — 스토리 무전이 말하는 동안은 멈춰 두었다가 이어서 나온다.
+      bossGuidance.update(delta);
+      if (story.getRadioLine() === null) bossRadio.update(delta);
       // 조작 온보딩 — 교전권(원거리 포함, 리시 반경 12) 안에 살아 있는 적이 있는데
       // 4초 넘게 공격이 없으면 공격 키를 짚어 준다.
       const foeNearby = result.state.encounter.enemies.some((enemy) => (

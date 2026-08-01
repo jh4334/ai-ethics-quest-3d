@@ -73,6 +73,25 @@
       [data-campaign-expected-action="decision"][data-campaign-completed="false"],
       [data-protocol-status="victory"]:not([data-campaign-ending])
     ) ~ .touch-controls .touch-context button { pointer-events: auto; }
+    /* 보스 동사 강조(S5) — 감독관이 요구하는 동사 버튼이 맥동한다. data-boss-verb는 HUD가 매 프레임 갱신. */
+    @keyframes boss-verb-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 #5de0c100; }
+      50% { box-shadow: 0 0 0 6px #5de0c155, 0 0 18px #5de0c1aa; }
+    }
+    [data-reboot-canvas][data-boss-verb="reflect"] ~ .touch-controls [data-touch-action="reflect"],
+    [data-reboot-canvas][data-boss-verb="trace"] ~ .touch-controls [data-touch-action="trace"],
+    [data-reboot-canvas][data-boss-verb="attack"] ~ .touch-controls [data-touch-action="attack"] {
+      animation: boss-verb-pulse .9s ease-in-out infinite;
+      border-color: #5de0c1;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      [data-reboot-canvas][data-boss-verb="reflect"] ~ .touch-controls [data-touch-action="reflect"],
+      [data-reboot-canvas][data-boss-verb="trace"] ~ .touch-controls [data-touch-action="trace"],
+      [data-reboot-canvas][data-boss-verb="attack"] ~ .touch-controls [data-touch-action="attack"] {
+        animation: none;
+        box-shadow: 0 0 0 3px #5de0c199;
+      }
+    }
     /* 보조 버튼(카메라·정지) — 우상단 일시정지 열 아래 작은 버튼으로. */
     .touch-utils { position: absolute; top: calc(var(--hud-top) + 50px); left: calc(var(--fixture-edge) - var(--edge-right) - 48px); display: flex; flex-direction: column; gap: 8px; }
     .touch-utils button { width: 48px; min-width: 0; min-height: 44px; padding: 2px 4px; font-size: .62rem; pointer-events: auto; touch-action: none; }
