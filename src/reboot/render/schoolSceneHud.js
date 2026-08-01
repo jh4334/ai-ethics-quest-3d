@@ -1,3 +1,4 @@
+import { bossObjectiveText, bossVerbFor } from '../bosses/guidance.js';
 import { PLAYER_RULES } from '../content/actions.js';
 
 const OBJECTIVES = Object.freeze({
@@ -75,7 +76,12 @@ export function createSchoolSceneHud({ canvas, ui = {} }) {
         ui.enemy.textContent = `ARMOR ${eraser?.armor ?? 0}`;
       }
 
-      if (ui.objective) ui.objective.textContent = PHASE_OBJECTIVES[storyState.phase] ?? OBJECTIVES[routeSegmentId];
+      // 보스전 목표(S5) — 스토리 단계 문구가 없을 때 보스 상태가 구간 목표를 덮어쓴다.
+      if (ui.objective) {
+        ui.objective.textContent = PHASE_OBJECTIVES[storyState.phase]
+          ?? bossObjectiveText(bossState)
+          ?? OBJECTIVES[routeSegmentId];
+      }
       if (ui.radio) ui.radio.hidden = radioLine === null;
       if (ui.radioSpeaker) ui.radioSpeaker.textContent = radioLine?.speaker ?? '';
       if (ui.radioText) ui.radioText.textContent = radioLine?.textKo ?? '';
@@ -105,6 +111,8 @@ export function createSchoolSceneHud({ canvas, ui = {} }) {
       canvas.dataset.heapBytes = String(performanceState.render.heapBytes);
       canvas.dataset.quality = storyState.campaign.settings.quality;
       canvas.dataset.dpr = String(qualityProfile.dpr);
+      // 지금 눌러야 하는 동사(S5) — 터치 버튼 강조 CSS([data-boss-verb])가 이 값을 읽는다.
+      canvas.dataset.bossVerb = (bossState && bossVerbFor(bossState)) ?? 'none';
       if (bossState) {
         canvas.dataset.bossPhase = bossPhase;
         canvas.dataset.bossSuccesses = String(bossState.phaseSuccesses);

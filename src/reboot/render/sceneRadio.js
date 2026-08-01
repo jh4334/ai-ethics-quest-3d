@@ -5,12 +5,15 @@
 export function createSceneRadio(ui = {}) {
   let queue = [];
   let remainingMs = 0;
+  let current = null;
 
   function hide() {
+    current = null;
     if (ui.radio) ui.radio.hidden = true;
   }
 
   function show(line) {
+    current = line;
     if (!ui.radio) return;
     ui.radio.hidden = false;
     if (ui.radioSpeaker) ui.radioSpeaker.textContent = line.speaker;
@@ -32,6 +35,10 @@ export function createSceneRadio(ui = {}) {
       queue = [];
       remainingMs = 0;
       hide();
+    },
+    // 지금 표시 중인 줄 — ui.radio 없이 순수 큐로 쓸 때 HUD가 이 값을 그린다(S5 보스 안내).
+    getCurrentLine() {
+      return remainingMs > 0 ? current : null;
     },
     getDebugState() {
       return Object.freeze({ playing: remainingMs > 0, queued: queue.length });
