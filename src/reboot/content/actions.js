@@ -25,9 +25,10 @@ export const ACTIONS = Object.freeze({
     startupTicks: 1, activeTicks: 6, recoveryTicks: 4, bufferTicks: 2,
     speed: 0.38, cooldownTicks: 18, cancelInto: Object.freeze([])
   }),
+  // S6a: 반사 유효창을 9틱(150ms)으로 넓혀 초등 반응 속도에 맞춘다(완벽창 6틱=100ms).
   reflect: action({
-    startupTicks: 2, activeTicks: 4, recoveryTicks: 3, bufferTicks: 2,
-    perfectStart: 3, perfectEnd: 4, range: 3.2, facingDot: 0.25,
+    startupTicks: 2, activeTicks: 9, recoveryTicks: 3, bufferTicks: 2,
+    perfectStart: 3, perfectEnd: 8, range: 3.2, facingDot: 0.25,
     cooldownTicks: 18, cancelInto: Object.freeze([])
   }),
   trace: action({

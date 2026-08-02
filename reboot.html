@@ -39,7 +39,8 @@
     .recovery { position: fixed; left: 50%; top: 82px; translate: -50% 0; max-width: min(90vw, 560px); margin: 0; padding: 10px 14px; border: 1px solid #f4c06d88; border-radius: 8px; color: #fff3d6; background: #101a36ee; text-align: center; }
     .radio { position: fixed; left: 50%; bottom: 64px; translate: -50% 0; z-index: 4; width: min(88vw, 680px); margin: 0; padding: 10px 14px; border-left: 3px solid #5de0c1; color: #eef5ff; background: #050918e8; line-height: 1.45; text-shadow: 0 2px 8px #000; }
     .radio strong { margin-right: 8px; color: #5de0c1; }
-    .feedback-prompts { position: fixed; right: 18px; bottom: max(142px, calc(env(safe-area-inset-bottom) + 130px)); z-index: 4; max-width: min(42vw, 360px); margin: 0; padding: 7px 10px; border-right: 3px solid #f4c06d; color: #fff3d6; background: #050918e3; font-size: .78rem; line-height: 1.4; text-align: right; text-shadow: 0 2px 8px #000; }
+    /* 우측 잘림 방지(S6a) — safe-area만큼 물러나고 오른쪽 패딩을 넉넉히 둔다. */
+    .feedback-prompts { position: fixed; right: max(18px, calc(env(safe-area-inset-right) + 6px)); bottom: max(142px, calc(env(safe-area-inset-bottom) + 130px)); z-index: 4; max-width: min(42vw, 360px); margin: 0; padding: 7px 12px 7px 10px; border-right: 3px solid #f4c06d; color: #fff3d6; background: #050918e3; font-size: .78rem; line-height: 1.4; text-align: right; text-shadow: 0 2px 8px #000; overflow-wrap: break-word; }
     /* ── 터치 조작(S4a) — 왼쪽 이동 스틱 · 오른쪽 엄지 부채꼴 4버튼 · 결정 시에만 뜨는 맥락 버튼 · 우상단 보조 버튼 ── */
     .touch-controls { display: none; position: fixed; inset: 0; z-index: 5; pointer-events: none; }
     .touch-stick { position: absolute; left: max(18px, env(safe-area-inset-left)); bottom: var(--safe-bottom); width: 132px; height: 132px; border: 2px solid #8ba5d077; border-radius: 50%; background: #08112699; pointer-events: auto; touch-action: none; }
@@ -128,7 +129,7 @@
         [data-protocol-status="victory"]:not([data-campaign-ending])
       ) ~ .feedback-prompts { bottom: calc(var(--safe-bottom) + 310px); }
     }
-    [data-touch-mode="true"] .patch-picker { bottom: calc(var(--safe-bottom) + 170px); }
+    [data-touch-mode="true"] .patch-picker { bottom: calc(var(--safe-bottom) + 252px); }
     /* 실기기 가로모드 — HUD를 한 줄로 압축하고 목표는 상단 중앙, 무전 자막은 하단 중앙에 둔다(QA fixture 화면엔 적용 안 함). */
     @media (orientation: landscape) {
       [data-touch-mode="true"]:not([data-viewport-fixture]) .title { display: none; }
@@ -156,7 +157,8 @@
       .chapter-result h2 { font-size: 1.25rem; }
       .chapter-result p { font-size: .94rem; line-height: 1.45; }
     }
-    .patch-picker { position: fixed; left: 50%; bottom: 28px; translate: -50% 0; z-index: 4; padding: 12px; border: 1px solid #5de0c188; border-radius: 10px; background: #081126ee; }
+    /* PATCH 패널은 무전 자막(bottom 64px) 위에 둔다 — 결말 대사를 가리지 않는다(S6a). */
+    .patch-picker { position: fixed; left: 50%; bottom: 140px; translate: -50% 0; z-index: 4; padding: 12px; border: 1px solid #5de0c188; border-radius: 10px; background: #081126ee; }
     .patch-picker p { margin: 0 0 8px; color: #5de0c1; text-align: center; }
     .campaign-continue { position: fixed; left: 50%; bottom: 28px; translate: -50% 0; z-index: 6; border-color: #f4c06d; background: #332611ee; }
     /* 계속 버튼 — 터치에서는 부채꼴·맥락 버튼 띠 위로 올려 절대 겹치지 않게 한다. */
@@ -178,9 +180,9 @@
         <div class="combat-hud" aria-label="전투 상태">
           <span class="gauge gauge-hp" data-combat-health><i class="gauge-fill" data-combat-health-fill></i><b class="gauge-label" data-combat-health-label>HP 100</b></span>
           <span class="gauge gauge-signal" data-combat-signal><i class="gauge-fill" data-combat-signal-fill></i><b class="gauge-label" data-combat-signal-label>SIGNAL 100</b></span>
-          <span data-combat-action>READY</span>
-          <span data-combat-chain>SYNC 0</span>
-          <span data-enemy-status>ARMOR 1</span>
+          <span data-combat-action>대기</span>
+          <span data-combat-chain>연계 0</span>
+          <span data-enemy-status>방어막 1</span>
         </div>
       </div>
       <div class="actions">
@@ -222,7 +224,7 @@
         <button type="button" data-touch-action="pause">정지</button>
       </div>
     </section>
-    <p class="hint">WASD·방향키 이동 · J 공격 · K 반사 · E 추적 · F 확보 · Q 소거</p>
+    <p class="hint">WASD·방향키 이동 · Space 대시 · J 공격 · K 반사 · E 추적 · F 확보 · Q 소거</p>
     <section class="test-storage" data-test-storage hidden aria-label="저장 QA 도구">
       <button type="button" data-test-seed-v3>v3 심기</button>
       <button type="button" data-test-checkpoint>체크포인트</button>

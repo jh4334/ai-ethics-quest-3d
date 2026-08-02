@@ -4,10 +4,12 @@ function deepFreeze(value) {
   return Object.freeze(value);
 }
 
+// S6a 난이도 하향(초등 5–6 기준): 적 이동은 플레이어(0.1/틱)보다 느리거나 비슷하게,
+// 윈드업은 길게(≥1/3초), 피해는 반으로 — '이동+공격+가끔 반사'만으로 1~2회 시도 내 클리어.
 export const ERASER_DEFINITION = deepFreeze({
   id: 'eraser',
   role: 'melee-pressure',
-  stats: { maxHp: 90, speed: 0.22, turnRadians: 0.32 },
+  stats: { maxHp: 72, speed: 0.12, turnRadians: 0.32 },
   perception: { acquireRange: 8, lossRange: 10 },
   collider: { height: 1.8, radius: 0.62 },
   armor: { hits: 1, breaksOnKinds: ['reflected-projectile'] },
@@ -16,11 +18,11 @@ export const ERASER_DEFINITION = deepFreeze({
     id: 'eraser-sweep',
     kind: 'melee',
     socket: 'right-hand',
-    timing: { activeTicks: 1, recoveryTicks: 18, windupTicks: 12 },
+    timing: { activeTicks: 1, recoveryTicks: 30, windupTicks: 20 },
     range: { max: 1.8, min: 0, preferred: 1.2 },
     facingDot: 0.85,
     requiredFacingTicks: 2,
-    damage: 12,
+    damage: 7,
     feedback: {
       windup: 'eraser-sweep-windup',
       contact: 'eraser-sweep-contact',
@@ -32,7 +34,8 @@ export const ERASER_DEFINITION = deepFreeze({
 export const STAMPER_DEFINITION = deepFreeze({
   id: 'stamper',
   role: 'reflected-ranged-command',
-  stats: { maxHp: 55, speed: 0.16, turnRadians: 0.25 },
+  // 도주 속도(0.08)는 플레이어(0.1)보다 느리다 — 벽 구석까지 몰지 않아도 따라잡힌다.
+  stats: { maxHp: 48, speed: 0.08, turnRadians: 0.25 },
   perception: { acquireRange: 11, lossRange: 13 },
   collider: { height: 1.7, radius: 0.55 },
   armor: { hits: 0, breaksOnKinds: [] },
@@ -41,11 +44,11 @@ export const STAMPER_DEFINITION = deepFreeze({
     id: 'stamper-shot',
     kind: 'projectile',
     socket: 'stamp-muzzle',
-    timing: { activeTicks: 1, recoveryTicks: 24, windupTicks: 42 },
+    timing: { activeTicks: 1, recoveryTicks: 36, windupTicks: 42 },
     range: { max: 9, min: 3, preferred: 6 },
     facingDot: 0.9,
     requiredFacingTicks: 3,
-    damage: 10,
+    damage: 6,
     projectile: { radius: 0.28, reflectable: true, speed: 0.34 },
     feedback: {
       windup: 'stamper-shot-windup',

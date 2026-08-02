@@ -28,15 +28,16 @@ function incoming(overrides = {}) {
 
 test('Given REFLECT timing, When a contact arrives early, perfectly, or late, Then authority follows the active window', () => {
   // Given: 세 개의 동일한 정면 투사체 조우.
+  // S6a: 활성창 9틱(elapsed 2~10)·완벽창 3~8 — 이르면(1) 피격, 완벽창(3) 완벽 반사, 늦으면(12·회복) 피격.
   const cases = [
     { tick: 1, kind: 'player-hit' },
     { tick: 3, kind: 'perfect-reflect' },
-    { tick: 8, kind: 'player-hit' }
+    { tick: 12, kind: 'player-hit' }
   ];
 
   // When: 각 투사체가 REFLECT의 서로 다른 프레임에 닿는다.
   for (const sample of cases) {
-    const result = run(createCombatState(), 10, (tick) => [
+    const result = run(createCombatState(), 16, (tick) => [
       ...(tick === 0 ? [{ type: 'reflect' }] : []),
       ...(tick === sample.tick ? [incoming()] : [])
     ]);

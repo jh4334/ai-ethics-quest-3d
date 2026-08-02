@@ -28,15 +28,19 @@ export function solveCameraFrame(targets, viewport, modifiers = {}) {
   const minZ = Math.min(...points.map((point) => point.z));
   const maxZ = Math.max(...points.map((point) => point.z));
   const touch = viewport.mode === 'touch';
+  // 세로 화면에서는 조준점이 전방(작은 z)으로 쏠리면 플레이어가 최하단 자막·버튼 뒤에 깔린다 —
+  // 전방 당김 한계를 좁혀 플레이어를 화면 중심대(세로 40~55%)에 유지한다(가로·데스크톱은 기존 값).
+  const portrait = touch && viewport.height > viewport.width;
   const chase = modifiers.chase?.strength ?? 0;
   const boss = modifiers.boss?.strength ?? 0;
   const lookLimit = touch ? 4 : 5;
+  const forwardLimit = portrait ? 1.2 : lookLimit;
   const centerX = (minX + maxX) / 2;
   const centerZ = (minZ + maxZ) / 2;
   const lookAt = {
     x: clamp(centerX, player.x - lookLimit, player.x + lookLimit),
     y: 1.15 + boss * 0.35,
-    z: clamp(centerZ - chase * 0.7, player.z - lookLimit, player.z + lookLimit)
+    z: clamp(centerZ - chase * 0.7, player.z - forwardLimit, player.z + lookLimit)
   };
   const spread = Math.max((maxX - minX) * 1.25, (maxZ - minZ) * 0.78);
   const distance = clamp((touch ? 14.7 : 11.4) + spread * 0.85 - chase * 1.4 + boss * 6.5, 12, touch ? 28 : 24);

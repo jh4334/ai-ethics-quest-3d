@@ -188,17 +188,39 @@ export function createCharacterFactory({ loader = new GLTFLoader() } = {}) {
   };
   let disposed = false;
 
+  // GLTFLoader는 텍스처 fetch가 실패해도(내부에서 null로 삼키고) 성공으로 resolve한다.
+  // 그 결과를 그대로 캐시하면 살구색 맨몸 모델이 장면 내내 재사용되므로, 텍스처 캐시를 훑어
+  // 소실 여부를 확인하고 실패한 시도의 자원은 즉시 정리한 뒤 오류로 승격한다.
+  async function loadWithTextureCheck(url) {
+    const gltf = await loader.loadAsync(url);
+    const textureCache = gltf.parser?.textureCache;
+    if (textureCache) {
+      const textures = await Promise.all(Object.values(textureCache));
+      if (textures.some((texture) => texture === null)) {
+        const orphaned = { geometries: new Set(), materials: new Set(), textures: new Set() };
+        registerCharacterSourceResources(gltf, orphaned);
+        disposeCharacterSourceResources(orphaned);
+        throw new Error(`텍스처가 로드되지 않음: ${url}`);
+      }
+    }
+    return gltf;
+  }
+
   function load(url) {
     if (!cache.has(url)) {
-      const pending = loader.loadAsync(url).then((gltf) => {
-        registerCharacterSourceResources(gltf, sourceResources);
-        if (disposed) disposeCharacterSourceResources(sourceResources);
-        return gltf;
-      }, (error) => {
-        // 실패한 프로미스를 캐시에 남기면 같은 장면 안에서 재시도가 영영 막힌다 — 지우고 전파.
-        cache.delete(url);
-        throw error;
-      });
+      // 리로드 직후 텍스처 fetch가 간헐적으로 실패한다 — 조용히 1회 재시도한다.
+      // 재시도조차 텍스처가 빠지면 마지막 결과라도 쓴다(캐릭터 부재보다 무텍스처 표시가 낫다).
+      const pending = loadWithTextureCheck(url)
+        .catch(() => loader.loadAsync(url))
+        .then((gltf) => {
+          registerCharacterSourceResources(gltf, sourceResources);
+          if (disposed) disposeCharacterSourceResources(sourceResources);
+          return gltf;
+        }, (error) => {
+          // 실패한 프로미스를 캐시에 남기면 같은 장면 안에서 재시도가 영영 막힌다 — 지우고 전파.
+          cache.delete(url);
+          throw error;
+        });
       cache.set(url, pending);
     }
     return cache.get(url);

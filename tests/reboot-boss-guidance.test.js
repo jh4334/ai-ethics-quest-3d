@@ -105,6 +105,29 @@ test('오입력 재안내는 단계 동사를 짚고 3초 이내에는 반복되
   assert.equal(guidance.noteMismatch('attack', createBossFixture('victory')), null);
 });
 
+test('터치 기기에서는 보스 안내가 키(K/E/J) 대신 버튼 이름으로 나온다 (S6a)', () => {
+  // 목표 문구: 키 이름이 사라지고 버튼 이름이 들어간다.
+  assert.equal(
+    bossObjectiveText(createBossFixture('phase-1-start'), 'touch'),
+    '감독관 1/3 — 빔을 반사 버튼으로 (0/2)'
+  );
+  assert.match(bossObjectiveText(createBossFixture('phase-2-start'), 'touch'), /추적 버튼/);
+  assert.match(bossObjectiveText(createBossFixture('phase-3-start'), 'touch'), /공격 버튼/);
+  // 동사 칩·순서 안내도 버튼 이름으로.
+  const prompts = bossGuidancePrompts(createBossFixture('phase-1-window'), 'touch');
+  assert.match(prompts[0].label, /반사 버튼/);
+  assert.match(prompts.at(-1).label, /반사 → 추적 → 공격/);
+  // 진입 무전·오입력 재안내도 버튼 이름으로, 키 문자는 없다.
+  const guidance = createBossGuidance();
+  const entry = guidance.observe({ device: 'touch', state: createBossFixture('phase-1-start') });
+  assert.match(entry[0].textKo, /반사 버튼/);
+  assert.doesNotMatch(entry[0].textKo, /K로/);
+  const mismatch = guidance.noteMismatch('attack', createBossFixture('phase-1-start'), 'touch');
+  assert.match(mismatch.textKo, /반사 버튼/);
+  // 기본값(데스크톱)은 기존 키 안내를 유지한다.
+  assert.equal(bossObjectiveText(createBossFixture('phase-1-start')), '감독관 1/3 — 빔을 K 반사 (0/2)');
+});
+
 test('학교 HUD는 보스전 동안 목표 문구를 단계 안내로 덮어쓰고 동사를 노출한다', () => {
   const canvas = { dataset: {} };
   const element = () => ({ hidden: true, textContent: '' });

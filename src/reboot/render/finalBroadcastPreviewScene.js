@@ -24,6 +24,18 @@ const PHASE_COLORS = Object.freeze({
   'signal-core': 0xd74732,
   'trace-consent': 0x6aa9ff
 });
+// 단계 안내 — 어떤 키(터치 버튼)로 응답하는지 목표줄에 한국어로 명시한다.
+// 특히 DASH는 게임 어디에도 키 안내가 없어 피날레가 막히는 문제(QA)의 직접 보정.
+const PHASE_GUIDES_KO = Object.freeze({
+  'dash-relay': '릴레이 질주 — Space 회피(터치: 회피 버튼)',
+  'reflect-shield': '보호막 되돌리기 — K 반사(터치: 반사 버튼)',
+  'signal-core': '신호 코어 마무리 — J 베기(터치: 공격 버튼)',
+  'trace-consent': '동의 기록 추적 — E 추적(터치: 추적 버튼)'
+});
+// dash-relay 진입 시 무전으로도 키를 알린다(무전·칩 이중 안내).
+const DASH_RADIO_GUIDE = Object.freeze({
+  speaker: 'DOT', textKo: '릴레이 사이는 Space 회피로 지나가. 터치라면 회피 버튼이야.', durationMs: 3900
+});
 const FINAL_FRAME_SUBJECTS = Object.freeze([
   Object.freeze({ halfX: 0.8, halfZ: 0.8, id: 'player', top: 2.8, x: 0, z: -60 }),
   Object.freeze({ halfX: 1.3, halfZ: 1.5, id: 'haru-platform', top: 2.8, x: -4.3, z: -68 }),
@@ -229,7 +241,7 @@ export function createFinalBroadcastPreviewScene({
       ? '기록된 마지막 방송 결과입니다'
       : protocol.status === 'victory'
         ? outcome ? '방송 대기열의 결과를 확인하세요' : 'F 검증 가능한 방송 · Q 사건 봉인'
-        : `${phase.response.toUpperCase()} — ${phase.id}`;
+        : `${protocol.phaseIndex + 1}/4 ${PHASE_GUIDES_KO[phase.id] ?? phase.response.toUpperCase()}`;
     if (ui.enemy) ui.enemy.textContent = `LUMEN + DOT ${protocol.hp}`;
     if (ui.action) ui.action.textContent = restoredOutcome ? 'RECORDED' : phase.response.toUpperCase();
     if (ui.chain) ui.chain.textContent = restoredOutcome ? '5/5 COMPLETE' : `${protocol.phaseIndex + 1}/4 PROTOCOL`;
@@ -257,7 +269,12 @@ export function createFinalBroadcastPreviewScene({
     absorbProtocolEvents(result.events);
     // 프로토콜 한 단계를 넘었을 때 그 동사의 의미를 무전으로(시나리오 v2).
     if (protocol.phaseIndex > phaseBefore || protocol.status === 'victory') {
-      radio.play([script.stepCues?.[phaseBefore]].filter(Boolean), { interrupt: true });
+      const nextPhase = protocol.definition.phases[protocol.phaseIndex];
+      radio.play([
+        script.stepCues?.[phaseBefore],
+        // DASH 단계에 들어서는 순간 키 안내를 무전으로 잇는다(Space·터치 회피 버튼).
+        protocol.status === 'active' && nextPhase?.id === 'dash-relay' ? DASH_RADIO_GUIDE : null
+      ].filter(Boolean), { interrupt: true });
     }
     if (protocol.status === 'victory' && fixture.decision) showOutcome();
     syncPresentation();

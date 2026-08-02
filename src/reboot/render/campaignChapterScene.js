@@ -3,8 +3,8 @@ import * as THREE from 'three';
 import { createEncounterGameRuntime } from '../app/encounterGameRuntime.js';
 import { completeCampaignChapter } from '../campaign/chapterProgression.js';
 import {
-  ROOM_ENCOUNTER_ORIGIN, ROOM_START_POSITION, advanceRoomWave, createRoomWaveProgress,
-  getRoomWaveEncounter, isRoomWaveCleared
+  ROOM_ENCOUNTER_ORIGIN, ROOM_ENTRY_GRACE_TICKS, ROOM_START_POSITION, advanceRoomWave,
+  createRoomWaveProgress, getRoomWaveEncounter, isRoomWaveCleared
 } from '../campaign/roomWaves.js';
 import { createCharacterFactory } from '../characters/factory.js';
 import { walkableRectsFromLevel } from '../level/walkableBounds.js';
@@ -36,6 +36,28 @@ const LANDMARK_TYPES = Object.freeze({ 2: 'share-chain', 3: 'dual-school', 4: 'a
 // 쓰러짐 복귀 — 1장과 동일한 결정적 리스폰(150틱 = 2.5초). 현재 웨이브만 리셋되고
 // 이미 전멸시킨 웨이브는 유지된다(무처벌 — 진행은 잃지 않는다).
 const RESPAWN_DELAY_TICKS = 150;
+// 리스폰 무적 표시 — 그레이스(ROOM_ENTRY_GRACE_TICKS) 동안 8틱 주기로 캐릭터를 깜빡인다(저비용).
+const RESPAWN_BLINK_PERIOD_TICKS = 8;
+// 웨이브 목표문구 — 초등 눈높이의 적 이름과 기대 동사(키 병기)를 한국어로 잇는다.
+const ENEMY_NAMES_KO = Object.freeze({
+  approval: '승인관', copycat: '카피캣', eraser: '지우개', recommender: '추천자', stamper: '도장기'
+});
+const VERB_GUIDES_KO = Object.freeze({
+  attack: '베기(J)로 마무리',
+  reflect: '반사(K)로 흐트리고 베기(J)',
+  trace: '추적(E)으로 원본을 읽고 베기(J)'
+});
+
+// 살아 있는 적을 종류별로 묶어 '카피캣 2기'처럼 읽는다 — 혼성 웨이브는 가운뎃점으로 잇는다.
+function livingEnemyLabel(enemies) {
+  const counts = new Map();
+  for (const enemy of enemies) {
+    if (enemy.phase === 'defeat') continue;
+    const name = ENEMY_NAMES_KO[enemy.definition.id] ?? enemy.definition.id;
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return [...counts.entries()].map(([name, count]) => `${name} ${count}기`).join('·');
+}
 
 // 게이지 채움 너비(%) — 0~100으로 자른 정수 문자열. 값이 없으면 null.
 function fillPercent(value, max) {
@@ -96,6 +118,10 @@ export function createCampaignChapterScene({
   let entered = false;
   let unsubscribeInput = null;
   let respawnAtTick = null;
+  // 리스폰 직후 무적 그레이스 동안 캐릭터를 깜빡여 무적을 알린다(입력은 그대로 살아 있다).
+  let respawnBlinking = false;
+  // 세로(터치) 뷰포트 여부 — resize 때만 갱신되는 순수 판정(프레임마다 레이아웃을 읽지 않는다).
+  let portraitView = false;
   // 타격감(GF1) — 1장과 동일: 명중 순간 시뮬을 벽시계 기준으로만 잠깐 멈춘다(틱 순서 불변).
   let hitStop = 0;
   let lastCombatEvents = [];
@@ -172,6 +198,9 @@ export function createCampaignChapterScene({
 
   function resize() {
     const viewport = getSceneViewport(canvas);
+    // 세로 화면은 시야가 좁아 플레이어가 최하단(자막·버튼 뒤)에 깔린다 — 화각을 넓혀 보정한다.
+    portraitView = viewport.mode === 'touch' && viewport.height > viewport.width;
+    camera.fov = portraitView ? 58 : 45;
     camera.aspect = viewport.width / viewport.height;
     camera.updateProjectionMatrix();
     renderer.setSize(viewport.width, viewport.height, false);
@@ -213,9 +242,16 @@ export function createCampaignChapterScene({
         ? `ARMOR ${armored.armor}`
         : `${content.boss.id.toUpperCase()} ×${alive}`;
     }
+    // 목표줄 — 현재 웨이브·남은 적·기대 동사를 한국어로("2/3 웨이브 — 카피캣 2기, 반사(K)로 …").
     if (ui.objective) ui.objective.textContent = completed
       ? '계속 버튼으로 다음 장을 여세요'
-      : awaitingDecision ? 'F 기록 보존 · Q 빠른 중단' : `${content.titleKo} — ${expected?.toUpperCase()}`;
+      : awaitingDecision
+        ? 'F 기록 보존 · Q 빠른 중단'
+        : [
+          `${Math.min(waveProgress.waveIndex + 1, waveProgress.total)}/${waveProgress.total} 웨이브`,
+          [livingEnemyLabel(encounter.enemies), VERB_GUIDES_KO[expected] ?? expected?.toUpperCase()]
+            .filter(Boolean).join(', ')
+        ].filter(Boolean).join(' — ');
   }
 
   function finish(action) {
@@ -277,9 +313,26 @@ export function createCampaignChapterScene({
   }
 
   // 카메라 — 플레이어 위치의 순수 함수로만 따라간다(상태·난수 없음 = 결정적).
+  // 세로(터치)에서는 조준점을 플레이어 쪽으로 당기고 카메라를 올려 플레이어가 화면 중심대
+  // (세로 40~55%)에 오게 한다 — 하단 자막·터치 버튼 띠에 캐릭터가 가려지지 않는다.
   function updateCamera(playerPosition) {
+    if (portraitView) {
+      camera.position.set(playerPosition.x * 0.45, 7.4, playerPosition.y + 11);
+      camera.lookAt(playerPosition.x * 0.7, 0.7, playerPosition.y - 1.8);
+      return;
+    }
     camera.position.set(playerPosition.x * 0.45, 6.2, playerPosition.y + 8.4);
     camera.lookAt(playerPosition.x * 0.7, 0.7, playerPosition.y - 5.6);
+  }
+
+  // 세로 구도 검증용 — 플레이어 발밑·머리의 화면 세로 위치(0=상단, 1=하단)를 계산한다.
+  function playerScreenBand(playerPosition) {
+    camera.updateMatrixWorld(true);
+    const project = (y) => {
+      const point = new THREE.Vector3(playerPosition.x, y, playerPosition.y).project(camera);
+      return (1 - point.y) / 2;
+    };
+    return { feet: project(0), head: project(2.3) };
   }
 
   return Object.freeze({
@@ -313,7 +366,13 @@ export function createCampaignChapterScene({
       return Object.freeze({
         actionIndex: waveProgress.waveIndex,
         awaitingDecision,
+        camera: Object.freeze({
+          playerScreenBand: Object.freeze(playerScreenBand(combat.player.position)),
+          portrait: portraitView
+        }),
         completed,
+        encounterTick: encounter.tick,
+        entryGraceTicks: ROOM_ENTRY_GRACE_TICKS,
         enemies: Object.freeze(encounter.enemies.map((enemy) => Object.freeze({
           armor: enemy.armor,
           hp: enemy.hp,
@@ -373,10 +432,13 @@ export function createCampaignChapterScene({
           advanceClearedWave(result.state.combat.player.position);
         } else if (result.state.combat.player.status === 'defeated') {
           // 쓰러짐 복귀 — 시뮬 고정 틱으로 재며, 체크포인트(방 시작 위치)에서 현재 웨이브만 다시 연다.
+          // 런타임 재생성으로 적도 웨이브 스폰 지점(시작점에서 10유닛+ 북쪽)으로 되돌아가고,
+          // 진입 그레이스 90틱 동안 적 지각이 잠겨 리스폰 지점 캠핑이 성립하지 않는다.
           if (respawnAtTick === null) respawnAtTick = result.state.combat.tick + RESPAWN_DELAY_TICKS;
           if (result.state.combat.tick >= respawnAtTick) {
             game = createWaveRuntime(ROOM_START_POSITION);
             respawnAtTick = null;
+            respawnBlinking = true; // 그레이스 동안 무적 표시(깜빡임) 시작
             result = game.update(0, { horizontal: 0, vertical: 0 }, {});
             currentWaveCast()?.present(result.state.encounter, result.enemyEvents);
             enemyHpBars.sync(result.state.encounter);
@@ -389,6 +451,13 @@ export function createCampaignChapterScene({
       // 플레이어 캐릭터는 전투 시뮬의 위치·행동을 그대로 따른다(1장 cast.setPlayerState와 동일 계약).
       playerAnchor.position.set(playerState.position.x, 0, playerState.position.y);
       playerAnchor.rotation.y = Math.atan2(playerState.facing.x, playerState.facing.y);
+      // 리스폰 무적 표시 — 그레이스가 남은 동안만 캐릭터를 결정적 틱 주기로 깜빡인다(추가 자원 0).
+      const encounterTick = game.getState().encounter.tick;
+      const respawnGraceActive = respawnBlinking && fighting && encounterTick < ROOM_ENTRY_GRACE_TICKS;
+      if (!respawnGraceActive) respawnBlinking = false;
+      playerAnchor.visible = !respawnGraceActive
+        || Math.floor(encounterTick / RESPAWN_BLINK_PERIOD_TICKS) % 2 === 0;
+      canvas.dataset.campaignRespawnGrace = respawnGraceActive ? 'active' : 'none';
       const playerAnimation = {
         acting: fighting && !['idle', 'stagger', 'defeat'].includes(playerState.action.name),
         defeated: playerState.status === 'defeated',
