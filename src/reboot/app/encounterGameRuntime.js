@@ -1,5 +1,5 @@
 import { stepCombat, createCombatState } from '../sim/combatSimulation.js';
-import { FIXED_HZ } from '../content/actions.js';
+import { FIXED_HZ, PLAYER_RULES } from '../content/actions.js';
 import { MIXED_ARENA } from '../encounters/catalog.js';
 import { createEncounter, resetEncounter, stepEncounter } from '../encounters/runtime.js';
 
@@ -108,9 +108,11 @@ export function createEncounterGameRuntime({
   walkable = []
 } = {}) {
   const authoredEncounter = offsetEncounter(encounterDefinition, encounterOrigin);
+  // 통행 경계는 스토리 게이트에 따라 장면이 갱신할 수 있다(setWalkable) — 시뮬 틱 밖에서만 바뀐다.
+  let activeWalkable = walkable;
   const createInitial = () => {
     const encounter = createEncounter(authoredEncounter, { deviceClass });
-    const combat = createCombatState({ targets: combatTargets(encounter, extraTargets), walkable });
+    const combat = createCombatState({ targets: combatTargets(encounter, extraTargets), walkable: activeWalkable });
     combat.player.position = { x: startPosition.x, y: startPosition.y };
     return { accumulator: 0, combat, encounter, pendingIncoming: [] };
   };
@@ -134,7 +136,7 @@ export function createEncounterGameRuntime({
         position: { x: combatResult.state.player.position.x, z: combatResult.state.player.position.y },
         zoneId: playerZone(combatResult.state.player.position, encounterOrigin)
       },
-      walkable
+      walkable: activeWalkable
     });
     syncCombatTargets(combatResult.state, encounterResult.state);
     const pendingIncoming = encounterResult.events
@@ -151,17 +153,63 @@ export function createEncounterGameRuntime({
   }
 
   return Object.freeze({
+    // 체크포인트 복원(S6a) — 이미 정리된 구간을 재부팅했을 때, 공인 피해 접촉으로
+    // 살아 있는 적을 전부 정리한다(같은 부팅 상태 → 같은 결과, 결정적).
+    clearEnemiesForCheckpoint() {
+      const contacts = runtime.encounter.enemies
+        .filter((enemy) => enemy.phase !== 'defeat')
+        .map((enemy) => ({
+          damage: 9999, id: `checkpoint-clear:${enemy.id}`, targetId: enemy.id, type: 'damage'
+        }));
+      if (contacts.length === 0) return getState();
+      const result = stepEncounter(runtime.encounter, {
+        blockers: [],
+        contacts,
+        effects: [],
+        onScreen: true,
+        player: {
+          id: 'player',
+          position: { x: runtime.combat.player.position.x, z: runtime.combat.player.position.y },
+          zoneId: playerZone(runtime.combat.player.position, encounterOrigin)
+        },
+        walkable: activeWalkable
+      });
+      runtime.encounter = result.state;
+      syncCombatTargets(runtime.combat, runtime.encounter);
+      return getState();
+    },
     getState,
+    // 웨이브 사이 소폭 회복(S6a) — 결정적 이벤트(적 격파)에서만 호출된다. 회복량을 돌려준다.
+    heal(amount) {
+      if (!Number.isInteger(amount) || amount <= 0) return 0;
+      const player = runtime.combat.player;
+      if (player.status !== 'active') return 0;
+      const before = player.hp;
+      player.hp = Math.min(PLAYER_RULES.maxHp, player.hp + amount);
+      return player.hp - before;
+    },
     queueAction(type, targetId = null) {
       if (!EDGE_ACTIONS.has(type) || queuedActions.length >= 16) return false;
       queuedActions.push(targetId ? { targetId, type } : { type });
       return true;
     },
-    reset() {
+    // 리스폰 = 체크포인트(S6a): position으로 스폰을 지정하고, keepEncounter면 적 상태
+    // (격파 기록 포함)를 유지한다 — 이미 전멸시킨 구간의 적을 되살리지 않는다.
+    reset({ keepEncounter = false, position = startPosition } = {}) {
+      const survivors = runtime.encounter;
       queuedActions = [];
       runtime = createInitial();
-      runtime.encounter = resetEncounter(runtime.encounter);
+      runtime.encounter = keepEncounter ? survivors : resetEncounter(runtime.encounter);
+      if (keepEncounter) syncCombatTargets(runtime.combat, runtime.encounter);
+      runtime.combat.player.position = { x: position.x, y: position.y };
       return getState();
+    },
+    // 스토리 게이트 개폐 — 다음 시뮬 틱부터 새 통행 경계가 적용된다(틱 중간 변경 없음).
+    setWalkable(rects) {
+      activeWalkable = Object.freeze(
+        (Array.isArray(rects) ? rects : []).map((rect) => Object.freeze({ ...rect }))
+      );
+      runtime.combat.walkable = activeWalkable;
     },
     update(elapsedSeconds, movement = {}, environment = {}) {
       const bounded = Number.isFinite(elapsedSeconds)

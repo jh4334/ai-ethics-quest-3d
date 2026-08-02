@@ -90,12 +90,37 @@ export function createChapterOneDirector({ campaign, persist = () => {} } = {}) 
     return story;
   }
 
+  // 이중 안전장치(S6a P0) — phase별로 다음에 보충해야 할 트리거. 어떤 경로로 보스에
+  // 도달했든 completeBoss가 놓친 단계를 순서대로 fast-forward해 소프트락을 막는다.
+  const catchUpEvents = Object.freeze({
+    'cold-open': { triggerId: 'cold-open', type: 'trigger' },
+    corridor: { triggerId: 'corridor-cleared', type: 'trigger' },
+    'first-arena': { triggerId: 'first-arena-cleared', type: 'trigger' },
+    'memory-decision': { action: 'purge', type: 'memory-action' },
+    'memory-traced': { triggerId: 'backup-pressure-cleared', type: 'trigger' },
+    'memory-secure-ready': { action: 'secure', type: 'memory-action' },
+    pursuit: { triggerId: 'scanner-pursuit-cleared', type: 'trigger' }
+  });
+
   return Object.freeze({
     completeBoss() {
-      if (story.phase !== 'boss') return false;
-      transition({ triggerId: 'boss-defeated', type: 'trigger' });
-      transition({ triggerId: 'approval-record-opened', type: 'trigger' });
-      return true;
+      if (story.phase === 'complete') return false;
+      // 재부팅 복원 — 이미 결말 체크포인트면 상태 변경 없이 성공 처리(멱등).
+      if (story.phase === 'chapter-ending') return true;
+      const fastForward = story.phase !== 'boss' && story.phase !== 'post-boss';
+      let guard = 0;
+      while (catchUpEvents[story.phase] && guard < 8) {
+        transition(catchUpEvents[story.phase]);
+        guard += 1;
+      }
+      // 보충된 중간 무전은 버린다 — 결말 대본(감독관 정지·승인 기록)만 흘러나온다.
+      if (fastForward) {
+        radio.length = 0;
+        radioElapsedMs = 0;
+      }
+      if (story.phase === 'boss') transition({ triggerId: 'boss-defeated', type: 'trigger' });
+      if (story.phase === 'post-boss') transition({ triggerId: 'approval-record-opened', type: 'trigger' });
+      return story.phase === 'chapter-ending';
     },
     getOutcome: () => createChapterOneOutcome(story),
     getRadioLine: () => radio[0] ?? null,

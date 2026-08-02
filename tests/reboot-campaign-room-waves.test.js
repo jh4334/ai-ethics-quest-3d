@@ -4,8 +4,8 @@ import test from 'node:test';
 
 import { createEncounterGameRuntime } from '../src/reboot/app/encounterGameRuntime.js';
 import {
-  ROOM_ENCOUNTER_ORIGIN, ROOM_START_POSITION, ROOM_WAVES, advanceRoomWave, createRoomWaveProgress,
-  getRoomWaveCount, getRoomWaveEncounter, isRoomWaveCleared
+  ROOM_ENCOUNTER_ORIGIN, ROOM_ENTRY_GRACE_TICKS, ROOM_START_POSITION, ROOM_WAVES, advanceRoomWave,
+  createRoomWaveProgress, getRoomWaveCount, getRoomWaveEncounter, isRoomWaveCleared
 } from '../src/reboot/campaign/roomWaves.js';
 import { ENEMY_DEFINITIONS } from '../src/reboot/content/enemies/catalog.js';
 import { createEncounter } from '../src/reboot/encounters/runtime.js';
@@ -101,12 +101,23 @@ test('방 원점·시작 위치로 심은 웨이브 전투는 같은 입력에�
   assert.deepEqual(play(), play());
 });
 
-test('시작 위치의 플레이어는 리시 반경 안에 있고 웨이브 적은 접근해 교전을 시작한다', () => {
-  const distance = Math.hypot(
-    ROOM_START_POSITION.x - ROOM_ENCOUNTER_ORIGIN.x,
-    ROOM_START_POSITION.y - ROOM_ENCOUNTER_ORIGIN.z
-  );
-  assert.ok(distance < 12, '플레이어 시작점은 전투 리시 반경(12) 안이어야 한다');
+test('웨이브 스폰은 시작점에서 충분히 떨어져 있고 그레이스 동안 선제 피격이 없다', () => {
+  // 스폰-시작점 거리 ≥ 10 — 진입·리스폰 직후 적이 바로 붙는 캠핑 데스루프를 막는 저작 규칙.
+  for (const chapter of [2, 3, 4]) {
+    for (let wave = 0; wave < 3; wave += 1) {
+      const definition = getRoomWaveEncounter(chapter, wave);
+      assert.equal(definition.zoneMode, 'room');
+      assert.equal(definition.entryGraceTicks, ROOM_ENTRY_GRACE_TICKS);
+      for (const spawnDef of definition.spawns) {
+        const distance = Math.hypot(
+          ROOM_ENCOUNTER_ORIGIN.x + spawnDef.position.x - ROOM_START_POSITION.x,
+          ROOM_ENCOUNTER_ORIGIN.z + spawnDef.position.z - ROOM_START_POSITION.y
+        );
+        assert.ok(distance >= 10, `${spawnDef.id} 스폰이 시작점과 너무 가깝다: ${distance}`);
+      }
+    }
+  }
+  // 그레이스(90틱) + 여유 60틱 동안 제자리에 있어도 HP 100 유지, 적은 목표를 잡지 않는다.
   const runtime = createEncounterGameRuntime({
     deviceClass: 'desktop',
     encounterDefinition: getRoomWaveEncounter(2, 0),
@@ -114,10 +125,47 @@ test('시작 위치의 플레이어는 리시 반경 안에 있고 웨이브 적
     extraTargets: [],
     startPosition: ROOM_START_POSITION
   });
-  advance(runtime, 12);
+  advance(runtime, ROOM_ENTRY_GRACE_TICKS + 60);
+  assert.equal(runtime.getState().combat.player.hp, 100);
+  assert.equal(
+    runtime.getState().encounter.enemies.every((enemy) => enemy.targetId === null),
+    true
+  );
+  // 플레이어가 적 쪽으로 다가가면(획득 반경 안) 그제서야 교전이 열린다.
+  for (let tick = 0; tick < 300; tick += 1) {
+    const { combat, encounter } = runtime.getState();
+    const enemy = encounter.enemies.find((entry) => entry.phase !== 'defeat');
+    const dx = enemy.position.x - combat.player.position.x;
+    const dz = enemy.position.z - combat.player.position.y;
+    const distance = Math.hypot(dx, dz) || 1;
+    if (distance < 4) break;
+    runtime.update(1 / 60, { horizontal: dx / distance, vertical: dz / distance });
+  }
+  advance(runtime, 30);
   assert.equal(
     runtime.getState().encounter.enemies.some((enemy) => enemy.targetId === 'player'),
     true
+  );
+});
+
+test('방 모드는 리시 존 경계로 적을 동결하지 않는다 — 경계 밖 무저항 처치 악용 방지', () => {
+  // 원점(0,-23)에서 12유닛 밖(z=-35.5) — 구식 존 판정이면 플레이어가 route 존으로 갈려
+  // 바로 옆의 적이 굳던 위치. 방 모드에서는 walkable 전체가 교전 구역이다.
+  const runtime = createEncounterGameRuntime({
+    deviceClass: 'desktop',
+    encounterDefinition: getRoomWaveEncounter(2, 0),
+    encounterOrigin: ROOM_ENCOUNTER_ORIGIN,
+    extraTargets: [],
+    startPosition: { x: 0, y: -35.5 }
+  });
+  advance(runtime, ROOM_ENTRY_GRACE_TICKS + 90);
+  const { encounter } = runtime.getState();
+  assert.equal(encounter.enemies.some((enemy) => enemy.targetId === 'player'), true);
+  // 적이 실제로 플레이어 쪽(남쪽)으로 이동해 교전을 잇는다 — 동결이 아니다.
+  const spawnZ = getRoomWaveEncounter(2, 0).spawns[0].position.z + ROOM_ENCOUNTER_ORIGIN.z;
+  assert.ok(
+    encounter.enemies[0].position.z < spawnZ,
+    `적이 스폰(z=${spawnZ})에서 플레이어 쪽으로 움직여야 한다: z=${encounter.enemies[0].position.z}`
   );
 });
 

@@ -10,11 +10,30 @@ const OBJECTIVES = Object.freeze({
   'gym-boss-arena': '승인 기록을 잠근 감독관과 대면'
 });
 
+// 단계 목표 — 기기별 문구(S6a): 데스크톱은 키(E/F/Q) 병기, 터치는 버튼 이름으로 말한다.
 const PHASE_OBJECTIVES = Object.freeze({
-  'chapter-ending': '내 선택과 승인 기록 확인',
-  'memory-decision': '선택은 기록됨 · TRACE로 검증 / PURGE로 단축',
-  'memory-secure-ready': '검증 완료 · SECURE로 원본 고정',
-  'memory-traced': 'TRACE 유지 · 원본 연결 확인 중'
+  'chapter-ending': Object.freeze({
+    desktop: '내 선택과 승인 기록 확인',
+    touch: '내 선택과 승인 기록 확인'
+  }),
+  'memory-decision': Object.freeze({
+    desktop: '선택은 기록됨 · E 추적으로 검증 / Q 소거로 단축',
+    touch: '선택은 기록됨 · 추적 버튼 검증 / 소거 버튼 단축'
+  }),
+  'memory-secure-ready': Object.freeze({
+    desktop: '검증 완료 · F 확보로 원본 고정',
+    touch: '검증 완료 · 확보 버튼으로 원본 고정'
+  }),
+  'memory-traced': Object.freeze({
+    desktop: '추적 유지 · 원본 연결 확인 중',
+    touch: '추적 유지 · 원본 연결 확인 중'
+  })
+});
+
+// 전투 상태 칩 — 영어 약어 대신 초등 눈높이 한국어(S6a).
+const ACTION_LABELS = Object.freeze({
+  attack1: '베기 1', attack2: '베기 2', attack3: '베기 3', dash: '회피', defeat: '다운',
+  idle: '대기', ready: '대기', reflect: '반사', secure: '확보', stagger: '경직', trace: '추적'
 });
 
 // 게이지 채움 너비(%) — 0~100으로 자른 정수 문자열. 값이 없으면 null.
@@ -33,7 +52,7 @@ function syncGauge(ui, { container, fill, label }, text, width, blocked = null) 
 
 function syncBoss(ui, bossState) {
   const phase = bossState.definition.phases[bossState.phaseIndex];
-  if (ui.enemy) ui.enemy.textContent = `${phase.id.toUpperCase()} ${bossState.hp}`;
+  if (ui.enemy) ui.enemy.textContent = `감독관 ${bossState.hp}`;
   return phase.id;
 }
 
@@ -66,20 +85,23 @@ export function createSchoolSceneHud({ canvas, ui = {} }) {
         );
         canvas.dataset.playerSignal = String(frame.hud.signal);
       }
-      if (ui.action) ui.action.textContent = frame.hud.action.toUpperCase();
-      if (ui.chain) ui.chain.textContent = `SYNC ${frame.hud.chainLevel}`;
+      const device = viewportMode === 'touch' ? 'touch' : 'desktop';
+      if (ui.action) {
+        ui.action.textContent = ACTION_LABELS[frame.hud.action] ?? frame.hud.action.toUpperCase();
+      }
+      if (ui.chain) ui.chain.textContent = `연계 ${frame.hud.chainLevel}`;
 
       let bossPhase = null;
       if (bossState) bossPhase = syncBoss(ui, bossState);
       else if (ui.enemy) {
         const eraser = encounter.enemies.find((enemy) => enemy.definition.id === 'eraser');
-        ui.enemy.textContent = `ARMOR ${eraser?.armor ?? 0}`;
+        ui.enemy.textContent = `방어막 ${eraser?.armor ?? 0}`;
       }
 
       // 보스전 목표(S5) — 스토리 단계 문구가 없을 때 보스 상태가 구간 목표를 덮어쓴다.
       if (ui.objective) {
-        ui.objective.textContent = PHASE_OBJECTIVES[storyState.phase]
-          ?? bossObjectiveText(bossState)
+        ui.objective.textContent = PHASE_OBJECTIVES[storyState.phase]?.[device]
+          ?? bossObjectiveText(bossState, device)
           ?? OBJECTIVES[routeSegmentId];
       }
       if (ui.radio) ui.radio.hidden = radioLine === null;

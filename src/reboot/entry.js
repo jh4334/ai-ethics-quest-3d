@@ -1,6 +1,10 @@
 import { createAppLifecycle } from './app/lifecycle.js';
 import { resolveCampaignSceneId } from './app/campaignSceneRouting.js';
 import { resolveBootScene } from './app/fixtures.js';
+import { createBossFixture } from './bosses/fixtures.js';
+import {
+  CHAPTER_ONE_POST_BOSS_CHECKPOINTS, chapterOneSpawnForCheckpoint
+} from './story/chapterOneGates.js';
 import { createInputRouter } from './app/input.js';
 import { createQaSceneFixtures } from './app/qaSceneFixtures.js';
 import { createRebootSession } from './app/session.js';
@@ -91,8 +95,18 @@ const createScene = (
     ui: sceneUi
   })
 );
+// 부팅·재시작 복원(S6a) — 저장 체크포인트의 저작 스폰에서 시작한다. 보스 격파 직후
+// (PATCH 미선택) 저장이면 승리 상태의 보스로 복원해 PATCH 선택부터 이어 간다(새로고침 소프트락 방지).
+const createChapterOneScene = () => {
+  const progress = session.getState().chapterProgress;
+  const checkpoint = progress.current === 1 ? progress.checkpoint : 'chapter-1:start';
+  const bossOptions = CHAPTER_ONE_POST_BOSS_CHECKPOINTS.includes(checkpoint)
+    ? { enabled: true, initialState: createBossFixture('victory') }
+    : { enabled: true };
+  return createScene(chapterOneSpawnForCheckpoint(checkpoint), {}, null, bossOptions);
+};
 const sceneRegistry = createSceneRegistry([
-  ['school-night', () => createScene()],
+  ['school-night', createChapterOneScene],
   ...[2, 3, 4].map((chapter) => [`campaign-chapter-${chapter}`, () => createCampaignChapterScene({
     campaign: session.getState(), canvas, chapter, input,
     persist: (campaign) => session.update(() => campaign), renderer, ui: sceneUi
@@ -147,19 +161,37 @@ const visibilityPause = createVisibilityPause({
   sync: syncStatus
 });
 
+// R 오조작 방지(S6a) — 한 번 더 눌러야 실제로 다시 시작한다(진행 소실 방지).
+// 확인 창은 UI 표현 전용 벽시계라 시뮬 결정성과 무관하다.
+let restartArmedUntil = 0;
+let restartDisarmTimer = null;
+function requestRestart() {
+  const now = Date.now();
+  if (restartDisarmTimer !== null) {
+    clearTimeout(restartDisarmTimer);
+    restartDisarmTimer = null;
+  }
+  if (now <= restartArmedUntil) {
+    restartArmedUntil = 0;
+    app.restart();
+    syncStatus();
+    return;
+  }
+  restartArmedUntil = now + 3500;
+  status.textContent = '다시 시작할까? 한 번 더 누르면 실행';
+  restartDisarmTimer = setTimeout(() => {
+    restartDisarmTimer = null;
+    restartArmedUntil = 0;
+    syncStatus();
+  }, 3500);
+}
 input.subscribe(({ action, active }) => {
   if (!active) return;
   if (action === 'pause') togglePause();
-  if (action === 'restart') {
-    app.restart();
-    syncStatus();
-  }
+  if (action === 'restart') requestRestart();
 });
 root.querySelector('[data-pause]')?.addEventListener('click', togglePause);
-root.querySelector('[data-restart]')?.addEventListener('click', () => {
-  app.restart();
-  syncStatus();
-});
+root.querySelector('[data-restart]')?.addEventListener('click', requestRestart);
 window.addEventListener('pagehide', () => {
   visibilityPause.detach();
   touchControls.detach();
