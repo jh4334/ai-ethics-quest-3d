@@ -36,6 +36,23 @@ export function createAppLifecycle({ registry, scheduler }) {
     }
   }
 
+  function transition(nextSceneId) {
+    if (status === 'destroyed') return;
+    if (status === 'idle') {
+      start(nextSceneId);
+      return;
+    }
+    const shouldRun = status === 'running';
+    cancelFrame();
+    releaseScene();
+    sceneId = nextSceneId;
+    scene = registry.create(nextSceneId);
+    lastTime = null;
+    scene.enter();
+    status = shouldRun ? 'running' : 'paused';
+    scheduleFrame();
+  }
+
   return Object.freeze({
     destroy() {
       if (status === 'destroyed') return;
@@ -58,15 +75,7 @@ export function createAppLifecycle({ registry, scheduler }) {
     },
     restart() {
       if (!sceneId || status === 'destroyed') return;
-      const restartId = sceneId;
-      const shouldRun = status === 'running';
-      cancelFrame();
-      releaseScene();
-      scene = registry.create(restartId);
-      lastTime = null;
-      scene.enter();
-      status = shouldRun ? 'running' : 'paused';
-      scheduleFrame();
+      transition(sceneId);
     },
     resume() {
       if (status !== 'paused') return;
@@ -81,6 +90,9 @@ export function createAppLifecycle({ registry, scheduler }) {
       scene.enter();
       status = 'running';
       scheduleFrame();
+    },
+    transition(nextSceneId) {
+      transition(nextSceneId);
     }
   });
 }

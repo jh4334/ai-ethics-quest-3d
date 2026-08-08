@@ -1,4 +1,5 @@
 import { createAppLifecycle } from './app/lifecycle.js';
+import { createWebglBootController } from './app/bootController.js';
 import { resolveCampaignSceneId } from './app/campaignSceneRouting.js';
 import { resolveBootScene } from './app/fixtures.js';
 import { createBossFixture } from './bosses/fixtures.js';
@@ -41,7 +42,17 @@ const syncTouchMode = () => {
 };
 syncTouchMode();
 touchLayoutQuery.addEventListener?.('change', syncTouchMode);
-const renderer = createRenderer(canvas, { quality: runtimeSettings.quality, windowRef: window });
+const status = root.querySelector('[data-reboot-status]');
+const boot = createWebglBootController({
+  canvas,
+  failure: root.querySelector('[data-webgl-failure]'),
+  reload: () => window.location.reload(),
+  root,
+  status
+});
+const renderer = boot.createRenderer(() => createRenderer(canvas, { quality: runtimeSettings.quality, windowRef: window }));
+
+if (renderer) {
 const input = createInputRouter({ target: window });
 const touchControls = createTouchControls({ input, root });
 const sceneUi = Object.freeze({
@@ -137,7 +148,6 @@ const sceneId = resolveBootScene({
   search: window.location.search,
   testHook
 });
-const status = root.querySelector('[data-reboot-status]');
 const recoveryNotice = root.querySelector('[data-recovery-notice]');
 
 if (session.getRecoveryNotice()) {
@@ -159,6 +169,10 @@ const visibilityPause = createVisibilityPause({
   documentRef: document,
   pause: () => app.pause(),
   sync: syncStatus
+});
+boot.onContextLost(() => {
+  app.pause();
+  root.dataset.status = app.getState().status;
 });
 
 // R 오조작 방지(S6a) — 한 번 더 눌러야 실제로 다시 시작한다(진행 소실 방지).
@@ -197,6 +211,7 @@ window.addEventListener('pagehide', () => {
   touchControls.detach();
   input.detach();
   app.destroy();
+  boot.dispose();
   renderer.dispose();
 }, { once: true });
 
@@ -264,6 +279,7 @@ if (testHook) {
     pause: () => { app.pause(); syncStatus(); },
     restart: () => { app.restart(); syncStatus(); },
     resume: () => { app.resume(); syncStatus(); },
+    transition: (nextSceneId) => { app.transition(nextSceneId); syncStatus(); },
     seedLegacyForTest: (raw) => {
       window.localStorage.removeItem(LEGACY_BACKUP_KEY);
       window.localStorage.removeItem(V4_SAVE_KEY);
@@ -282,4 +298,5 @@ if (testHook) {
     sceneId
   });
   syncTestOutput();
+}
 }

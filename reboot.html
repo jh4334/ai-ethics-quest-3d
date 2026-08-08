@@ -37,6 +37,13 @@
     button:focus-visible { outline: 3px solid #f4c06d; outline-offset: 2px; }
     .hint { position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); translate: -50% 0; margin: 0; color: #d9e4ff; font-size: .82rem; text-align: center; text-shadow: 0 2px 8px #000; }
     .recovery { position: fixed; left: 50%; top: 82px; translate: -50% 0; max-width: min(90vw, 560px); margin: 0; padding: 10px 14px; border: 1px solid #f4c06d88; border-radius: 8px; color: #fff3d6; background: #101a36ee; text-align: center; }
+    .webgl-failure { position: fixed; inset: 50% auto auto 50%; z-index: 10; width: min(88vw, 560px); translate: -50% -50%; padding: 22px; border: 1px solid #d74732; border-radius: 12px; color: #e9f0ff; background: #081126f2; text-align: center; line-height: 1.55; }
+    .webgl-failure p { margin: 0; word-break: keep-all; }
+    .webgl-failure button { margin-top: 14px; border-color: #f4c06d; color: #fff3d6; }
+    [data-reboot-root][data-webgl-unavailable="true"] .hud,
+    [data-reboot-root][data-webgl-unavailable="true"] .objective,
+    [data-reboot-root][data-webgl-unavailable="true"] .hint,
+    [data-reboot-root][data-webgl-unavailable="true"] .touch-controls { display: none; }
     .radio { position: fixed; left: 50%; bottom: 64px; translate: -50% 0; z-index: 4; width: min(88vw, 680px); margin: 0; padding: 10px 14px; border-left: 3px solid #5de0c1; color: #eef5ff; background: #050918e8; line-height: 1.45; text-shadow: 0 2px 8px #000; }
     .radio strong { margin-right: 8px; color: #5de0c1; }
     /* 우측 잘림 방지(S6a) — safe-area만큼 물러나고 오른쪽 패딩을 넉넉히 둔다. */
@@ -173,6 +180,10 @@
 <body>
   <main data-reboot-root data-app-marker="H-17 Reboot">
     <canvas data-reboot-canvas aria-label="00시 17분의 어두운 학교 복도"></canvas>
+    <section class="webgl-failure" data-webgl-failure role="alert" aria-live="assertive" hidden>
+      <p data-webgl-message>그래픽을 시작하지 못했습니다. WebGL 지원을 확인한 뒤 다시 시도해 주세요.</p>
+      <button type="button" data-webgl-retry>새로고침</button>
+    </section>
     <section class="hud" aria-label="게임 상태와 제어">
       <div>
         <h1 class="title">H-17: NULL</h1>

@@ -1,9 +1,14 @@
 import * as THREE from 'three';
 import { resolveQualityProfile } from '../settings/quality.js';
 
-export function createRenderer(canvas, { quality = 'auto', windowRef = window } = {}) {
+export function createRenderer(canvas, {
+  quality = 'auto', rendererFactory = (options) => new THREE.WebGLRenderer(options), windowRef = window
+} = {}) {
+  if (!canvas) throw new Error('A reboot canvas is required to create the renderer');
+  const supported = ['webgl2', 'webgl', 'experimental-webgl'].some((contextId) => canvas.getContext?.(contextId));
+  if (!supported) throw new Error('WebGL is not supported by this device');
   const profile = resolveQualityProfile(quality, windowRef.devicePixelRatio || 1);
-  const renderer = new THREE.WebGLRenderer({
+  const renderer = rendererFactory({
     antialias: quality !== 'low',
     canvas,
     powerPreference: 'high-performance'
