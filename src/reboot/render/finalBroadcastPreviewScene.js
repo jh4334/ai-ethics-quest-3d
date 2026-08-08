@@ -13,6 +13,7 @@ import { createFinaleFixture } from '../campaign/finaleFixtures.js';
 import { createCharacterFactory } from '../characters/factory.js';
 import { CHAPTER_SIX } from '../content/chapters/catalog.js';
 import { chapterSixLevel } from '../content/levels/chapter6.js';
+import { createScenePerformanceProbe } from '../perf/sceneProbe.js';
 import { setChapterCheckpoint } from '../state/consequences.js';
 import { createBroadcastStationEnvironment } from './broadcastStationEnvironment.js';
 import { createDisposableRegistry } from './dispose.js';
@@ -161,6 +162,7 @@ export function createFinalBroadcastPreviewScene({
   fill.position.set(0, 6, -61);
   fill.castShadow = false;
   scene.add(fill);
+  const performanceProbe = createScenePerformanceProbe({ renderer, scene, windowRef });
 
   const castRoot = new THREE.Group();
   castRoot.name = 'final-broadcast-character-cast';
@@ -232,6 +234,15 @@ export function createFinalBroadcastPreviewScene({
     if (spatialMode) camera.lookAt(routeState.position.x, 1, routeState.position.y - (portrait ? 3 : 5));
     else camera.lookAt(touch ? -1 : 0, touch ? 1.2 : 0.7, touch ? -68.5 : -68);
     renderer.setSize(viewport.width, viewport.height, false);
+    performanceProbe.reset();
+  }
+
+  function syncPerformance() {
+    const performance = performanceProbe.report();
+    canvas.dataset.p95FrameMs = String(performance.p95FrameMs);
+    canvas.dataset.drawCalls = String(performance.render.calls);
+    canvas.dataset.triangles = String(performance.render.triangles);
+    canvas.dataset.lightCount = String(performance.render.lights);
   }
 
   function updateSpatialCamera() {
@@ -449,6 +460,7 @@ export function createFinalBroadcastPreviewScene({
         broadcastRoute: routeState,
         landmarks: landmarks.getDebugState(),
         outcome,
+        performance: performanceProbe.report(),
         protocol,
         route: route.getDebugState()
       });
@@ -509,6 +521,8 @@ export function createFinalBroadcastPreviewScene({
       }
       syncPresentation();
       renderer.render(scene, camera);
+      performanceProbe.record(delta);
+      syncPerformance();
     }
   });
 }

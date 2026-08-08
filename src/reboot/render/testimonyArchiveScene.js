@@ -14,6 +14,7 @@ import { PLAYER_RULES } from '../content/actions.js';
 import { CHAPTER_FIVE } from '../content/chapters/catalog.js';
 import { chapterFiveLevel } from '../content/levels/chapter5.js';
 import { walkableRectsFromLevel } from '../level/walkableBounds.js';
+import { createScenePerformanceProbe } from '../perf/sceneProbe.js';
 import { setChapterCheckpoint } from '../state/consequences.js';
 import { createBladeTrail } from './bladeTrail.js';
 import { createDisposableRegistry } from './dispose.js';
@@ -80,6 +81,7 @@ export function createTestimonyArchiveScene({
   archiveLight.position.set(0, 7, -70);
   archiveLight.castShadow = false;
   scene.add(archiveLight);
+  const performanceProbe = createScenePerformanceProbe({ renderer, scene, windowRef });
 
   const castRoot = new THREE.Group();
   castRoot.name = 'testimony-character-cast';
@@ -234,6 +236,15 @@ export function createTestimonyArchiveScene({
     camera.aspect = viewport.width / viewport.height;
     camera.updateProjectionMatrix();
     renderer.setSize(viewport.width, viewport.height, false);
+    performanceProbe.reset();
+  }
+
+  function syncPerformance() {
+    const performance = performanceProbe.report();
+    canvas.dataset.p95FrameMs = String(performance.p95FrameMs);
+    canvas.dataset.drawCalls = String(performance.render.calls);
+    canvas.dataset.triangles = String(performance.render.triangles);
+    canvas.dataset.lightCount = String(performance.render.lights);
   }
 
   function updateCamera(position) {
@@ -317,6 +328,7 @@ export function createTestimonyArchiveScene({
         enemies: Object.freeze(encounter.enemies.map(({ hp, id, phase, position }) => Object.freeze({ hp, id, phase, position }))),
         environment: environment.getDebugState(),
         errors: Object.freeze([...errors]),
+        performance: performanceProbe.report(),
         player: Object.freeze({ hp: combat.player.hp, position: Object.freeze({ ...combat.player.position }), signal: combat.player.signal }),
         progress,
         route: route.getDebugState()
@@ -377,6 +389,8 @@ export function createTestimonyArchiveScene({
       enemyHpBars.face(camera);
       syncPresentation();
       renderer.render(scene, camera);
+      performanceProbe.record(delta);
+      syncPerformance();
     }
   });
 }
