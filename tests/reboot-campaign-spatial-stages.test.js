@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import * as THREE from 'three';
 
 import { getRoomWaveEncounter } from '../src/reboot/campaign/roomWaves.js';
 import { chapterTwoLevel } from '../src/reboot/content/levels/chapter2.js';
 import { chapterThreeLevel } from '../src/reboot/content/levels/chapter3.js';
 import { chapterFourLevel } from '../src/reboot/content/levels/chapter4.js';
+import { createCampaignSpatialLandmarks } from '../src/reboot/render/campaignSpatialLandmarks.js';
 
 const LEVELS = Object.freeze({
   2: chapterTwoLevel,
@@ -16,6 +18,12 @@ const EXPECTED_GEOMETRY = Object.freeze({
   2: ['edit-bays', 'upload-trace', 'broadcast-stage'],
   3: ['warm-incomplete', 'cold-verified', 'deletion-archive'],
   4: ['conveyor-scoring', 'approval-trace', 'emergency-archive']
+});
+
+const EXPECTED_ACTIONS = Object.freeze({
+  2: ['reflect', 'trace', 'attack'],
+  3: ['trace', 'trace', 'attack'],
+  4: ['reflect', 'trace', 'attack']
 });
 
 test('Given chapters 2-4, When spatial contracts are read, Then every chapter has three distinct playable zones', () => {
@@ -53,6 +61,7 @@ test('Given spatial level zones, When room waves are inspected, Then each wave o
     assert.deepEqual(origins, level.segments.slice(1).map(({ anchor }) => ({ x: anchor.x, z: anchor.z })));
     assert.deepEqual(starts, level.segments.slice(0, 3).map(({ anchor }) => ({ x: anchor.x, y: anchor.z })));
     assert.equal(new Set(origins.map(({ x, z }) => `${x}:${z}`)).size, 3);
+    assert.deepEqual(waves.map((wave) => wave.spatial.requiredAction), EXPECTED_ACTIONS[chapter]);
     for (const [index, wave] of waves.entries()) {
       assert.equal(wave.spatial.segmentId, level.segments[index + 1].id);
       assert.equal(wave.spatial.interactionId, level.segments[index + 1].interactionId);
@@ -84,4 +93,27 @@ test('Given chapter-specific ethics spaces, When their authored paths are compar
   assert.notEqual(warmPath.geometryId, coldPath.geometryId);
   assert.ok(deletionReveal);
   assert.equal(emergencyArchive.sideEffectId, 'approval-delay-exposes-support-record');
+});
+
+test('Given authored spatial geometry, When the landmark layer is built, Then every zone renders a distinct low-spec landmark', () => {
+  // Given: 장별 공간 기하가 포함된 실제 Three.js 장면.
+  for (const [chapter, level] of Object.entries(LEVELS)) {
+    const scene = new THREE.Scene();
+
+    // When: 공간 랜드마크를 인스턴싱해 장면에 붙인다.
+    const layer = createCampaignSpatialLandmarks({ level, scene });
+    const debug = layer.getDebugState();
+    const playable = debug.zones.slice(1);
+
+    // Then: 세 플레이 공간의 형태·랜드마크가 다르고 저사양 예산을 지킨다.
+    assert.equal(playable.length, 3);
+    assert.equal(new Set(playable.map(({ geometryId }) => geometryId)).size, 3);
+    assert.equal(new Set(playable.map(({ landmarkId }) => landmarkId)).size, 3);
+    assert.ok(debug.budget.drawCalls <= 7, `${chapter}장 draw calls`);
+    assert.ok(debug.budget.instances <= 20, `${chapter}장 instances`);
+    assert.ok(debug.budget.resources <= 7, `${chapter}장 resources`);
+    assert.equal(scene.children.includes(layer.root), true);
+    assert.ok(layer.dispose() > 0);
+    assert.equal(layer.dispose(), 0);
+  }
 });
