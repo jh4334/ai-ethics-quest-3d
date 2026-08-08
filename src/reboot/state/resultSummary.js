@@ -1,4 +1,5 @@
 import { CHARACTER_IDS, deepFreeze, normalizeRebootState } from './model.js';
+import { createLearningReport } from './learningReport.js';
 
 const evidenceLabels = Object.freeze({
   'haru-memory-backup': '하루의 기억 백업',
@@ -6,6 +7,7 @@ const evidenceLabels = Object.freeze({
   'original-upload-trace': '최초 업로드 흔적',
   'dot-deletion-log': 'DOT 삭제 로그',
   'support-record': '긴급 지원 기록',
+  'verified-package': '검증된 증언 패키지',
   'broadcast-queue': '방송 대기열'
 });
 
@@ -28,7 +30,7 @@ const characterLabels = Object.freeze({
   yoonseo: '윤서'
 });
 
-export function createResultSummary(state) {
+export function createResultSummary(state, gateDefinitions = []) {
   const current = normalizeRebootState(state);
   const observedActions = current.evidence.map((record) => (
     `${evidenceLabels[record.evidenceId]}을 ${actionLabels[record.action]}`
@@ -42,6 +44,7 @@ export function createResultSummary(state) {
     observedActions,
     evidenceConsequences,
     characterChanges,
+    learning: createLearningReport(current, gateDefinitions),
     worldChanges: [
       `확보된 기록 ${current.integrity.secured}개, 잃은 기록 ${current.integrity.lost}개`,
       `제한 공개 ${current.exposure.contained}개, 넓은 공개 ${current.exposure.disclosed}개`

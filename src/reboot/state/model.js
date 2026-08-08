@@ -1,4 +1,5 @@
-export const SAVE_SCHEMA_VERSION = 4;
+export const SAVE_SCHEMA_VERSION = 5;
+export const CHAPTER_COUNT = 6;
 
 export const CHARACTER_IDS = Object.freeze(['dot', 'haru', 'lumen', 'yoonseo']);
 export const PATCH_IDS = Object.freeze(['reflect-arc', 'trace-speed', 'chain-persistence']);
@@ -8,15 +9,18 @@ export const EVIDENCE_IDS = Object.freeze([
   'original-upload-trace',
   'dot-deletion-log',
   'support-record',
+  'verified-package',
   'broadcast-queue'
 ]);
 export const EVIDENCE_ACTIONS = Object.freeze(['secure', 'purge', 'expose']);
+export const GATE_OUTCOMES = Object.freeze(['resolved', 'failed', 'unknown']);
 export const MOTION_SETTINGS = Object.freeze(['full', 'reduced']);
 export const QUALITY_SETTINGS = Object.freeze(['auto', 'low', 'medium', 'high']);
 
 const characterIdSet = new Set(CHARACTER_IDS);
 const evidenceIdSet = new Set(EVIDENCE_IDS);
 const evidenceActionSet = new Set(EVIDENCE_ACTIONS);
+const gateOutcomeSet = new Set(GATE_OUTCOMES);
 const patchIdSet = new Set(PATCH_IDS);
 const motionSet = new Set(MOTION_SETTINGS);
 const qualitySet = new Set(QUALITY_SETTINGS);
@@ -44,6 +48,7 @@ export function createInitialRebootState(settings = createDefaultSettings()) {
     chapterProgress: { completed: [], current: 1, checkpoint: 'chapter-1:start' },
     patchChoice: null,
     evidence: [],
+    gateAttempts: [],
     settings: createDefaultSettings(settings)
   });
 }
@@ -68,7 +73,8 @@ function isSettings(value) {
 }
 
 function isChapterProgress(value) {
-  if (!isRecord(value) || !Number.isInteger(value.current) || value.current < 1 || value.current > 5) return false;
+  if (!isRecord(value) || !Number.isInteger(value.current)
+    || value.current < 1 || value.current > CHAPTER_COUNT) return false;
   if (!Array.isArray(value.completed)) return false;
   const expectedCompleted = Array.from({ length: value.current - 1 }, (_, index) => index + 1);
   if (value.completed.length !== expectedCompleted.length) return false;
@@ -83,7 +89,20 @@ function isEvidenceRecord(value) {
     && evidenceActionSet.has(value.action)
     && Number.isInteger(value.chapter)
     && value.chapter >= 1
-    && value.chapter <= 5;
+    && value.chapter <= CHAPTER_COUNT;
+}
+
+export function isValidGateId(value) {
+  return typeof value === 'string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(value);
+}
+
+function isGateAttempt(value) {
+  return isRecord(value)
+    && isValidGateId(value.gateId)
+    && Number.isInteger(value.chapter)
+    && value.chapter >= 1
+    && value.chapter <= CHAPTER_COUNT
+    && gateOutcomeSet.has(value.outcome);
 }
 
 export function isValidRebootState(candidate) {
@@ -96,6 +115,7 @@ export function isValidRebootState(candidate) {
   if (candidate.patchChoice !== null && !patchIdSet.has(candidate.patchChoice)) return false;
   if (!Array.isArray(candidate.evidence) || !candidate.evidence.every(isEvidenceRecord)) return false;
   if (new Set(candidate.evidence.map((record) => record.evidenceId)).size !== candidate.evidence.length) return false;
+  if (!Array.isArray(candidate.gateAttempts) || !candidate.gateAttempts.every(isGateAttempt)) return false;
   return isSettings(candidate.settings);
 }
 
@@ -113,6 +133,7 @@ export function normalizeRebootState(candidate) {
     },
     patchChoice: candidate.patchChoice,
     evidence: candidate.evidence.map(({ action, chapter, evidenceId }) => ({ action, chapter, evidenceId })),
+    gateAttempts: candidate.gateAttempts.map(({ chapter, gateId, outcome }) => ({ chapter, gateId, outcome })),
     settings: createDefaultSettings(candidate.settings)
   });
 }
