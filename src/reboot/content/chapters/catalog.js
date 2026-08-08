@@ -61,7 +61,7 @@ export const CHAPTER_TWO = deepFreeze({
       { speaker: 'DOT', textKo: '…미끼였어. 하루는 지워질 걸 알고 있었어.', durationMs: 3900 }
     ]
   },
-  timeline: { desktopMinutes: 29, touchMinutes: 31, chapterSelectMinutes: 28 }
+  timeline: { status: 'unmeasured' }
 });
 
 export const CHAPTER_THREE = deepFreeze({
@@ -120,7 +120,7 @@ export const CHAPTER_THREE = deepFreeze({
       { speaker: '하루·녹음', textKo: 'DOT 잘못만은 아니야. 걔한텐 명령이었어. 누가 명령했는지 봐.', durationMs: 4500 }
     ]
   },
-  timeline: { desktopMinutes: 30, touchMinutes: 32, chapterSelectMinutes: 29 }
+  timeline: { status: 'unmeasured' }
 });
 
 export const CHAPTERS_2_3 = deepFreeze([CHAPTER_TWO, CHAPTER_THREE]);
@@ -181,12 +181,70 @@ export const CHAPTER_FOUR = deepFreeze({
       { speaker: 'DOT', textKo: '00:16:43. 네가 눌렀어. 검토 자료 없이 — 우리 모두가 그렇게 눌러.', durationMs: 4900 }
     ]
   },
-  timeline: { desktopMinutes: 31, touchMinutes: 33, chapterSelectMinutes: 30 }
+  timeline: { status: 'unmeasured' }
 });
 
 export const CHAPTER_FIVE = deepFreeze({
-  id: 'chapter-5-final-broadcast',
+  id: 'chapter-5-testimony-archive',
   order: 5,
+  titleKo: '증언 보관소',
+  loop: {
+    decision: 'verify-consent-and-redact-before-preserving-testimony',
+    steps: ['trace-source', 'mark-consent', 'redact-identity', 'seal-verification-package'],
+    targetSeconds: 30
+  },
+  enemyIds: ['eraser', 'approval'],
+  evidenceId: 'verified-package',
+  carryover: {
+    secure: {
+      encounterVariant: 'full-provenance-audit', evidenceAccess: 'consent-ledger',
+      dialogueCue: '보존한 기록 덕분에 출처와 동의 표식을 원문에서 대조한다.',
+      advantage: '원문 출처 표식이 처음부터 보인다.', cost: '가려야 할 개인정보 조각이 더 많이 남아 있다.'
+    },
+    purge: {
+      encounterVariant: 'reconstructed-provenance', evidenceAccess: 'witness-crosscheck',
+      dialogueCue: '비어 있는 원문을 증언과 실행 로그를 겹쳐 복원한다.',
+      advantage: '노출된 개인정보 조각은 적다.', cost: '출처가 맞는지 세 보관실에서 다시 확인해야 한다.'
+    }
+  },
+  consequenceEchoes: [
+    { id: 'witness-consent', secureKo: '증언자의 동의 범위를 기록과 함께 남겼다.', purgeKo: '빠진 원문 대신 증언자가 공개 범위를 다시 정했다.' },
+    { id: 'privacy-redaction', secureKo: '개인 표식을 가린 검증본이 방송 패키지에 들어갔다.', purgeKo: '노출 위험이 있는 조각은 봉인하고 검증 경로만 남겼다.' }
+  ],
+  boss: {
+    id: 'archive-redaction-warden',
+    phases: [
+      { id: 'trace-provenance', response: 'trace' },
+      { id: 'reflect-unauthorized-copy', response: 'reflect' },
+      { id: 'seal-package', response: 'attack' }
+    ]
+  },
+  patchReward: { id: 'consent-mask', verb: 'trace', effect: 'private identity stays masked while provenance remains visible' },
+  reversal: {
+    foreshadowIds: ['witness-return-signal', 'consent-ledger-gap'],
+    revealId: 'haru-is-the-witness',
+    textKo: '보관소의 마지막 증언자는 사라진 기록 속 하루 본인이었다.'
+  },
+  sceneScript: {
+    briefing: [
+      { speaker: 'DOT', textKo: '증언은 찾았어. 하지만 찾았다는 이유만으로 전부 보여 줄 수는 없어.', durationMs: 4300 },
+      { speaker: '하루', textKo: '내 기록이야. 어디까지 남길지는 나도 같이 정할게.', durationMs: 4100 }
+    ],
+    stepCues: [
+      { speaker: 'DOT', textKo: '출처 표식이 실행 로그와 맞아. 이 조각은 검증할 수 있어.', durationMs: 4000 },
+      { speaker: '하루', textKo: '이름은 가려. 사건의 순서와 결정 경로는 남겨 줘.', durationMs: 4100 },
+      { speaker: 'DOT', textKo: '동의 범위 밖 복사본이야. 반사해서 보관소 밖으로 돌려보내.', durationMs: 4200 }
+    ],
+    reversalScript: [
+      { speaker: '하루', textKo: '이제 방송할 수 있어. 나를 증거로 쓰지 말고, 내 증언과 경계를 같이 보여 줘.', durationMs: 4800 }
+    ]
+  },
+  timeline: { status: 'unmeasured' }
+});
+
+export const CHAPTER_SIX = deepFreeze({
+  id: 'chapter-6-final-broadcast',
+  order: 6,
   titleKo: '마지막 방송',
   loop: {
     decision: 'master-protection-protocol-before-broadcast',
@@ -256,8 +314,10 @@ export const CHAPTER_FIVE = deepFreeze({
       { speaker: 'DOT', textKo: '동의 없는 삭제 권한을 반납할게. 다음 밤엔, 물어보고 움직일 거야.', durationMs: 4900 }
     ]
   },
-  timeline: { desktopMinutes: 34, touchMinutes: 35, chapterSelectMinutes: 33 }
+  timeline: { status: 'unmeasured' }
 });
 
 export const CHAPTERS_4_5 = deepFreeze([CHAPTER_FOUR, CHAPTER_FIVE]);
+export const CHAPTERS_4_6 = deepFreeze([CHAPTER_FOUR, CHAPTER_FIVE, CHAPTER_SIX]);
 export const CHAPTERS_2_5 = deepFreeze([...CHAPTERS_2_3, ...CHAPTERS_4_5]);
+export const CHAPTERS_2_6 = deepFreeze([...CHAPTERS_2_3, ...CHAPTERS_4_6]);

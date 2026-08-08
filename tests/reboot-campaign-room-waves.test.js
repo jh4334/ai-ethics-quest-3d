@@ -5,7 +5,7 @@ import test from 'node:test';
 import { createEncounterGameRuntime } from '../src/reboot/app/encounterGameRuntime.js';
 import {
   ROOM_ENCOUNTER_ORIGIN, ROOM_ENTRY_GRACE_TICKS, ROOM_START_POSITION, ROOM_WAVES, advanceRoomWave,
-  createRoomWaveProgress, getRoomWaveCount, getRoomWaveEncounter, isRoomWaveCleared
+  createRoomWaveProgress, getRoomWaveCount, getRoomWaveEncounter, isRoomWaveCleared, isSpatialWaveReady
 } from '../src/reboot/campaign/roomWaves.js';
 import { ENEMY_DEFINITIONS } from '../src/reboot/content/enemies/catalog.js';
 import { createEncounter } from '../src/reboot/encounters/runtime.js';
@@ -27,7 +27,7 @@ test('2~4장은 각각 3웨이브를 저작 상수로 정의하고 스폰 정의
       assert.ok(definition.spawns.length >= 1);
       for (const spawn of definition.spawns) {
         assert.ok(ENEMY_DEFINITIONS[spawn.definitionId], `${spawn.definitionId}는 적 카탈로그에 있어야 한다`);
-        assert.equal(spawn.zoneId, 'arena');
+        assert.equal(spawn.zoneId, definition.spatial.segmentId);
         assert.equal(Number.isFinite(spawn.position.x) && Number.isFinite(spawn.position.z), true);
         assert.equal(ids.has(spawn.id), false, `스폰 ID ${spawn.id}는 장 안에서 유일해야 한다`);
         ids.add(spawn.id);
@@ -67,6 +67,16 @@ test('전멸 판정은 권위 상태의 phase만 보고 빈 배열을 전멸로 
   assert.equal(isRoomWaveCleared(null), false);
 });
 
+test('Given 전멸한 공간, When 요구 상호작용이 빠지면, Then 다음 구역 진행은 잠긴다', () => {
+  // Given: 적은 모두 쓰러졌지만 윤리 동사는 아직 확인되지 않은 공간.
+  const defeated = [{ phase: 'defeat' }];
+
+  // When/Then: 전멸만으로는 잠기고, 권위 입력이 확인된 뒤에만 열린다.
+  assert.equal(isSpatialWaveReady(defeated, false), false);
+  assert.equal(isSpatialWaveReady(defeated, true), true);
+  assert.equal(isSpatialWaveReady([{ phase: 'idle' }], true), false);
+});
+
 test('웨이브 정의는 encounter 런타임에 그대로 꽂히고 같은 호출은 같은 동결 객체를 돌려준다', () => {
   for (const chapter of [2, 3, 4]) {
     for (let wave = 0; wave < 3; wave += 1) {
@@ -84,12 +94,13 @@ test('웨이브 정의는 encounter 런타임에 그대로 꽂히고 같은 호�
 
 test('방 원점·시작 위치로 심은 웨이브 전투는 같은 입력에서 같은 60Hz 결과를 만든다', () => {
   const play = () => {
+    const definition = getRoomWaveEncounter(2, 0);
     const runtime = createEncounterGameRuntime({
       deviceClass: 'desktop',
-      encounterDefinition: getRoomWaveEncounter(2, 0),
-      encounterOrigin: ROOM_ENCOUNTER_ORIGIN,
+      encounterDefinition: definition,
+      encounterOrigin: definition.spatial.encounterOrigin,
       extraTargets: [],
-      startPosition: ROOM_START_POSITION
+      startPosition: definition.spatial.startPosition
     });
     advance(runtime, 30);
     runtime.queueAction('attack');
@@ -110,20 +121,21 @@ test('웨이브 스폰은 시작점에서 충분히 떨어져 있고 그레이�
       assert.equal(definition.entryGraceTicks, ROOM_ENTRY_GRACE_TICKS);
       for (const spawnDef of definition.spawns) {
         const distance = Math.hypot(
-          ROOM_ENCOUNTER_ORIGIN.x + spawnDef.position.x - ROOM_START_POSITION.x,
-          ROOM_ENCOUNTER_ORIGIN.z + spawnDef.position.z - ROOM_START_POSITION.y
+          definition.spatial.encounterOrigin.x + spawnDef.position.x - definition.spatial.startPosition.x,
+          definition.spatial.encounterOrigin.z + spawnDef.position.z - definition.spatial.startPosition.y
         );
         assert.ok(distance >= 10, `${spawnDef.id} 스폰이 시작점과 너무 가깝다: ${distance}`);
       }
     }
   }
   // 그레이스(90틱) + 여유 60틱 동안 제자리에 있어도 HP 100 유지, 적은 목표를 잡지 않는다.
+  const firstWave = getRoomWaveEncounter(2, 0);
   const runtime = createEncounterGameRuntime({
     deviceClass: 'desktop',
-    encounterDefinition: getRoomWaveEncounter(2, 0),
-    encounterOrigin: ROOM_ENCOUNTER_ORIGIN,
+    encounterDefinition: firstWave,
+    encounterOrigin: firstWave.spatial.encounterOrigin,
     extraTargets: [],
-    startPosition: ROOM_START_POSITION
+    startPosition: firstWave.spatial.startPosition
   });
   advance(runtime, ROOM_ENTRY_GRACE_TICKS + 60);
   assert.equal(runtime.getState().combat.player.hp, 100);
@@ -172,12 +184,13 @@ test('방 모드는 리시 존 경계로 적을 동결하지 않는다 — 경�
 test('적 방향 이동 유지 + 공격 반복이면 웨이브는 결정적으로 전멸한다', () => {
   // e2e 헬퍼(적 방향으로 이동 유지 + 동사 키 반복)와 같은 입력 패턴의 하한 검증.
   for (const chapter of [2, 3, 4]) {
+    const definition = getRoomWaveEncounter(chapter, 0);
     const runtime = createEncounterGameRuntime({
       deviceClass: 'desktop',
-      encounterDefinition: getRoomWaveEncounter(chapter, 0),
-      encounterOrigin: ROOM_ENCOUNTER_ORIGIN,
+      encounterDefinition: definition,
+      encounterOrigin: definition.spatial.encounterOrigin,
       extraTargets: [],
-      startPosition: ROOM_START_POSITION
+      startPosition: definition.spatial.startPosition
     });
     for (let tick = 0; tick < 3600; tick += 1) {
       const { combat, encounter } = runtime.getState();

@@ -25,6 +25,19 @@ test('학교 장면 카메라 헬퍼는 터치 화면과 기억 백업 표적을
   assert.equal(getBossCameraTargets(frame, { id: 'cue' }).threat.id, 'attendance-proctor');
 });
 
+test('학교 장면 카메라는 아직 만나지 않은 먼 적 대신 현재 이동 경로를 잡는다', () => {
+  const player = { position: { x: 0, y: 0, z: 1 } };
+  const farEnemy = { id: 'future-enemy', phase: 'idle', position: { x: 1, z: -39 } };
+  const targets = getEncounterCameraTargets(
+    { player, targets: [{ id: farEnemy.id, position: farEnemy.position }] },
+    { id: 'classroom-exit', position: { x: 0, y: 0, z: -4.8 } },
+    { enemies: [farEnemy] }
+  );
+
+  assert.equal(targets.threat.id, 'player');
+  assert.equal(targets.routeCue.id, 'classroom-exit');
+});
+
 test('학교 HUD는 보스와 결말 상태를 사용자 화면과 QA 텔레메트리에 함께 반영한다', () => {
   const canvas = { dataset: {} };
   const element = () => ({ hidden: true, textContent: '' });

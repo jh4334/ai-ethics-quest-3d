@@ -63,7 +63,7 @@ export const chapterOneLevel = {
   layers: {
     collision: [
       { id: 'collision-classroom', segmentId: 'classroom-cold-open', walkableBounds: { maxX: 6, maxZ: 6, minX: -6, minZ: -6 } },
-      { id: 'collision-corridor', segmentId: 'collapsing-corridor', walkableBounds: { maxX: 3, maxZ: -6, minX: -3, minZ: -30 } },
+      { id: 'collision-corridor', segmentId: 'collapsing-corridor', walkableBounds: { maxX: 6, maxZ: -6, minX: -6, minZ: -30 } },
       { id: 'collision-first-arena', segmentId: 'first-arena', walkableBounds: { maxX: 9, maxZ: -30, minX: -9, minZ: -48 } },
       { id: 'collision-memory', segmentId: 'memory-backup-decision', walkableBounds: { maxX: 6, maxZ: -48, minX: -6, minZ: -61 } },
       { id: 'collision-pursuit', segmentId: 'scanner-pursuit', walkableBounds: { maxX: 4, maxZ: -61, minX: -4, minZ: -91 } },
@@ -71,7 +71,7 @@ export const chapterOneLevel = {
     ],
     navigation: [
       { bounds: { maxX: 6, maxZ: 6, minX: -6, minZ: -6 }, id: 'nav-classroom', segmentId: 'classroom-cold-open' },
-      { bounds: { maxX: 3, maxZ: -6, minX: -3, minZ: -30 }, id: 'nav-corridor', segmentId: 'collapsing-corridor' },
+      { bounds: { maxX: 6, maxZ: -6, minX: -6, minZ: -30 }, id: 'nav-corridor', segmentId: 'collapsing-corridor' },
       { bounds: { maxX: 9, maxZ: -30, minX: -9, minZ: -48 }, id: 'nav-first-arena', segmentId: 'first-arena' },
       { bounds: { maxX: 6, maxZ: -48, minX: -6, minZ: -61 }, id: 'nav-memory', segmentId: 'memory-backup-decision' },
       { bounds: { maxX: 4, maxZ: -61, minX: -4, minZ: -91 }, id: 'nav-pursuit', segmentId: 'scanner-pursuit' },

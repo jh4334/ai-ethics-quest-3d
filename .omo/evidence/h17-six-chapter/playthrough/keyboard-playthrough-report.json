@@ -1,0 +1,70 @@
+{
+  "baseUrl": "http://127.0.0.1:4174/",
+  "chapterReports": [
+    {
+      "checkpoint": "chapter-2:start",
+      "drawCalls": 65,
+      "p95FrameMs": 100,
+      "triangles": 65469,
+      "chapter": 1,
+      "elapsedSeconds": 130.1,
+      "inputMode": "keyboard",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-1-keyboard-result.png"
+    },
+    {
+      "checkpoint": "chapter-3:start",
+      "drawCalls": 86,
+      "p95FrameMs": 100,
+      "triangles": 100301,
+      "chapter": 2,
+      "elapsedSeconds": 95.5,
+      "inputMode": "keyboard",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-2-keyboard-result.png"
+    },
+    {
+      "checkpoint": "chapter-4:start",
+      "drawCalls": 85,
+      "p95FrameMs": 100,
+      "triangles": 101771,
+      "chapter": 3,
+      "elapsedSeconds": 97.9,
+      "inputMode": "keyboard",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-3-keyboard-result.png"
+    },
+    {
+      "checkpoint": "chapter-5:start",
+      "drawCalls": 80,
+      "p95FrameMs": 100,
+      "triangles": 100375,
+      "chapter": 4,
+      "elapsedSeconds": 118.3,
+      "inputMode": "keyboard",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-4-keyboard-result.png"
+    },
+    {
+      "checkpoint": "chapter-6:broadcast-room",
+      "drawCalls": 67,
+      "p95FrameMs": 100,
+      "triangles": 119179,
+      "chapter": 5,
+      "elapsedSeconds": 112.8,
+      "inputMode": "keyboard",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-5-keyboard-result.png"
+    },
+    {
+      "checkpoint": "chapter-6:resolved-redacted",
+      "drawCalls": 81,
+      "p95FrameMs": 100,
+      "triangles": 85997,
+      "chapter": 6,
+      "elapsedSeconds": 71.6,
+      "inputMode": "keyboard",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-6-keyboard-result.png"
+    }
+  ],
+  "consoleErrors": [],
+  "failedResponses": [],
+  "finalCheckpoint": "chapter-6:resolved-redacted",
+  "inputMode": "keyboard",
+  "touch": null
+}

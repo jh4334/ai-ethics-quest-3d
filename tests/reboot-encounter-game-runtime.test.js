@@ -25,6 +25,15 @@ test('Given the player inside the authored arena, When combat advances, Then ene
   assert.equal(result.state.encounter.enemies.some((enemy) => enemy.targetId === 'player'), true);
 });
 
+test('저작 시작 방향은 이동 전 캐릭터와 첫 공격을 다음 목표 쪽으로 향하게 한다', () => {
+  const runtime = createEncounterGameRuntime({
+    startFacing: { x: 0, y: -2 },
+    startPosition: { x: 0, y: -17 }
+  });
+
+  assert.deepEqual(runtime.getState().combat.player.facing, { x: 0, y: -1 });
+});
+
 test('Given the player leaves the first arena, When the route continues, Then enemies cannot chase into later scenes', () => {
   // Given: mixed arena 전투가 시작된 뒤 다음 복도로 달리는 플레이어.
   const runtime = createEncounterGameRuntime({ startPosition: { x: 0, y: -39 } });

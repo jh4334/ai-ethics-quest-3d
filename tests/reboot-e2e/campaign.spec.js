@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { copyFile } from 'node:fs/promises';
 
 import { serializeSave } from '../../src/reboot/save/codec.js';
+import { V5_SAVE_KEY } from '../../src/reboot/save/repository.js';
 import { finalizeCampaign } from '../../src/reboot/campaign/endingEvaluator.js';
 import { createFinaleFixture } from '../../src/reboot/campaign/finaleFixtures.js';
 import { setChapterCheckpoint } from '../../src/reboot/state/consequences.js';
@@ -64,6 +65,12 @@ async function clearCampaignWave(page, canvas, verbKey, clearedWaves) {
         const debug = window.__ethicsReboot.getSceneDebugState();
         const target = debug.enemies.find((enemy) => enemy.phase !== 'defeat');
         if (target) {
+          if (sceneCanvas.dataset.campaignInteractionStatus !== 'resolved') {
+            tap(verbCode);
+            beat += 1;
+            await nextBeat();
+            continue;
+          }
           // 전투 시뮬 좌표: player.position.y = 월드 z. 1.2보다 멀면 적 방향 축 키를 유지한다.
           const dx = target.position.x - debug.player.position.x;
           const dz = target.position.z - debug.player.position.y;
@@ -73,7 +80,6 @@ async function clearCampaignWave(page, canvas, verbKey, clearedWaves) {
           hold('KeyS', far && dz > 0.4);
           hold('KeyW', far && dz < -0.4);
           tap('KeyJ');
-          if (beat % 20 === 10) tap(verbCode);
         }
         beat += 1;
         await nextBeat();
@@ -91,11 +97,17 @@ async function clearCampaignWave(page, canvas, verbKey, clearedWaves) {
 // 웨이브 i 전멸 = 단계 i+1 — 세 웨이브를 모두 깨면 결정 단계(F/Q)가 열린다.
 async function fightCampaignChapter(page, canvas, verbKeys) {
   await expect(canvas).toHaveAttribute('data-campaign-step', '0');
+  const visitedZones = [];
   for (const [wave, verbKey] of verbKeys.entries()) {
+    visitedZones.push(await canvas.getAttribute('data-campaign-zone'));
     await clearCampaignWave(page, canvas, verbKey, wave + 1);
   }
   await expect(canvas).toHaveAttribute('data-campaign-expected-action', 'decision');
   await expect(canvas).toHaveAttribute('data-campaign-enemies-alive', '0');
+  const resolvedInteractions = (await canvas.getAttribute('data-campaign-resolved-interactions'))
+    ?.split(',').filter(Boolean) ?? [];
+  expect(resolvedInteractions).toHaveLength(3);
+  return visitedZones;
 }
 
 // S3c: LUMEN 압박 펄스 — 윈드업(data-protocol-pulse=windup)이 보이면 단계 키보다 먼저 K로
@@ -144,13 +156,20 @@ test('운영 루트는 저장된 2장을 열고 전투 결정 뒤 3장으로 계
   const canvas = page.locator('[data-reboot-canvas]');
   await expect(canvas).toHaveAttribute('data-campaign-chapter', '2');
   await expect(canvas).toHaveAttribute('data-characters', 'ready', { timeout: 60_000 });
+  await expect.poll(async () => Number(await canvas.getAttribute('data-draw-calls'))).toBeGreaterThan(0);
+  await expect.poll(async () => Number(await canvas.getAttribute('data-triangles'))).toBeGreaterThan(0);
+  await expect.poll(async () => Number(await canvas.getAttribute('data-p95-frame-ms'))).toBeLessThanOrEqual(100);
+  await expect(canvas).toHaveAttribute('data-light-count', '2');
 
   // 실전투 — 2장 웨이브 동사 순서(REFLECT·TRACE·ATTACK)대로 세 웨이브를 전멸시킨 뒤 F로 보존한다.
-  await fightCampaignChapter(page, canvas, ['KeyK', 'KeyE', 'KeyJ']);
+  const visitedZones = await fightCampaignChapter(page, canvas, ['KeyK', 'KeyE', 'KeyJ']);
+  expect(new Set(visitedZones).size).toBe(3);
+  const spatialDebug = await page.evaluate(() => window.__ethicsReboot.getSceneDebugState());
+  expect(spatialDebug.player.position.y).toBeLessThan(-58);
   await page.keyboard.press('KeyF');
   await expect(canvas).toHaveAttribute('data-campaign-completed', 'true');
   await expect(page.locator('[data-campaign-continue]')).toBeVisible();
-  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('h17.null.save.v4')));
+  const saved = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), V5_SAVE_KEY);
   expect(saved.chapterProgress).toEqual({ completed: [1, 2], current: 3, checkpoint: 'chapter-3:start' });
   expect(saved.evidence.at(-1)).toEqual({ action: 'secure', chapter: 2, evidenceId: 'original-upload-trace' });
 
@@ -160,13 +179,45 @@ test('운영 루트는 저장된 2장을 열고 전투 결정 뒤 3장으로 계
   expect(errors).toEqual([]);
 });
 
-test('완료된 마지막 방송 저장은 보스 재전을 열지 않고 기록된 결말을 복원한다', async ({ page }) => {
+for (const [chapter, verbKeys] of [[3, ['KeyE', 'KeyE', 'KeyJ']], [4, ['KeyK', 'KeyE', 'KeyJ']]]) {
+  test(`Given ${chapter}장 저장, When 실제 이동과 전투를 반복하면, Then 서로 다른 세 공간을 완주한다`, async ({ page }) => {
+    const errors = captureErrors(page);
+    const state = setChapterCheckpoint(createInitialRebootState({
+      motion: 'reduced', quality: 'low', sound: false
+    }), chapter, `chapter-${chapter}:start`);
+    await page.addInitScript(({ bytes, key }) => {
+      sessionStorage.setItem('h17.testHook', 'true');
+      localStorage.setItem(key, bytes);
+    }, { bytes: serializeSave(state), key: V5_SAVE_KEY });
+
+    await page.goto('/?sw=off', { waitUntil: 'domcontentloaded' });
+    const canvas = page.locator('[data-reboot-canvas]');
+    await expect(canvas).toHaveAttribute('data-campaign-chapter', String(chapter));
+    await expect(canvas).toHaveAttribute('data-characters', 'ready', { timeout: 60_000 });
+
+    const visitedZones = await fightCampaignChapter(page, canvas, verbKeys);
+    const debug = await page.evaluate(() => window.__ethicsReboot.getSceneDebugState());
+    expect(new Set(visitedZones).size).toBe(3);
+    expect(debug.player.position.y).toBeLessThan(-58);
+    expect(debug.performance.render.calls).toBeGreaterThan(0);
+    expect(debug.performance.render.triangles).toBeGreaterThan(0);
+    expect(debug.performance.render.lights).toBe(2);
+    expect(errors).toEqual([]);
+  });
+}
+
+test('완료된 마지막 방송 저장은 이어하기 후 보스 재전 없이 기록된 결말을 복원한다', async ({ page }) => {
   const errors = captureErrors(page);
   const fixture = createFinaleFixture('sealed');
   const resolved = finalizeCampaign(fixture.campaign, { decision: fixture.decision }).state;
-  await page.addInitScript((bytes) => localStorage.setItem('h17.null.save.v4', bytes), serializeSave(resolved));
+  await page.addInitScript(({ bytes, key }) => localStorage.setItem(key, bytes), {
+    bytes: serializeSave(resolved), key: V5_SAVE_KEY
+  });
 
   await page.goto('/reboot.html?sw=off', { waitUntil: 'domcontentloaded' });
+  const continueButton = page.locator('[data-shell-continue]');
+  await expect(continueButton).toBeVisible();
+  await continueButton.click();
   const canvas = page.locator('[data-reboot-canvas]');
   await expect(canvas).toHaveAttribute('data-protocol-status', 'resolved');
   await expect(canvas).toHaveAttribute('data-campaign-ending', 'sealed-incident');

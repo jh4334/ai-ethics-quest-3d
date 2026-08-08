@@ -4,14 +4,27 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#050918" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
   <title>H-17: NULL — 삭제된 밤</title>
   <style>
-    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #050918; }
+    :root {
+      color-scheme: dark;
+      font-family: system-ui, sans-serif;
+      background: var(--h17-night, #050918);
+      --h17-danger: #d74732;
+      --h17-memory: #f4c06d;
+      --h17-moon: #6aa9ff;
+      --h17-muted: #a9bce9;
+      --h17-night: #050918;
+      --h17-panel: #081126;
+      --h17-signal: #5de0c1;
+      --h17-text: #e9f0ff;
+    }
     * { box-sizing: border-box; }
     body { margin: 0; min-height: 100svh; overflow: hidden; }
     /* 공용 치수 — QA 뷰포트 fixture가 --fixture-width를 지정하면 오른쪽 기준선이 fixture 폭으로 좁혀진다. */
     [data-reboot-root] {
-      min-height: 100svh; position: relative; background: #050918;
+      min-height: 100svh; position: relative; background: var(--h17-night);
       --safe-bottom: max(14px, env(safe-area-inset-bottom));
       --edge-right: max(14px, env(safe-area-inset-right));
       --hud-top: max(16px, env(safe-area-inset-top));
@@ -19,43 +32,93 @@
     }
     [data-reboot-canvas] { display: block; width: 100vw; height: 100svh; }
     .hud { position: fixed; inset: max(16px, env(safe-area-inset-top)) 16px auto; display: flex; justify-content: space-between; align-items: start; gap: 16px; pointer-events: none; }
-    .title { margin: 0; color: #f4c06d; font-size: clamp(1rem, 3vw, 1.5rem); letter-spacing: .08em; text-shadow: 0 2px 12px #000; }
+    .title { margin: 0; color: var(--h17-memory); font-size: clamp(1rem, 3vw, 1.5rem); letter-spacing: .08em; text-shadow: 0 2px 12px #000; }
     .status { margin: .35rem 0 0; color: #d9e4ff; font-size: .9rem; }
+    .chapter-strip { position: fixed; top: max(16px, env(safe-area-inset-top)); left: 50%; z-index: 2; display: flex; gap: 5px; translate: -50% 0; margin: 0; padding: 6px 8px; border: 1px solid #7b91bf55; border-radius: 999px; background: #050918c7; list-style: none; pointer-events: none; }
+    .chapter-strip li { display: grid; min-width: 46px; grid-template-columns: 18px 1fr; align-items: center; gap: 4px; color: #9eabc5; font-size: .64rem; white-space: nowrap; }
+    .chapter-strip b { display: grid; width: 18px; height: 18px; place-items: center; border: 1px solid currentColor; border-radius: 50%; font-size: .66rem; }
+    .chapter-strip [data-state="current"] { color: #fff3d6; font-weight: 800; }
+    .chapter-strip [data-state="current"] b { color: #15100a; background: var(--h17-memory); box-shadow: 0 0 12px #f4c06d88; }
+    .chapter-strip [data-state="complete"] { color: #7ce5cf; }
     .combat-hud { display: flex; gap: 10px; margin-top: 8px; color: #d9e4ff; font-size: .78rem; }
     .combat-hud > span { padding: 4px 7px; border: 1px solid #7b91bf66; border-radius: 5px; background: #050918aa; }
     /* 채움형 게이지 — HP는 붉은/호박, 시그널은 시안. 라벨 글씨는 채움 위에서도 또렷하게. */
     .combat-hud .gauge { position: relative; min-width: 118px; overflow: hidden; transition: box-shadow .35s ease-out; }
     .gauge-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; border-radius: 4px; transition: width .18s ease-out; pointer-events: none; }
     .gauge-hp .gauge-fill { background: linear-gradient(90deg, #a63d33, #e08a3f); }
-    .gauge-signal .gauge-fill { background: linear-gradient(90deg, #1d7d8f, #5de0c1); }
+    .gauge-signal .gauge-fill { background: linear-gradient(90deg, #1d7d8f, var(--h17-signal)); }
     .gauge-label { position: relative; color: #fff; font-style: normal; font-weight: 700; letter-spacing: .04em; text-shadow: 0 1px 3px #000c; }
     /* 시그널 부족(signal-blocked) 깜빡임 — 클래스는 이벤트 프레임에만 붙고, 꺼질 때 transition으로만 잦아든다. */
     .gauge-blocked { box-shadow: 0 0 0 2px #ff6b6bcc, 0 0 14px #ff6b6b99; transition: none; }
     .objective { position: fixed; top: max(112px, calc(env(safe-area-inset-top) + 96px)); left: 50%; translate: -50% 0; max-width: min(72vw, 620px); margin: 0; padding: 6px 10px; border-radius: 6px; color: #fff3d6; background: #050918b8; font-size: clamp(.82rem, 2vw, 1rem); line-height: 1.35; text-align: center; text-shadow: 0 2px 8px #000; }
     .actions { display: flex; gap: 8px; pointer-events: auto; }
     button { min-width: 48px; min-height: 44px; padding: 8px 12px; border: 1px solid #7b91bf; border-radius: 8px; color: #fff; background: #101a36dd; font: inherit; }
-    button:focus-visible { outline: 3px solid #f4c06d; outline-offset: 2px; }
+    button:focus-visible { outline: 3px solid var(--h17-memory); outline-offset: 2px; }
     .hint { position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); translate: -50% 0; margin: 0; color: #d9e4ff; font-size: .82rem; text-align: center; text-shadow: 0 2px 8px #000; }
     .recovery { position: fixed; left: 50%; top: 82px; translate: -50% 0; max-width: min(90vw, 560px); margin: 0; padding: 10px 14px; border: 1px solid #f4c06d88; border-radius: 8px; color: #fff3d6; background: #101a36ee; text-align: center; }
-    .radio { position: fixed; left: 50%; bottom: 64px; translate: -50% 0; z-index: 4; width: min(88vw, 680px); margin: 0; padding: 10px 14px; border-left: 3px solid #5de0c1; color: #eef5ff; background: #050918e8; line-height: 1.45; text-shadow: 0 2px 8px #000; }
-    .radio strong { margin-right: 8px; color: #5de0c1; }
+    .webgl-failure { position: fixed; inset: 50% auto auto 50%; z-index: 10; width: min(88vw, 560px); translate: -50% -50%; padding: 22px; border: 1px solid var(--h17-danger); border-radius: 12px; color: var(--h17-text); background: #081126f2; text-align: center; line-height: 1.55; }
+    .webgl-failure p { margin: 0; word-break: keep-all; }
+    .webgl-failure button { margin-top: 14px; border-color: var(--h17-memory); color: #fff3d6; }
+    .product-shell, .teacher-report { position: fixed; inset: 0; z-index: 8; display: grid; place-items: center; padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom)); background: linear-gradient(135deg, #050918ed, #101a36e8); overflow: auto; }
+    .product-shell[hidden], .teacher-report[hidden] { display: none; }
+    .product-shell-card, .teacher-report-card { width: min(100%, 760px); padding: clamp(20px, 5vw, 42px); border: 1px solid #7b91bf; border-radius: 16px; background: #081126f5; box-shadow: 0 24px 90px #000b; }
+    .product-shell-kicker { margin: 0; color: var(--h17-signal); font-size: .85rem; font-weight: 800; letter-spacing: .12em; }
+    .product-shell h1, .teacher-report h1 { margin: 8px 0 12px; color: var(--h17-memory); font-size: clamp(2rem, 8vw, 4rem); line-height: 1.08; word-break: keep-all; }
+    .product-shell-lead, .teacher-report p { margin: 0; color: #d9e4ff; line-height: 1.6; overflow-wrap: break-word; }
+    .shell-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 24px; }
+    .shell-actions button { min-height: 52px; text-align: left; }
+    .shell-actions [data-shell-new], .shell-actions [data-shell-continue] { border-color: var(--h17-memory); background: #332611ee; font-weight: 800; }
+    .shell-panel { margin-top: 18px; padding-top: 18px; border-top: 1px solid #7b91bf66; }
+    .shell-panel h2, .teacher-report h2 { margin: 0 0 10px; color: var(--h17-signal); font-size: 1.05rem; }
+    .shell-panel-page { display: grid; gap: 10px; }
+    .shell-chapter-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .shell-chapter-grid button { min-height: 56px; text-align: left; }
+    .shell-chapter-grid button[data-state="complete"] { border-color: var(--h17-signal); }
+    .shell-chapter-grid button[data-state="current"] { border-color: var(--h17-memory); background: #332611ee; }
+    .shell-chapter-grid button:disabled { opacity: .45; }
+    .shell-settings { display: grid; gap: 12px; }
+    .shell-settings label { display: grid; gap: 6px; color: var(--h17-text); }
+    .shell-settings input, .shell-settings select { min-height: 44px; border: 1px solid #7b91bf; border-radius: 8px; color: #fff; background: #101a36; font: inherit; }
+    .shell-settings input[type="checkbox"] { width: 24px; min-height: 24px; accent-color: var(--h17-signal); }
+    .shell-help { margin: 0; padding-left: 1.25rem; color: #d9e4ff; line-height: 1.65; }
+    .teacher-report { z-index: 9; background: #050918f2; }
+    .teacher-report-card { max-width: 840px; }
+    .teacher-report-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+    .teacher-report-content { color: var(--h17-text); }
+    .teacher-report-content section { margin-top: 18px; padding-top: 14px; border-top: 1px solid #7b91bf55; }
+    .teacher-report-content ul { margin: 0; padding-left: 1.35rem; line-height: 1.6; overflow-wrap: anywhere; }
+    [data-reboot-root][data-shell-open="true"] .hud,
+    [data-reboot-root][data-shell-open="true"] .chapter-strip,
+    [data-reboot-root][data-shell-open="true"] .objective,
+    [data-reboot-root][data-shell-open="true"] .hint,
+    [data-reboot-root][data-shell-open="true"] .radio,
+    [data-reboot-root][data-shell-open="true"] .feedback-prompts,
+    [data-reboot-root][data-shell-open="true"] .touch-controls { display: none; }
+    [data-reboot-root][data-webgl-unavailable="true"] .hud,
+    [data-reboot-root][data-webgl-unavailable="true"] .chapter-strip,
+    [data-reboot-root][data-webgl-unavailable="true"] .objective,
+    [data-reboot-root][data-webgl-unavailable="true"] .hint,
+    [data-reboot-root][data-webgl-unavailable="true"] .touch-controls { display: none; }
+    @media (prefers-reduced-motion: reduce) { .product-shell, .teacher-report { scroll-behavior: auto; } }
+    .radio { position: fixed; left: 50%; bottom: 64px; translate: -50% 0; z-index: 4; width: min(88vw, 680px); margin: 0; padding: 10px 14px; border-left: 3px solid var(--h17-signal); color: #eef5ff; background: #050918e8; line-height: 1.45; text-shadow: 0 2px 8px #000; }
+    .radio strong { margin-right: 8px; color: var(--h17-signal); }
     /* 우측 잘림 방지(S6a) — safe-area만큼 물러나고 오른쪽 패딩을 넉넉히 둔다. */
-    .feedback-prompts { position: fixed; right: max(18px, calc(env(safe-area-inset-right) + 6px)); bottom: max(142px, calc(env(safe-area-inset-bottom) + 130px)); z-index: 4; max-width: min(42vw, 360px); margin: 0; padding: 7px 12px 7px 10px; border-right: 3px solid #f4c06d; color: #fff3d6; background: #050918e3; font-size: .78rem; line-height: 1.4; text-align: right; text-shadow: 0 2px 8px #000; overflow-wrap: break-word; }
+    .feedback-prompts { position: fixed; right: max(18px, calc(env(safe-area-inset-right) + 6px)); bottom: max(142px, calc(env(safe-area-inset-bottom) + 130px)); z-index: 4; max-width: min(42vw, 360px); margin: 0; padding: 7px 12px 7px 10px; border-right: 3px solid var(--h17-memory); color: #fff3d6; background: #050918e3; font-size: .78rem; line-height: 1.4; text-align: right; text-shadow: 0 2px 8px #000; overflow-wrap: break-word; }
     /* ── 터치 조작(S4a) — 왼쪽 이동 스틱 · 오른쪽 엄지 부채꼴 4버튼 · 결정 시에만 뜨는 맥락 버튼 · 우상단 보조 버튼 ── */
     .touch-controls { display: none; position: fixed; inset: 0; z-index: 5; pointer-events: none; }
     .touch-stick { position: absolute; left: max(18px, env(safe-area-inset-left)); bottom: var(--safe-bottom); width: 132px; height: 132px; border: 2px solid #8ba5d077; border-radius: 50%; background: #08112699; pointer-events: auto; touch-action: none; }
     .touch-stick::before, .touch-stick::after { content: ''; position: absolute; background: #a9bce944; pointer-events: none; }
     .touch-stick::before { inset: 14px 64px; }
     .touch-stick::after { inset: 64px 14px; }
-    .touch-stick-knob { position: absolute; left: 44px; top: 44px; width: 42px; height: 42px; border: 2px solid #5de0c1; border-radius: 50%; background: #17365dcc; pointer-events: none; }
+    .touch-stick-knob { position: absolute; left: 44px; top: 44px; width: 42px; height: 42px; border: 2px solid var(--h17-signal); border-radius: 50%; background: #17365dcc; pointer-events: none; }
     /* 1차 버튼 부채꼴 — 공격이 가장 크게 오른쪽 아래 모서리, 회피·반사·추적이 호를 그린다. 스틱과 절대 겹치지 않는 150px 상자. */
     .touch-actions { position: absolute; left: calc(var(--fixture-edge) - var(--edge-right) - 150px); bottom: var(--safe-bottom); width: 150px; height: 150px; }
     .touch-actions button { position: absolute; min-width: 0; min-height: 0; padding: 0; border-radius: 50%; font-size: .7rem; pointer-events: auto; touch-action: none; }
-    [data-touch-action="attack"] { right: 0; bottom: 0; width: 72px; height: 72px; border-color: #f4c06d; background: #4a2d21e8; font-size: .82rem; font-weight: 700; }
+    [data-touch-action="attack"] { right: 0; bottom: 0; width: 72px; height: 72px; border-color: var(--h17-memory); background: #4a2d21e8; font-size: .82rem; font-weight: 700; }
     [data-touch-action="dash"] { right: 88px; bottom: 4px; width: 56px; height: 56px; border-color: #8ba5d0; }
     [data-touch-action="reflect"] { right: 4px; bottom: 88px; width: 56px; height: 56px; }
     [data-touch-action="trace"] { right: 74px; bottom: 74px; width: 56px; height: 56px; }
-    [data-touch-action="reflect"], [data-touch-action="trace"], [data-touch-action="secure"] { border-color: #5de0c1; }
+    [data-touch-action="reflect"], [data-touch-action="trace"], [data-touch-action="secure"] { border-color: var(--h17-signal); }
     /* 맥락 버튼(확보 F·소거 Q) — 결정 대기 상태에서만 부채꼴 위로 나타난다.
        display가 아니라 opacity·pointer-events로만 숨겨 DOM·dispatchEvent 경로를 유지한다. */
     .touch-context { position: absolute; left: calc(var(--fixture-edge) - var(--edge-right) - 202px); bottom: calc(var(--safe-bottom) + 164px); display: flex; gap: 10px; opacity: 0; translate: 0 8px; transition: opacity .18s ease-out, translate .18s ease-out; }
@@ -83,7 +146,7 @@
     [data-reboot-canvas][data-boss-verb="trace"] ~ .touch-controls [data-touch-action="trace"],
     [data-reboot-canvas][data-boss-verb="attack"] ~ .touch-controls [data-touch-action="attack"] {
       animation: boss-verb-pulse .9s ease-in-out infinite;
-      border-color: #5de0c1;
+      border-color: var(--h17-signal);
     }
     @media (prefers-reduced-motion: reduce) {
       [data-reboot-canvas][data-boss-verb="reflect"] ~ .touch-controls [data-touch-action="reflect"],
@@ -107,13 +170,16 @@
     [data-touch-mode="true"] .hud { display: block; right: auto; width: calc(var(--fixture-edge) - 32px); }
     [data-touch-mode="true"] .title { font-size: 1rem; }
     [data-touch-mode="true"] .status { font-size: .72rem; margin-top: .2rem; }
+    [data-touch-mode="true"] .chapter-strip { top: calc(var(--hud-top) + 112px); width: min(320px, calc(100vw - 116px)); justify-content: center; padding: 5px 7px; }
+    [data-touch-mode="true"] .chapter-strip li { min-width: 28px; grid-template-columns: 1fr; }
+    [data-touch-mode="true"] .chapter-strip span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
     [data-touch-mode="true"] .actions { position: absolute; top: 0; right: 0; gap: 6px; }
     [data-touch-mode="true"] .actions button { min-width: 0; padding: 8px 10px; font-size: .8rem; white-space: nowrap; }
     [data-touch-mode="true"] .combat-hud { flex-wrap: wrap; gap: 6px; max-width: calc(100% - 64px); }
     [data-touch-mode="true"] .combat-hud .gauge { flex: 1 1 40%; min-width: 118px; }
     [data-touch-mode="true"] .combat-hud > span:not(.gauge) { flex: 0 0 auto; font-size: .68rem; padding: 3px 6px; white-space: nowrap; }
     /* 목표 문구는 HUD 아래 상단 밴드에 고정 — 화면 중앙·보조 버튼 열을 침범하지 않는다. */
-    [data-touch-mode="true"] .objective { top: calc(var(--hud-top) + 108px); max-width: min(calc(100vw - 136px), 620px); }
+    [data-touch-mode="true"] .objective { top: calc(var(--hud-top) + 150px); max-width: min(calc(100vw - 136px), 620px); }
     [data-touch-mode="true"] .feedback-prompts { right: auto; left: calc(var(--fixture-edge) - min(60vw, 340px) - 18px); bottom: calc(var(--safe-bottom) + 256px); max-width: min(60vw, 340px); }
     [data-touch-mode="true"] .radio { bottom: calc(var(--safe-bottom) + 170px); width: min(calc(100vw - 40px), 600px); }
     /* 세로 결정 대기 중에는 자막·피드백 칩을 한 단 올려 맥락 버튼 띠를 비워 둔다(가로에서는 띠가 겹치지 않음). */
@@ -143,8 +209,8 @@
       [data-touch-mode="true"]:not([data-viewport-fixture]) .campaign-continue { bottom: calc(var(--safe-bottom) + 160px); }
     }
     .chapter-result { position: fixed; inset: 50% auto auto 50%; translate: -50% -50%; z-index: 3; width: min(88vw, 620px); padding: 22px; border: 1px solid #f4c06d88; border-radius: 12px; background: #081126f2; box-shadow: 0 20px 80px #000a; }
-    .chapter-result h2 { margin: 0 0 14px; color: #f4c06d; }
-    .chapter-result p { margin: 9px 0; color: #e9f0ff; line-height: 1.55; }
+    .chapter-result h2 { margin: 0 0 14px; color: var(--h17-memory); }
+    .chapter-result p { margin: 9px 0; color: var(--h17-text); line-height: 1.55; }
     .chapter-result [data-result-action] { color: #fff3d6; font-weight: 700; }
     .chapter-result [data-result-consequence] { padding-top: 9px; border-top: 1px solid #7b91bf55; }
     .chapter-result [data-result-reversal] { color: #a9d9ff; }
@@ -159,20 +225,81 @@
     }
     /* PATCH 패널은 무전 자막(bottom 64px) 위에 둔다 — 결말 대사를 가리지 않는다(S6a). */
     .patch-picker { position: fixed; left: 50%; bottom: 140px; translate: -50% 0; z-index: 4; padding: 12px; border: 1px solid #5de0c188; border-radius: 10px; background: #081126ee; }
-    .patch-picker p { margin: 0 0 8px; color: #5de0c1; text-align: center; }
-    .campaign-continue { position: fixed; left: 50%; bottom: 28px; translate: -50% 0; z-index: 6; border-color: #f4c06d; background: #332611ee; }
+    .patch-picker p { margin: 0 0 8px; color: var(--h17-signal); text-align: center; }
+    .campaign-continue { position: fixed; left: 50%; bottom: 28px; translate: -50% 0; z-index: 6; border-color: var(--h17-memory); background: #332611ee; }
     /* 계속 버튼 — 터치에서는 부채꼴·맥락 버튼 띠 위로 올려 절대 겹치지 않게 한다. */
     [data-touch-mode="true"] .campaign-continue { bottom: calc(var(--safe-bottom) + 196px); }
-    .test-storage { position: fixed; left: 12px; bottom: 12px; z-index: 4; max-width: min(92vw, 700px); padding: 8px; border: 1px dashed #6aa9ff; background: #050918ee; }
+    .test-storage { position: fixed; left: 12px; bottom: 12px; z-index: 4; max-width: min(92vw, 700px); padding: 8px; border: 1px dashed var(--h17-moon); background: #050918ee; }
     .test-storage pre { max-height: 110px; overflow: auto; margin: 8px 0 0; color: #bfe8ff; font-size: 11px; white-space: pre-wrap; }
     .viewport-tools { position: fixed; left: 50%; top: 10px; translate: -50% 0; z-index: 8; display: flex; gap: 6px; }
     .viewport-tools[hidden] { display: none; }
     .viewport-tools button { min-height: 34px; padding: 4px 8px; font-size: .7rem; }
+    @media (max-width: 520px) {
+      .shell-actions { grid-template-columns: 1fr; }
+      .shell-chapter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .product-shell-card, .teacher-report-card { padding: 20px; }
+    }
+    @media print {
+      body { overflow: visible; background: #fff; color: #000; }
+      [data-reboot-root] > * { display: none !important; }
+      [data-reboot-root] > [data-teacher-report] { position: static; display: block !important; padding: 0; background: #fff; color: #000; }
+      .teacher-report-card { width: auto; padding: 0; border: 0; border-radius: 0; background: #fff; box-shadow: none; }
+      .teacher-report h1, .teacher-report h2, .teacher-report p, .teacher-report-content { color: #000; }
+      .teacher-report-actions { display: none; }
+      .teacher-report-content section { border-color: #777; break-inside: avoid; }
+    }
   </style>
 </head>
 <body>
   <main data-reboot-root data-app-marker="H-17 Reboot">
     <canvas data-reboot-canvas aria-label="00시 17분의 어두운 학교 복도"></canvas>
+    <section class="webgl-failure" data-webgl-failure role="alert" aria-live="assertive" hidden>
+      <p data-webgl-message>그래픽을 시작하지 못했습니다. WebGL 지원을 확인한 뒤 다시 시도해 주세요.</p>
+      <button type="button" data-webgl-retry>새로고침</button>
+    </section>
+    <section class="product-shell" data-product-shell aria-label="게임 시작 메뉴" hidden>
+      <div class="product-shell-card">
+        <p class="product-shell-kicker">AI 윤리의 섬 3D</p>
+        <h1 data-shell-heading tabindex="-1">H-17: NULL</h1>
+        <p class="product-shell-lead">단서를 확인하고, 기록을 지킬 방법을 선택하세요. 이름이나 개인정보는 저장하지 않습니다.</p>
+        <div class="shell-actions" aria-label="시작 메뉴">
+          <button type="button" data-shell-new>새 게임</button>
+          <button type="button" data-shell-continue hidden>이어서 하기</button>
+          <button type="button" data-shell-map-open>장 선택</button>
+          <button type="button" data-shell-settings-open>설정</button>
+          <button type="button" data-shell-help-open>조작 도움말</button>
+          <button type="button" data-teacher-report-open>교사용 조사 보고서</button>
+        </div>
+        <section class="shell-panel" data-shell-panel hidden aria-live="polite">
+          <button type="button" data-shell-panel-close>메뉴로 돌아가기</button>
+          <section class="shell-panel-page" data-shell-panel-page="map" hidden>
+            <h2 tabindex="-1">장 선택</h2>
+            <p class="product-shell-lead">완료한 장과 현재 장만 다시 열 수 있습니다.</p>
+            <div class="shell-chapter-grid" aria-label="캠페인 장 선택">
+              <button type="button" data-shell-chapter="1">1장 출석</button><button type="button" data-shell-chapter="2">2장 공유</button><button type="button" data-shell-chapter="3">3장 두 학교</button><button type="button" data-shell-chapter="4">4장 승인</button><button type="button" data-shell-chapter="5">5장 증언</button><button type="button" data-shell-chapter="6">6장 방송</button>
+            </div>
+          </section>
+          <section class="shell-panel-page shell-settings" data-shell-panel-page="settings" hidden>
+            <h2 tabindex="-1">설정</h2>
+            <label>소리 <input type="checkbox" data-shell-setting="sound" /></label>
+            <label>움직임 <select data-shell-setting="motion"><option value="full">전체</option><option value="reduced">줄임</option></select></label>
+            <label>화질 <select data-shell-setting="quality"><option value="auto">자동</option><option value="low">낮음</option><option value="medium">보통</option><option value="high">높음</option></select></label>
+            <p class="product-shell-lead">설정은 이 기기에만 저장되며, 화질은 다음 장면부터 적용됩니다.</p>
+          </section>
+          <section class="shell-panel-page" data-shell-panel-page="help" hidden>
+            <h2 tabindex="-1">조작 도움말</h2>
+            <ul class="shell-help"><li>이동: WASD 또는 방향키</li><li>대시: Space</li><li>공격: J · 반사: K · 추적: E</li><li>결정: F로 확보 · Q로 중단</li><li>메뉴를 닫을 때는 Esc를 누르세요.</li></ul>
+          </section>
+        </section>
+      </div>
+    </section>
+    <section class="teacher-report" data-teacher-report aria-label="교사용 조사 보고서" hidden>
+      <div class="teacher-report-card">
+        <div class="teacher-report-actions"><button type="button" data-teacher-report-close>닫기</button><button type="button" data-teacher-report-print>인쇄</button></div>
+        <h1 data-teacher-report-heading tabindex="-1">교사용 조사 보고서</h1>
+        <div class="teacher-report-content" data-teacher-report-content></div>
+      </div>
+    </section>
     <section class="hud" aria-label="게임 상태와 제어">
       <div>
         <h1 class="title">H-17: NULL</h1>
@@ -190,6 +317,14 @@
         <button type="button" data-restart>다시 시작</button>
       </div>
     </section>
+    <ol class="chapter-strip" data-chapter-progress aria-label="1장부터 6장까지 캠페인 진행">
+      <li data-chapter="1"><b>1</b><span>출석</span></li>
+      <li data-chapter="2"><b>2</b><span>폭동</span></li>
+      <li data-chapter="3"><b>3</b><span>두 학교</span></li>
+      <li data-chapter="4"><b>4</b><span>승인실</span></li>
+      <li data-chapter="5"><b>5</b><span>증언</span></li>
+      <li data-chapter="6"><b>6</b><span>방송</span></li>
+    </ol>
     <p class="objective" data-route-objective>교실 기록 단말로 이동</p>
     <p class="recovery" data-recovery-notice role="status" hidden></p>
     <p class="radio" data-radio-subtitle aria-live="polite" hidden><strong data-radio-speaker></strong><span data-radio-text></span></p>

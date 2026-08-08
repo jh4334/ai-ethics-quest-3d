@@ -59,10 +59,10 @@ test('walkableRectsFromLevel: X는 벽 inset, Z는 이음새 보존·경로 양 
   const rects = walkableRectsFromLevel(chapterOneLevel);
   assert.equal(rects.length, chapterOneLevel.layers.collision.length);
 
-  // X: 모든 세그먼트가 벽 두께만큼 좁아진다(복도 ±3 → ±2.4).
+  // X: 모든 세그먼트가 벽 두께만큼 좁아진다(명단광장 ±6 → ±5.4).
   const corridor = rects[1];
-  assert.equal(corridor.minX, -3 + WALKABLE_WALL_INSET);
-  assert.equal(corridor.maxX, 3 - WALKABLE_WALL_INSET);
+  assert.equal(corridor.minX, -6 + WALKABLE_WALL_INSET);
+  assert.equal(corridor.maxX, 6 - WALKABLE_WALL_INSET);
   // Z: 중간 이음새는 그대로(-6에서 교실↔복도가 계속 이어진다).
   assert.equal(corridor.maxZ, -6);
   assert.equal(corridor.minZ, -30);

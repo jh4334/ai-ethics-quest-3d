@@ -10,31 +10,34 @@ import { setChapterCheckpoint } from '../src/reboot/state/consequences.js';
 test('production scene routing follows the persisted chapter instead of reopening chapter one', () => {
   let state = createInitialRebootState();
   const sceneIds = [resolveCampaignSceneId(state)];
-  for (let chapter = 2; chapter <= 5; chapter += 1) {
+  for (let chapter = 2; chapter <= 6; chapter += 1) {
     state = setChapterCheckpoint(state, chapter, `chapter-${chapter}:start`);
     sceneIds.push(resolveCampaignSceneId(state));
   }
   assert.deepEqual(sceneIds, [
     'school-night', 'campaign-chapter-2', 'campaign-chapter-3',
-    'campaign-chapter-4', 'final-broadcast'
+    'campaign-chapter-4', 'campaign-chapter-5', 'final-broadcast'
   ]);
 });
 
-test('chapters 2–4 persist distinct evidence and advance to the next reloadable scene', () => {
+test('chapters 2–5 persist distinct evidence and advance to the final broadcast', () => {
   let state = setChapterCheckpoint(createInitialRebootState(), 2, 'chapter-2:start');
   const second = completeCampaignChapter(state, 2, 'secure');
   const third = completeCampaignChapter(second.state, 3, 'purge');
   const fourth = completeCampaignChapter(third.state, 4, 'secure');
+  const fifth = completeCampaignChapter(fourth.state, 5, 'secure');
 
   assert.equal(resolveCampaignSceneId(second.state), 'campaign-chapter-3');
   assert.equal(resolveCampaignSceneId(third.state), 'campaign-chapter-4');
-  assert.equal(resolveCampaignSceneId(fourth.state), 'final-broadcast');
-  assert.deepEqual(fourth.state.evidence.map(({ action, evidenceId }) => [evidenceId, action]), [
+  assert.equal(resolveCampaignSceneId(fourth.state), 'campaign-chapter-5');
+  assert.equal(resolveCampaignSceneId(fifth.state), 'final-broadcast');
+  assert.deepEqual(fifth.state.evidence.map(({ action, evidenceId }) => [evidenceId, action]), [
     ['original-upload-trace', 'secure'],
     ['dot-deletion-log', 'purge'],
-    ['support-record', 'secure']
+    ['support-record', 'secure'],
+    ['verified-package', 'secure']
   ]);
-  assert.throws(() => completeCampaignChapter(fourth.state, 4, 'secure'), /현재 장/);
+  assert.throws(() => completeCampaignChapter(fifth.state, 5, 'secure'), /현재 장/);
 });
 
 test('production campaign adapters stay deterministic and are wired into the default entry', () => {

@@ -37,6 +37,9 @@ async function pressForHp(page, key, hp) {
 test('운영 URL은 QA fixture를 무시하고 명시적 훅만 모든 보스 단계를 연다', async ({ page }) => {
   const errors = captureErrors(page);
   await page.goto('/reboot.html?sw=off&fixture=qa-boss-phase-3', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('[data-product-shell]')).toBeVisible();
+  await expect(page.locator('[data-reboot-canvas]')).not.toHaveAttribute('data-boss-phase', 'approval-core');
+  await page.locator('[data-shell-new]').click();
   await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-route-segment', 'classroom-cold-open');
   await expect(page.locator('[data-reboot-canvas]')).not.toHaveAttribute('data-boss-phase', 'approval-core');
 
@@ -67,7 +70,7 @@ test('결과·손상 저장·저품질 fixture가 사용자 의미와 예산을 
   });
 
   const corruptPage = await context.newPage();
-  await corruptPage.addInitScript(() => localStorage.setItem('h17.null.save.v4', '{bad'));
+  await corruptPage.addInitScript(() => localStorage.setItem('h17.null.save.v5', '{bad'));
   await corruptPage.goto(`/reboot.html?${TEST_QUERY}&fixture=qa-corrupt-save`, { waitUntil: 'domcontentloaded' });
   await expect(corruptPage.locator('[data-recovery-notice]')).toBeVisible();
   await corruptPage.close();
@@ -91,11 +94,17 @@ test('온라인 체크포인트는 오프라인 재실행 뒤 보스 승리까�
   await page.goto(`/reboot.html?${OFFLINE_QUERY}&fixture=boss-secure`, { waitUntil: 'domcontentloaded' });
   await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-characters', 'ready', { timeout: 20_000 });
   await page.evaluate(() => navigator.serviceWorker.ready);
-  if (!await page.evaluate(() => Boolean(navigator.serviceWorker.controller))) {
-    await page.reload({ waitUntil: 'domcontentloaded' });
-    await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-characters', 'ready', { timeout: 20_000 });
-  }
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+  // 환경 에셋은 설치를 막지 않는 장별 지연 캐시다. 제어권을 얻은 온라인 장면을 한 번
+  // 실제로 열어 런타임 캐시를 채운 뒤, 같은 장의 오프라인 재접속을 검증한다.
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-characters', 'ready', { timeout: 20_000 });
+  await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-environment-status', 'ready', { timeout: 20_000 });
+  await expect.poll(async () => page.evaluate(async () => {
+    const names = await caches.keys();
+    const requests = await Promise.all(names.map(async (name) => (await caches.open(name)).keys()));
+    return requests.flat().some(({ url }) => url.includes('/assets/reboot/environment/'));
+  })).toBe(true);
   const cachedUrls = await page.evaluate(async () => {
     const names = await caches.keys();
     const requests = await Promise.all(names.map(async (name) => (await caches.open(name)).keys()));
