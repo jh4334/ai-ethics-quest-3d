@@ -1,33 +1,43 @@
 {
   "build": {
-    "modules": 169,
-    "rebootJavaScriptBytes": 296830,
-    "rebootJavaScriptGzipBytes": 98860,
-    "threeJavaScriptBytes": 678630,
-    "threeJavaScriptGzipBytes": 172900,
+    "modules": 172,
+    "rebootJavaScriptBytes": 317746,
+    "rebootJavaScriptGzipBytes": 105820,
+    "threeJavaScriptBytes": 679932,
+    "threeJavaScriptGzipBytes": 173170,
     "chunkWarningOverBytes": 500000
   },
   "assets": {
-    "initialShell": { "bytes": 1329945, "files": 12 },
-    "installPrecache": { "bytes": 51140752, "files": 56 },
-    "chapterEnvironment": { "bytes": 12908175, "files": 27 },
+    "initialShell": { "bytes": 1353574, "files": 12 },
+    "installPrecache": { "bytes": 51164381, "files": 56 },
+    "chapterEnvironment": { "bytes": 13035875, "files": 41 },
     "character": { "bytes": 34100927, "files": 42 },
     "animation": { "bytes": 15709880, "files": 2 },
-    "total": { "bytes": 64048927, "files": 83 }
+    "total": { "bytes": 64200256, "files": 97 }
+  },
+  "firstPlayableChapter": {
+    "encodedBodyBytes": 85493849,
+    "requests": 233,
+    "transferBytes": 72154175,
+    "measurementSurface": "Vite dev server, empty browser context, chapter 1 high-quality profile"
   },
   "captures": {
     "profiles": ["desktop-1440x900", "mobile-390x844"],
-    "maxDrawCalls": 136,
-    "maxTriangles": 132821,
+    "renderer": "ANGLE Intel Iris Xe Direct3D11",
+    "maxDrawCalls": 187,
+    "maxTriangles": 140247,
     "maxLights": 4,
-    "swiftShaderP95FrameMs": 100,
+    "desktopDirectRafP95FrameMs": 16.8,
+    "mobileDirectRafP95FrameMs": 24.8,
+    "sceneProbeP95FrameMs": 100,
+    "sceneProbeNote": "초기 로딩과 포커스 전환을 포함한 장면 누적값이라 정상 프레임의 직접 rAF 표본과 분리한다.",
     "consoleErrors": 0,
     "failedResponses": 0
   },
   "automatedPlaythrough": {
-    "keyboardSeconds": 309.6,
-    "touchSeconds": 234.7,
+    "keyboardSeconds": 626.2,
+    "touchSeconds": 411.9,
     "humanPlaytimeMeasured": false,
-    "note": "테스트 훅과 자동 입력을 사용한 가속 경로이므로 사람의 실제 플레이 시간으로 해석하지 않는다."
+    "note": "실제 이동·전투·퍼즐·저장 재접속을 수행하지만 테스트 훅과 자동 입력을 사용하므로 사람의 실제 플레이 시간으로 해석하지 않는다."
   }
 }
