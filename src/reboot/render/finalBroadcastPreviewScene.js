@@ -4,8 +4,8 @@ import { PULSE_RULES, createBroadcastProtocolState, stepBroadcastProtocol } from
 import { finalizeCampaign } from '../campaign/endingEvaluator.js';
 import { createFinaleFixture } from '../campaign/finaleFixtures.js';
 import { createCharacterFactory } from '../characters/factory.js';
-import { CHAPTER_FIVE } from '../content/chapters/catalog.js';
-import { chapterFiveLevel } from '../content/levels/chapter5.js';
+import { CHAPTER_SIX } from '../content/chapters/catalog.js';
+import { chapterSixLevel } from '../content/levels/chapter6.js';
 import { createDisposableRegistry } from './dispose.js';
 import { createCampaignLandmarks } from './campaignLandmarks.js';
 import { createSceneRadio } from './sceneRadio.js';
@@ -96,7 +96,7 @@ export function createFinalBroadcastPreviewScene({
   const camera = new THREE.PerspectiveCamera(44, 1, 0.1, 100);
   camera.position.set(0, 6.4, -51.5);
   camera.lookAt(0, 0.7, -68);
-  const route = resources.register(createSchoolRoute({ level: chapterFiveLevel, lightLimit: 0, scene }), 'final-route');
+  const route = resources.register(createSchoolRoute({ level: chapterSixLevel, lightLimit: 0, scene }), 'final-route');
   const landmarks = resources.register(createCampaignLandmarks({
     scene, type: 'finale', variant: endingId === 'sealed' ? 'purge' : 'secure'
   }), 'final-landmarks');
@@ -140,12 +140,12 @@ export function createFinalBroadcastPreviewScene({
   let protocol = createBroadcastProtocolState(fixture.campaign);
   // 시나리오 v2 — 도입·프로토콜 단계·결말 대본을 무전 자막으로(정본: docs/reboot/시나리오-v2.md).
   const radio = createSceneRadio(ui);
-  const script = CHAPTER_FIVE.sceneScript ?? {};
+  const script = CHAPTER_SIX.sceneScript ?? {};
   let outcome = null;
   let accumulator = 0;
   let entered = false;
   let unsubscribeInput = null;
-  const alreadyResolved = /^chapter-5:resolved-/.test(fixture.campaign.chapterProgress.checkpoint);
+  const alreadyResolved = /^chapter-6:resolved-/.test(fixture.campaign.chapterProgress.checkpoint);
   // 타격감(GF1) — 펄스 명중 순간 시뮬만 벽시계 기준으로 잠깐 멈추고(캠페인 방과 동일 규칙),
   // 카메라는 기존 컨트롤러의 셰이크 공식(감쇠 1.4, 위상 ×19)을 그대로 빌려 흔든다.
   const reducedMotion = fixture.campaign.settings?.motion === 'reduced';
@@ -244,7 +244,7 @@ export function createFinalBroadcastPreviewScene({
         : `${protocol.phaseIndex + 1}/4 ${PHASE_GUIDES_KO[phase.id] ?? phase.response.toUpperCase()}`;
     if (ui.enemy) ui.enemy.textContent = `LUMEN + DOT ${protocol.hp}`;
     if (ui.action) ui.action.textContent = restoredOutcome ? 'RECORDED' : phase.response.toUpperCase();
-    if (ui.chain) ui.chain.textContent = restoredOutcome ? '5/5 COMPLETE' : `${protocol.phaseIndex + 1}/4 PROTOCOL`;
+    if (ui.chain) ui.chain.textContent = restoredOutcome ? '6/6 COMPLETE' : `${protocol.phaseIndex + 1}/4 PROTOCOL`;
   }
 
   function queueAction({ action, active }) {

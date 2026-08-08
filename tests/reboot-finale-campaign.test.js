@@ -15,9 +15,10 @@ const enemyValidation = await import('../src/reboot/content/enemies/validateEnem
 const broadcast = await import('../src/reboot/bosses/broadcastProtocol.js').catch(() => ({}));
 const chapterFourLevel = await import('../src/reboot/content/levels/chapter4.js').catch(() => ({}));
 const chapterFiveLevel = await import('../src/reboot/content/levels/chapter5.js').catch(() => ({}));
+const chapterSixLevel = await import('../src/reboot/content/levels/chapter6.js').catch(() => ({}));
 const levelValidation = await import('../src/reboot/level/validateLevel.js').catch(() => ({}));
 
-const { CHAPTERS_2_5 = [], CHAPTERS_4_5 = [] } = chapterCatalog;
+const { CHAPTERS_2_6 = [], CHAPTERS_4_6 = [] } = chapterCatalog;
 const { validateChapterDefinitions = unavailable } = campaignRuntime;
 const {
   applyApprovalCommand = unavailable,
@@ -33,6 +34,7 @@ const {
 } = broadcast;
 const { chapterFourLevel: level4 = null } = chapterFourLevel;
 const { chapterFiveLevel: level5 = null } = chapterFiveLevel;
+const { chapterSixLevel: level6 = null } = chapterSixLevel;
 const { validateLevel = unavailable } = levelValidation;
 
 function reversePipeline(decision) {
@@ -51,20 +53,17 @@ function advanceProtocolWindow(state) {
   return current;
 }
 
-test('Given chapters 4 and 5, When validated with the campaign, Then five chapters fit the canonical 2–3 hour route', () => {
-  // Given: 승인실과 마지막 방송을 포함한 확장 카탈로그.
-  const validation = validateChapterDefinitions(CHAPTERS_2_5);
-  const chapterOneMinutes = 29;
-  const totalMinutes = chapterOneMinutes
-    + CHAPTERS_2_5.reduce((total, chapter) => total + chapter.timeline.desktopMinutes, 0);
+test('Given chapters 4 through 6, When validated with the campaign, Then testimony and broadcast remain distinct unmeasured routes', () => {
+  // Given: 승인실, 증언 보관소, 마지막 방송을 포함한 확장 카탈로그.
+  const validation = validateChapterDefinitions(CHAPTERS_2_6);
 
-  // Then: 4·5장의 루프/보스/PATCH/반전과 전체 길이가 정본 범위에 든다.
-  assert.deepEqual(CHAPTERS_4_5.map((chapter) => chapter.id), [
-    'chapter-4-three-second-approval', 'chapter-5-final-broadcast'
+  // Then: 세 장의 루프/보스/PATCH/반전이 있고 실측 전 분량 숫자를 만들지 않는다.
+  assert.deepEqual(CHAPTERS_4_6.map((chapter) => chapter.id), [
+    'chapter-4-three-second-approval', 'chapter-5-testimony-archive', 'chapter-6-final-broadcast'
   ]);
   assert.deepEqual(validation.errors, []);
-  assert.equal(totalMinutes >= 120 && totalMinutes <= 180, true);
-  assert.equal(CHAPTERS_4_5.every((chapter) => chapter.boss.phases.length >= 3), true);
+  assert.equal(CHAPTERS_4_6.every((chapter) => chapter.timeline.status === 'unmeasured'), true);
+  assert.equal(CHAPTERS_4_6.every((chapter) => chapter.boss.phases.length >= 3), true);
 });
 
 test('Given the approval pipeline, When reversed before deciding, Then speed and preservation remain viable with explicit costs', () => {
@@ -143,12 +142,23 @@ test('Given documented histories, When the campaign finalizes twice, Then three 
   }
 });
 
-test('Given chapter 4/5 routes and pure finale rules, When inspected, Then levels validate and simulation stays deterministic', () => {
-  assert.deepEqual([level4, level5].map((level) => validateLevel(level).errors), [[], []]);
+test('Given chapter 4/5/6 routes and pure finale rules, When inspected, Then levels validate and simulation stays deterministic', () => {
+  assert.deepEqual([level4, level5, level6].map((level) => validateLevel(level).errors), [[], [], []]);
   const sources = [
     '../src/reboot/campaign/approvalPipeline.js',
     '../src/reboot/campaign/endingEvaluator.js',
     '../src/reboot/bosses/broadcastProtocol.js'
   ].map((path) => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
   assert.equal(/Math\.random|from ['"]three['"]/.test(sources), false);
+});
+
+test('Given the relocated finale, When production scene source is inspected, Then chapter six owns its content level and restore checkpoint', () => {
+  // Given/When: 마지막 방송 표현 어댑터의 정본 결합점을 읽는다.
+  const source = readFileSync(new URL('../src/reboot/render/finalBroadcastPreviewScene.js', import.meta.url), 'utf8');
+
+  // Then: 새 5장의 카탈로그/레벨이나 chapter-5 복원 정규식에 기대지 않는다.
+  assert.match(source, /CHAPTER_SIX/);
+  assert.match(source, /chapterSixLevel/);
+  assert.match(source, /chapter-6:resolved-/);
+  assert.doesNotMatch(source, /CHAPTER_FIVE|chapterFiveLevel|chapter-5:resolved-/);
 });
