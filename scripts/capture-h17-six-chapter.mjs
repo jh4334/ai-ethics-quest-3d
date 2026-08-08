@@ -69,6 +69,22 @@ async function captureChapter(browser, chapter, profile) {
   await page.waitForTimeout(900);
   const name = `chapter-${chapter}-${profile.id}`;
   const screenshotPath = `${outputDirectory}/${name}.png`;
+  await page.bringToFront();
+  const directRafP95FrameMs = await page.evaluate(() => new Promise((resolve) => {
+    const samples = [];
+    let previous = performance.now();
+    const sample = (now) => {
+      samples.push(now - previous);
+      previous = now;
+      if (samples.length < 120) {
+        requestAnimationFrame(sample);
+        return;
+      }
+      samples.sort((left, right) => left - right);
+      resolve(Math.round(samples[Math.ceil(samples.length * 0.95) - 1] * 10) / 10);
+    };
+    requestAnimationFrame(sample);
+  }));
   await page.screenshot({ animations: 'disabled', path: screenshotPath });
   const report = await page.evaluate(() => {
     const canvasElement = document.querySelector('[data-reboot-canvas]');
@@ -100,7 +116,7 @@ async function captureChapter(browser, chapter, profile) {
   });
   await context.close();
   return {
-    chapter, consoleErrors, failedResponses, name, profile: profile.id,
+    chapter, consoleErrors, directRafP95FrameMs, failedResponses, name, profile: profile.id,
     screenshotPath: relativeEvidencePath(screenshotPath), ...report
   };
 }
