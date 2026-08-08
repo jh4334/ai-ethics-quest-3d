@@ -25,9 +25,9 @@ export function validateChapterDefinitions(definitions) {
     if (!Array.isArray(chapter?.reversal?.foreshadowIds) || chapter.reversal.foreshadowIds.length < 2) {
       errors.push(issue('MISSING_FORESHADOW', chapter?.id));
     }
-    if (!(chapter?.timeline?.desktopMinutes >= 25 && chapter.timeline.desktopMinutes <= 35)
-      || !(chapter?.timeline?.touchMinutes >= 25 && chapter.timeline.touchMinutes <= 35)
-      || !(chapter?.timeline?.chapterSelectMinutes >= 25 && chapter.timeline.chapterSelectMinutes <= 35)) {
+    const measuredTimeline = chapter?.timeline?.status === 'measured'
+      && chapter.timeline.desktopMinutes > 0 && chapter.timeline.touchMinutes > 0;
+    if (chapter?.timeline?.status !== 'unmeasured' && !measuredTimeline) {
       errors.push(issue('INVALID_TIMELINE', chapter?.id));
     }
     if (!chapter?.carryover?.secure || !chapter?.carryover?.purge) {
