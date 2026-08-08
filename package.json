@@ -7,6 +7,8 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "test": "node tests/run-node-tests.mjs",
+    "test:h17": "node tests/run-node-tests.mjs --suite=h17",
+    "test:legacy": "node tests/run-node-tests.mjs --suite=legacy",
     "smoke": "node tests/dom-smoke.mjs",
     "browser:install": "playwright install chromium",
     "preview:test": "node tests/reboot-e2e/previewServer.mjs",
