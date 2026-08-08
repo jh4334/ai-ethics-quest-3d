@@ -20,19 +20,20 @@ function isDeepFrozen(value) {
   ));
 }
 
-test('initial v4 consequence state exposes immutable independent models', () => {
+test('initial v5 consequence state exposes immutable independent models', () => {
   // Given: no previous reboot campaign.
   // When: a new state is created.
   const state = createInitialRebootState();
 
   // Then: every consequence, progress, choice, evidence, and settings model is immutable.
-  assert.equal(state.schemaVersion, 4);
+  assert.equal(state.schemaVersion, 5);
   assert.deepEqual(state.integrity, { secured: 0, lost: 0 });
   assert.deepEqual(state.exposure, { contained: 0, disclosed: 0 });
   assert.deepEqual(state.trust, { dot: 0, haru: 0, lumen: 0, yoonseo: 0 });
   assert.deepEqual(state.chapterProgress, { completed: [], current: 1, checkpoint: 'chapter-1:start' });
   assert.equal(state.patchChoice, null);
   assert.deepEqual(state.evidence, []);
+  assert.deepEqual(state.gateAttempts, []);
   assert.deepEqual(state.settings, { motion: 'full', quality: 'auto', sound: true });
   assert.equal(isDeepFrozen(state), true);
 });
@@ -83,9 +84,9 @@ test('trust chapter and patch transitions return normalized immutable copies', (
 });
 
 test('malformed and future consequence data normalize to a safe new campaign', () => {
-  // Given: malformed v4 fields and a future schema.
+  // Given: malformed v5 fields and a future schema.
   const malformed = {
-    schemaVersion: 4,
+    schemaVersion: 5,
     integrity: { secured: -8, lost: 'many' },
     exposure: null,
     trust: { haru: 500, stranger: 99 },
@@ -97,9 +98,9 @@ test('malformed and future consequence data normalize to a safe new campaign', (
 
   // When: both values cross the model boundary.
   const repaired = normalizeRebootState(malformed);
-  const future = normalizeRebootState({ schemaVersion: 5, settings: { sound: false } });
+  const future = normalizeRebootState({ schemaVersion: 6, settings: { sound: false } });
 
-  // Then: invalid fields are safe and future progress is not interpreted as v4.
+  // Then: invalid fields are safe and future progress is not interpreted as v5.
   assert.deepEqual(repaired, createInitialRebootState());
   assert.deepEqual(future, createInitialRebootState());
 });
