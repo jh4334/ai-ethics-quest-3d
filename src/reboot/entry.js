@@ -28,6 +28,13 @@ const canvas = root?.querySelector('[data-reboot-canvas]');
 if (!root || !canvas) throw new Error('H-17 reboot root and canvas are required');
 
 const session = createRebootSession({ storage: safeLocalStorage(window) });
+for (const item of root.querySelectorAll('[data-chapter-progress] [data-chapter]')) {
+  const chapter = Number(item.dataset.chapter);
+  const progress = session.getState().chapterProgress;
+  const state = progress.completed.includes(chapter) ? 'complete' : chapter === progress.current ? 'current' : 'locked';
+  item.dataset.state = state;
+  if (state === 'current') item.setAttribute('aria-current', 'step');
+}
 const searchParams = new URLSearchParams(window.location.search);
 const testHook = window.__ETHICS_TEST_HOOK__ === true
   || window.sessionStorage.getItem('h17.testHook') === 'true'

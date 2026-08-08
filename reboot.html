@@ -21,6 +21,12 @@
     .hud { position: fixed; inset: max(16px, env(safe-area-inset-top)) 16px auto; display: flex; justify-content: space-between; align-items: start; gap: 16px; pointer-events: none; }
     .title { margin: 0; color: #f4c06d; font-size: clamp(1rem, 3vw, 1.5rem); letter-spacing: .08em; text-shadow: 0 2px 12px #000; }
     .status { margin: .35rem 0 0; color: #d9e4ff; font-size: .9rem; }
+    .chapter-strip { position: fixed; top: max(16px, env(safe-area-inset-top)); left: 50%; z-index: 2; display: flex; gap: 5px; translate: -50% 0; margin: 0; padding: 6px 8px; border: 1px solid #7b91bf55; border-radius: 999px; background: #050918c7; list-style: none; pointer-events: none; }
+    .chapter-strip li { display: grid; min-width: 46px; grid-template-columns: 18px 1fr; align-items: center; gap: 4px; color: #9eabc5; font-size: .64rem; white-space: nowrap; }
+    .chapter-strip b { display: grid; width: 18px; height: 18px; place-items: center; border: 1px solid currentColor; border-radius: 50%; font-size: .66rem; }
+    .chapter-strip [data-state="current"] { color: #fff3d6; font-weight: 800; }
+    .chapter-strip [data-state="current"] b { color: #15100a; background: #f4c06d; box-shadow: 0 0 12px #f4c06d88; }
+    .chapter-strip [data-state="complete"] { color: #7ce5cf; }
     .combat-hud { display: flex; gap: 10px; margin-top: 8px; color: #d9e4ff; font-size: .78rem; }
     .combat-hud > span { padding: 4px 7px; border: 1px solid #7b91bf66; border-radius: 5px; background: #050918aa; }
     /* 채움형 게이지 — HP는 붉은/호박, 시그널은 시안. 라벨 글씨는 채움 위에서도 또렷하게. */
@@ -41,6 +47,7 @@
     .webgl-failure p { margin: 0; word-break: keep-all; }
     .webgl-failure button { margin-top: 14px; border-color: #f4c06d; color: #fff3d6; }
     [data-reboot-root][data-webgl-unavailable="true"] .hud,
+    [data-reboot-root][data-webgl-unavailable="true"] .chapter-strip,
     [data-reboot-root][data-webgl-unavailable="true"] .objective,
     [data-reboot-root][data-webgl-unavailable="true"] .hint,
     [data-reboot-root][data-webgl-unavailable="true"] .touch-controls { display: none; }
@@ -114,6 +121,9 @@
     [data-touch-mode="true"] .hud { display: block; right: auto; width: calc(var(--fixture-edge) - 32px); }
     [data-touch-mode="true"] .title { font-size: 1rem; }
     [data-touch-mode="true"] .status { font-size: .72rem; margin-top: .2rem; }
+    [data-touch-mode="true"] .chapter-strip { top: calc(var(--hud-top) + 74px); width: min(320px, calc(100vw - 116px)); justify-content: center; padding: 5px 7px; }
+    [data-touch-mode="true"] .chapter-strip li { min-width: 28px; grid-template-columns: 1fr; }
+    [data-touch-mode="true"] .chapter-strip span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
     [data-touch-mode="true"] .actions { position: absolute; top: 0; right: 0; gap: 6px; }
     [data-touch-mode="true"] .actions button { min-width: 0; padding: 8px 10px; font-size: .8rem; white-space: nowrap; }
     [data-touch-mode="true"] .combat-hud { flex-wrap: wrap; gap: 6px; max-width: calc(100% - 64px); }
@@ -201,6 +211,14 @@
         <button type="button" data-restart>다시 시작</button>
       </div>
     </section>
+    <ol class="chapter-strip" data-chapter-progress aria-label="1장부터 6장까지 캠페인 진행">
+      <li data-chapter="1"><b>1</b><span>출석</span></li>
+      <li data-chapter="2"><b>2</b><span>폭동</span></li>
+      <li data-chapter="3"><b>3</b><span>두 학교</span></li>
+      <li data-chapter="4"><b>4</b><span>승인실</span></li>
+      <li data-chapter="5"><b>5</b><span>증언</span></li>
+      <li data-chapter="6"><b>6</b><span>방송</span></li>
+    </ol>
     <p class="objective" data-route-objective>교실 기록 단말로 이동</p>
     <p class="recovery" data-recovery-notice role="status" hidden></p>
     <p class="radio" data-radio-subtitle aria-live="polite" hidden><strong data-radio-speaker></strong><span data-radio-text></span></p>

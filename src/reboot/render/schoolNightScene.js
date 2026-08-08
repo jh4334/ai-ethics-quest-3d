@@ -23,7 +23,7 @@ import { createBossCast } from './bossCast.js';
 import { createDisposableRegistry } from './dispose.js';
 import { createEnemyCast } from './enemyCast.js';
 import { createEnemyHpBars } from './enemyHpBars.js';
-import { createSchoolAtmosphere } from './schoolAtmosphere.js';
+import { createFloatingCampusEnvironment } from './floatingCampusEnvironment.js';
 import { createSchoolRoute } from './schoolRoute.js';
 import { createSchoolSceneDebugSnapshot } from './schoolSceneDebug.js';
 import { closestRouteSegment, getBossCameraTargets, getEncounterCameraTargets, getSceneViewport, updateSchoolCamera } from './schoolSceneCamera.js';
@@ -38,11 +38,12 @@ export function createSchoolNightScene({
   const resources = createDisposableRegistry();
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x050918);
-  scene.fog = new THREE.Fog(0x050918, 24, 55);
+  scene.fog = new THREE.Fog(0x050918, 48, 150);
 
-  const camera = new THREE.PerspectiveCamera(44, 1, 0.1, 90);
-  const route = resources.register(createSchoolRoute({ level: chapterOneLevel, lightLimit: 3, scene }), 'school-route');
-  resources.register(createSchoolAtmosphere({ level: chapterOneLevel, scene }), 'school-atmosphere');
+  const camera = new THREE.PerspectiveCamera(44, 1, 0.1, 180);
+  const route = resources.register(createSchoolRoute({ level: chapterOneLevel, lightLimit: 0, scene }), 'school-route');
+  route.group.visible = false;
+  const campus = resources.register(createFloatingCampusEnvironment({ scene }), 'floating-campus');
   // 캐릭터·적·보스가 GLTF 캐시를 공유한다 — 같은 애니메이션 GLB·텍스처를 세 번 파싱하지 않게.
   // 캐스트들보다 먼저 등록해 역순 해제에서 마지막에 폐기된다.
   const characterFactory = resources.register(createCharacterFactory(), 'shared-character-factory');
@@ -226,6 +227,10 @@ export function createSchoolNightScene({
       syncStoryGate();
       canvas.dataset.characters = 'loading';
       canvas.dataset.enemies = 'loading';
+      canvas.dataset.environmentStatus = 'loading';
+      campus.ready.then((report) => {
+        if (entered) canvas.dataset.environmentStatus = report.status;
+      });
       canvas.dataset.lastAction = 'none';
       canvas.dataset.lastEnemyEvent = 'none';
       loadSchoolSceneCast({
@@ -250,7 +255,7 @@ export function createSchoolNightScene({
       return createSchoolSceneDebugSnapshot({
         activeTargets, bossGame, cameraState, canvas, cast, combatSafeArea, currentSegment,
         enemyCast, feedback, game, lastEnemyEvents, lastEvents, lastFrame, performanceProbe,
-        route, story
+        campus, route, story
       });
     },
     resourceCount() {
