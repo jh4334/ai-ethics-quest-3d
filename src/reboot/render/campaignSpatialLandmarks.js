@@ -1,11 +1,12 @@
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 const MATERIALS = Object.freeze({
-  amber: { color: 0xf3b36c, emissive: 0x6b3515, emissiveIntensity: 0.7, roughness: 0.72 },
-  blue: { color: 0x6aa9ff, emissive: 0x173f75, emissiveIntensity: 0.8, roughness: 0.62 },
-  cyan: { color: 0x5de0c1, emissive: 0x155c52, emissiveIntensity: 0.9, roughness: 0.6 },
-  navy: { color: 0x17284b, emissive: 0x081126, emissiveIntensity: 0.35, roughness: 0.88 },
-  red: { color: 0xd74732, emissive: 0x651b17, emissiveIntensity: 0.85, roughness: 0.68 }
+  amber: { color: 0xc18b55, emissive: 0x3f200d, emissiveIntensity: 0.28, metalness: 0.12, roughness: 0.58 },
+  blue: { color: 0x496b9f, emissive: 0x102949, emissiveIntensity: 0.32, metalness: 0.18, roughness: 0.5 },
+  cyan: { color: 0x4e9998, emissive: 0x103f3e, emissiveIntensity: 0.36, metalness: 0.2, roughness: 0.48 },
+  navy: { color: 0x1c2f4a, emissive: 0x07101d, emissiveIntensity: 0.18, metalness: 0.08, roughness: 0.82 },
+  red: { color: 0x9d3b38, emissive: 0x3e1211, emissiveIntensity: 0.34, metalness: 0.16, roughness: 0.54 }
 });
 
 const part = (shape, material, x, y, z, sx, sy, sz, yaw = 0) => (
@@ -14,9 +15,11 @@ const part = (shape, material, x, y, z, sx, sy, sz, yaw = 0) => (
 
 const RECIPES = Object.freeze({
   'media-plaza': ['media-kiosk-ring', [
-    part('cylinder', 'amber', -4.5, 1, 0, 1.2, 2, 1.2),
-    part('cylinder', 'amber', 4.5, 1, 0, 1.2, 2, 1.2),
-    part('box', 'blue', 0, 2.6, -4, 6, 0.5, 0.5)
+    part('cylinder', 'amber', -4.8, 1.2, -3.8, 0.45, 2.4, 0.45),
+    part('cylinder', 'amber', 4.8, 1.2, -3.8, 0.45, 2.4, 0.45),
+    part('box', 'blue', 0, 2.5, -3.8, 10, 0.35, 0.35),
+    part('box', 'cyan', -2.5, 0.7, 1.5, 1.4, 1.4, 0.35),
+    part('box', 'cyan', 2.5, 0.7, 1.5, 1.4, 1.4, 0.35)
   ]],
   'edit-bays': ['edit-cutting-bays', [
     part('box', 'red', -5.5, 1.5, -3, 0.5, 3, 5),
@@ -36,8 +39,12 @@ const RECIPES = Object.freeze({
     part('box', 'amber', 0, 4.7, -5, 12.6, 0.5, 0.5)
   ]],
   'split-foyer': ['split-school-gate', [
-    part('box', 'amber', -3.8, 1.8, -1, 3.2, 3.6, 0.5),
-    part('box', 'cyan', 3.8, 1.8, -1, 3.2, 3.6, 0.5),
+    part('box', 'amber', -5.2, 1.8, -2, 0.4, 3.6, 0.45),
+    part('box', 'amber', -2.2, 1.8, -2, 0.4, 3.6, 0.45),
+    part('box', 'amber', -3.7, 3.4, -2, 3.4, 0.4, 0.45),
+    part('box', 'cyan', 2.2, 1.8, -2, 0.4, 3.6, 0.45),
+    part('box', 'cyan', 5.2, 1.8, -2, 0.4, 3.6, 0.45),
+    part('box', 'cyan', 3.7, 3.4, -2, 3.4, 0.4, 0.45),
     part('box', 'blue', 0, 0.08, 1, 0.2, 0.08, 10)
   ]],
   'warm-incomplete': ['warm-missing-desk-arc', [
@@ -59,9 +66,13 @@ const RECIPES = Object.freeze({
     part('box', 'cyan', 0, 0.08, -1, 0.35, 0.08, 9)
   ]],
   'approval-intake': ['approval-intake-stacks', [
-    part('box', 'red', -4.5, 0.35, -2, 3, 0.7, 2),
-    part('box', 'red', 4.5, 0.7, -2, 3, 1.4, 2),
-    part('box', 'amber', 0, 1.2, -4.5, 4, 2.4, 0.5)
+    part('box', 'red', -4.5, 0.18, -1.6, 2.2, 0.24, 1.35),
+    part('box', 'red', -4.3, 0.42, -1.7, 1.8, 0.2, 1.1, 0.08),
+    part('box', 'red', 4.5, 0.18, -1.6, 2.2, 0.24, 1.35),
+    part('box', 'red', 4.3, 0.42, -1.7, 1.8, 0.2, 1.1, -0.08),
+    part('box', 'amber', -2.3, 1.8, -4.5, 0.4, 3.6, 0.45),
+    part('box', 'amber', 2.3, 1.8, -4.5, 0.4, 3.6, 0.45),
+    part('box', 'amber', 0, 3.4, -4.5, 5, 0.4, 0.45)
   ]],
   'conveyor-scoring': ['three-second-conveyor', [
     part('box', 'red', 0, 0.3, -1, 3, 0.5, 13),
@@ -85,8 +96,8 @@ const RECIPES = Object.freeze({
 
 function geometryFor(shape) {
   return shape === 'cylinder'
-    ? new THREE.CylinderGeometry(0.5, 0.5, 1, 12)
-    : new THREE.BoxGeometry(1, 1, 1);
+    ? new THREE.CylinderGeometry(0.5, 0.5, 1, 16)
+    : new RoundedBoxGeometry(1, 1, 1, 4, 0.08);
 }
 
 export function createCampaignSpatialLandmarks({ level, scene }) {

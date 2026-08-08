@@ -15,6 +15,7 @@ import { chapterTwoLevel } from '../content/levels/chapter2.js';
 import { chapterThreeLevel } from '../content/levels/chapter3.js';
 import { chapterFourLevel } from '../content/levels/chapter4.js';
 import { createBladeTrail } from './bladeTrail.js';
+import { createCampaignChapterEnvironment } from './campaignChapterEnvironment.js';
 import { createDisposableRegistry } from './dispose.js';
 import { createCampaignLandmarks } from './campaignLandmarks.js';
 import { createCampaignSpatialLandmarks } from './campaignSpatialLandmarks.js';
@@ -83,13 +84,23 @@ export function createCampaignChapterScene({
   if (!config || !content) throw new RangeError('운영 캠페인 장면은 2장부터 4장까지 지원합니다.');
   const resources = createDisposableRegistry();
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x050918);
-  scene.fog = new THREE.Fog(0x050918, 28, 68);
+  scene.background = new THREE.Color(0x081020);
+  scene.fog = new THREE.Fog(0x081020, 32, 72);
   const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
   const route = resources.register(createSchoolRoute({ level: config.level, lightLimit: 0, scene }), 'campaign-route');
+  route.group.traverse((object) => {
+    if (object.userData.routeRole !== 'occluder') return;
+    object.material.color.setHex(0x233754);
+    object.material.emissive.setHex(0x07101e);
+    object.material.emissiveIntensity = 0.18;
+  });
   const landmarks = resources.register(createCampaignLandmarks({ scene, type: LANDMARK_TYPES[chapter] }), 'campaign-landmarks');
+  landmarks.root.visible = false;
   const spatialLandmarks = resources.register(
     createCampaignSpatialLandmarks({ level: config.level, scene }), 'campaign-spatial-landmarks'
+  );
+  const environment = resources.register(
+    createCampaignChapterEnvironment({ chapter, level: config.level, scene }), 'campaign-production-environment'
   );
   const factory = resources.register(createCharacterFactory(), 'campaign-cast');
   // 적 머리 위 HP 링 — 웨이브가 바뀌어도 인스턴스 하나로 스폰 ID별 바를 관리한다.
@@ -119,6 +130,11 @@ export function createCampaignChapterScene({
   const script = content.sceneScript ?? { briefing: [], reversalScript: [], stepCues: [] };
   const characters = new Map();
   const errors = [];
+  environment.ready.then(() => {
+    if (entered) syncPresentation();
+  }).catch((error) => {
+    if (entered) errors.push(`environment: ${error.message}`);
+  });
   let waveProgress = createRoomWaveProgress(chapter);
   let interactionSatisfied = false;
   const resolvedInteractions = [];
@@ -159,6 +175,7 @@ export function createCampaignChapterScene({
       encounterDefinition: definition,
       encounterOrigin: definition.spatial.encounterOrigin,
       extraTargets: [],
+      startFacing: { x: 0, y: -1 },
       startPosition,
       walkable
     });
@@ -259,6 +276,9 @@ export function createCampaignChapterScene({
     canvas.dataset.campaignResolvedInteractions = resolvedInteractions.join(',');
     canvas.dataset.campaignPhaseBeats = spatial.phaseBeats.join(',');
     canvas.dataset.campaignEnemiesAlive = String(awaitingDecision || completed ? 0 : alive);
+    const environmentState = environment.getDebugState();
+    canvas.dataset.environmentStatus = environmentState.status;
+    canvas.dataset.environmentFailures = environmentState.failedAssetIds.join(',');
     canvas.dataset.playerSignal = String(combat.player.signal);
     canvas.dataset.characters = errors.length > 0
       ? 'error'
@@ -423,6 +443,7 @@ export function createCampaignChapterScene({
           position: Object.freeze({ x: enemy.position.x, z: enemy.position.z })
         }))),
         errors: Object.freeze([...errors]),
+        environment: environment.getDebugState(),
         landmarks: landmarks.getDebugState(),
         performance: performanceProbe.report(),
         player: Object.freeze({

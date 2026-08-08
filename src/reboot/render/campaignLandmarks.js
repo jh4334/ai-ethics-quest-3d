@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 
 const PALETTES = Object.freeze({
-  amber: Object.freeze({ color: 0xf3b36c, emissive: 0x6b3515 }),
-  blue: Object.freeze({ color: 0x6aa9ff, emissive: 0x173f75 }),
-  cyan: Object.freeze({ color: 0x5de0c1, emissive: 0x155c52 }),
+  amber: Object.freeze({ color: 0xbe8954, emissive: 0x3d210f }),
+  blue: Object.freeze({ color: 0x5275a8, emissive: 0x112b4b }),
+  cyan: Object.freeze({ color: 0x4f9e9b, emissive: 0x104542 }),
   glow: Object.freeze({ color: 0xcffef0, emissive: 0x36d4ae, emissiveIntensity: 1.55 }),
-  neutral: Object.freeze({ color: 0x8795ad, emissive: 0x202a3d }),
-  red: Object.freeze({ color: 0xd74732, emissive: 0x651b17 }),
-  violet: Object.freeze({ color: 0xb58ad9, emissive: 0x45265f })
+  neutral: Object.freeze({ color: 0x77859b, emissive: 0x151d2b }),
+  red: Object.freeze({ color: 0x9f3e39, emissive: 0x3f1412 }),
+  violet: Object.freeze({ color: 0x806a9d, emissive: 0x2b1b3c })
 });
 
 // 인스턴스 튜플: [x, y, z, sx, sy, sz, rotY=0, rotZ=0] — rotZ는 벽시계 바늘처럼 벽면 회전에만 쓴다.
@@ -242,8 +242,9 @@ export function createCampaignLandmarks({ scene, type, variant = 'default' }) {
     const material = materials.get(paletteName) ?? new THREE.MeshStandardMaterial({
       color: palette.color,
       emissive: palette.emissive,
-      emissiveIntensity: palette.emissiveIntensity ?? 0.7,
-      roughness: 0.72
+      emissiveIntensity: palette.emissiveIntensity ?? 0.34,
+      metalness: 0.14,
+      roughness: 0.58
     });
     materials.set(paletteName, material);
     return material;
