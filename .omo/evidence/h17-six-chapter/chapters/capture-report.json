@@ -1,0 +1,291 @@
+{
+  "baseUrl": "http://127.0.0.1:4174/",
+  "captures": [
+    {
+      "chapter": 1,
+      "consoleErrors": [],
+      "failedResponses": [],
+      "name": "chapter-1-desktop-1440x900",
+      "profile": "desktop-1440x900",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/chapters/chapter-1-desktop-1440x900.png",
+      "dataset": {
+        "campaignChapter": "1",
+        "characters": "ready",
+        "drawCalls": 136,
+        "environmentStatus": "ready",
+        "lightCount": 4,
+        "p95FrameMs": 100,
+        "triangles": 132471
+      },
+      "resources": {
+        "encodedBodyBytes": 85156463,
+        "requests": 214,
+        "transferBytes": 71831191
+      },
+      "touchControlsVisible": false
+    },
+    {
+      "chapter": 2,
+      "consoleErrors": [],
+      "failedResponses": [],
+      "name": "chapter-2-desktop-1440x900",
+      "profile": "desktop-1440x900",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/chapters/chapter-2-desktop-1440x900.png",
+      "dataset": {
+        "campaignChapter": "2",
+        "campaignStep": "0",
+        "characters": "ready",
+        "drawCalls": 102,
+        "environmentStatus": "ready",
+        "lightCount": 2,
+        "p95FrameMs": 100,
+        "triangles": 75077
+      },
+      "resources": {
+        "encodedBodyBytes": 62151379,
+        "requests": 190,
+        "transferBytes": 55701158
+      },
+      "touchControlsVisible": false
+    },
+    {
+      "chapter": 3,
+      "consoleErrors": [],
+      "failedResponses": [],
+      "name": "chapter-3-desktop-1440x900",
+      "profile": "desktop-1440x900",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/chapters/chapter-3-desktop-1440x900.png",
+      "dataset": {
+        "campaignChapter": "3",
+        "campaignStep": "0",
+        "characters": "ready",
+        "drawCalls": 116,
+        "environmentStatus": "ready",
+        "lightCount": 2,
+        "p95FrameMs": 100,
+        "triangles": 78241
+      },
+      "resources": {
+        "encodedBodyBytes": 58654083,
+        "requests": 182,
+        "transferBytes": 58678530
+      },
+      "touchControlsVisible": false
+    },
+    {
+      "chapter": 4,
+      "consoleErrors": [],
+      "failedResponses": [],
+      "name": "chapter-4-desktop-1440x900",
+      "profile": "desktop-1440x900",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/chapters/chapter-4-desktop-1440x900.png",
+      "dataset": {
+        "campaignChapter": "4",
+        "campaignStep": "0",
+        "characters": "ready",
+        "drawCalls": 124,
+        "environmentStatus": "ready",
+        "lightCount": 2,
+        "p95FrameMs": 100,
+        "triangles": 121163
+      },
+      "resources": {
+        "encodedBodyBytes": 72084090,
+        "requests": 193,
+        "transferBytes": 64597138
+      },
+      "touchControlsVisible": false
+    },
+    {
+      "chapter": 5,
+      "consoleErrors": [],
+      "failedResponses": [],
+      "name": "chapter-5-desktop-1440x900",
+      "profile": "desktop-1440x900",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/chapters/chapter-5-desktop-1440x900.png",
+      "dataset": {
+        "campaignChapter": "5",
+        "campaignStep": "0",
+        "characters": "ready",
+        "drawCalls": 102,
+        "environmentStatus": "ready",
+        "lightCount": 2,
+        "p95FrameMs": 100,
+        "triangles": 109925
+      },
+      "resources": {
+        "encodedBodyBytes": 59541990,
+        "requests": 181,
+        "transferBytes": 53741619
+      },
+      "touchControlsVisible": false
+    },
+    {
+      "chapter": 6,
+      "consoleErrors": [],
+      "failedResponses": [],
+      "name": "chapter-6-desktop-1440x900",
+      "profile": "desktop-1440x900",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/chapters/chapter-6-desktop-1440x900.png",
+      "dataset": {
+        "campaignChapter": "6",
+        "campaignStep": "0",
+        "characters": "ready",
+        "drawCalls": 111,
+        "environmentStatus": "ready",
+        "lightCount": 2,
+        "p95FrameMs": 100,
+        "triangles": 112037
+      },
+      "resources": {
+        "encodedBodyBytes": 64972400,
+        "requests": 191,
+        "transferBytes": 54749030
+      },
+      "touchControlsVisible": false
+    },
+    {
+      "chapter": 1,
+      "consoleErrors": [],
+      "failedResponses": [],
+      "name": "chapter-1-mobile-390x844",
+      "profile": "mobile-390x844",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/chapters/chapter-1-mobile-390x844.png",
+      "dataset": {
+        "campaignChapter": "1",
+        "characters": "ready",
+        "drawCalls": 133,
+        "environmentStatus": "ready",
+        "lightCount": 4,
+        "p95FrameMs": 100,
+        "triangles": 132821
+      },
+      "resources": {
+        "encodedBodyBytes": 85156463,
+        "requests": 214,
+        "transferBytes": 71831191
+      },
+      "touchControlsVisible": true
+    },
+    {
+      "chapter": 2,
+      "consoleErrors": [],
+      "failedResponses": [],
+      "name": "chapter-2-mobile-390x844",
+      "profile": "mobile-390x844",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/chapters/chapter-2-mobile-390x844.png",
+      "dataset": {
+        "campaignChapter": "2",
+        "campaignStep": "0",
+        "characters": "ready",
+        "drawCalls": 92,
+        "environmentStatus": "ready",
+        "lightCount": 2,
+        "p95FrameMs": 100,
+        "triangles": 74381
+      },
+      "resources": {
+        "encodedBodyBytes": 62151379,
+        "requests": 190,
+        "transferBytes": 55701158
+      },
+      "touchControlsVisible": true
+    },
+    {
+      "chapter": 3,
+      "consoleErrors": [],
+      "failedResponses": [],
+      "name": "chapter-3-mobile-390x844",
+      "profile": "mobile-390x844",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/chapters/chapter-3-mobile-390x844.png",
+      "dataset": {
+        "campaignChapter": "3",
+        "campaignStep": "0",
+        "characters": "ready",
+        "drawCalls": 101,
+        "environmentStatus": "ready",
+        "lightCount": 2,
+        "p95FrameMs": 100,
+        "triangles": 77461
+      },
+      "resources": {
+        "encodedBodyBytes": 58654083,
+        "requests": 182,
+        "transferBytes": 58678530
+      },
+      "touchControlsVisible": true
+    },
+    {
+      "chapter": 4,
+      "consoleErrors": [],
+      "failedResponses": [],
+      "name": "chapter-4-mobile-390x844",
+      "profile": "mobile-390x844",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/chapters/chapter-4-mobile-390x844.png",
+      "dataset": {
+        "campaignChapter": "4",
+        "campaignStep": "0",
+        "characters": "ready",
+        "drawCalls": 113,
+        "environmentStatus": "ready",
+        "lightCount": 2,
+        "p95FrameMs": 100,
+        "triangles": 119777
+      },
+      "resources": {
+        "encodedBodyBytes": 72084090,
+        "requests": 193,
+        "transferBytes": 64597138
+      },
+      "touchControlsVisible": true
+    },
+    {
+      "chapter": 5,
+      "consoleErrors": [],
+      "failedResponses": [],
+      "name": "chapter-5-mobile-390x844",
+      "profile": "mobile-390x844",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/chapters/chapter-5-mobile-390x844.png",
+      "dataset": {
+        "campaignChapter": "5",
+        "campaignStep": "0",
+        "characters": "ready",
+        "drawCalls": 102,
+        "environmentStatus": "ready",
+        "lightCount": 2,
+        "p95FrameMs": 100,
+        "triangles": 109925
+      },
+      "resources": {
+        "encodedBodyBytes": 59541990,
+        "requests": 181,
+        "transferBytes": 53741619
+      },
+      "touchControlsVisible": true
+    },
+    {
+      "chapter": 6,
+      "consoleErrors": [],
+      "failedResponses": [],
+      "name": "chapter-6-mobile-390x844",
+      "profile": "mobile-390x844",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/chapters/chapter-6-mobile-390x844.png",
+      "dataset": {
+        "campaignChapter": "6",
+        "campaignStep": "0",
+        "characters": "ready",
+        "drawCalls": 109,
+        "environmentStatus": "ready",
+        "lightCount": 2,
+        "p95FrameMs": 100,
+        "triangles": 111877
+      },
+      "resources": {
+        "encodedBodyBytes": 64972400,
+        "requests": 191,
+        "transferBytes": 54749030
+      },
+      "touchControlsVisible": true
+    }
+  ]
+}

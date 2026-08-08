@@ -1,0 +1,119 @@
+{
+  "baseUrl": "http://127.0.0.1:4174/",
+  "chapterReports": [
+    {
+      "checkpoint": "chapter-2:start",
+      "drawCalls": 62,
+      "p95FrameMs": 100,
+      "triangles": 62017,
+      "chapter": 1,
+      "elapsedSeconds": 44.8,
+      "inputMode": "touch",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-1-touch-result.png"
+    },
+    {
+      "checkpoint": "chapter-3:start",
+      "drawCalls": 43,
+      "p95FrameMs": 100,
+      "triangles": 93085,
+      "chapter": 2,
+      "elapsedSeconds": 36.1,
+      "inputMode": "touch",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-2-touch-result.png"
+    },
+    {
+      "checkpoint": "chapter-4:start",
+      "drawCalls": 47,
+      "p95FrameMs": 100,
+      "triangles": 95419,
+      "chapter": 3,
+      "elapsedSeconds": 35.6,
+      "inputMode": "touch",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-3-touch-result.png"
+    },
+    {
+      "checkpoint": "chapter-5:start",
+      "drawCalls": 54,
+      "p95FrameMs": 100,
+      "triangles": 94601,
+      "chapter": 4,
+      "elapsedSeconds": 42.8,
+      "inputMode": "touch",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-4-touch-result.png"
+    },
+    {
+      "checkpoint": "chapter-6:broadcast-room",
+      "drawCalls": 57,
+      "p95FrameMs": 100,
+      "triangles": 128655,
+      "chapter": 5,
+      "elapsedSeconds": 48.1,
+      "inputMode": "touch",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-5-touch-result.png"
+    },
+    {
+      "checkpoint": "chapter-6:resolved-redacted",
+      "drawCalls": 44,
+      "p95FrameMs": 100,
+      "triangles": 79215,
+      "chapter": 6,
+      "elapsedSeconds": 27.3,
+      "inputMode": "touch",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-6-touch-result.png"
+    }
+  ],
+  "consoleErrors": [],
+  "failedResponses": [],
+  "finalCheckpoint": "chapter-6:resolved-redacted",
+  "inputMode": "touch",
+  "touch": {
+    "buttons": [
+      {
+        "action": "secure",
+        "height": 52,
+        "width": 96
+      },
+      {
+        "action": "purge",
+        "height": 52,
+        "width": 96
+      },
+      {
+        "action": "attack",
+        "height": 72,
+        "width": 72
+      },
+      {
+        "action": "dash",
+        "height": 56,
+        "width": 56
+      },
+      {
+        "action": "reflect",
+        "height": 56,
+        "width": 56
+      },
+      {
+        "action": "trace",
+        "height": 56,
+        "width": 56
+      },
+      {
+        "action": "camera-reset",
+        "height": 44,
+        "width": 48
+      },
+      {
+        "action": "pause",
+        "height": 44,
+        "width": 48
+      }
+    ],
+    "debug": {
+      "attached": true,
+      "buttonCount": 8,
+      "hasStick": true,
+      "pointerActive": false
+    }
+  }
+}

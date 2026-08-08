@@ -1,0 +1,33 @@
+{
+  "build": {
+    "modules": 169,
+    "rebootJavaScriptBytes": 296830,
+    "rebootJavaScriptGzipBytes": 98860,
+    "threeJavaScriptBytes": 678630,
+    "threeJavaScriptGzipBytes": 172900,
+    "chunkWarningOverBytes": 500000
+  },
+  "assets": {
+    "initialShell": { "bytes": 1329945, "files": 12 },
+    "installPrecache": { "bytes": 51140752, "files": 56 },
+    "chapterEnvironment": { "bytes": 12908175, "files": 27 },
+    "character": { "bytes": 34100927, "files": 42 },
+    "animation": { "bytes": 15709880, "files": 2 },
+    "total": { "bytes": 64048927, "files": 83 }
+  },
+  "captures": {
+    "profiles": ["desktop-1440x900", "mobile-390x844"],
+    "maxDrawCalls": 136,
+    "maxTriangles": 132821,
+    "maxLights": 4,
+    "swiftShaderP95FrameMs": 100,
+    "consoleErrors": 0,
+    "failedResponses": 0
+  },
+  "automatedPlaythrough": {
+    "keyboardSeconds": 309.6,
+    "touchSeconds": 234.7,
+    "humanPlaytimeMeasured": false,
+    "note": "테스트 훅과 자동 입력을 사용한 가속 경로이므로 사람의 실제 플레이 시간으로 해석하지 않는다."
+  }
+}
