@@ -1,5 +1,5 @@
 {
-  "baseUrl": "http://127.0.0.1:4174/",
+  "baseUrl": "http://127.0.0.1:8899/",
   "captures": [
     {
       "chapter": 1,
@@ -12,16 +12,16 @@
       "dataset": {
         "campaignChapter": "1",
         "characters": "ready",
-        "drawCalls": 165,
+        "drawCalls": 187,
         "environmentStatus": "ready",
         "lightCount": 4,
-        "p95FrameMs": 49.9,
-        "triangles": 140247
+        "p95FrameMs": 100,
+        "triangles": 148205
       },
       "resources": {
-        "encodedBodyBytes": 85493849,
-        "requests": 233,
-        "transferBytes": 72154175
+        "encodedBodyBytes": 76537437,
+        "requests": 104,
+        "transferBytes": 63153663
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": false
@@ -29,7 +29,7 @@
     {
       "chapter": 2,
       "consoleErrors": [],
-      "directRafP95FrameMs": 16.7,
+      "directRafP95FrameMs": 16.8,
       "failedResponses": [],
       "name": "chapter-2-desktop-1440x900",
       "profile": "desktop-1440x900",
@@ -45,9 +45,9 @@
         "triangles": 84647
       },
       "resources": {
-        "encodedBodyBytes": 62414895,
-        "requests": 201,
-        "transferBytes": 55967974
+        "encodedBodyBytes": 53458483,
+        "requests": 72,
+        "transferBytes": 46969562
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": false
@@ -67,13 +67,13 @@
         "drawCalls": 184,
         "environmentStatus": "ready",
         "lightCount": 2,
-        "p95FrameMs": 41.7,
+        "p95FrameMs": 66.6,
         "triangles": 88087
       },
       "resources": {
-        "encodedBodyBytes": 58912155,
-        "requests": 194,
-        "transferBytes": 58940202
+        "encodedBodyBytes": 49955743,
+        "requests": 65,
+        "transferBytes": 49944190
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": false
@@ -93,13 +93,13 @@
         "drawCalls": 187,
         "environmentStatus": "ready",
         "lightCount": 2,
-        "p95FrameMs": 41.8,
+        "p95FrameMs": 41.7,
         "triangles": 131069
       },
       "resources": {
-        "encodedBodyBytes": 72327206,
-        "requests": 202,
-        "transferBytes": 64842954
+        "encodedBodyBytes": 63370794,
+        "requests": 73,
+        "transferBytes": 55845142
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": false
@@ -119,13 +119,13 @@
         "drawCalls": 175,
         "environmentStatus": "ready",
         "lightCount": 2,
-        "p95FrameMs": 49.9,
+        "p95FrameMs": 33.4,
         "triangles": 120103
       },
       "resources": {
-        "encodedBodyBytes": 66703893,
-        "requests": 198,
-        "transferBytes": 60908622
+        "encodedBodyBytes": 57747481,
+        "requests": 69,
+        "transferBytes": 51911110
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": false
@@ -145,13 +145,13 @@
         "drawCalls": 175,
         "environmentStatus": "ready",
         "lightCount": 2,
-        "p95FrameMs": 41.7,
+        "p95FrameMs": 41.6,
         "triangles": 123099
       },
       "resources": {
-        "encodedBodyBytes": 68804976,
-        "requests": 205,
-        "transferBytes": 58585806
+        "encodedBodyBytes": 59848564,
+        "requests": 76,
+        "transferBytes": 49587094
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": false
@@ -159,7 +159,7 @@
     {
       "chapter": 1,
       "consoleErrors": [],
-      "directRafP95FrameMs": 16.8,
+      "directRafP95FrameMs": 24.9,
       "failedResponses": [],
       "name": "chapter-1-mobile-390x844",
       "profile": "mobile-390x844",
@@ -167,16 +167,16 @@
       "dataset": {
         "campaignChapter": "1",
         "characters": "ready",
-        "drawCalls": 161,
+        "drawCalls": 184,
         "environmentStatus": "ready",
         "lightCount": 4,
-        "p95FrameMs": 58.4,
-        "triangles": 140213
+        "p95FrameMs": 50,
+        "triangles": 148179
       },
       "resources": {
-        "encodedBodyBytes": 85493849,
-        "requests": 233,
-        "transferBytes": 72154175
+        "encodedBodyBytes": 76537437,
+        "requests": 104,
+        "transferBytes": 63153663
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": true
@@ -184,7 +184,7 @@
     {
       "chapter": 2,
       "consoleErrors": [],
-      "directRafP95FrameMs": 16.8,
+      "directRafP95FrameMs": 16.7,
       "failedResponses": [],
       "name": "chapter-2-mobile-390x844",
       "profile": "mobile-390x844",
@@ -196,13 +196,13 @@
         "drawCalls": 160,
         "environmentStatus": "ready",
         "lightCount": 2,
-        "p95FrameMs": 33.4,
+        "p95FrameMs": 41.6,
         "triangles": 84573
       },
       "resources": {
-        "encodedBodyBytes": 62414895,
-        "requests": 201,
-        "transferBytes": 55967974
+        "encodedBodyBytes": 53458483,
+        "requests": 72,
+        "transferBytes": 46969562
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": true
@@ -210,7 +210,7 @@
     {
       "chapter": 3,
       "consoleErrors": [],
-      "directRafP95FrameMs": 16.8,
+      "directRafP95FrameMs": 16.7,
       "failedResponses": [],
       "name": "chapter-3-mobile-390x844",
       "profile": "mobile-390x844",
@@ -222,13 +222,13 @@
         "drawCalls": 163,
         "environmentStatus": "ready",
         "lightCount": 2,
-        "p95FrameMs": 33.3,
+        "p95FrameMs": 33.2,
         "triangles": 86657
       },
       "resources": {
-        "encodedBodyBytes": 58912155,
-        "requests": 194,
-        "transferBytes": 58940202
+        "encodedBodyBytes": 49955743,
+        "requests": 65,
+        "transferBytes": 49944190
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": true
@@ -236,7 +236,7 @@
     {
       "chapter": 4,
       "consoleErrors": [],
-      "directRafP95FrameMs": 16.8,
+      "directRafP95FrameMs": 16.7,
       "failedResponses": [],
       "name": "chapter-4-mobile-390x844",
       "profile": "mobile-390x844",
@@ -248,13 +248,13 @@
         "drawCalls": 175,
         "environmentStatus": "ready",
         "lightCount": 2,
-        "p95FrameMs": 41.6,
+        "p95FrameMs": 33.3,
         "triangles": 130021
       },
       "resources": {
-        "encodedBodyBytes": 72327206,
-        "requests": 202,
-        "transferBytes": 64842954
+        "encodedBodyBytes": 63370794,
+        "requests": 73,
+        "transferBytes": 55845142
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": true
@@ -262,7 +262,7 @@
     {
       "chapter": 5,
       "consoleErrors": [],
-      "directRafP95FrameMs": 24.8,
+      "directRafP95FrameMs": 16.8,
       "failedResponses": [],
       "name": "chapter-5-mobile-390x844",
       "profile": "mobile-390x844",
@@ -274,13 +274,13 @@
         "drawCalls": 169,
         "environmentStatus": "ready",
         "lightCount": 2,
-        "p95FrameMs": 41.6,
+        "p95FrameMs": 41.7,
         "triangles": 119905
       },
       "resources": {
-        "encodedBodyBytes": 66703893,
-        "requests": 198,
-        "transferBytes": 60908622
+        "encodedBodyBytes": 57747481,
+        "requests": 69,
+        "transferBytes": 51911110
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": true
@@ -304,9 +304,9 @@
         "triangles": 122879
       },
       "resources": {
-        "encodedBodyBytes": 68804976,
-        "requests": 205,
-        "transferBytes": 58585806
+        "encodedBodyBytes": 59848564,
+        "requests": 76,
+        "transferBytes": 49587094
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": true
