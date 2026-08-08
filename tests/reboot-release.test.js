@@ -8,10 +8,14 @@ test('canonical root, legacy route, and service worker form one release boundary
   const index = read('index.html');
   const legacy = read('legacy.html');
   const sw = read('public/sw.js');
+  const manifest = JSON.parse(read('public/reboot-assets.json'));
   assert.match(index, /location\.replace\(rebootUrl\.href\)/);
   assert.match(legacy, /src="\/src\/main\.js"/);
-  assert.match(sw, /ethics-quest-h17-v10/);
+  assert.match(sw, /ethics-quest-h17-v11/);
   assert.match(sw, /\.\/index\.html', '\.\/reboot\.html', '\.\/legacy\.html/);
+  assert.match(sw, /for \(const asset of manifest\) assets\.add\(asset\)/);
+  assert.ok(manifest.some((path) => path.includes('/environment/building/')));
+  assert.ok(manifest.some((path) => path.includes('/environment/materials/')));
 });
 
 test('release docs record the exact non-destructive rollback and current five chapters', () => {
