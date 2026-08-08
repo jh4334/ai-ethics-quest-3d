@@ -7,6 +7,7 @@ import {
   CAMPUS_ASSET_PLACEMENTS,
   CAMPUS_DISTRICTS,
   CAMPUS_LANDMARKS,
+  CAMPUS_MEMORY_PATH,
   CAMPUS_MATERIAL_ROLES,
   CAMPUS_REQUIRED_ASSET_IDS
 } from '../src/reboot/content/campus/chapterOneCampus.js';
@@ -66,7 +67,18 @@ test('Given chapter one campus canon, When audited, Then six distinct districts 
 
 test('Given the campus asset plan, When compared with the licensed catalog, Then every runtime placement resolves to a real GLB role', () => {
   const catalogIds = new Set(ENVIRONMENT_ASSETS.map(({ id }) => id));
-  assert.equal(CAMPUS_ASSET_PLACEMENTS.length >= 48, true);
+  const buildingIds = new Set(['campus-column', 'campus-doorway', 'campus-roof', 'campus-roof-edge', 'campus-wall', 'campus-window']);
+  const natureIds = new Set(['campus-bush', 'campus-grass', 'campus-rock', 'campus-tree', 'memory-flower']);
+  const districtCount = (districtId, ids) => CAMPUS_ASSET_PLACEMENTS.filter((entry) => (
+    entry.districtId === districtId && ids.has(entry.assetId)
+  )).length;
+
+  assert.equal(CAMPUS_ASSET_PLACEMENTS.length >= 140, true);
+  assert.equal(districtCount('open-classroom', natureIds) >= 14, true);
+  assert.equal(districtCount('roster-tower', buildingIds) >= 12, true);
+  assert.equal(districtCount('glass-administration', buildingIds) >= 12, true);
+  assert.equal(CAMPUS_MEMORY_PATH.length >= 22, true);
+  assert.equal(CAMPUS_MEMORY_PATH[0].z > CAMPUS_MEMORY_PATH.at(-1).z, true);
   assert.equal(CAMPUS_REQUIRED_ASSET_IDS.every((id) => catalogIds.has(id)), true);
   assert.equal(CAMPUS_ASSET_PLACEMENTS.every(({ districtId }) => (
     CAMPUS_DISTRICTS.some(({ id }) => id === districtId)
@@ -89,6 +101,7 @@ test('Given licensed assets load successfully, When the floating campus becomes 
   assert.ok(scene.getObjectByName('deletion-glass-tower'));
   assert.ok(scene.getObjectByName('floating-gym'));
   assert.equal(campus.getDebugState().architecture.materialRoles.length, 7);
+  assert.equal(campus.getDebugState().memoryPathAccents, CAMPUS_MEMORY_PATH.length);
 
   campus.dispose();
   assert.equal(assetLoader.getDebugState().loaderDisposed, true);

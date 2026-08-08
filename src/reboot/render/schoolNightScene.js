@@ -8,6 +8,7 @@ import { addCameraShake, createCameraController } from '../camera/controller.js'
 import { createCharacterCast } from '../characters/cast.js';
 import { createCharacterFactory } from '../characters/factory.js';
 import { chapterOneLevel } from '../content/levels/chapter1.js';
+import { CAMPUS_VISUAL_PROFILE } from '../design/tokens.js';
 import { createFeedbackDirector } from '../feedback/director.js';
 import { walkableRectsFromLevel } from '../level/walkableBounds.js';
 import { createFeedbackCounters } from '../feedback/counters.js';
@@ -37,8 +38,8 @@ export function createSchoolNightScene({
 }) {
   const resources = createDisposableRegistry();
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x050918);
-  scene.fog = new THREE.Fog(0x050918, 48, 150);
+  scene.background = new THREE.Color(CAMPUS_VISUAL_PROFILE.atmosphere.top);
+  scene.fog = new THREE.Fog(CAMPUS_VISUAL_PROFILE.atmosphere.fog, 48, 150);
 
   const camera = new THREE.PerspectiveCamera(44, 1, 0.1, 180);
   const route = resources.register(createSchoolRoute({ level: chapterOneLevel, lightLimit: 0, scene }), 'school-route');
@@ -66,6 +67,7 @@ export function createSchoolNightScene({
   const baseWalkable = walkableRectsFromLevel(chapterOneLevel);
   const game = createEncounterGameRuntime({
     deviceClass: getSceneViewport(canvas).mode,
+    startFacing: { x: 0, y: -1 },
     startPosition,
     walkable: baseWalkable,
     ...runtimeEncounterOptions

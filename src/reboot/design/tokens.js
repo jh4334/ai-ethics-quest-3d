@@ -15,6 +15,31 @@ export const WORLD_COLORS = Object.freeze(Object.fromEntries(
   Object.entries(DESIGN_TOKENS.color).map(([name, value]) => [name, Number.parseInt(value.slice(1), 16)])
 ));
 
+export const CAMPUS_VISUAL_PROFILE = Object.freeze({
+  atmosphere: Object.freeze({
+    bottom: 0x315f82,
+    fog: 0x172842,
+    horizon: 0x8d5f77,
+    top: 0x18345c
+  }),
+  camera: Object.freeze({
+    desktop: Object.freeze({ distance: 7.2, fov: 42, height: 2.55, lateral: 2.35 }),
+    touch: Object.freeze({ distance: 9.8, fov: 52, height: 5.7, lateral: 2.35 })
+  }),
+  lighting: Object.freeze({
+    deletionIntensity: 5.2,
+    memoryIntensity: 8.8,
+    moonIntensity: 3.15
+  }),
+  materialTint: Object.freeze({
+    brick: 0xe6b9a5,
+    concrete: 0xffffff,
+    track: 0xe39a94,
+    wood: 0xffffff
+  }),
+  silhouette: Object.freeze([0x314768, 0x233654, 0x17253f])
+});
+
 export const WORLD_MATERIALS = Object.freeze({
   brick: Object.freeze({ color: 0x8b4740, metalness: 0.02, roughness: 0.92 }),
   concrete: Object.freeze({ color: 0x66798f, metalness: 0.04, roughness: 0.88 }),

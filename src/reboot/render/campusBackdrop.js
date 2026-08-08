@@ -31,12 +31,17 @@ function createStars(group) {
 
 function createDistantIslands(group) {
   const geometry = new THREE.ConeGeometry(9, 11, 8, 1, true);
-  const material = new THREE.MeshStandardMaterial({ color: 0x18253d, roughness: 0.96 });
+  const material = new THREE.MeshStandardMaterial({
+    color: 0x24395b,
+    emissive: 0x0c1730,
+    emissiveIntensity: 0.55,
+    roughness: 0.96
+  });
   const islands = [
-    { x: -34, y: -5, z: -24, scale: 1.2 },
-    { x: 38, y: -7, z: -58, scale: 1.55 },
-    { x: -42, y: -9, z: -105, scale: 1.8 },
-    { x: 35, y: -8, z: -132, scale: 1.35 }
+    { x: -50, y: -7, z: -40, scale: 0.9 },
+    { x: 53, y: -8, z: -70, scale: 1.05 },
+    { x: -57, y: -10, z: -112, scale: 1.2 },
+    { x: 52, y: -9, z: -138, scale: 1.05 }
   ];
   for (const [index, entry] of islands.entries()) {
     const island = new THREE.Mesh(geometry, material);
@@ -79,7 +84,7 @@ function createDistrictSigns(group, documentRef) {
     const sign = new THREE.Sprite(material);
     sign.name = `campus-sign-${district.id}`;
     sign.position.set(district.center.x + (index % 2 ? 2.2 : -2.2), 3.75, district.center.z - 1.6);
-    sign.scale.set(2.7, 0.68, 1);
+    sign.scale.set(2.05, 0.52, 1);
     sign.userData.campusDistrictId = district.id;
     group.add(sign);
     return { material, texture };

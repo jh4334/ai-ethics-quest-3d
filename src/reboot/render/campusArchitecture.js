@@ -35,6 +35,23 @@ function roundedSlab(resources, width, depth, height, radius, id) {
   return geometry;
 }
 
+function roundedDeck(resources, width, depth, radius, id) {
+  const geometry = resources.register(new THREE.ShapeGeometry(
+    roundedShape(width, depth, radius), 5
+  ), id);
+  const uv = geometry.getAttribute('uv');
+  for (let index = 0; index < uv.count; index += 1) {
+    uv.setXY(
+      index,
+      (uv.getX(index) + width / 2) / width,
+      (uv.getY(index) + depth / 2) / depth
+    );
+  }
+  uv.needsUpdate = true;
+  geometry.rotateX(-Math.PI / 2);
+  return geometry;
+}
+
 function mesh(parent, geometry, material, name, position, rotation = null, scale = null) {
   const object = new THREE.Mesh(geometry, material);
   object.name = name;
@@ -62,6 +79,16 @@ function createPlatforms(group, resources, materials) {
   for (const [id, width, depth, x, z, radius] of platforms) {
     const slab = roundedSlab(resources, width, depth, 0.34, radius, `campus-${id}-slab`);
     mesh(group, slab, materials.concrete, `campus-platform-${id}`, { x, y: -0.34, z });
+    const deck = roundedDeck(resources, width - 0.22, depth - 0.22, Math.max(0.4, radius - 0.12), `campus-${id}-deck`);
+    mesh(group, deck, materials.concrete, `campus-platform-deck-${id}`, { x, y: 0.025, z });
+    const route = roundedDeck(
+      resources,
+      Math.min(3.4, width * 0.24),
+      depth - 0.7,
+      Math.min(1.1, radius * 0.34),
+      `campus-${id}-memory-route`
+    );
+    mesh(group, route, materials.wood, `campus-memory-route-${id}`, { x: 0, y: 0.12, z });
     const edge = resources.register(new THREE.EdgesGeometry(slab, 24), `campus-${id}-edge`);
     const outline = new THREE.LineSegments(edge, edgeMaterial);
     outline.name = `campus-platform-edge-${id}`;

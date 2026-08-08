@@ -318,6 +318,7 @@ test('school scene uses the imported character pipeline instead of primitive ava
   assert.match(source, /createCharacterCast/);
   assert.match(source, /createSchoolRoute/);
   assert.match(source, /createEncounterGameRuntime/);
+  assert.match(source, /startFacing:\s*\{\s*x:\s*0,\s*y:\s*-1\s*\}/);
   assert.match(source, /createEnemyCast/);
   assert.match(source, /createCombatPresentationAdapter/);
   assert.match(source, /createCameraController[\s\S]*updateSchoolCamera/);

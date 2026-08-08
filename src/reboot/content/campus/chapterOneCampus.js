@@ -6,6 +6,19 @@ const placement = (assetId, districtId, position, scale = 1, rotationY = 0) => O
   scale
 });
 
+function radialPlacements(assetId, districtId, {
+  centerX, centerZ, count, levels, radius, scale
+}) {
+  return levels.flatMap((y) => Array.from({ length: count }, (_, index) => {
+    const angle = index * Math.PI * 2 / count;
+    return placement(assetId, districtId, {
+      x: centerX + Math.sin(angle) * radius,
+      y,
+      z: centerZ + Math.cos(angle) * radius
+    }, scale, angle);
+  }));
+}
+
 export const CAMPUS_MATERIAL_ROLES = Object.freeze([
   'brick', 'concrete', 'glass', 'metal', 'wood', 'track', 'foliage'
 ]);
@@ -79,6 +92,45 @@ const classroomLife = [
   placement('campus-bench', 'open-classroom', { x: 4.4, y: 0.04, z: -4.3 }, 1.15, Math.PI)
 ]);
 
+const classroomLandscape = [
+  placement('campus-tree', 'open-classroom', { x: -5.25, y: 0, z: 4.25 }, 1.85, 0.2),
+  placement('campus-tree', 'open-classroom', { x: 5.15, y: 0, z: -4.35 }, 1.7, -0.45),
+  placement('campus-bush', 'open-classroom', { x: -5.15, y: 0, z: 2.4 }, 1.2, 0.4),
+  placement('campus-bush', 'open-classroom', { x: -4.95, y: 0, z: -3.5 }, 1.1, -0.2),
+  placement('campus-bush', 'open-classroom', { x: 5.05, y: 0, z: 3.2 }, 1.25, 0.8),
+  placement('campus-bush', 'open-classroom', { x: 5.15, y: 0, z: -2.2 }, 1.05, -0.7),
+  placement('campus-grass', 'open-classroom', { x: -4.45, y: 0.02, z: 4.65 }, 1.2, 0.25),
+  placement('campus-grass', 'open-classroom', { x: -5.35, y: 0.02, z: -1.1 }, 1.05, 0.9),
+  placement('campus-grass', 'open-classroom', { x: 4.55, y: 0.02, z: 4.55 }, 1.15, -0.5),
+  placement('campus-rock', 'open-classroom', { x: -4.65, y: 0.02, z: 3.65 }, 0.72, 0.15),
+  placement('campus-rock', 'open-classroom', { x: 4.8, y: 0.02, z: 3.7 }, 0.66, 0.8),
+  placement('campus-rock', 'open-classroom', { x: 5.15, y: 0.02, z: -3.35 }, 0.58, -0.35),
+  placement('memory-flower', 'open-classroom', { x: -4.15, y: 0.03, z: 4.35 }, 1.35, 0.1),
+  placement('memory-flower', 'open-classroom', { x: 4.2, y: 0.03, z: 4.25 }, 1.45, -0.1),
+  placement('memory-flower', 'open-classroom', { x: 5.2, y: 0.03, z: 2.35 }, 1.2, 0.4)
+];
+
+const rosterFacade = [
+  ...radialPlacements('campus-window', 'roster-tower', {
+    centerX: -4.6, centerZ: -18, count: 4, levels: [0.15, 3.05], radius: 4.05, scale: 0.92
+  }),
+  ...radialPlacements('campus-column', 'roster-tower', {
+    centerX: -4.6, centerZ: -18, count: 8, levels: [0], radius: 4.15, scale: 1.18
+  })
+];
+
+const administrationFacade = [
+  ...radialPlacements('campus-window', 'glass-administration', {
+    centerX: 0, centerZ: -76, count: 4, levels: [0.15, 3.05, 5.95], radius: 4.45, scale: 0.94
+  }),
+  ...radialPlacements('campus-column', 'glass-administration', {
+    centerX: 0, centerZ: -76, count: 8, levels: [0], radius: 4.55, scale: 1.32
+  }),
+  ...radialPlacements('campus-roof-edge', 'glass-administration', {
+    centerX: 0, centerZ: -76, count: 4, levels: [12.55], radius: 3.1, scale: 1.05
+  })
+];
+
 const campusPromenade = [
   placement('campus-bench', 'roster-tower', { x: 5.2, y: 0.04, z: -17 }, 1.2, -Math.PI / 2),
   placement('campus-lamp', 'roster-tower', { x: 5.8, y: 0.04, z: -22 }, 1.15),
@@ -117,6 +169,9 @@ export const CAMPUS_ASSET_PLACEMENTS = Object.freeze([
   ...classroomShell,
   ...classroomFurniture,
   ...classroomLife,
+  ...classroomLandscape,
+  ...rosterFacade,
+  ...administrationFacade,
   ...libraryProps,
   ...vegetation,
   ...campusPromenade,
@@ -139,6 +194,16 @@ export const CAMPUS_ASSET_PLACEMENTS = Object.freeze([
   placement('classroom-screen', 'glass-administration', { x: -2.8, y: 1.25, z: -75 }, 1.1, Math.PI / 2),
   placement('classroom-screen', 'glass-administration', { x: 2.8, y: 1.25, z: -77 }, 1.1, -Math.PI / 2)
 ]);
+
+export const CAMPUS_MEMORY_PATH = Object.freeze(Array.from({ length: 28 }, (_, index) => {
+  const t = index / 27;
+  return Object.freeze({
+    rotationY: Math.sin(t * Math.PI * 3.2) * 0.18,
+    x: Math.sin(t * Math.PI * 4.4) * 0.72 + (index % 2 === 0 ? -0.16 : 0.16),
+    y: 0.22,
+    z: 3.4 - t * 93.5
+  });
+}));
 
 export const CAMPUS_REQUIRED_ASSET_IDS = Object.freeze([
   ...new Set(CAMPUS_ASSET_PLACEMENTS.map((entry) => entry.assetId))

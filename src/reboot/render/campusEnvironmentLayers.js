@@ -13,7 +13,7 @@ function disableShadows(object) {
 }
 
 export function createCinematicNightSky({
-  accent = 0xf3b36c, centerZ, group, prefix, resources
+  accent = 0xf3b36c, centerZ, group, palette = null, prefix, resources
 }) {
   const skyGeometry = resources.register(
     new THREE.SphereGeometry(94, 32, 18), `${prefix}-night-sky-geometry`
@@ -23,25 +23,27 @@ export function createCinematicNightSky({
     fog: false,
     side: THREE.BackSide,
     uniforms: {
-      bottomColor: { value: new THREE.Color(0x182846) },
-      horizonColor: { value: new THREE.Color(0x3c3558) },
-      topColor: { value: new THREE.Color(0x050918) }
+      bottomColor: { value: new THREE.Color(palette?.bottom ?? 0x182846) },
+      horizonColor: { value: new THREE.Color(palette?.horizon ?? 0x3c3558) },
+      resolution: { value: new THREE.Vector2(1, 1) },
+      topColor: { value: new THREE.Color(palette?.top ?? 0x050918) }
     },
     vertexShader: `
-      varying float vSkyHeight;
       void main() {
-        vSkyHeight = normalize(position).y * 0.5 + 0.5;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }
     `,
     fragmentShader: `
       uniform vec3 bottomColor;
       uniform vec3 horizonColor;
+      uniform vec2 resolution;
       uniform vec3 topColor;
-      varying float vSkyHeight;
       void main() {
-        vec3 lower = mix(bottomColor, horizonColor, smoothstep(0.05, 0.38, vSkyHeight));
-        vec3 color = mix(lower, topColor, smoothstep(0.38, 0.95, vSkyHeight));
+        float screenY = clamp(gl_FragCoord.y / max(resolution.y, 1.0), 0.0, 1.0);
+        vec3 lower = mix(bottomColor, horizonColor, smoothstep(0.54, 0.8, screenY));
+        vec3 color = mix(lower, topColor, smoothstep(0.8, 1.0, screenY));
+        float twilightBand = 1.0 - smoothstep(0.0, 0.12, abs(screenY - 0.79));
+        color += horizonColor * twilightBand * 0.12;
         gl_FragColor = vec4(color, 1.0);
       }
     `
@@ -49,6 +51,10 @@ export function createCinematicNightSky({
   const sky = disableShadows(new THREE.Mesh(skyGeometry, skyMaterial));
   sky.name = `${prefix}-cinematic-night-sky`;
   sky.position.set(0, 3, centerZ);
+  sky.frustumCulled = false;
+  sky.onBeforeRender = (renderer) => {
+    renderer.getDrawingBufferSize(skyMaterial.uniforms.resolution.value);
+  };
   sky.renderOrder = -20;
   group.add(sky);
 
@@ -91,6 +97,41 @@ export function createCinematicNightSky({
   halo.position.set(-31, 25, centerZ - 52.8);
   group.add(halo);
   return Object.freeze({ skyObjects: 4, starCount });
+}
+
+export function createMemoryFootprintPath({ color, group, points, prefix, resources }) {
+  const footprintShape = new THREE.Shape();
+  footprintShape.absellipse(0, 0, 0.11, 0.27, 0, Math.PI * 2, false, 0);
+  const geometry = resources.register(
+    new THREE.ShapeGeometry(footprintShape, 10), `${prefix}-memory-footprint-geometry`
+  );
+  const material = resources.register(new THREE.MeshStandardMaterial({
+    color: new THREE.Color(color).multiplyScalar(0.46),
+    emissive: color,
+    emissiveIntensity: 1.05,
+    metalness: 0.18,
+    roughness: 0.28
+  }), `${prefix}-memory-footprint-material`);
+  const footprints = disableShadows(new THREE.InstancedMesh(geometry, material, points.length));
+  footprints.name = `${prefix}-memory-footprints`;
+  const matrix = new THREE.Matrix4();
+  const quaternion = new THREE.Quaternion();
+  const rotation = new THREE.Euler();
+  for (const [index, point] of points.entries()) {
+    rotation.set(-Math.PI / 2, point.rotationY, 0);
+    quaternion.setFromEuler(rotation);
+    matrix.compose(
+      new THREE.Vector3(point.x, point.y, point.z),
+      quaternion,
+      new THREE.Vector3(index % 2 === 0 ? 0.86 : 1, 1, 1)
+    );
+    footprints.setMatrixAt(index, matrix);
+  }
+  footprints.instanceMatrix.needsUpdate = true;
+  footprints.computeBoundingBox();
+  footprints.computeBoundingSphere();
+  group.add(footprints);
+  return Object.freeze({ footprintCount: points.length, footprints });
 }
 
 export function createCampusEdgeDressing({
