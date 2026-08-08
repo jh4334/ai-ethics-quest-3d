@@ -206,13 +206,18 @@ for (const [chapter, verbKeys] of [[3, ['KeyE', 'KeyE', 'KeyJ']], [4, ['KeyK', '
   });
 }
 
-test('완료된 마지막 방송 저장은 보스 재전을 열지 않고 기록된 결말을 복원한다', async ({ page }) => {
+test('완료된 마지막 방송 저장은 이어하기 후 보스 재전 없이 기록된 결말을 복원한다', async ({ page }) => {
   const errors = captureErrors(page);
   const fixture = createFinaleFixture('sealed');
   const resolved = finalizeCampaign(fixture.campaign, { decision: fixture.decision }).state;
-  await page.addInitScript((bytes) => localStorage.setItem('h17.null.save.v4', bytes), serializeSave(resolved));
+  await page.addInitScript(({ bytes, key }) => localStorage.setItem(key, bytes), {
+    bytes: serializeSave(resolved), key: V5_SAVE_KEY
+  });
 
   await page.goto('/reboot.html?sw=off', { waitUntil: 'domcontentloaded' });
+  const continueButton = page.locator('[data-shell-continue]');
+  await expect(continueButton).toBeVisible();
+  await continueButton.click();
   const canvas = page.locator('[data-reboot-canvas]');
   await expect(canvas).toHaveAttribute('data-protocol-status', 'resolved');
   await expect(canvas).toHaveAttribute('data-campaign-ending', 'sealed-incident');
