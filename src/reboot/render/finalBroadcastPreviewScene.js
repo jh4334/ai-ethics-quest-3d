@@ -481,6 +481,7 @@ export function createFinalBroadcastPreviewScene({
         const playerAnchor = anchors.get('player');
         playerAnchor.position.set(routeState.position.x, 0, routeState.position.y);
         playerAnchor.rotation.y = lastHeading;
+        fill.position.set(routeState.position.x, 6, routeState.position.y + 2.5);
         updateSpatialCamera();
       }
       if (protocol.status === 'active') {

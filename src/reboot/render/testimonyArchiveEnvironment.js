@@ -5,6 +5,8 @@ import { createEnvironmentAssetLoader } from '../environment/loader.js';
 import { createDisposableRegistry } from './dispose.js';
 
 const ASSET_PLACEMENTS = Object.freeze([
+  ['classroom-desk', -3.2, 0, -5.4, 1, 0], ['classroom-desk', 3.2, 0, -5.4, 1, 0],
+  ['classroom-chair', -3.2, 0, -3.9, 1, Math.PI], ['classroom-chair', 3.2, 0, -3.9, 1, Math.PI],
   ['classroom-screen', -2.4, 0.1, -5.2, 1.1, 0], ['classroom-screen', 2.4, 0.1, -5.2, 1.1, 0],
   ['campus-column', -5, 0, -12, 1.15, 0], ['campus-column', 5, 0, -12, 1.15, 0],
   ['classroom-screen', -3.8, 0.1, -24, 1.05, Math.PI / 2], ['classroom-screen', 3.8, 0.1, -24, 1.05, -Math.PI / 2],
@@ -48,7 +50,9 @@ function createArchitecture(resources) {
   const group = new THREE.Group();
   group.name = 'testimony-archive-architecture';
   const concrete = resources.register(new THREE.MeshStandardMaterial({ color: 0x52647d, roughness: 0.9 }), 'testimony-concrete');
-  const metal = resources.register(new THREE.MeshStandardMaterial({ color: 0x7891aa, metalness: 0.76, roughness: 0.28 }), 'testimony-metal');
+  const metal = resources.register(new THREE.MeshStandardMaterial({
+    color: 0x8da7c2, emissive: 0x0a1524, emissiveIntensity: 0.22, metalness: 0.46, roughness: 0.36
+  }), 'testimony-metal');
   const glass = resources.register(new THREE.MeshStandardMaterial({
     color: 0x75c8dc, opacity: 0.3, roughness: 0.18, transparent: true, depthWrite: false
   }), 'testimony-glass');

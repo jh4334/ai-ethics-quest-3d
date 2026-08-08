@@ -67,7 +67,7 @@ test('마지막 방송 환경은 실제 에셋과 서로 다른 네 랜드마크
   const environment = createBroadcastStationEnvironment({ assetLoader, scene });
   const report = await environment.ready;
 
-  assert.equal(report.placedInstances, 20);
+  assert.equal(report.placedInstances, 24);
   assert.deepEqual(report.failedAssetIds, []);
   assert.equal(environment.getDebugState().zoneCount, 4);
   assert.deepEqual(environment.getDebugState().landmarkIds, BROADCAST_ZONES.map(({ landmarkId }) => landmarkId));

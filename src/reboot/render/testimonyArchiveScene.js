@@ -76,7 +76,7 @@ export function createTestimonyArchiveScene({
   const factory = resources.register(createCharacterFactory(), 'testimony-character-factory');
   const enemyHpBars = resources.register(createEnemyHpBars({ scene }), 'testimony-enemy-bars');
   const bladeTrail = resources.register(createBladeTrail({ scene }), 'testimony-blade-trail');
-  scene.add(new THREE.HemisphereLight(0x8fabe0, 0x2c1924, 1.45));
+  scene.add(new THREE.HemisphereLight(0xa9c4f2, 0x2c1924, 2.25));
   const archiveLight = new THREE.PointLight(0xffb55f, 5.6, 44, 1.75);
   archiveLight.position.set(0, 7, -70);
   archiveLight.castShadow = false;
@@ -123,6 +123,7 @@ export function createTestimonyArchiveScene({
       encounterDefinition: getTestimonyEncounter(progress.zoneIndex),
       encounterOrigin: { x: 0, z: zone.anchorZ },
       extraTargets: [],
+      startFacing: { x: 0, y: -1 },
       startPosition,
       walkable: allWalkable.slice(0, progress.zoneIndex + 1)
     });
@@ -372,6 +373,7 @@ export function createTestimonyArchiveScene({
         respawnAtTick = null;
       }
       const playerState = game.getState().combat.player;
+      archiveLight.position.set(playerState.position.x, 6.5, playerState.position.y + 2.5);
       const playerAnchor = anchors.get('player');
       playerAnchor.position.set(playerState.position.x, 0, playerState.position.y);
       playerAnchor.rotation.y = Math.atan2(playerState.facing.x, playerState.facing.y);

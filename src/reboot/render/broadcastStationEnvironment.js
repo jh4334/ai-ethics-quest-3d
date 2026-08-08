@@ -5,6 +5,8 @@ import { createEnvironmentAssetLoader } from '../environment/loader.js';
 import { createDisposableRegistry } from './dispose.js';
 
 const PLACEMENTS = Object.freeze([
+  ['classroom-desk', -3.4, 0, -6.2, 1.05, 0], ['classroom-desk', 3.4, 0, -6.2, 1.05, 0],
+  ['classroom-chair', -3.4, 0, -4.8, 1, Math.PI], ['classroom-chair', 3.4, 0, -4.8, 1, Math.PI],
   ['campus-column', -4.5, 0, -4, 1.3, 0], ['campus-column', 4.5, 0, -4, 1.3, 0],
   ['campus-doorway', 0, 0, -8, 1.55, 0], ['classroom-screen', 0, 1.15, -6.8, 1.2, 0],
   ['campus-column', -6.5, 0, -21, 1.25, 0], ['campus-column', 6.5, 0, -21, 1.25, 0],
@@ -49,7 +51,9 @@ function createArchitecture(resources) {
   const group = new THREE.Group();
   group.name = 'broadcast-station-architecture';
   const concrete = resources.register(new THREE.MeshStandardMaterial({ color: 0x4d607c, roughness: 0.88 }), 'broadcast-concrete');
-  const metal = resources.register(new THREE.MeshStandardMaterial({ color: 0x708aa8, metalness: 0.8, roughness: 0.26 }), 'broadcast-metal');
+  const metal = resources.register(new THREE.MeshStandardMaterial({
+    color: 0x8ca6c4, emissive: 0x0a1524, emissiveIntensity: 0.22, metalness: 0.48, roughness: 0.34
+  }), 'broadcast-metal');
   const glass = resources.register(new THREE.MeshStandardMaterial({
     color: 0x69cbe1, opacity: 0.28, roughness: 0.14, transparent: true, depthWrite: false
   }), 'broadcast-glass');
