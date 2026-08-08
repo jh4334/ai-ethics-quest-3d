@@ -218,6 +218,7 @@ export function createSchoolNightScene({
     enter() {
       if (entered) return;
       entered = true;
+      canvas.dataset.campaignChapter = '1';
       resize();
       unsubscribeInput = input.subscribe(queueAction);
       feedback.attach();
