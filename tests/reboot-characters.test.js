@@ -265,6 +265,7 @@ test('character cast accepts the authoritative simulation pose without moving it
   // Given: 아직 에셋을 로드하지 않은 학교 캐릭터 캐스트가 있다.
   const scene = new THREE.Scene();
   const cast = createCharacterCast({ scene });
+  assert.deepEqual(cast.getDebugState().visibleIds, ['player', 'dot']);
 
   // When: 고정 스텝 시뮬레이션 위치와 상태를 적용한다.
   cast.setPlayerState({

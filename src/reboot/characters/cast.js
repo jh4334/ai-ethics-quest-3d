@@ -5,8 +5,8 @@ import { createCharacterFactory } from './factory.js';
 const SCHOOL_CAST = Object.freeze([
   Object.freeze({ id: 'player', position: [0, 0, 2], rotation: 0 }),
   Object.freeze({ id: 'dot', position: [-2.25, 0, -0.4], rotation: 0 }),
-  Object.freeze({ id: 'haru', position: [2.2, 0, -1.9], rotation: 0 }),
-  Object.freeze({ id: 'yoonseo', position: [-2.05, 0, -4.1], rotation: 0 })
+  Object.freeze({ id: 'haru', position: [2.2, 0, -1.9], rotation: 0, visible: false }),
+  Object.freeze({ id: 'yoonseo', position: [-2.05, 0, -4.1], rotation: 0, visible: false })
 ]);
 
 export function createCharacterCast({ characterFactory = null, scene }) {
@@ -29,6 +29,7 @@ export function createCharacterCast({ characterFactory = null, scene }) {
     anchor.name = `anchor-${entry.id}`;
     anchor.position.set(...entry.position);
     anchor.rotation.y = entry.rotation;
+    anchor.visible = entry.visible !== false;
     root.add(anchor);
     anchors.set(entry.id, anchor);
   }
@@ -73,7 +74,8 @@ export function createCharacterCast({ characterFactory = null, scene }) {
           })] : [];
         })),
         loaded: characters.size,
-        total: SCHOOL_CAST.length
+        total: SCHOOL_CAST.length,
+        visibleIds: Object.freeze(SCHOOL_CAST.filter(({ visible }) => visible !== false).map(({ id }) => id))
       });
     },
     getPlayerPosition() {

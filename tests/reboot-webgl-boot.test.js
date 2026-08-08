@@ -72,6 +72,20 @@ test('Given WebGL을 지원하지 않는 캔버스 When 렌더러를 만들면 T
   assert.equal(created, false);
 });
 
+test('Given H-17 야간 장면 When 렌더러를 만들면 Then 기준 톤매핑과 노출을 적용한다', () => {
+  const renderer = {
+    setClearColor() {},
+    setPixelRatio() {},
+    userData: {}
+  };
+  const canvas = { getContext: () => ({}) };
+
+  createRenderer(canvas, { rendererFactory: () => renderer, windowRef: { devicePixelRatio: 1 } });
+
+  assert.equal(renderer.toneMappingExposure, 0.82);
+  assert.ok(Number.isInteger(renderer.toneMapping));
+});
+
 test('Given 실행 중인 WebGL 캔버스 When 컨텍스트를 잃으면 Then 기본 동작을 막고 일시정지 안내를 남긴다', () => {
   // Given: 정상적으로 렌더러를 만든 뒤 손실 콜백을 연결한 상태다.
   const { canvas, failure, message, root, status } = createBootDom();

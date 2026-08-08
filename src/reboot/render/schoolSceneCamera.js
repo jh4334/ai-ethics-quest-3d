@@ -18,8 +18,13 @@ export function getEncounterCameraTargets(frame, routeCue, encounter) {
       Math.hypot(first.position.x - frame.player.position.x, first.position.z - frame.player.position.z)
       - Math.hypot(second.position.x - frame.player.position.x, second.position.z - frame.player.position.z)
     ))[0];
-  const threatId = committed?.id ?? nearest?.id;
-  const threat = frame.targets.find((target) => target.id === threatId) ?? frame.player;
+  const playerPosition = frame.player.position;
+  const nearestDistance = nearest
+    ? Math.hypot(nearest.position.x - playerPosition.x, nearest.position.z - playerPosition.z)
+    : Infinity;
+  const threatId = committed?.id ?? (nearestDistance <= 12 ? nearest?.id : null);
+  const threat = frame.targets.find((target) => target.id === threatId)
+    ?? { id: 'player', position: frame.player.position };
   const memoryTarget = frame.targets.find((target) => target.id === 'memory-backup');
   const traceTarget = Math.abs(frame.player.position.z + 54) < 10 && memoryTarget
     ? memoryTarget

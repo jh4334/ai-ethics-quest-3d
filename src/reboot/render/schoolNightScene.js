@@ -88,7 +88,7 @@ export function createSchoolNightScene({
     windowRef
   }), 'combat-feedback');
   const feedbackCounters = createFeedbackCounters();
-  scene.add(new THREE.HemisphereLight(0xb5c6ff, 0x271626, 2.35));
+  scene.add(new THREE.HemisphereLight(0x819ed4, 0x2d1920, 1.3));
   const performanceProbe = createScenePerformanceProbe({ feedback, renderer, scene, windowRef });
 
   let entered = false, unsubscribeInput = null;

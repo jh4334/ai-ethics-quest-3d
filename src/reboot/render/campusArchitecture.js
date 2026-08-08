@@ -56,18 +56,24 @@ function mesh(parent, geometry, material, name, position, rotation = null, scale
 
 function createPlatforms(group, resources, materials) {
   const platforms = [
-    ['open-classroom', 14, 14, 0, 3],
-    ['roster-tower', 14, 25, -18, 3.5],
-    ['athletics-field', 22, 20, -39, 4],
-    ['library-archive', 16, 16, -54, 3.5],
-    ['glass-administration', 10, 31, -76, 3],
-    ['gymnasium', 29, 31, -105, 5]
+    ['open-classroom', 14, 13, 0, 0, 3],
+    ['roster-tower', 14, 23, -1.2, -18, 3.5],
+    ['athletics-field', 22, 18, 1.25, -39, 4],
+    ['library-archive', 18, 14, -1.2, -54, 3.5],
+    ['glass-administration', 11, 29, 1, -76, 3],
+    ['gymnasium', 29, 29, -0.9, -105, 5]
   ];
-  for (const [id, width, depth, z, radius] of platforms) {
+  const edgeMaterial = resources.register(new THREE.LineBasicMaterial({ color: 0x5fa8d7, transparent: true, opacity: 0.58 }), 'campus-edge-material');
+  for (const [id, width, depth, x, z, radius] of platforms) {
     const slab = roundedSlab(resources, width, depth, 0.34, radius, `campus-${id}-slab`);
-    mesh(group, slab, materials.concrete, `campus-platform-${id}`, { x: 0, y: -0.34, z });
+    mesh(group, slab, materials.concrete, `campus-platform-${id}`, { x, y: -0.34, z });
+    const edge = resources.register(new THREE.EdgesGeometry(slab, 24), `campus-${id}-edge`);
+    const outline = new THREE.LineSegments(edge, edgeMaterial);
+    outline.name = `campus-platform-edge-${id}`;
+    outline.position.set(x, -0.335, z);
+    group.add(outline);
     const underside = resources.register(new THREE.ConeGeometry(Math.min(width, depth) * 0.47, 5.5, 10, 1, true), `campus-${id}-underside`);
-    mesh(group, underside, materials.brick, `campus-floating-foundation-${id}`, { x: 0, y: -3.05, z }, { x: Math.PI, y: 0, z: 0 }, { x: 1, y: 1, z: depth / width });
+    mesh(group, underside, materials.brick, `campus-floating-foundation-${id}`, { x, y: -3.05, z }, { x: Math.PI, y: 0, z: 0 }, { x: 1, y: 1, z: depth / width });
   }
 }
 
@@ -83,13 +89,13 @@ function createRosterTower(group, resources, materials) {
 
 function createAthleticsField(group, resources, materials) {
   const field = resources.register(new THREE.CircleGeometry(6.2, 48), 'athletics-field-grass');
-  mesh(group, field, materials.foliage, 'athletics-field', { x: 0, y: 0.035, z: -39 }, { x: -Math.PI / 2, y: 0, z: 0 }, { x: 1.35, y: 1, z: 1 });
+  mesh(group, field, materials.foliage, 'athletics-field', { x: 0, y: 0.16, z: -39 }, { x: -Math.PI / 2, y: 0, z: 0 }, { x: 1.35, y: 1, z: 1 });
   const track = resources.register(new THREE.RingGeometry(7.43, 7.57, 64), 'athletics-track-ring');
-  mesh(group, track, materials.track, 'athletics-track', { x: 0, y: 0.045, z: -39 }, { x: -Math.PI / 2, y: 0, z: 0 }, { x: 1.25, y: 1, z: 1 });
-  const laneMaterial = resources.register(new THREE.MeshBasicMaterial({ color: 0xe6c28a }), 'athletics-lane-material');
+  mesh(group, track, materials.track, 'athletics-track', { x: 0, y: 0.19, z: -39 }, { x: -Math.PI / 2, y: 0, z: 0 }, { x: 1.25, y: 1, z: 1 });
+  const laneMaterial = resources.register(new THREE.MeshBasicMaterial({ color: 0xffd38a }), 'athletics-lane-material');
   for (const [index, radius] of [7.38, 7.5, 7.62].entries()) {
     const lane = resources.register(new THREE.RingGeometry(radius, radius + 0.035, 64), `athletics-lane-${index}`);
-    mesh(group, lane, laneMaterial, `athletics-lane-line-${index}`, { x: 0, y: 0.052, z: -39 }, { x: -Math.PI / 2, y: 0, z: 0 }, { x: 1.25, y: 1, z: 1 });
+    mesh(group, lane, laneMaterial, `athletics-lane-line-${index}`, { x: 0, y: 0.205, z: -39 }, { x: -Math.PI / 2, y: 0, z: 0 }, { x: 1.25, y: 1, z: 1 });
   }
   const points = Array.from({ length: 58 }, (_, index) => {
     const t = index / 57;
@@ -98,7 +104,12 @@ function createAthleticsField(group, resources, materials) {
     return new THREE.Vector3(-5.1 + Math.sin(angle) * radius * 0.72, 0.11, -40.2 + Math.cos(angle) * radius);
   });
   const fingerprint = resources.register(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 90, 0.055, 6, false), 'fingerprint-recorder-tube');
-  mesh(group, fingerprint, materials.wood, 'fingerprint-recorder', { x: 0, y: 0, z: 0 });
+  const fingerprintMaterial = resources.register(new THREE.MeshStandardMaterial({
+    color: 0xf4b85f, emissive: 0x9a4518, emissiveIntensity: 0.72, metalness: 0.46, roughness: 0.36
+  }), 'fingerprint-recorder-material');
+  mesh(group, fingerprint, fingerprintMaterial, 'fingerprint-recorder', { x: 0, y: 0.08, z: 0 });
+  const pedestal = resources.register(new THREE.CylinderGeometry(1.05, 1.35, 0.32, 18), 'fingerprint-pedestal');
+  mesh(group, pedestal, materials.metal, 'fingerprint-recorder-pedestal', { x: -5.1, y: 0.12, z: -40.2 });
 }
 
 function createLibrary(group, resources, materials) {

@@ -121,7 +121,7 @@
     [data-touch-mode="true"] .hud { display: block; right: auto; width: calc(var(--fixture-edge) - 32px); }
     [data-touch-mode="true"] .title { font-size: 1rem; }
     [data-touch-mode="true"] .status { font-size: .72rem; margin-top: .2rem; }
-    [data-touch-mode="true"] .chapter-strip { top: calc(var(--hud-top) + 74px); width: min(320px, calc(100vw - 116px)); justify-content: center; padding: 5px 7px; }
+    [data-touch-mode="true"] .chapter-strip { top: calc(var(--hud-top) + 112px); width: min(320px, calc(100vw - 116px)); justify-content: center; padding: 5px 7px; }
     [data-touch-mode="true"] .chapter-strip li { min-width: 28px; grid-template-columns: 1fr; }
     [data-touch-mode="true"] .chapter-strip span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
     [data-touch-mode="true"] .actions { position: absolute; top: 0; right: 0; gap: 6px; }
@@ -130,7 +130,7 @@
     [data-touch-mode="true"] .combat-hud .gauge { flex: 1 1 40%; min-width: 118px; }
     [data-touch-mode="true"] .combat-hud > span:not(.gauge) { flex: 0 0 auto; font-size: .68rem; padding: 3px 6px; white-space: nowrap; }
     /* 목표 문구는 HUD 아래 상단 밴드에 고정 — 화면 중앙·보조 버튼 열을 침범하지 않는다. */
-    [data-touch-mode="true"] .objective { top: calc(var(--hud-top) + 108px); max-width: min(calc(100vw - 136px), 620px); }
+    [data-touch-mode="true"] .objective { top: calc(var(--hud-top) + 150px); max-width: min(calc(100vw - 136px), 620px); }
     [data-touch-mode="true"] .feedback-prompts { right: auto; left: calc(var(--fixture-edge) - min(60vw, 340px) - 18px); bottom: calc(var(--safe-bottom) + 256px); max-width: min(60vw, 340px); }
     [data-touch-mode="true"] .radio { bottom: calc(var(--safe-bottom) + 170px); width: min(calc(100vw - 40px), 600px); }
     /* 세로 결정 대기 중에는 자막·피드백 칩을 한 단 올려 맥락 버튼 띠를 비워 둔다(가로에서는 띠가 겹치지 않음). */

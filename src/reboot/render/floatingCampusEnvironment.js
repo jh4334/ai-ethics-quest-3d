@@ -14,17 +14,36 @@ const PBR_MATERIAL_BINDINGS = Object.freeze({
   wood: 'interior-wood'
 });
 
-function applyPlacement(root, entry, index) {
-  root.name = `campus-asset-${entry.assetId}-${index}`;
-  root.position.set(entry.position.x, entry.position.y, entry.position.z);
-  root.rotation.y = entry.rotationY;
-  root.scale.setScalar(entry.scale);
-  root.userData.campusAssetId = entry.assetId;
-  root.userData.campusDistrictId = entry.districtId;
-  root.traverse((object) => {
-    if (!object.isMesh) return;
-    object.castShadow = false;
-    object.receiveShadow = false;
+function addInstancedAsset(parent, instance, placements, assetId) {
+  const position = new THREE.Vector3();
+  const quaternion = new THREE.Quaternion();
+  const scale = new THREE.Vector3();
+  const placementMatrix = new THREE.Matrix4();
+  const combined = new THREE.Matrix4();
+  const rotation = new THREE.Euler();
+  instance.root.updateMatrixWorld(true);
+  let meshIndex = 0;
+  instance.root.traverse((source) => {
+    if (!source.isMesh) return;
+    const batch = new THREE.InstancedMesh(source.geometry, source.material, placements.length);
+    batch.name = `campus-asset-${assetId}-batch-${meshIndex}`;
+    batch.castShadow = false;
+    batch.receiveShadow = false;
+    batch.userData.campusAssetId = assetId;
+    for (const [index, entry] of placements.entries()) {
+      position.set(entry.position.x, entry.position.y, entry.position.z);
+      rotation.set(0, entry.rotationY, 0);
+      quaternion.setFromEuler(rotation);
+      scale.setScalar(entry.scale);
+      placementMatrix.compose(position, quaternion, scale);
+      combined.multiplyMatrices(placementMatrix, source.matrixWorld);
+      batch.setMatrixAt(index, combined);
+    }
+    batch.instanceMatrix.needsUpdate = true;
+    batch.computeBoundingBox();
+    batch.computeBoundingSphere();
+    parent.add(batch);
+    meshIndex += 1;
   });
 }
 
@@ -56,17 +75,17 @@ function createDistrictBeacons(group) {
 }
 
 function createCampusLights(group) {
-  const moon = new THREE.DirectionalLight(0xa9c7ff, 1.45);
+  const moon = new THREE.DirectionalLight(0x9fc5ff, 2.65);
   moon.name = 'campus-moon-key';
   moon.position.set(-14, 22, 8);
   moon.castShadow = false;
   group.add(moon);
-  const memory = new THREE.PointLight(0xffb45f, 3.2, 30, 1.9);
+  const memory = new THREE.PointLight(0xffad59, 7.2, 38, 1.7);
   memory.name = 'campus-memory-light';
   memory.position.set(-1, 5.5, -54);
   memory.castShadow = false;
   group.add(memory);
-  const deletion = new THREE.PointLight(0x7abfff, 2.4, 34, 2);
+  const deletion = new THREE.PointLight(0x6db9ff, 4.6, 38, 1.85);
   deletion.name = 'campus-deletion-light';
   deletion.position.set(0, 8.5, -77);
   deletion.castShadow = false;
@@ -76,6 +95,10 @@ function createCampusLights(group) {
 function applyPbrMaterial(architecture, role, material) {
   for (const texture of [material.map, material.normalMap, material.roughnessMap]) {
     if (texture) texture.repeat.set(role === 'wood' ? 3 : 5, role === 'wood' ? 3 : 5);
+  }
+  if (role === 'track' || role === 'wood') {
+    material.emissive.set(role === 'track' ? 0x280a08 : 0x241208);
+    material.emissiveIntensity = role === 'track' ? 0.42 : 0.28;
   }
   architecture.group.traverse((object) => {
     if (object.isMesh && object.material?.name === `campus-${role}-material`) object.material = material;
@@ -100,6 +123,7 @@ export function createFloatingCampusEnvironment({
   scene.add(group);
 
   let disposed = false;
+  let placedInstanceCount = 0;
   const loadedInstances = [];
   const failedAssetIds = [];
   const failedMaterialIds = [];
@@ -108,13 +132,9 @@ export function createFloatingCampusEnvironment({
     loadedInstances.push(instance);
     if (instance.isPlaceholder) failedAssetIds.push(assetId);
     if (disposed) return;
-    CAMPUS_ASSET_PLACEMENTS
-      .filter((entry) => entry.assetId === assetId)
-      .forEach((entry, index) => {
-        const clone = instance.root.clone(true);
-        applyPlacement(clone, entry, index);
-        assetRoot.add(clone);
-      });
+    const placements = CAMPUS_ASSET_PLACEMENTS.filter((entry) => entry.assetId === assetId);
+    addInstancedAsset(assetRoot, instance, placements, assetId);
+    placedInstanceCount += placements.length;
   }));
   const materialPromise = Promise.all(Object.entries(PBR_MATERIAL_BINDINGS).map(async ([role, materialId]) => {
     const instance = await assetLoader.loadMaterial(materialId);
@@ -126,14 +146,14 @@ export function createFloatingCampusEnvironment({
     failedAssetIds: Object.freeze([...failedAssetIds]),
     failedMaterialIds: Object.freeze([...failedMaterialIds]),
     loadedAssetIds: Object.freeze(CAMPUS_REQUIRED_ASSET_IDS.filter((id) => !failedAssetIds.includes(id))),
-    placedInstances: assetRoot.children.length,
+    placedInstances: placedInstanceCount,
     status: failedAssetIds.length === 0 && failedMaterialIds.length === 0 ? 'ready' : 'degraded'
   })).catch((error) => Object.freeze({
     error: error instanceof Error ? error.message : String(error),
     failedAssetIds: Object.freeze([...CAMPUS_REQUIRED_ASSET_IDS]),
     failedMaterialIds: Object.freeze(Object.values(PBR_MATERIAL_BINDINGS)),
     loadedAssetIds: Object.freeze([]),
-    placedInstances: assetRoot.children.length,
+    placedInstances: placedInstanceCount,
     status: 'error'
   }));
 
@@ -150,7 +170,7 @@ export function createFloatingCampusEnvironment({
     },
     getDebugState: () => Object.freeze({
       architecture: architecture.getDebugState(),
-      assetInstances: assetRoot.children.length,
+      assetInstances: placedInstanceCount,
       districtSigns: backdrop.signCount,
       failedAssetIds: Object.freeze([...failedAssetIds]),
       failedMaterialIds: Object.freeze([...failedMaterialIds]),

@@ -14,6 +14,8 @@ export function createRenderer(canvas, {
     powerPreference: 'high-performance'
   });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.82;
   renderer.setClearColor(0x050918, 1);
   renderer.setPixelRatio(profile.dpr);
   renderer.userData = {};
