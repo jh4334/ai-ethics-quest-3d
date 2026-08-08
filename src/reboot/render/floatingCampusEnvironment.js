@@ -6,6 +6,8 @@ import {
 import { createEnvironmentAssetLoader } from '../environment/loader.js';
 import { createCampusArchitecture } from './campusArchitecture.js';
 import { createCampusBackdrop } from './campusBackdrop.js';
+import { createCampusEdgeDressing, createCinematicNightSky } from './campusEnvironmentLayers.js';
+import { createDisposableRegistry } from './dispose.js';
 
 const PBR_MATERIAL_BINDINGS = Object.freeze({
   brick: 'masonry-brick',
@@ -110,11 +112,19 @@ export function createFloatingCampusEnvironment({
   scene
 } = {}) {
   if (!scene?.isScene) throw new TypeError('부유 캠퍼스를 추가할 Three.js 장면이 필요합니다.');
+  const resources = createDisposableRegistry();
   const architecture = createCampusArchitecture();
   const group = new THREE.Group();
   group.name = 'h17-floating-campus';
   group.add(architecture.group);
   const backdrop = createCampusBackdrop({ group });
+  const sky = createCinematicNightSky({
+    accent: 0xf0c878, centerZ: -58, group, prefix: 'floating-campus', resources
+  });
+  const edgeDressing = createCampusEdgeDressing({
+    accent: 0xf0c878, centerZ: -56, group, halfWidth: 15.5,
+    prefix: 'floating-campus', resources, spanZ: 118
+  });
   createCampusLights(group);
   const districtBeacons = createDistrictBeacons(group);
   const assetRoot = new THREE.Group();
@@ -164,6 +174,7 @@ export function createFloatingCampusEnvironment({
       group.removeFromParent();
       group.clear();
       backdrop.dispose();
+      resources.disposeAll();
       districtBeacons.dispose();
       architecture.dispose();
       assetLoader.dispose();
@@ -172,9 +183,12 @@ export function createFloatingCampusEnvironment({
       architecture: architecture.getDebugState(),
       assetInstances: placedInstanceCount,
       districtSigns: backdrop.signCount,
+      edgeDressingInstances: edgeDressing.postCount + edgeDressing.lanternCount
+        + edgeDressing.shrubCount + edgeDressing.shardCount,
       failedAssetIds: Object.freeze([...failedAssetIds]),
       failedMaterialIds: Object.freeze([...failedMaterialIds]),
       requiredAssetIds: CAMPUS_REQUIRED_ASSET_IDS,
+      skyObjects: sky.skyObjects,
       status: disposed ? 'disposed' : assetRoot.children.length > 0 ? 'loaded' : 'loading'
     }),
     group,

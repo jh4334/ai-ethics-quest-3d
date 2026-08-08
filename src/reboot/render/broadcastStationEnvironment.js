@@ -2,7 +2,10 @@ import * as THREE from 'three';
 
 import { BROADCAST_ZONES } from '../campaign/broadcastRoute.js';
 import { createEnvironmentAssetLoader } from '../environment/loader.js';
-import { createEmissivePathAccents, createLayeredCampusSilhouettes } from './campusEnvironmentLayers.js';
+import {
+  createCampusEdgeDressing, createCinematicNightSky,
+  createEmissivePathAccents, createLayeredCampusSilhouettes
+} from './campusEnvironmentLayers.js';
 import { createDisposableRegistry } from './dispose.js';
 
 const PLACEMENTS = Object.freeze([
@@ -18,7 +21,13 @@ const PLACEMENTS = Object.freeze([
   ['classroom-screen', -2.6, 1.1, -48, 1.15, Math.PI / 2], ['classroom-screen', 2.6, 1.1, -48, 1.15, -Math.PI / 2],
   ['campus-doorway', -7, 0, -60, 1.7, 0], ['campus-window', -5.5, 0.4, -80.5, 1.45, 0],
   ['campus-window', 5.5, 0.4, -80.5, 1.45, 0], ['campus-column', -9.5, 0, -70, 1.45, 0],
-  ['campus-column', 9.5, 0, -70, 1.45, 0]
+  ['campus-column', 9.5, 0, -70, 1.45, 0],
+  ['record-laptop', -3.4, 0.82, -6.2, 0.82, 0], ['record-laptop', 3.4, 0.82, -6.2, 0.82, 0],
+  ['media-speaker', -5.2, 0, -22, 1.7, 0], ['media-speaker', 5.2, 0, -22, 1.7, 0],
+  ['campus-bench', -3.8, 0, -41, 1.1, Math.PI / 2], ['campus-bench', 3.8, 0, -52, 1.1, -Math.PI / 2],
+  ['campus-lamp', -6, 0, -43, 1.2, 0], ['campus-lamp', 6, 0, -51, 1.2, 0],
+  ['broadcast-antenna', -6.8, 3.8, -72, 2.1, 0], ['broadcast-antenna', 6.8, 3.8, -72, 2.1, Math.PI],
+  ['archive-box', -4.5, 0, -67, 1.1, 0.3], ['campus-planter', 4.5, 0, -67, 1.3, 0]
 ]);
 
 function roundedShape(width, depth, radius) {
@@ -156,6 +165,13 @@ export function createBroadcastStationEnvironment({ assetLoader = createEnvironm
     centerZ: -41, colors: [0x25334b, 0x17283d, 0x0d172a], group,
     prefix: 'broadcast-station', resources, spanZ: 86
   });
+  const sky = createCinematicNightSky({
+    accent: 0xd74732, centerZ: -41, group, prefix: 'broadcast-station', resources
+  });
+  const edgeDressing = createCampusEdgeDressing({
+    accent: 0xf3b36c, centerZ: -41, group, halfWidth: 12,
+    prefix: 'broadcast-station', resources, spanZ: 88
+  });
   const accents = createEmissivePathAccents({
     colors: [0xf3b36c, 0x5de0c1, 0xd74732], group,
     points: BROADCAST_ZONES.flatMap((zone) => [-3.2, 0, 3.2].map((offset, index) => ({
@@ -211,10 +227,13 @@ export function createBroadcastStationEnvironment({ assetLoader = createEnvironm
     getDebugState: () => Object.freeze({
       assetInstances: assetRoot.children.length,
       atmosphericLayers: atmosphere.layerCount,
+      edgeDressingInstances: edgeDressing.postCount + edgeDressing.lanternCount
+        + edgeDressing.shrubCount + edgeDressing.shardCount,
       emissiveAccents: accents.accentCount,
       failedAssetIds: Object.freeze([...failures]),
       landmarkIds: Object.freeze(BROADCAST_ZONES.map(({ landmarkId }) => landmarkId)),
       pbrArchitectureMeshes: 12,
+      skyObjects: sky.skyObjects,
       stationIdentityMeshes: architecture.stationIdentityMeshes,
       status: assetRoot.children.length > 0 ? 'ready' : 'loading',
       zoneCount: BROADCAST_ZONES.length

@@ -1,7 +1,10 @@
 import * as THREE from 'three';
 
 import { createEnvironmentAssetLoader } from '../environment/loader.js';
-import { createEmissivePathAccents, createLayeredCampusSilhouettes } from './campusEnvironmentLayers.js';
+import {
+  createCampusEdgeDressing, createCinematicNightSky,
+  createEmissivePathAccents, createLayeredCampusSilhouettes
+} from './campusEnvironmentLayers.js';
 import { createDisposableRegistry } from './dispose.js';
 
 const prop = (id, x, z, scale = 1, yaw = 0, y = 0) => ({ id, scale, x, y, yaw, z });
@@ -10,62 +13,82 @@ const RECIPES = Object.freeze({
   'media-plaza': [
     prop('campus-tree', -5, -2, 0.9), prop('campus-tree', 5, -2, 0.9),
     prop('campus-bush', -4.2, 2.4, 0.8), prop('campus-bush', 4.2, 2.4, 0.8),
-    prop('campus-rock', -2.4, -4, 0.8), prop('classroom-screen', 2.4, -4, 1.2, Math.PI)
+    prop('campus-rock', -2.4, -4, 0.8), prop('classroom-screen', 2.4, -4, 1.2, Math.PI),
+    prop('campus-bench', -3.4, 4.2, 1.05), prop('campus-bench', 3.4, 4.2, 1.05),
+    prop('campus-lamp', -6, 0, 1.1), prop('campus-lamp', 6, 0, 1.1)
   ],
   'edit-bays': [
     prop('classroom-desk', -4.2, -3, 1.05), prop('classroom-chair', -4.2, -1.8, 1, Math.PI),
     prop('classroom-screen', -4.2, -3.1, 1.1), prop('classroom-desk', 4.2, 2.2, 1.05, Math.PI),
-    prop('classroom-chair', 4.2, 1, 1), prop('campus-doorway', 0, -5.6, 1.2)
+    prop('classroom-chair', 4.2, 1, 1), prop('campus-doorway', 0, -5.6, 1.2),
+    prop('record-laptop', -4.2, -3, 0.82, 0, 0.82), prop('record-laptop', 4.2, 2.2, 0.82, Math.PI, 0.82),
+    prop('campus-sofa', 0, 4.6, 1.05, Math.PI)
   ],
   'upload-trace': [
     prop('library-bookcase', -5, -3.2, 1.15, Math.PI / 2), prop('library-books', -4.2, -3.2, 1.1, Math.PI / 2, 1.1),
     prop('classroom-screen', -2.8, -4.5, 1.25), prop('classroom-screen', 2.8, -4.5, 1.25),
-    prop('campus-column', -5.2, 3.2, 1.15), prop('campus-column', 5.2, 3.2, 1.15)
+    prop('campus-column', -5.2, 3.2, 1.15), prop('campus-column', 5.2, 3.2, 1.15),
+    prop('archive-box', -1.6, 3.8, 1.05, 0.25), prop('archive-box', 1.6, 3.8, 1.05, -0.25),
+    prop('broadcast-antenna', 0, -5.6, 1.6)
   ],
   'broadcast-stage': [
     prop('campus-column', -6, -4.8, 1.3), prop('campus-column', 6, -4.8, 1.3),
     prop('classroom-screen', -3.2, -5.4, 1.4), prop('classroom-screen', 3.2, -5.4, 1.4),
-    prop('campus-stairs', 0, 2.8, 1.25, Math.PI), prop('campus-doorway', 0, -6.2, 1.55)
+    prop('campus-stairs', 0, 2.8, 1.25, Math.PI), prop('campus-doorway', 0, -6.2, 1.55),
+    prop('media-speaker', -5.1, -3.8, 1.7), prop('media-speaker', 5.1, -3.8, 1.7),
+    prop('broadcast-antenna', 0, -5.2, 1.8)
   ],
   'split-foyer': [
     prop('campus-doorway', -3.6, -4.5, 1.3), prop('campus-doorway', 3.6, -4.5, 1.3),
     prop('campus-column', -5.8, 1.8, 1.2), prop('campus-column', 5.8, 1.8, 1.2),
-    prop('campus-tree', -6, -4, 0.75), prop('campus-rock', 6, -4, 0.8)
+    prop('campus-tree', -6, -4, 0.75), prop('campus-rock', 6, -4, 0.8),
+    prop('campus-planter', -2, 3.8, 1.2), prop('campus-fence', 2, 4.6, 1.1)
   ],
   'warm-incomplete': [
     prop('classroom-desk', -4.4, -3.2, 1.05), prop('classroom-chair', -4.4, -2, 1, Math.PI),
     prop('library-bookcase', 4.8, -3.6, 1.15, -Math.PI / 2), prop('library-books', 4, -3.6, 1.1, -Math.PI / 2, 1.1),
-    prop('campus-tree', -5.4, 2.8, 0.8), prop('campus-bush', 5.4, 2.8, 0.85)
+    prop('campus-tree', -5.4, 2.8, 0.8), prop('campus-bush', 5.4, 2.8, 0.85),
+    prop('campus-sofa', 0, 3.7, 1.15, Math.PI), prop('campus-lamp', -2.4, 3.7, 1.1),
+    prop('memory-flower', 2.8, 3.7, 1.5)
   ],
   'cold-verified': [
     prop('classroom-screen', -4.2, -4, 1.35), prop('classroom-screen', 0, -4, 1.35),
     prop('classroom-screen', 4.2, -4, 1.35), prop('campus-column', -5.4, 2.8, 1.2),
-    prop('campus-column', 5.4, 2.8, 1.2), prop('campus-window', 0, -5.4, 1.4)
+    prop('campus-column', 5.4, 2.8, 1.2), prop('campus-window', 0, -5.4, 1.4),
+    prop('record-laptop', -2.8, 2.8, 1.2, 0, 1.05), prop('record-laptop', 2.8, 2.8, 1.2, 0, 1.05),
+    prop('broadcast-antenna', 0, -5.2, 1.5)
   ],
   'deletion-archive': [
     prop('library-bookcase', -5.5, -3.6, 1.25, Math.PI / 2), prop('library-bookcase', 5.5, -3.6, 1.25, -Math.PI / 2),
     prop('library-books', -4.6, -3.6, 1.15, Math.PI / 2, 1.1), prop('library-books', 4.6, -3.6, 1.15, -Math.PI / 2, 1.1),
-    prop('campus-doorway', 0, -5.8, 1.5), prop('classroom-screen', 0, -4.9, 1.35)
+    prop('campus-doorway', 0, -5.8, 1.5), prop('classroom-screen', 0, -4.9, 1.35),
+    prop('archive-box', -2.2, 3.4, 1.1), prop('archive-box', 2.2, 3.4, 1.1),
+    prop('campus-lamp', 0, 3.8, 1.2)
   ],
   'approval-intake': [
     prop('classroom-desk', -4, -3, 1.05), prop('classroom-chair', -4, -1.8, 1, Math.PI),
     prop('classroom-screen', -4, -3.1, 1.15), prop('library-bookcase', 4.6, -3, 1.15, -Math.PI / 2),
-    prop('library-books', 3.8, -3, 1.1, -Math.PI / 2, 1.1), prop('campus-doorway', 0, -5.4, 1.35)
+    prop('library-books', 3.8, -3, 1.1, -Math.PI / 2, 1.1), prop('campus-doorway', 0, -5.4, 1.35),
+    prop('record-laptop', -4, -3, 0.9, 0, 0.86), prop('archive-box', 3.2, 3.6, 1.05)
   ],
   'conveyor-scoring': [
     prop('campus-column', -5.6, -4, 1.2), prop('campus-column', 5.6, -4, 1.2),
     prop('classroom-screen', -4.4, 2, 1.2, Math.PI), prop('classroom-screen', 4.4, 2, 1.2, Math.PI),
-    prop('campus-stairs', -5, -1, 1.05, Math.PI / 2), prop('campus-stairs', 5, -1, 1.05, -Math.PI / 2)
+    prop('campus-stairs', -5, -1, 1.05, Math.PI / 2), prop('campus-stairs', 5, -1, 1.05, -Math.PI / 2),
+    prop('media-speaker', -3.8, 3.6, 1.4), prop('media-speaker', 3.8, 3.6, 1.4)
   ],
   'approval-trace': [
     prop('classroom-desk', -3.4, -3.8, 1.05), prop('classroom-chair', -3.4, -2.6, 1, Math.PI),
     prop('classroom-screen', -3.4, -3.9, 1.2), prop('campus-window', 3.8, -4.5, 1.35),
-    prop('campus-column', -5.4, 2.8, 1.2), prop('campus-column', 5.4, 2.8, 1.2)
+    prop('campus-column', -5.4, 2.8, 1.2), prop('campus-column', 5.4, 2.8, 1.2),
+    prop('record-laptop', -3.4, -3.8, 0.9, 0, 0.86), prop('broadcast-antenna', 3.8, 3.4, 1.5)
   ],
   'emergency-archive': [
     prop('library-bookcase', -6, -3.2, 1.3, Math.PI / 2), prop('library-bookcase', 6, -3.2, 1.3, -Math.PI / 2),
     prop('library-books', -5, -3.2, 1.15, Math.PI / 2, 1.2), prop('library-books', 5, -3.2, 1.15, -Math.PI / 2, 1.2),
-    prop('campus-doorway', 0, -6, 1.55), prop('campus-stairs', 0, 3.5, 1.2, Math.PI)
+    prop('campus-doorway', 0, -6, 1.55), prop('campus-stairs', 0, 3.5, 1.2, Math.PI),
+    prop('archive-box', -2.4, 3.6, 1.2, 0.3), prop('archive-box', 2.4, 3.6, 1.2, -0.3),
+    prop('campus-lamp', 0, -4.8, 1.15)
   ]
 });
 
@@ -219,6 +242,15 @@ export function createCampaignChapterEnvironment({
     centerZ: (minZ + maxZ) / 2, colors: CHAPTER_VISUALS[chapter].colors, group,
     prefix: `campaign-${chapter}`, resources, spanZ: maxZ - minZ
   });
+  const sky = createCinematicNightSky({
+    accent: chapter === 3 ? 0x64ddc4 : 0xf3b36c,
+    centerZ: (minZ + maxZ) / 2, group, prefix: `campaign-${chapter}`, resources
+  });
+  const edgeDressing = createCampusEdgeDressing({
+    accent: chapter === 4 ? 0xd74732 : 0xf3b36c,
+    centerZ: (minZ + maxZ) / 2, group, halfWidth: 10,
+    prefix: `campaign-${chapter}`, resources, spanZ: maxZ - minZ
+  });
   const accents = createEmissivePathAccents({
     colors: [0xf3b36c, 0x5de0c1], group,
     points: level.segments.flatMap((segment) => [-3, 0, 3].map((offset, index) => ({
@@ -294,10 +326,13 @@ export function createCampaignChapterEnvironment({
       assetInstances: assetRoot.children.length,
       atmosphericLayers: atmosphere.layerCount,
       authoredMeshes: atmosphere.instanceCount + architectureMetrics.meshCount,
+      edgeDressingInstances: edgeDressing.postCount + edgeDressing.lanternCount
+        + edgeDressing.shrubCount + edgeDressing.shardCount,
       emissiveAccents: accents.accentCount,
       failedAssetIds: Object.freeze([...failedAssetIds]),
       placementSignature,
       pbrArchitectureMeshes: architectureMetrics.pbrMeshCount,
+      skyObjects: sky.skyObjects,
       status,
       texturedSurfaces: surfaceRoot.children.length,
       uniqueAssetIds: assetIds.length,

@@ -74,14 +74,28 @@ export const ENVIRONMENT_ASSETS = Object.freeze([
   defineAsset('campus-window', 'building', 'wall-window-wide-square-detailed.glb', { width: 4, height: 3, depth: 0.25, color: 0x587d91 }),
   defineAsset('campus-column', 'building', 'column-wide.glb', { width: 0.6, height: 3, depth: 0.6, color: 0x77818a }),
   defineAsset('campus-stairs', 'building', 'stairs-open-short.glb', { width: 2, height: 1, depth: 3, color: 0x6f7880 }),
+  defineAsset('campus-roof', 'building', 'roof-flat-square.glb', { width: 4, height: 0.4, depth: 4, color: 0x536376 }),
+  defineAsset('campus-roof-edge', 'building', 'roof-flat-side.glb', { width: 4, height: 0.4, depth: 4, color: 0x536376 }),
   defineAsset('classroom-desk', 'furniture', 'desk.glb', { width: 1.4, height: 0.8, depth: 0.7, color: 0x8a6545 }),
   defineAsset('classroom-chair', 'furniture', 'chairDesk.glb', { width: 0.6, height: 1, depth: 0.6, color: 0xa1744d }),
   defineAsset('classroom-screen', 'furniture', 'computerScreen.glb', { width: 0.8, height: 0.55, depth: 0.12, color: 0x3f708a }),
   defineAsset('library-bookcase', 'furniture', 'bookcaseOpen.glb', { width: 1.3, height: 2, depth: 0.45, color: 0x7a5437 }),
   defineAsset('library-books', 'furniture', 'books.glb', { width: 0.7, height: 0.25, depth: 0.25, color: 0xc48b45 }),
+  defineAsset('campus-bench', 'furniture', 'bench.glb', { width: 2, height: 0.9, depth: 0.7, color: 0x89664c }),
+  defineAsset('campus-sofa', 'furniture', 'loungeSofa.glb', { width: 2.4, height: 1, depth: 0.9, color: 0x6d536e }),
+  defineAsset('campus-lamp', 'furniture', 'lampRoundFloor.glb', { width: 0.55, height: 2, depth: 0.55, color: 0xf0c878 }),
+  defineAsset('record-laptop', 'furniture', 'laptop.glb', { width: 0.7, height: 0.4, depth: 0.5, color: 0x5b7187 }),
+  defineAsset('archive-box', 'furniture', 'cardboardBoxOpen.glb', { width: 0.8, height: 0.6, depth: 0.8, color: 0x8d6849 }),
+  defineAsset('campus-planter', 'furniture', 'plantSmall1.glb', { width: 0.6, height: 0.8, depth: 0.6, color: 0x477a52 }),
+  defineAsset('broadcast-antenna', 'furniture', 'televisionAntenna.glb', { width: 1.3, height: 1.4, depth: 0.8, color: 0x7b899c }),
+  defineAsset('media-speaker', 'furniture', 'speaker.glb', { width: 0.6, height: 1.4, depth: 0.55, color: 0x273448 }),
   defineAsset('campus-tree', 'nature', 'tree_default_dark.glb', { width: 2.5, height: 5, depth: 2.5, color: 0x3c714c }),
   defineAsset('campus-bush', 'nature', 'plant_bushLarge.glb', { width: 1.8, height: 1.2, depth: 1.8, color: 0x477a52 }),
-  defineAsset('campus-rock', 'nature', 'rock_largeA.glb', { width: 1.6, height: 1.2, depth: 1.4, color: 0x68727a })
+  defineAsset('campus-rock', 'nature', 'rock_largeA.glb', { width: 1.6, height: 1.2, depth: 1.4, color: 0x68727a }),
+  defineAsset('campus-fence', 'nature', 'fence_simple.glb', { width: 2, height: 1.2, depth: 0.2, color: 0x6f5842 }),
+  defineAsset('campus-grass', 'nature', 'grass_large.glb', { width: 1.4, height: 0.9, depth: 1.4, color: 0x3d6f54 }),
+  defineAsset('memory-flower', 'nature', 'flower_yellowA.glb', { width: 0.5, height: 0.7, depth: 0.5, color: 0xf0c878 }),
+  defineAsset('campus-bridge', 'nature', 'bridge_woodNarrow.glb', { width: 2.5, height: 0.6, depth: 5, color: 0x76593e })
 ]);
 
 function defineMaterial(id, source, folder, filePrefix, placeholderColor) {

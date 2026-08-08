@@ -10,6 +10,8 @@ import { createInitialRebootState } from '../src/reboot/state/model.js';
 
 const baseUrl = process.env.H17_CAPTURE_URL ?? 'http://127.0.0.1:4174/';
 const outputDirectory = fileURLToPath(new URL('../.omo/evidence/h17-six-chapter/chapters/', import.meta.url));
+const rendererProfile = process.env.H17_CAPTURE_RENDERER === 'hardware' ? 'hardware' : 'swiftshader';
+const headless = process.env.H17_CAPTURE_HEADFUL !== 'true';
 const profiles = Object.freeze([
   Object.freeze({ height: 900, id: 'desktop-1440x900', quality: 'high', touch: false, width: 1440 }),
   Object.freeze({ height: 844, id: 'mobile-390x844', quality: 'low', touch: true, width: 390 })
@@ -40,7 +42,9 @@ async function captureChapter(browser, chapter, profile) {
   const consoleErrors = [];
   const failedResponses = [];
   page.on('console', (message) => {
-    if (message.type() === 'error') consoleErrors.push(message.text());
+    if (message.type() !== 'error') return;
+    const sourceUrl = message.location().url;
+    consoleErrors.push(sourceUrl ? `${message.text()} @ ${sourceUrl}` : message.text());
   });
   page.on('pageerror', (error) => consoleErrors.push(error.message));
   page.on('response', (response) => {
@@ -86,6 +90,11 @@ async function captureChapter(browser, chapter, profile) {
         requests: resources.length,
         transferBytes: resources.reduce((sum, entry) => sum + (entry.transferSize || 0), 0)
       },
+      renderer: (() => {
+        const gl = canvasElement.getContext('webgl2');
+        const info = gl?.getExtension('WEBGL_debug_renderer_info');
+        return info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : 'masked';
+      })(),
       touchControlsVisible: getComputedStyle(document.querySelector('[data-touch-controls]')).display !== 'none'
     };
   });
@@ -97,7 +106,12 @@ async function captureChapter(browser, chapter, profile) {
 }
 
 await mkdir(outputDirectory, { recursive: true });
-const browser = await chromium.launch({ args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader'] });
+const browser = await chromium.launch({
+  headless,
+  args: rendererProfile === 'hardware'
+    ? ['--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding']
+    : ['--enable-unsafe-swiftshader', '--use-angle=swiftshader']
+});
 const captures = [];
 try {
   for (const profile of selectedProfiles) {
@@ -110,10 +124,10 @@ try {
 }
 
 const reportPath = `${outputDirectory}/capture-report.json`;
-await writeFile(reportPath, `${JSON.stringify({ baseUrl, captures }, null, 2)}\n`, 'utf8');
+await writeFile(reportPath, `${JSON.stringify({ baseUrl, captures, headless, rendererProfile }, null, 2)}\n`, 'utf8');
 const failures = captures.flatMap(({ chapter, consoleErrors, failedResponses, profile }) => [
   ...consoleErrors.map((message) => `${chapter}장 ${profile} console: ${message}`),
   ...failedResponses.map((message) => `${chapter}장 ${profile} response: ${message}`)
 ]);
 if (failures.length > 0) throw new Error(failures.join('\n'));
-console.log(JSON.stringify({ captures: captures.length, reportPath }, null, 2));
+console.log(JSON.stringify({ captures: captures.length, reportPath: relativeEvidencePath(reportPath), rendererProfile }, null, 2));

@@ -2,7 +2,10 @@ import * as THREE from 'three';
 
 import { TESTIMONY_ZONES } from '../campaign/testimonyArchive.js';
 import { createEnvironmentAssetLoader } from '../environment/loader.js';
-import { createEmissivePathAccents, createLayeredCampusSilhouettes } from './campusEnvironmentLayers.js';
+import {
+  createCampusEdgeDressing, createCinematicNightSky,
+  createEmissivePathAccents, createLayeredCampusSilhouettes
+} from './campusEnvironmentLayers.js';
 import { createDisposableRegistry } from './dispose.js';
 
 const ASSET_PLACEMENTS = Object.freeze([
@@ -17,7 +20,13 @@ const ASSET_PLACEMENTS = Object.freeze([
   ['library-books', -4.8, 1.1, -45, 1.1, Math.PI / 2], ['library-books', 4.8, 1.1, -45, 1.1, -Math.PI / 2],
   ['campus-stairs', 0, 0, -59.5, 1.35, Math.PI],
   ['campus-column', -8.5, 0, -69, 1.45, 0], ['campus-column', 8.5, 0, -69, 1.45, 0],
-  ['campus-doorway', 0, 0, -81.2, 1.65, 0]
+  ['campus-doorway', 0, 0, -81.2, 1.65, 0],
+  ['record-laptop', -3.2, 0.82, -5.4, 0.82, 0], ['record-laptop', 3.2, 0.82, -5.4, 0.82, 0],
+  ['archive-box', -4.2, 0, -20.5, 1.15, 0.2], ['archive-box', 4.2, 0, -27.5, 1.15, -0.2],
+  ['campus-sofa', 0, 0, -31, 1.15, Math.PI], ['campus-lamp', -5.5, 0, -24, 1.2, 0],
+  ['campus-lamp', 5.5, 0, -48, 1.2, 0], ['campus-planter', -4.2, 0, -65, 1.3, 0],
+  ['campus-planter', 4.2, 0, -74, 1.3, 0], ['campus-bench', 0, 0, -68, 1.2, Math.PI],
+  ['broadcast-antenna', 0, 4.8, -77, 1.9, 0]
 ]);
 
 function roundedShape(width, depth, radius) {
@@ -140,6 +149,13 @@ export function createTestimonyArchiveEnvironment({ assetLoader = createEnvironm
     centerZ: -41, colors: [0x2c314b, 0x182b42, 0x10182c], group,
     prefix: 'testimony-archive', resources, spanZ: 82
   });
+  const sky = createCinematicNightSky({
+    accent: 0x64ddc4, centerZ: -41, group, prefix: 'testimony-archive', resources
+  });
+  const edgeDressing = createCampusEdgeDressing({
+    accent: 0xf2b762, centerZ: -41, group, halfWidth: 12,
+    prefix: 'testimony-archive', resources, spanZ: 88
+  });
   const accents = createEmissivePathAccents({
     colors: [0xf2b762, 0x64ddc4], group,
     points: TESTIMONY_ZONES.flatMap((zone) => [-3.2, 0, 3.2].map((offset, index) => ({
@@ -198,10 +214,13 @@ export function createTestimonyArchiveEnvironment({ assetLoader = createEnvironm
     getDebugState: () => Object.freeze({
       assetInstances: assetRoot.children.length,
       atmosphericLayers: atmosphere.layerCount,
+      edgeDressingInstances: edgeDressing.postCount + edgeDressing.lanternCount
+        + edgeDressing.shrubCount + edgeDressing.shardCount,
       emissiveAccents: accents.accentCount,
       failedAssetIds: Object.freeze([...failures]),
       landmarkIds: Object.freeze(TESTIMONY_ZONES.map(({ landmarkId }) => landmarkId)),
       pbrArchitectureMeshes: 16,
+      skyObjects: sky.skyObjects,
       status: assetRoot.children.length > 0 ? 'ready' : 'loading',
       verticalArchiveMeshes: architecture.verticalArchiveMeshes,
       zoneCount: TESTIMONY_ZONES.length

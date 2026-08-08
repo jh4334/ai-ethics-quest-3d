@@ -13,6 +13,7 @@ import { createSceneRegistry } from './app/sceneRegistry.js';
 import { createTouchControls } from './input/touchControls.js';
 import { createVisibilityPause } from './input/visibilityPause.js';
 import { createTeacherReportView } from './report/teacherReportView.js';
+import { applyDesignTokens } from './design/tokens.js';
 import { applyViewportFixture, configureRuntime, withRuntimeSettings } from './settings/runtime.js';
 import { createRenderer } from './render/renderer.js';
 import { createDualSchoolPreviewScene } from './render/dualSchoolPreviewScene.js';
@@ -29,6 +30,7 @@ import { safeLocalStorage } from './save/resilientStorage.js';
 const root = document.querySelector('[data-reboot-root]');
 const canvas = root?.querySelector('[data-reboot-canvas]');
 if (!root || !canvas) throw new Error('H-17 reboot root and canvas are required');
+applyDesignTokens(root);
 
 const session = createRebootSession({ storage: safeLocalStorage(window) });
 for (const item of root.querySelectorAll('[data-chapter-progress] [data-chapter]')) {

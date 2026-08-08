@@ -7,6 +7,7 @@ import {
   createRoomWaveProgress, getRoomWaveEncounter, isSpatialWaveReady
 } from '../campaign/roomWaves.js';
 import { createCharacterFactory } from '../characters/factory.js';
+import { WORLD_COLORS } from '../design/tokens.js';
 import { walkableRectsFromLevel } from '../level/walkableBounds.js';
 import { PLAYER_RULES } from '../content/actions.js';
 import { createScenePerformanceProbe } from '../perf/sceneProbe.js';
@@ -16,6 +17,7 @@ import { chapterThreeLevel } from '../content/levels/chapter3.js';
 import { chapterFourLevel } from '../content/levels/chapter4.js';
 import { createBladeTrail } from './bladeTrail.js';
 import { createCampaignChapterEnvironment } from './campaignChapterEnvironment.js';
+import { campaignCameraFrame } from './campaignSceneCamera.js';
 import { createDisposableRegistry } from './dispose.js';
 import { createCampaignLandmarks } from './campaignLandmarks.js';
 import { createCampaignSpatialLandmarks } from './campaignSpatialLandmarks.js';
@@ -34,7 +36,7 @@ const CONFIGS = Object.freeze({
 });
 // 캐스트 앵커 — [0]은 플레이어(전투 시뮬이 위치를 지배), [1]은 동행 NPC(전장 밖 관측 위치).
 const POSITIONS = Object.freeze([[0, 0, -17], [-3.1, 0, -15.2]]);
-const COLORS = Object.freeze([0x5de0c1, 0x6aa9ff, 0xd74732]);
+const COLORS = Object.freeze([WORLD_COLORS.signal, WORLD_COLORS.moon, WORLD_COLORS.danger]);
 const LANDMARK_TYPES = Object.freeze({ 2: 'share-chain', 3: 'dual-school', 4: 'approval-room' });
 // 쓰러짐 복귀 — 1장과 동일한 결정적 리스폰(150틱 = 2.5초). 현재 웨이브만 리셋되고
 // 이미 전멸시킨 웨이브는 유지된다(무처벌 — 진행은 잃지 않는다).
@@ -84,8 +86,8 @@ export function createCampaignChapterScene({
   if (!config || !content) throw new RangeError('운영 캠페인 장면은 2장부터 4장까지 지원합니다.');
   const resources = createDisposableRegistry();
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x081020);
-  scene.fog = new THREE.Fog(0x081020, 32, 72);
+  scene.background = new THREE.Color(WORLD_COLORS.panel);
+  scene.fog = new THREE.Fog(WORLD_COLORS.panel, 36, 92);
   const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
   const route = resources.register(createSchoolRoute({ level: config.level, lightLimit: 0, scene }), 'campaign-route');
   route.group.traverse((object) => {
@@ -116,8 +118,8 @@ export function createCampaignChapterScene({
   ring.rotation.x = -Math.PI / 2;
   scene.add(ring);
   // 방 조명 예산 2개 유지 — 신규 라이트·그림자·렌더타깃 0.
-  scene.add(new THREE.HemisphereLight(0xbfd3ff, 0x29162b, 3));
-  const fill = new THREE.PointLight(0xffd39a, 3.2, 32, 1.8);
+  scene.add(new THREE.HemisphereLight(WORLD_COLORS.moon, 0x29162b, 3));
+  const fill = new THREE.PointLight(WORLD_COLORS.memory, 3.2, 32, 1.8);
   fill.position.set(0, 6, -17);
   fill.castShadow = false;
   scene.add(fill);
@@ -240,7 +242,7 @@ export function createCampaignChapterScene({
     const viewport = getSceneViewport(canvas);
     // 세로 화면은 시야가 좁아 플레이어가 최하단(자막·버튼 뒤)에 깔린다 — 화각을 넓혀 보정한다.
     portraitView = viewport.mode === 'touch' && viewport.height > viewport.width;
-    camera.fov = portraitView ? 58 : 45;
+    camera.fov = campaignCameraFrame(chapter, { x: 0, y: 0 }, portraitView).fov;
     camera.aspect = viewport.width / viewport.height;
     camera.updateProjectionMatrix();
     renderer.setSize(viewport.width, viewport.height, false);
@@ -378,13 +380,9 @@ export function createCampaignChapterScene({
   // 세로(터치)에서는 조준점을 플레이어 쪽으로 당기고 카메라를 올려 플레이어가 화면 중심대
   // (세로 40~55%)에 오게 한다 — 하단 자막·터치 버튼 띠에 캐릭터가 가려지지 않는다.
   function updateCamera(playerPosition) {
-    if (portraitView) {
-      camera.position.set(playerPosition.x * 0.45, 7.4, playerPosition.y + 11);
-      camera.lookAt(playerPosition.x * 0.7, 0.7, playerPosition.y - 1.8);
-      return;
-    }
-    camera.position.set(playerPosition.x * 0.45, 6.2, playerPosition.y + 8.4);
-    camera.lookAt(playerPosition.x * 0.7, 0.7, playerPosition.y - 5.6);
+    const frame = campaignCameraFrame(chapter, playerPosition, portraitView);
+    camera.position.set(frame.position.x, frame.position.y, frame.position.z);
+    camera.lookAt(frame.lookAt.x, frame.lookAt.y, frame.lookAt.z);
   }
 
   // 세로 구도 검증용 — 플레이어 발밑·머리의 화면 세로 위치(0=상단, 1=하단)를 계산한다.

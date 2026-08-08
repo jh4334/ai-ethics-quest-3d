@@ -13,6 +13,7 @@ import { createCharacterFactory } from '../characters/factory.js';
 import { PLAYER_RULES } from '../content/actions.js';
 import { CHAPTER_FIVE } from '../content/chapters/catalog.js';
 import { chapterFiveLevel } from '../content/levels/chapter5.js';
+import { WORLD_COLORS } from '../design/tokens.js';
 import { walkableRectsFromLevel } from '../level/walkableBounds.js';
 import { createScenePerformanceProbe } from '../perf/sceneProbe.js';
 import { setChapterCheckpoint } from '../state/consequences.js';
@@ -67,8 +68,8 @@ export function createTestimonyArchiveScene({
   }
   const resources = createDisposableRegistry();
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x050918);
-  scene.fog = new THREE.Fog(0x050918, 34, 104);
+  scene.background = new THREE.Color(WORLD_COLORS.night);
+  scene.fog = new THREE.Fog(WORLD_COLORS.night, 38, 112);
   const camera = new THREE.PerspectiveCamera(44, 1, 0.1, 120);
   const route = resources.register(createSchoolRoute({ level: chapterFiveLevel, lightLimit: 0, scene }), 'testimony-route');
   route.group.visible = false;
@@ -76,8 +77,8 @@ export function createTestimonyArchiveScene({
   const factory = resources.register(createCharacterFactory(), 'testimony-character-factory');
   const enemyHpBars = resources.register(createEnemyHpBars({ scene }), 'testimony-enemy-bars');
   const bladeTrail = resources.register(createBladeTrail({ scene }), 'testimony-blade-trail');
-  scene.add(new THREE.HemisphereLight(0xa9c4f2, 0x2c1924, 2.25));
-  const archiveLight = new THREE.PointLight(0xffb55f, 5.6, 44, 1.75);
+  scene.add(new THREE.HemisphereLight(WORLD_COLORS.moon, 0x2c1924, 2.25));
+  const archiveLight = new THREE.PointLight(WORLD_COLORS.memory, 5.6, 44, 1.75);
   archiveLight.position.set(0, 7, -70);
   archiveLight.castShadow = false;
   scene.add(archiveLight);
@@ -249,8 +250,13 @@ export function createTestimonyArchiveScene({
   }
 
   function updateCamera(position) {
-    camera.position.set(position.x + (portrait ? 1.4 : 3), portrait ? 6.4 : 5.2, position.y + (portrait ? 10.8 : 9));
-    camera.lookAt(position.x, 1, position.y - (portrait ? 2.5 : 5));
+    if (completed) {
+      camera.position.set(portrait ? 7.5 : 12.5, portrait ? 10.2 : 8.4, -58);
+      camera.lookAt(0, 2.5, -73);
+      return;
+    }
+    camera.position.set(position.x + (portrait ? 2.2 : 4), portrait ? 7.6 : 5, position.y + (portrait ? 11.8 : 8.4));
+    camera.lookAt(position.x - (portrait ? 0.4 : 0.8), 1.15, position.y - (portrait ? 3.2 : 4.5));
   }
 
   function syncPresentation() {

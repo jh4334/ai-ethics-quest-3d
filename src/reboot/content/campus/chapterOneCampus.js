@@ -68,6 +68,38 @@ const classroomShell = [
   ...[-5.7, 5.7].flatMap((x) => [-4.8, 4.8].map((z) => placement('campus-column', 'open-classroom', { x, y: 0, z }, 1.35)))
 ];
 
+const classroomLife = [
+  [-3.4, 1.9], [-1.2, 1.9], [1.2, 1.9], [3.4, 1.9]
+].map(([x, z], index) => placement(
+  'record-laptop', 'open-classroom', { x, y: 0.88, z: z - 0.08 }, 0.72, Math.PI + (index % 2) * 0.08
+)).concat([
+  placement('campus-planter', 'open-classroom', { x: -4.8, y: 0.05, z: 3.6 }, 1.25, 0.2),
+  placement('campus-planter', 'open-classroom', { x: 4.8, y: 0.05, z: 3.6 }, 1.25, -0.2),
+  placement('campus-lamp', 'open-classroom', { x: -4.7, y: 0.04, z: -3.5 }, 1.1),
+  placement('campus-bench', 'open-classroom', { x: 4.4, y: 0.04, z: -4.3 }, 1.15, Math.PI)
+]);
+
+const campusPromenade = [
+  placement('campus-bench', 'roster-tower', { x: 5.2, y: 0.04, z: -17 }, 1.2, -Math.PI / 2),
+  placement('campus-lamp', 'roster-tower', { x: 5.8, y: 0.04, z: -22 }, 1.15),
+  placement('campus-bridge', 'roster-tower', { x: 0, y: 0.02, z: -28 }, 1.4, 0),
+  placement('campus-fence', 'athletics-field', { x: -8.4, y: 0.05, z: -39 }, 1.45, Math.PI / 2),
+  placement('campus-fence', 'athletics-field', { x: 8.4, y: 0.05, z: -39 }, 1.45, -Math.PI / 2),
+  placement('campus-bench', 'athletics-field', { x: -6.2, y: 0.04, z: -32.6 }, 1.1, Math.PI),
+  placement('campus-bench', 'athletics-field', { x: 6.2, y: 0.04, z: -45.2 }, 1.1),
+  ...[-6.8, -5.4, 5.4, 6.8].flatMap((x, index) => [
+    placement('campus-grass', 'athletics-field', { x, y: 0.03, z: -47 + (index % 2) * 15 }, 1.15, index * 0.6),
+    placement('memory-flower', 'athletics-field', { x: x + 0.5, y: 0.04, z: -46.5 + (index % 2) * 15 }, 1.4, index)
+  ]),
+  placement('archive-box', 'library-archive', { x: -1.8, y: 0.04, z: -57 }, 1.05, 0.25),
+  placement('campus-sofa', 'library-archive', { x: 1.8, y: 0.04, z: -57.2 }, 1.15, Math.PI),
+  placement('campus-lamp', 'library-archive', { x: 0, y: 0.04, z: -49.4 }, 1.2),
+  placement('campus-roof-edge', 'library-archive', { x: -5.4, y: 3.15, z: -54 }, 1.15, 0),
+  placement('campus-roof-edge', 'library-archive', { x: 5.4, y: 3.15, z: -54 }, 1.15, Math.PI),
+  placement('broadcast-antenna', 'glass-administration', { x: 0, y: 13.4, z: -76 }, 2.2, 0),
+  placement('campus-roof', 'gymnasium', { x: 0, y: 8.4, z: -104 }, 3.4, 0)
+];
+
 const libraryProps = [-4.7, -2.8, 2.8, 4.7].flatMap((x, index) => [
   placement('library-bookcase', 'library-archive', { x, y: 0.05, z: -56.2 }, 1.1, index < 2 ? 0 : Math.PI),
   placement('library-books', 'library-archive', { x, y: 1.15, z: -55.75 }, 1.05, index < 2 ? 0 : Math.PI)
@@ -84,8 +116,10 @@ const vegetation = [
 export const CAMPUS_ASSET_PLACEMENTS = Object.freeze([
   ...classroomShell,
   ...classroomFurniture,
+  ...classroomLife,
   ...libraryProps,
   ...vegetation,
+  ...campusPromenade,
   placement('campus-window', 'library-archive', { x: -5.4, y: 0.15, z: -48.62 }, 1.25, 0),
   placement('campus-doorway', 'library-archive', { x: 5.4, y: 0.15, z: -48.62 }, 1.25, 0),
   placement('campus-column', 'library-archive', { x: -7.65, y: 0, z: -48.55 }, 1.15, 0),

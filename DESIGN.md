@@ -30,6 +30,8 @@
 
 ## 디자인 토큰
 
+런타임 기준값은 `src/reboot/design/tokens.js` 한 곳에서 관리한다. 제품 루트가 이를 CSS 사용자 속성으로 적용하고 Three.js 장면도 같은 `WORLD_COLORS`·`WORLD_MATERIALS`를 사용한다.
+
 | 역할 | 값 |
 | --- | --- |
 | 밤 배경 | `#050918` |

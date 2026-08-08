@@ -11,6 +11,7 @@ import {
 import { finalizeCampaign } from '../campaign/endingEvaluator.js';
 import { createFinaleFixture } from '../campaign/finaleFixtures.js';
 import { createCharacterFactory } from '../characters/factory.js';
+import { WORLD_COLORS } from '../design/tokens.js';
 import { CHAPTER_SIX } from '../content/chapters/catalog.js';
 import { chapterSixLevel } from '../content/levels/chapter6.js';
 import { createScenePerformanceProbe } from '../perf/sceneProbe.js';
@@ -29,10 +30,10 @@ const CAST = Object.freeze([
   Object.freeze({ id: 'lumen', position: [2.2, 0, -70], rotation: 0 })
 ]);
 const PHASE_COLORS = Object.freeze({
-  'dash-relay': 0xf3b36c,
-  'reflect-shield': 0x5de0c1,
-  'signal-core': 0xd74732,
-  'trace-consent': 0x6aa9ff
+  'dash-relay': WORLD_COLORS.memory,
+  'reflect-shield': WORLD_COLORS.signal,
+  'signal-core': WORLD_COLORS.danger,
+  'trace-consent': WORLD_COLORS.moon
 });
 // 단계 안내 — 어떤 키(터치 버튼)로 응답하는지 목표줄에 한국어로 명시한다.
 // 특히 DASH는 게임 어디에도 키 안내가 없어 피날레가 막히는 문제(QA)의 직접 보정.
@@ -118,8 +119,8 @@ export function createFinalBroadcastPreviewScene({
   const spatialMode = endingId === null && !alreadyResolved;
   const resources = createDisposableRegistry();
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x07101d);
-  scene.fog = new THREE.Fog(0x07101d, 28, 72);
+  scene.background = new THREE.Color(WORLD_COLORS.night);
+  scene.fog = new THREE.Fog(WORLD_COLORS.night, 34, 92);
   const camera = new THREE.PerspectiveCamera(44, 1, 0.1, 100);
   camera.position.set(0, 6.4, -51.5);
   camera.lookAt(0, 0.7, -68);
@@ -157,8 +158,8 @@ export function createFinalBroadcastPreviewScene({
   pulseRing.rotation.x = -Math.PI / 2;
   pulseRing.visible = false;
   scene.add(pulseRing);
-  scene.add(new THREE.HemisphereLight(0xc9d8ff, 0x271626, 3));
-  const fill = new THREE.PointLight(0xffd39a, 3.6, 34, 1.8);
+  scene.add(new THREE.HemisphereLight(WORLD_COLORS.moon, 0x271626, 3));
+  const fill = new THREE.PointLight(WORLD_COLORS.memory, 3.6, 34, 1.8);
   fill.position.set(0, 6, -61);
   fill.castShadow = false;
   scene.add(fill);
@@ -221,9 +222,9 @@ export function createFinalBroadcastPreviewScene({
     camera.fov = touch ? 58 : 44;
     if (spatialMode) {
       camera.position.set(
-        routeState.position.x + (portrait ? 1.4 : 3),
-        portrait ? 6.7 : 5.4,
-        routeState.position.y + (portrait ? 11.6 : 9.6)
+        routeState.position.x + (portrait ? -1.6 : -3),
+        portrait ? 7.2 : 4.5,
+        routeState.position.y + (portrait ? 10.8 : 7)
       );
     } else {
       camera.position.set(touch ? -1 : 0, touch ? 8 : 6.4, touch ? -44.5 : -51.5);
@@ -231,7 +232,7 @@ export function createFinalBroadcastPreviewScene({
     cameraBase.copy(camera.position); // 셰이크 기준점 — 흔들림은 이 기준에서의 오프셋으로만 계산한다.
     camera.aspect = viewport.width / viewport.height;
     camera.updateProjectionMatrix();
-    if (spatialMode) camera.lookAt(routeState.position.x, 1, routeState.position.y - (portrait ? 3 : 5));
+    if (spatialMode) camera.lookAt(routeState.position.x + 0.8, 1.2, routeState.position.y - (portrait ? 3.8 : 4.8));
     else camera.lookAt(touch ? -1 : 0, touch ? 1.2 : 0.7, touch ? -68.5 : -68);
     renderer.setSize(viewport.width, viewport.height, false);
     performanceProbe.reset();
@@ -247,12 +248,12 @@ export function createFinalBroadcastPreviewScene({
 
   function updateSpatialCamera() {
     cameraBase.set(
-      routeState.position.x + (portrait ? 1.4 : 3),
-      portrait ? 6.7 : 5.4,
-      routeState.position.y + (portrait ? 11.6 : 9.6)
+      routeState.position.x + (portrait ? -1.6 : -3),
+      portrait ? 7.2 : 4.5,
+      routeState.position.y + (portrait ? 10.8 : 7)
     );
     camera.position.copy(cameraBase);
-    camera.lookAt(routeState.position.x, 1, routeState.position.y - (portrait ? 3 : 5));
+    camera.lookAt(routeState.position.x + 0.8, 1.2, routeState.position.y - (portrait ? 3.8 : 4.8));
   }
 
   function showOutcome(decision = fixture.decision) {

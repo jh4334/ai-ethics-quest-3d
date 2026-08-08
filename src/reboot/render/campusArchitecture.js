@@ -1,17 +1,10 @@
 import * as THREE from 'three';
 
 import { CAMPUS_DISTRICTS, CAMPUS_LANDMARKS, CAMPUS_MATERIAL_ROLES } from '../content/campus/chapterOneCampus.js';
+import { WORLD_COLORS, WORLD_MATERIALS } from '../design/tokens.js';
 import { createDisposableRegistry } from './dispose.js';
 
-const MATERIAL_PARAMETERS = Object.freeze({
-  brick: { color: 0x8b4740, roughness: 0.92, metalness: 0.02 },
-  concrete: { color: 0x66798f, roughness: 0.88, metalness: 0.04 },
-  glass: { color: 0x80bde0, roughness: 0.18, metalness: 0.08, opacity: 0.34, transparent: true, depthWrite: false },
-  metal: { color: 0x748ca7, roughness: 0.31, metalness: 0.82 },
-  wood: { color: 0xb07846, roughness: 0.76, metalness: 0.01 },
-  track: { color: 0x8f3f3a, roughness: 0.82, metalness: 0.01 },
-  foliage: { color: 0x4f795b, roughness: 0.94, metalness: 0 }
-});
+const MATERIAL_PARAMETERS = WORLD_MATERIALS;
 
 function roundedShape(width, depth, radius) {
   const x = width / 2;
@@ -63,7 +56,9 @@ function createPlatforms(group, resources, materials) {
     ['glass-administration', 11, 29, 1, -76, 3],
     ['gymnasium', 29, 29, -0.9, -105, 5]
   ];
-  const edgeMaterial = resources.register(new THREE.LineBasicMaterial({ color: 0x5fa8d7, transparent: true, opacity: 0.58 }), 'campus-edge-material');
+  const edgeMaterial = resources.register(new THREE.LineBasicMaterial({
+    color: WORLD_COLORS.moon, opacity: 0.58, transparent: true
+  }), 'campus-edge-material');
   for (const [id, width, depth, x, z, radius] of platforms) {
     const slab = roundedSlab(resources, width, depth, 0.34, radius, `campus-${id}-slab`);
     mesh(group, slab, materials.concrete, `campus-platform-${id}`, { x, y: -0.34, z });
@@ -92,7 +87,7 @@ function createAthleticsField(group, resources, materials) {
   mesh(group, field, materials.foliage, 'athletics-field', { x: 0, y: 0.16, z: -39 }, { x: -Math.PI / 2, y: 0, z: 0 }, { x: 1.35, y: 1, z: 1 });
   const track = resources.register(new THREE.RingGeometry(7.43, 7.57, 64), 'athletics-track-ring');
   mesh(group, track, materials.track, 'athletics-track', { x: 0, y: 0.19, z: -39 }, { x: -Math.PI / 2, y: 0, z: 0 }, { x: 1.25, y: 1, z: 1 });
-  const laneMaterial = resources.register(new THREE.MeshBasicMaterial({ color: 0xffd38a }), 'athletics-lane-material');
+  const laneMaterial = resources.register(new THREE.MeshBasicMaterial({ color: WORLD_COLORS.memory }), 'athletics-lane-material');
   for (const [index, radius] of [7.38, 7.5, 7.62].entries()) {
     const lane = resources.register(new THREE.RingGeometry(radius, radius + 0.035, 64), `athletics-lane-${index}`);
     mesh(group, lane, laneMaterial, `athletics-lane-line-${index}`, { x: 0, y: 0.205, z: -39 }, { x: -Math.PI / 2, y: 0, z: 0 }, { x: 1.25, y: 1, z: 1 });
@@ -105,7 +100,7 @@ function createAthleticsField(group, resources, materials) {
   });
   const fingerprint = resources.register(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 90, 0.055, 6, false), 'fingerprint-recorder-tube');
   const fingerprintMaterial = resources.register(new THREE.MeshStandardMaterial({
-    color: 0xf4b85f, emissive: 0x9a4518, emissiveIntensity: 0.72, metalness: 0.46, roughness: 0.36
+    color: WORLD_COLORS.memory, emissive: 0x9a4518, emissiveIntensity: 0.72, metalness: 0.46, roughness: 0.36
   }), 'fingerprint-recorder-material');
   mesh(group, fingerprint, fingerprintMaterial, 'fingerprint-recorder', { x: 0, y: 0.08, z: 0 });
   const pedestal = resources.register(new THREE.CylinderGeometry(1.05, 1.35, 0.32, 18), 'fingerprint-pedestal');
@@ -127,7 +122,9 @@ function createAdministrationTower(group, resources, materials) {
   const ribs = resources.register(new THREE.TorusGeometry(4.05, 0.11, 6, 32), 'administration-rib');
   for (const y of [1.1, 4.6, 8.1, 11.6]) mesh(group, ribs, materials.metal, `administration-ring-${y}`, { x: 0, y, z: -76 }, { x: Math.PI / 2, y: 0, z: 0 });
   const beam = resources.register(new THREE.CylinderGeometry(1.35, 0.46, 19, 24, 1, true), 'deletion-beam');
-  const beamMaterial = resources.register(new THREE.MeshBasicMaterial({ color: 0xe8f4ff, opacity: 0.16, transparent: true, depthWrite: false }), 'deletion-beam-material');
+  const beamMaterial = resources.register(new THREE.MeshBasicMaterial({
+    color: WORLD_COLORS.text, depthWrite: false, opacity: 0.16, transparent: true
+  }), 'deletion-beam-material');
   mesh(group, beam, beamMaterial, 'deletion-beam-column', { x: 0, y: 12, z: -76 });
 }
 
