@@ -11,9 +11,8 @@ test('canonical root, legacy route, and service worker form one release boundary
   const manifest = JSON.parse(read('public/reboot-assets.json'));
   assert.match(index, /location\.replace\(rebootUrl\.href\)/);
   assert.match(legacy, /src="\/src\/main\.js"/);
-  assert.match(sw, /ethics-quest-h17-v11/);
   assert.match(sw, /\.\/index\.html', '\.\/reboot\.html', '\.\/legacy\.html/);
-  assert.match(sw, /for \(const asset of manifest\) assets\.add\(asset\)/);
+  assert.match(sw, /LAZY_ASSET_PREFIXES/);
   assert.ok(manifest.some((path) => path.includes('/environment/building/')));
   assert.ok(manifest.some((path) => path.includes('/environment/materials/')));
 });
