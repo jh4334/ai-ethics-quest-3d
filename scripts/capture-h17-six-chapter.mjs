@@ -1,5 +1,6 @@
 import { chromium } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
+import { relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { serializeSave } from '../src/reboot/save/codec.js';
@@ -19,6 +20,10 @@ const selectedProfiles = process.env.H17_CAPTURE_PROFILE
   ? profiles.filter(({ id }) => id === process.env.H17_CAPTURE_PROFILE)
   : profiles;
 if (chapters.length === 0 || selectedProfiles.length === 0) throw new Error('캡처할 장과 화면 프로필이 필요합니다.');
+
+function relativeEvidencePath(path) {
+  return relative(process.cwd(), path).replaceAll('\\', '/');
+}
 
 function campaignAt(chapter) {
   const initial = createInitialRebootState({ motion: 'reduced', quality: 'low', sound: false });
@@ -85,7 +90,10 @@ async function captureChapter(browser, chapter, profile) {
     };
   });
   await context.close();
-  return { chapter, consoleErrors, failedResponses, name, profile: profile.id, screenshotPath, ...report };
+  return {
+    chapter, consoleErrors, failedResponses, name, profile: profile.id,
+    screenshotPath: relativeEvidencePath(screenshotPath), ...report
+  };
 }
 
 await mkdir(outputDirectory, { recursive: true });

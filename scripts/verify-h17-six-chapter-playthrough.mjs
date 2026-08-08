@@ -1,5 +1,6 @@
 import { chromium } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
+import { relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { serializeSave } from '../src/reboot/save/codec.js';
@@ -18,6 +19,10 @@ if (!Number.isInteger(startingChapter) || startingChapter < 1 || startingChapter
 if (!['keyboard', 'touch'].includes(inputMode)) throw new RangeError('입력 모드는 keyboard 또는 touch여야 합니다.');
 const chapterStartedAt = new Map();
 const chapterReports = [];
+
+function relativeEvidencePath(path) {
+  return relative(process.cwd(), path).replaceAll('\\', '/');
+}
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -230,7 +235,7 @@ async function finishChapterReport(page, chapter) {
     chapter,
     elapsedSeconds: Math.round((Date.now() - chapterStartedAt.get(chapter)) / 100) / 10,
     inputMode,
-    screenshotPath
+    screenshotPath: relativeEvidencePath(screenshotPath)
   });
 }
 
