@@ -24,7 +24,7 @@ test('Given the reboot canon, When chapter definitions load, Then chapters two t
   assert.equal(new Set(definitions.map((chapter) => chapter.id)).size, 5);
   assert.equal(new Set(evidenceIds).size, 5);
   assert.equal(CHAPTER_FIVE.id, 'chapter-5-testimony-archive');
-  assert.equal(CHAPTER_FIVE.evidenceId, 'verified-testimony-package');
+  assert.equal(CHAPTER_FIVE.evidenceId, 'verified-package');
   assert.equal(CHAPTER_SIX.id, 'chapter-6-final-broadcast');
   assert.equal(CHAPTER_SIX.evidenceId, 'broadcast-queue');
   assert.deepEqual(CHAPTER_SIX.boss.phases.map((phase) => phase.response), [

@@ -85,7 +85,7 @@ function legacyAttempts(progress, nextProgress) {
   return completed.map((chapter) => ({
     chapter,
     gateId: LEGACY_GATE_IDS[chapter],
-    outcome: 'unknown'
+    outcome: chapter === 5 && progress.current === 5 ? 'legacy-grandfathered' : 'unknown'
   }));
 }
 

@@ -6,6 +6,7 @@ import { migrateV4Save } from './v4Migration.js';
 
 export const V4_SAVE_KEY = 'h17.null.save.v4';
 export const V4_TEMP_KEY = 'h17.null.save.v4.tmp';
+export const V4_BACKUP_KEY = 'h17.null.save.v4.backup';
 export const V5_SAVE_KEY = 'h17.null.save.v5';
 export const V5_TEMP_KEY = 'h17.null.save.v5.tmp';
 export const LEGACY_BACKUP_KEY = 'h17.legacy.v3.backup';
@@ -47,6 +48,7 @@ export function createSaveRepository(rawStorage) {
 
   function boot() {
     preserveLegacyBackup(storage, LEGACY_V3_KEY, LEGACY_BACKUP_KEY);
+    preserveLegacyBackup(storage, V4_SAVE_KEY, V4_BACKUP_KEY);
     const parsed = parseStoredSave(storage.getItem(V5_SAVE_KEY));
     if (parsed.kind === 'valid') {
       storage.removeItem(V5_TEMP_KEY);
@@ -85,6 +87,7 @@ export function createSaveRepository(rawStorage) {
 
   function reset() {
     preserveLegacyBackup(storage, LEGACY_V3_KEY, LEGACY_BACKUP_KEY);
+    preserveLegacyBackup(storage, V4_SAVE_KEY, V4_BACKUP_KEY);
     const parsed = parseStoredSave(storage.getItem(V5_SAVE_KEY));
     const migrated = parsed.kind === 'empty' ? migrateV4Save(storage.getItem(V4_SAVE_KEY)) : null;
     const settings = parsed.kind === 'valid'

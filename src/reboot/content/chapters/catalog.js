@@ -194,7 +194,7 @@ export const CHAPTER_FIVE = deepFreeze({
     targetSeconds: 30
   },
   enemyIds: ['eraser', 'approval'],
-  evidenceId: 'verified-testimony-package',
+  evidenceId: 'verified-package',
   carryover: {
     secure: {
       encounterVariant: 'full-provenance-audit', evidenceAccess: 'consent-ledger',

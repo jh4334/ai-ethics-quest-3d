@@ -53,6 +53,19 @@ test('Given a learning report, When its machine fields are inspected, Then no mo
   assert.equal(keys.has('moralScore'), false);
 });
 
+test('Given a migrated chapter-five completion, When reporting, Then it stays an explicit legacy result', () => {
+  const state = append(createInitialRebootState(), 'testimony-archive', 5, 'legacy-grandfathered');
+
+  const report = createLearningReport(state, gates);
+
+  assert.deepEqual(report.gates.at(-1), {
+    attempts: 1,
+    chapter: 5,
+    gateId: 'testimony-archive',
+    status: 'legacy-grandfathered'
+  });
+});
+
 test('Given an invalid gate attempt, When it is recorded, Then the state boundary rejects it', () => {
   // Given
   const state = createInitialRebootState();

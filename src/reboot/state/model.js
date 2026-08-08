@@ -13,7 +13,7 @@ export const EVIDENCE_IDS = Object.freeze([
   'broadcast-queue'
 ]);
 export const EVIDENCE_ACTIONS = Object.freeze(['secure', 'purge', 'expose']);
-export const GATE_OUTCOMES = Object.freeze(['resolved', 'failed', 'unknown']);
+export const GATE_OUTCOMES = Object.freeze(['resolved', 'failed', 'unknown', 'legacy-grandfathered']);
 export const MOTION_SETTINGS = Object.freeze(['full', 'reduced']);
 export const QUALITY_SETTINGS = Object.freeze(['auto', 'low', 'medium', 'high']);
 

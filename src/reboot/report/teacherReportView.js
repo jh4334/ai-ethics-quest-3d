@@ -1,7 +1,9 @@
 import { createTeacherInvestigationReport } from './teacherInvestigationReport.js';
 
 const STATUS_LABELS = Object.freeze({
-  'first-try': '첫 시도 통과', retry: '재시도 뒤 통과', struggling: '추가 연습 필요', unknown: '확인 중'
+  'first-try': '첫 시도 통과',
+  'legacy-grandfathered': '이전 5장 완료 기록 승계',
+  retry: '재시도 뒤 통과', struggling: '추가 연습 필요', unknown: '확인 중'
 });
 
 function appendList(documentRef, parent, items, label) {

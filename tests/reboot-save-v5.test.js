@@ -59,7 +59,7 @@ test('Given empty storage, When v5 boots, Then it writes only the v5 key', async
   assert.equal(storage.getItem(repositoryApi.V4_SAVE_KEY), null);
 });
 
-test('Given a resolved v4 finale, When v5 boots, Then progress migrates and v4 bytes stay unchanged', async () => {
+test('Given a resolved v4 finale, When v5 boots, Then progress migrates and v4 bytes are backed up once', async () => {
   // Given
   const repositoryApi = await import('../src/reboot/save/repository.js');
   assert.equal(typeof repositoryApi.V5_SAVE_KEY, 'string');
@@ -80,9 +80,26 @@ test('Given a resolved v4 finale, When v5 boots, Then progress migrates and v4 b
     action: 'secure', chapter: 6, evidenceId: 'broadcast-queue'
   });
   assert.equal(boot.state.gateAttempts.some((attempt) => (
-    attempt.chapter === 5 && attempt.gateId === 'testimony-archive' && attempt.outcome === 'unknown'
+    attempt.chapter === 5 && attempt.gateId === 'testimony-archive'
+      && attempt.outcome === 'legacy-grandfathered'
   )), true);
   assert.equal(storage.getItem(repositoryApi.V4_SAVE_KEY), original);
+  assert.equal(storage.getItem(repositoryApi.V4_BACKUP_KEY), original);
+});
+
+test('Given an existing v4 backup, When migration boots again, Then protected bytes are never overwritten', async () => {
+  const repositoryApi = await import('../src/reboot/save/repository.js');
+  const protectedBytes = '{"protected":"first-copy"}';
+  const currentBytes = JSON.stringify(v4State());
+  const storage = new MemoryStorage([
+    [repositoryApi.V4_BACKUP_KEY, protectedBytes],
+    [repositoryApi.V4_SAVE_KEY, currentBytes]
+  ]);
+
+  createSaveRepository(storage).boot();
+
+  assert.equal(storage.getItem(repositoryApi.V4_BACKUP_KEY), protectedBytes);
+  assert.equal(storage.getItem(repositoryApi.V4_SAVE_KEY), currentBytes);
 });
 
 test('Given an unknown v4 finale checkpoint, When v5 boots, Then it uses the safe chapter-six checkpoint', async () => {
