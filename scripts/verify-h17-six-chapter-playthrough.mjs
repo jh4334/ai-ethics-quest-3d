@@ -65,13 +65,36 @@ async function setTouchMovement(page, x, y, active) {
 }
 
 async function moveUntil(page, predicate, timeout = 90_000) {
-  if (inputMode === 'touch') await setTouchMovement(page, 0, -1, true);
-  else await page.keyboard.down('KeyW');
+  const deadline = Date.now() + timeout;
+  let leftHeld = false;
+  let rightHeld = false;
+  if (inputMode === 'keyboard') await page.keyboard.down('KeyW');
   try {
-    await page.waitForFunction(predicate, null, { timeout });
+    while (Date.now() < deadline) {
+      if (await page.evaluate(predicate)) return;
+      const x = await page.evaluate(() => window.__ethicsReboot.getSceneDebugState().combat.player.x);
+      const horizontal = Math.abs(x) > 0.65 ? -Math.sign(x) : 0;
+      if (inputMode === 'touch') {
+        await setTouchMovement(page, horizontal, -1, true);
+      } else {
+        if (horizontal < 0 && !leftHeld) { await page.keyboard.down('KeyA'); leftHeld = true; }
+        if (horizontal >= 0 && leftHeld) { await page.keyboard.up('KeyA'); leftHeld = false; }
+        if (horizontal > 0 && !rightHeld) { await page.keyboard.down('KeyD'); rightHeld = true; }
+        if (horizontal <= 0 && rightHeld) { await page.keyboard.up('KeyD'); rightHeld = false; }
+      }
+      await page.waitForTimeout(100);
+    }
+    throw new Error('이동 조건을 제한 시간 안에 충족하지 못했습니다.');
+  } catch (error) {
+    const debug = await page.evaluate(() => window.__ethicsReboot.getSceneDebugState());
+    throw new Error(`이동 제한 시간을 넘었습니다: ${JSON.stringify(debug)}`, { cause: error });
   } finally {
     if (inputMode === 'touch') await setTouchMovement(page, 0, 0, false);
-    else await page.keyboard.up('KeyW');
+    else {
+      await page.keyboard.up('KeyW');
+      if (leftHeld) await page.keyboard.up('KeyA');
+      if (rightHeld) await page.keyboard.up('KeyD');
+    }
   }
 }
 
