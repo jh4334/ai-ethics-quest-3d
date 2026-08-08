@@ -117,7 +117,7 @@ export function updateSchoolCamera({
   const heightShift = mode === 'boss' ? 2 : 0;
   const distanceShift = mode === 'boss' ? 5 : 0;
   camera.position.set(next.position.x, next.position.y - heightShift, next.position.z - distanceShift);
-  camera.fov = mode === 'arena' ? portraitArena ? 65 : 50 : mode === 'boss' ? 36 : next.fov;
+  camera.fov = mode === 'arena' ? portraitArena ? 66 : 50 : mode === 'boss' ? 36 : next.fov;
   camera.updateProjectionMatrix();
   camera.lookAt(next.lookAt.x, next.lookAt.y, next.lookAt.z);
   return Object.freeze({
