@@ -13,6 +13,8 @@ import {
   unlockedTestimonySegmentIds
 } from '../src/reboot/campaign/testimonyArchive.js';
 import { createTestimonyArchiveEnvironment } from '../src/reboot/render/testimonyArchiveEnvironment.js';
+import { setChapterCheckpoint } from '../src/reboot/state/consequences.js';
+import { createInitialRebootState } from '../src/reboot/state/model.js';
 
 test('증언 보관소는 서로 떨어진 네 공간에 고유 조사·전투 계약을 둔다', () => {
   assert.deepEqual(TESTIMONY_ZONES.map(({ id }) => id), [
@@ -60,13 +62,25 @@ test('장소별 적 정의는 고정 상수이며 호출할 때마다 같은 동
 
 test('장소·단서·결정 체크포인트는 재접속 뒤 같은 단계로 복원된다', () => {
   let progress = advanceTestimonyArchive(createTestimonyArchiveProgress(), 'combat-cleared');
-  assert.equal(testimonyArchiveCheckpoint(progress), 'chapter-5:testimony-intake:clue');
+  assert.equal(testimonyArchiveCheckpoint(progress), 'chapter-5:testimony-intake-clue');
   assert.deepEqual(restoreTestimonyArchiveProgress(testimonyArchiveCheckpoint(progress)), progress);
   progress = advanceTestimonyArchive(progress, 'trace');
   assert.equal(testimonyArchiveCheckpoint(progress), 'chapter-5:consent-redaction-lab');
   assert.deepEqual(restoreTestimonyArchiveProgress(testimonyArchiveCheckpoint(progress)), progress);
   assert.equal(restoreTestimonyArchiveProgress('chapter-5:decision').phase, 'decision');
   assert.deepEqual(restoreTestimonyArchiveProgress('chapter-5:unknown'), createTestimonyArchiveProgress());
+});
+
+test('증언 보관소의 모든 전투·단서 체크포인트는 실제 v5 저장 경계를 통과한다', () => {
+  let progress = createTestimonyArchiveProgress();
+  let campaign = setChapterCheckpoint(createInitialRebootState(), 5, 'chapter-5:start');
+  for (let zone = 0; zone < TESTIMONY_ZONES.length; zone += 1) {
+    campaign = setChapterCheckpoint(campaign, 5, testimonyArchiveCheckpoint(progress));
+    progress = advanceTestimonyArchive(progress, 'combat-cleared');
+    campaign = setChapterCheckpoint(campaign, 5, testimonyArchiveCheckpoint(progress));
+    if (progress.phase === 'clue') progress = advanceTestimonyArchive(progress, TESTIMONY_ZONES[zone].clueAction);
+  }
+  assert.equal(campaign.chapterProgress.current, 5);
 });
 
 test('증언 보관소 렌더 환경은 실제 GLB 배치와 곡면 랜드마크 네 곳을 함께 폐기한다', async () => {

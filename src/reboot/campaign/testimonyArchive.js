@@ -80,7 +80,7 @@ export function testimonyArchiveCheckpoint(progress) {
   if (progress.phase === 'decision') return 'chapter-5:decision';
   const zone = TESTIMONY_ZONES[progress.zoneIndex];
   if (!zone) throw new TypeError('체크포인트를 만들 증언 보관소 구역이 없습니다.');
-  return `chapter-5:${zone.id}${progress.phase === 'clue' ? ':clue' : ''}`;
+  return `chapter-5:${zone.id}${progress.phase === 'clue' ? '-clue' : ''}`;
 }
 
 export function restoreTestimonyArchiveProgress(checkpoint) {
@@ -88,7 +88,7 @@ export function restoreTestimonyArchiveProgress(checkpoint) {
   if (checkpoint === 'chapter-5:decision') {
     return deepFreeze({ expectedAction: 'decision', phase: 'decision', zoneIndex: TESTIMONY_ZONES.length - 1 });
   }
-  const match = /^chapter-5:([a-z0-9-]+)(:clue)?$/.exec(checkpoint);
+  const match = /^chapter-5:([a-z0-9-]+?)(-clue)?$/.exec(checkpoint);
   const zoneIndex = match ? TESTIMONY_ZONES.findIndex(({ id }) => id === match[1]) : -1;
   if (zoneIndex < 0) return createTestimonyArchiveProgress();
   const clue = Boolean(match[2]);
