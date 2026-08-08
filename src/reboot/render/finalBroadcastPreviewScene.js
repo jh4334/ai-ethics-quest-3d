@@ -1,11 +1,20 @@
 import * as THREE from 'three';
 
 import { PULSE_RULES, createBroadcastProtocolState, stepBroadcastProtocol } from '../bosses/broadcastProtocol.js';
+import {
+  BROADCAST_ZONES,
+  broadcastCheckpointForPhase,
+  broadcastZoneReady,
+  restoreBroadcastRouteState,
+  stepBroadcastRoute
+} from '../campaign/broadcastRoute.js';
 import { finalizeCampaign } from '../campaign/endingEvaluator.js';
 import { createFinaleFixture } from '../campaign/finaleFixtures.js';
 import { createCharacterFactory } from '../characters/factory.js';
 import { CHAPTER_SIX } from '../content/chapters/catalog.js';
 import { chapterSixLevel } from '../content/levels/chapter6.js';
+import { setChapterCheckpoint } from '../state/consequences.js';
+import { createBroadcastStationEnvironment } from './broadcastStationEnvironment.js';
 import { createDisposableRegistry } from './dispose.js';
 import { createCampaignLandmarks } from './campaignLandmarks.js';
 import { createSceneRadio } from './sceneRadio.js';
@@ -56,6 +65,21 @@ function syncGauge(ui, { container, fill, label }, text, width) {
   if (ui[fill]?.style && width !== null) ui[fill].style.width = width;
 }
 
+function restoreProtocolAtCheckpoint(campaign, checkpoint) {
+  let state = createBroadcastProtocolState(campaign);
+  const completedPhases = checkpoint === 'chapter-6:broadcast-console'
+    ? BROADCAST_ZONES.length
+    : restoreBroadcastRouteState(checkpoint).unlockedPhase;
+  for (let index = 0; index < completedPhases; index += 1) {
+    const phase = state.definition.phases[state.phaseIndex];
+    while (state.phaseTick < phase.timing.windupTicks) state = stepBroadcastProtocol(state).state;
+    state = stepBroadcastProtocol(state, {
+      actions: [{ id: `restore:${index}`, targetId: phase.targetId, type: phase.response }]
+    }).state;
+  }
+  return state;
+}
+
 function inspectFinaleFrame(camera, viewport) {
   camera.updateMatrixWorld(true);
   const safeRect = Object.freeze({
@@ -89,6 +113,8 @@ export function createFinalBroadcastPreviewScene({
 }) {
   const fixture = endingId ? createFinaleFixture(endingId) : { campaign, decision: null };
   if (!fixture.campaign) throw new TypeError('마지막 방송에는 캠페인 저장 상태가 필요합니다.');
+  const alreadyResolved = /^chapter-6:resolved-/.test(fixture.campaign.chapterProgress.checkpoint);
+  const spatialMode = endingId === null && !alreadyResolved;
   const resources = createDisposableRegistry();
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x07101d);
@@ -100,6 +126,11 @@ export function createFinalBroadcastPreviewScene({
   const landmarks = resources.register(createCampaignLandmarks({
     scene, type: 'finale', variant: endingId === 'sealed' ? 'purge' : 'secure'
   }), 'final-landmarks');
+  route.group.visible = !spatialMode;
+  if (landmarks.group) landmarks.group.visible = !spatialMode;
+  const environment = spatialMode
+    ? resources.register(createBroadcastStationEnvironment({ scene }), 'broadcast-station-environment')
+    : null;
   const factory = resources.register(createCharacterFactory(), 'final-cast');
   const ringGeometry = resources.register(new THREE.RingGeometry(2.1, 2.45, 40), 'protocol-ring-geometry');
   const ringMaterial = resources.register(new THREE.MeshBasicMaterial({
@@ -137,7 +168,9 @@ export function createFinalBroadcastPreviewScene({
   const anchors = new Map();
   const characters = new Map();
   const errors = [];
-  let protocol = createBroadcastProtocolState(fixture.campaign);
+  let activeCampaign = fixture.campaign;
+  let routeState = restoreBroadcastRouteState(activeCampaign.chapterProgress.checkpoint);
+  let protocol = restoreProtocolAtCheckpoint(activeCampaign, activeCampaign.chapterProgress.checkpoint);
   // 시나리오 v2 — 도입·프로토콜 단계·결말 대본을 무전 자막으로(정본: docs/reboot/시나리오-v2.md).
   const radio = createSceneRadio(ui);
   const script = CHAPTER_SIX.sceneScript ?? {};
@@ -145,7 +178,6 @@ export function createFinalBroadcastPreviewScene({
   let accumulator = 0;
   let entered = false;
   let unsubscribeInput = null;
-  const alreadyResolved = /^chapter-6:resolved-/.test(fixture.campaign.chapterProgress.checkpoint);
   // 타격감(GF1) — 펄스 명중 순간 시뮬만 벽시계 기준으로 잠깐 멈추고(캠페인 방과 동일 규칙),
   // 카메라는 기존 컨트롤러의 셰이크 공식(감쇠 1.4, 위상 ×19)을 그대로 빌려 흔든다.
   const reducedMotion = fixture.campaign.settings?.motion === 'reduced';
@@ -153,6 +185,9 @@ export function createFinalBroadcastPreviewScene({
   let hitStop = 0;
   let shakeAmount = 0;
   let shakePhase = 0;
+  let environmentReady = !spatialMode;
+  let portrait = false;
+  let lastHeading = Math.PI;
 
   function absorbProtocolEvents(events) {
     for (const event of events) {
@@ -170,22 +205,49 @@ export function createFinalBroadcastPreviewScene({
     castRoot.add(anchor);
     anchors.set(entry.id, anchor);
   }
+  if (spatialMode) {
+    anchors.get('player').position.set(routeState.position.x, 0, routeState.position.y);
+    anchors.get('haru').position.set(-4.5, 0, -71);
+    anchors.get('dot').position.set(4.2, 0, -24);
+    anchors.get('lumen').position.set(4.2, 0, -48);
+  }
 
   function resize() {
     const viewport = getSceneViewport(canvas);
     const touch = viewport.mode === 'touch';
+    portrait = touch && viewport.height > viewport.width;
     camera.fov = touch ? 58 : 44;
-    camera.position.set(touch ? -1 : 0, touch ? 8 : 6.4, touch ? -44.5 : -51.5);
+    if (spatialMode) {
+      camera.position.set(
+        routeState.position.x + (portrait ? 1.4 : 3),
+        portrait ? 6.7 : 5.4,
+        routeState.position.y + (portrait ? 11.6 : 9.6)
+      );
+    } else {
+      camera.position.set(touch ? -1 : 0, touch ? 8 : 6.4, touch ? -44.5 : -51.5);
+    }
     cameraBase.copy(camera.position); // 셰이크 기준점 — 흔들림은 이 기준에서의 오프셋으로만 계산한다.
     camera.aspect = viewport.width / viewport.height;
     camera.updateProjectionMatrix();
-    camera.lookAt(touch ? -1 : 0, touch ? 1.2 : 0.7, touch ? -68.5 : -68);
+    if (spatialMode) camera.lookAt(routeState.position.x, 1, routeState.position.y - (portrait ? 3 : 5));
+    else camera.lookAt(touch ? -1 : 0, touch ? 1.2 : 0.7, touch ? -68.5 : -68);
     renderer.setSize(viewport.width, viewport.height, false);
   }
 
+  function updateSpatialCamera() {
+    cameraBase.set(
+      routeState.position.x + (portrait ? 1.4 : 3),
+      portrait ? 6.7 : 5.4,
+      routeState.position.y + (portrait ? 11.6 : 9.6)
+    );
+    camera.position.copy(cameraBase);
+    camera.lookAt(routeState.position.x, 1, routeState.position.y - (portrait ? 3 : 5));
+  }
+
   function showOutcome(decision = fixture.decision) {
-    const finalized = finalizeCampaign(fixture.campaign, { decision });
+    const finalized = finalizeCampaign(activeCampaign, { decision });
     outcome = finalized.outcome;
+    activeCampaign = finalized.state;
     persist?.(finalized.state);
     landmarks.setOnAir?.(true); // 결말 확정 — ON AIR 사인 점등(시나리오 v2: 5장 방)
     // 결말 대본 + 공통 에필로그(DOT의 권한 반납) — 도덕 낙인 없이 인물의 목소리로 닫는다.
@@ -210,11 +272,22 @@ export function createFinalBroadcastPreviewScene({
 
   function syncPresentation() {
     const phase = protocol.definition.phases[protocol.phaseIndex];
+    const zone = BROADCAST_ZONES[protocol.phaseIndex];
+    const zoneReady = !spatialMode || broadcastZoneReady(routeState, protocol.phaseIndex);
     const restoredOutcome = alreadyResolved && outcome !== null;
     const pulseActive = !restoredOutcome && protocol.status === 'active' && protocol.pulseWindupRemaining !== null;
     ring.visible = !restoredOutcome && protocol.status === 'active';
     ringMaterial.color.setHex(PHASE_COLORS[phase.id]);
+    if (spatialMode) {
+      ring.position.set(0, 0.05, zone.anchorZ);
+      pulseRing.position.set(2.2, 0.07, zone.anchorZ - 2);
+    }
     pulseRing.visible = pulseActive;
+    canvas.dataset.campaignChapter = '6';
+    canvas.dataset.campaignStep = String(protocol.phaseIndex);
+    canvas.dataset.finalBroadcastZone = zone.id;
+    canvas.dataset.finalBroadcastZoneReady = String(zoneReady);
+    canvas.dataset.environmentStatus = environmentReady ? 'ready' : 'loading';
     canvas.dataset.protocolPhase = phase.id;
     canvas.dataset.protocolPhaseTick = String(protocol.phaseTick);
     canvas.dataset.protocolStatus = restoredOutcome ? 'resolved' : protocol.status;
@@ -236,12 +309,16 @@ export function createFinalBroadcastPreviewScene({
       ui.feedback.hidden = !pulseActive;
       ui.feedback.textContent = pulseActive ? 'LUMEN 압박 펄스 — K 반사로 무효화!' : '';
     }
-    canvas.dataset.characters = errors.length > 0 ? 'error' : characters.size === CAST.length ? 'ready' : 'loading';
+    canvas.dataset.characters = errors.length > 0
+      ? 'error'
+      : characters.size === CAST.length && environmentReady ? 'ready' : 'loading';
     if (ui.objective) ui.objective.textContent = restoredOutcome
       ? '기록된 마지막 방송 결과입니다'
       : protocol.status === 'victory'
         ? outcome ? '방송 대기열의 결과를 확인하세요' : 'F 검증 가능한 방송 · Q 사건 봉인'
-        : `${protocol.phaseIndex + 1}/4 ${PHASE_GUIDES_KO[phase.id] ?? phase.response.toUpperCase()}`;
+        : !zoneReady
+          ? `${zone.titleKo} 목표 표식까지 ${Math.ceil(Math.hypot(routeState.position.x, routeState.position.y - zone.anchorZ))}m 이동`
+          : `${protocol.phaseIndex + 1}/4 ${PHASE_GUIDES_KO[phase.id] ?? phase.response.toUpperCase()}`;
     if (ui.enemy) ui.enemy.textContent = `LUMEN + DOT ${protocol.hp}`;
     if (ui.action) ui.action.textContent = restoredOutcome ? 'RECORDED' : phase.response.toUpperCase();
     if (ui.chain) ui.chain.textContent = restoredOutcome ? '6/6 COMPLETE' : `${protocol.phaseIndex + 1}/4 PROTOCOL`;
@@ -258,6 +335,11 @@ export function createFinalBroadcastPreviewScene({
     if (protocol.status !== 'active') return;
     if (!['reflect', 'trace', 'dash', 'attack'].includes(action)) return;
     const phaseBefore = protocol.phaseIndex;
+    const defendingPulse = action === 'reflect' && protocol.pulseWindupRemaining !== null;
+    if (spatialMode && !defendingPulse && !broadcastZoneReady(routeState, phaseBefore)) {
+      syncPresentation();
+      return;
+    }
     const result = stepBroadcastProtocol(protocol, {
       actions: [{
         id: `${protocol.tick}:${action}`,
@@ -269,6 +351,20 @@ export function createFinalBroadcastPreviewScene({
     absorbProtocolEvents(result.events);
     // 프로토콜 한 단계를 넘었을 때 그 동사의 의미를 무전으로(시나리오 v2).
     if (protocol.phaseIndex > phaseBefore || protocol.status === 'victory') {
+      if (spatialMode) {
+        if (protocol.status === 'victory') {
+          activeCampaign = setChapterCheckpoint(activeCampaign, 6, 'chapter-6:broadcast-console');
+        } else {
+          routeState = stepBroadcastRoute(routeState, { delta: 0 }, protocol.phaseIndex);
+          activeCampaign = setChapterCheckpoint(
+            activeCampaign,
+            6,
+            broadcastCheckpointForPhase(protocol.phaseIndex)
+          );
+          environment.setActiveZone(protocol.phaseIndex);
+        }
+        persist?.(activeCampaign);
+      }
       const nextPhase = protocol.definition.phases[protocol.phaseIndex];
       radio.play([
         script.stepCues?.[phaseBefore],
@@ -319,6 +415,15 @@ export function createFinalBroadcastPreviewScene({
       resize();
       unsubscribeInput = input.subscribe(queueAction);
       windowRef.addEventListener('resize', resize);
+      if (environment) {
+        environment.setActiveZone(protocol.phaseIndex);
+        environment.ready.then((report) => {
+          if (!entered) return;
+          environmentReady = report.failedAssetIds.length === 0;
+          if (!environmentReady) errors.push(...report.failedAssetIds.map((id) => `환경 에셋: ${id}`));
+          syncPresentation();
+        });
+      }
       syncPresentation();
       loadCast();
       if (alreadyResolved) {
@@ -340,6 +445,8 @@ export function createFinalBroadcastPreviewScene({
         characterErrors: Object.freeze([...errors]),
         characterIds: Object.freeze([...characters.keys()]),
         finaleFrame: inspectFinaleFrame(camera, getSceneViewport(canvas)),
+        broadcastEnvironment: environment?.getDebugState() ?? null,
+        broadcastRoute: routeState,
         landmarks: landmarks.getDebugState(),
         outcome,
         protocol,
@@ -348,6 +455,22 @@ export function createFinalBroadcastPreviewScene({
     },
     update(delta) {
       radio.update(delta);
+      const horizontal = spatialMode
+        ? Number(input.isActive('move-right')) - Number(input.isActive('move-left'))
+        : 0;
+      const vertical = spatialMode
+        ? Number(input.isActive('move-down')) - Number(input.isActive('move-up'))
+        : 0;
+      if (spatialMode) {
+        routeState = stepBroadcastRoute(routeState, {
+          dash: input.isActive('dash'), delta, horizontal, vertical
+        }, protocol.phaseIndex);
+        if (horizontal !== 0 || vertical !== 0) lastHeading = Math.atan2(horizontal, vertical);
+        const playerAnchor = anchors.get('player');
+        playerAnchor.position.set(routeState.position.x, 0, routeState.position.y);
+        playerAnchor.rotation.y = lastHeading;
+        updateSpatialCamera();
+      }
       if (protocol.status === 'active') {
         // 히트스톱 동안 프로토콜 시뮬만 벽시계 기준으로 멈춘다(렌더·무전·카메라는 계속).
         const stopped = hitStop > 0;
@@ -364,7 +487,9 @@ export function createFinalBroadcastPreviewScene({
       }
       const phase = protocol.definition.phases[protocol.phaseIndex];
       for (const [id, character] of characters) {
-        character.update(delta, { acting: ['dot', 'lumen'].includes(id) && protocol.status === 'active' });
+        character.update(delta, id === 'player' && spatialMode
+          ? { acting: false, moving: horizontal !== 0 || vertical !== 0 }
+          : { acting: ['dot', 'lumen'].includes(id) && protocol.status === 'active' });
       }
       ring.scale.setScalar(0.9 + Math.min(1, protocol.phaseTick / phase.timing.windupTicks) * 0.16);
       // 경고 링 — 윈드업 잔여 틱만큼 LUMEN 쪽으로 조여든다(잔여가 줄수록 작아진다).
