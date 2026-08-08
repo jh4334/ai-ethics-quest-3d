@@ -113,10 +113,11 @@ export function updateSchoolCamera({
   const combatFocus = (currentSegment.id === 'first-arena'
     && encounter.enemies.some((enemy) => ['windup', 'active'].includes(enemy.phase))) || inBoss;
   const mode = inBoss ? 'boss' : combatFocus ? 'arena' : 'route';
+  const portraitArena = viewport.mode === 'touch' && viewport.height > viewport.width;
   const heightShift = mode === 'boss' ? 2 : 0;
   const distanceShift = mode === 'boss' ? 5 : 0;
   camera.position.set(next.position.x, next.position.y - heightShift, next.position.z - distanceShift);
-  camera.fov = mode === 'arena' ? 50 : mode === 'boss' ? 36 : next.fov;
+  camera.fov = mode === 'arena' ? portraitArena ? 65 : 50 : mode === 'boss' ? 36 : next.fov;
   camera.updateProjectionMatrix();
   camera.lookAt(next.lookAt.x, next.lookAt.y, next.lookAt.z);
   return Object.freeze({
