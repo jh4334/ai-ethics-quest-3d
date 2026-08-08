@@ -91,6 +91,11 @@ test('증언 보관소 렌더 환경은 실제 GLB 배치와 곡면 랜드마크
       const root = new THREE.Group();
       root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 0.5, 6), new THREE.MeshStandardMaterial()));
       return { isPlaceholder: false, root };
+    },
+    async loadMaterial(id) {
+      const material = new THREE.MeshStandardMaterial({ color: 0x667788 });
+      material.name = id;
+      return { isPlaceholder: false, material };
     }
   };
   const scene = new THREE.Scene();

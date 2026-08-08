@@ -2,6 +2,7 @@ import * as THREE from 'three';
 
 import { TESTIMONY_ZONES } from '../campaign/testimonyArchive.js';
 import { createEnvironmentAssetLoader } from '../environment/loader.js';
+import { createEmissivePathAccents, createLayeredCampusSilhouettes } from './campusEnvironmentLayers.js';
 import { createDisposableRegistry } from './dispose.js';
 
 const ASSET_PLACEMENTS = Object.freeze([
@@ -62,6 +63,9 @@ function createArchitecture(resources) {
   const cyan = resources.register(new THREE.MeshStandardMaterial({
     color: 0x64ddc4, emissive: 0x155f56, emissiveIntensity: 0.72, metalness: 0.32, roughness: 0.38
   }), 'testimony-cyan');
+  const archive = resources.register(new THREE.MeshStandardMaterial({
+    color: 0x72523a, emissive: 0x24140b, emissiveIntensity: 0.24, roughness: 0.78
+  }), 'testimony-archive-surface');
 
   const platforms = [
     [12, 16, -2, 2.5], [18, 24, -22, 3.5], [14, 24, -46, 3], [24, 26, -71, 4.5]
@@ -89,10 +93,31 @@ function createArchitecture(resources) {
     addMesh(group, crosscheckRings, index % 2 === 0 ? cyan : amber, `privacy-crosscheck-grid-${index}`, 0, y, -47, Math.PI / 2);
   }
 
-  const vault = resources.register(new THREE.CylinderGeometry(6.4, 7.5, 5.5, 18, 1, true), 'testimony-vault-shell');
-  addMesh(group, vault, metal, 'verified-package-vault', 0, 2.75, -74);
-  const vaultDoor = resources.register(new THREE.TorusGeometry(3, 0.38, 12, 48), 'testimony-vault-door');
-  addMesh(group, vaultDoor, amber, 'verified-package-vault-door', 0, 3, -68.2);
+  const vault = resources.register(new THREE.IcosahedronGeometry(1.8, 1), 'testimony-vault-core');
+  addMesh(group, vault, cyan, 'verified-package-vault', 0, 3.1, -77);
+  const vaultDoor = resources.register(new THREE.TorusGeometry(1.9, 0.14, 8, 32), 'testimony-vault-door');
+  addMesh(group, vaultDoor, amber, 'verified-package-vault-door', 0, 3.1, -78);
+
+  const archiveTower = resources.register(new THREE.CylinderGeometry(0.68, 1.05, 7.5, 8), 'testimony-archive-tower');
+  const archiveCrown = new THREE.Group();
+  archiveCrown.name = 'testimony-archive-crown';
+  group.add(archiveCrown);
+  for (let index = 0; index < 12; index += 1) {
+    const side = index % 2 === 0 ? -1 : 1;
+    const band = Math.floor(index / 2);
+    addMesh(archiveCrown, archiveTower, archive, `testimony-vertical-stack-${index}`,
+      side * (9.2 + (band % 2) * 1.5), 3.75 + (band % 3) * 1.2, -15 - band * 10.5);
+  }
+  const suspendedRing = resources.register(new THREE.TorusGeometry(2.35, 0.1, 8, 32), 'testimony-suspended-ring');
+  for (const [index, z] of [-18, -38, -58, -74].entries()) {
+    addMesh(archiveCrown, suspendedRing, index % 2 ? amber : cyan, `testimony-suspended-index-${index}`,
+      index % 2 ? -5.4 : 5.4, 5.6 + (index % 2) * 1.2, z);
+  }
+  const recordShard = resources.register(new THREE.OctahedronGeometry(0.72, 0), 'testimony-record-shard');
+  for (let index = 0; index < 8; index += 1) {
+    addMesh(archiveCrown, recordShard, index % 2 ? amber : cyan, `testimony-record-shard-${index}`,
+      (index % 2 ? 1 : -1) * (2.2 + (index % 3)), 2.2 + (index % 4) * 0.9, -40 - index * 4.2);
+  }
 
   const beacons = TESTIMONY_ZONES.map((zone, index) => {
     const geometry = resources.register(new THREE.TorusGeometry(0.85, 0.07, 8, 28), `testimony-beacon-${index}`);
@@ -100,7 +125,7 @@ function createArchitecture(resources) {
     beacon.visible = index === 0;
     return beacon;
   });
-  return { beacons, concrete, group };
+  return { archive, beacons, concrete, group, verticalArchiveMeshes: archiveCrown.children.length };
 }
 
 export function createTestimonyArchiveEnvironment({ assetLoader = createEnvironmentAssetLoader(), scene } = {}) {
@@ -111,13 +136,24 @@ export function createTestimonyArchiveEnvironment({ assetLoader = createEnvironm
   group.name = 'testimony-archive-environment';
   group.add(architecture.group);
   scene.add(group);
+  const atmosphere = createLayeredCampusSilhouettes({
+    centerZ: -41, colors: [0x2c314b, 0x182b42, 0x10182c], group,
+    prefix: 'testimony-archive', resources, spanZ: 82
+  });
+  const accents = createEmissivePathAccents({
+    colors: [0xf2b762, 0x64ddc4], group,
+    points: TESTIMONY_ZONES.flatMap((zone) => [-3.2, 0, 3.2].map((offset, index) => ({
+      x: (index - 1) * 0.72, y: 0, z: zone.anchorZ + offset
+    }))),
+    prefix: 'testimony-archive', resources
+  });
   const assetRoot = new THREE.Group();
   assetRoot.name = 'testimony-archive-glb-assets';
   group.add(assetRoot);
   let disposed = false;
   const failures = [];
   const assets = [...new Set(ASSET_PLACEMENTS.map(([id]) => id))];
-  const ready = Promise.all(assets.map(async (assetId) => {
+  const assetPromise = Promise.all(assets.map(async (assetId) => {
     const loaded = await assetLoader.load(assetId);
     if (loaded.isPlaceholder) failures.push(assetId);
     if (disposed) return;
@@ -135,7 +171,20 @@ export function createTestimonyArchiveEnvironment({ assetLoader = createEnvironm
       });
       assetRoot.add(root);
     }
-  })).then(() => Object.freeze({ failedAssetIds: Object.freeze([...failures]), placedInstances: ASSET_PLACEMENTS.length }));
+  }));
+  const materialPromise = Promise.all([
+    ['structural-concrete', architecture.concrete], ['interior-wood', architecture.archive]
+  ].map(async ([materialId, target]) => {
+    const loaded = await assetLoader.loadMaterial(materialId);
+    if (loaded.isPlaceholder) failures.push(materialId);
+    if (disposed) return;
+    architecture.group.traverse((object) => {
+      if (object.isMesh && object.material === target) object.material = loaded.material;
+    });
+  }));
+  const ready = Promise.all([assetPromise, materialPromise]).then(() => Object.freeze({
+    failedAssetIds: Object.freeze([...failures]), placedInstances: ASSET_PLACEMENTS.length
+  }));
 
   return Object.freeze({
     dispose() {
@@ -148,9 +197,13 @@ export function createTestimonyArchiveEnvironment({ assetLoader = createEnvironm
     },
     getDebugState: () => Object.freeze({
       assetInstances: assetRoot.children.length,
+      atmosphericLayers: atmosphere.layerCount,
+      emissiveAccents: accents.accentCount,
       failedAssetIds: Object.freeze([...failures]),
       landmarkIds: Object.freeze(TESTIMONY_ZONES.map(({ landmarkId }) => landmarkId)),
+      pbrArchitectureMeshes: 16,
       status: assetRoot.children.length > 0 ? 'ready' : 'loading',
+      verticalArchiveMeshes: architecture.verticalArchiveMeshes,
       zoneCount: TESTIMONY_ZONES.length
     }),
     group,

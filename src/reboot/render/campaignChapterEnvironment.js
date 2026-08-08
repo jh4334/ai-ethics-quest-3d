@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 import { createEnvironmentAssetLoader } from '../environment/loader.js';
+import { createEmissivePathAccents, createLayeredCampusSilhouettes } from './campusEnvironmentLayers.js';
 import { createDisposableRegistry } from './dispose.js';
 
 const prop = (id, x, z, scale = 1, yaw = 0, y = 0) => ({ id, scale, x, y, yaw, z });
@@ -74,6 +75,12 @@ const SURFACES = Object.freeze({
   4: ['masonry-brick', 'road-asphalt', 'structural-concrete', 'structural-concrete']
 });
 
+const CHAPTER_VISUALS = Object.freeze({
+  2: Object.freeze({ colors: [0x39213f, 0x182e4e, 0x101a32], identity: 'media-festival-rig', pbr: 'road-asphalt' }),
+  3: Object.freeze({ colors: [0x49253e, 0x173d4d, 0x17213c], identity: 'dual-school-divide', pbr: 'masonry-brick' }),
+  4: Object.freeze({ colors: [0x3e252b, 0x263341, 0x111b2b], identity: 'approval-conveyor-spine', pbr: 'structural-concrete' })
+});
+
 function findBounds(level, segmentId) {
   return level.layers.collision.find((entry) => entry.segmentId === segmentId).walkableBounds;
 }
@@ -100,6 +107,96 @@ function configureMaterial(material) {
   }
 }
 
+function addAuthoredMesh(group, geometry, material, name, position, rotation = null, scale = null) {
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = name;
+  mesh.position.set(position.x, position.y, position.z);
+  if (rotation) mesh.rotation.set(rotation.x ?? 0, rotation.y ?? 0, rotation.z ?? 0);
+  if (scale) mesh.scale.set(scale.x, scale.y, scale.z);
+  mesh.castShadow = false;
+  mesh.receiveShadow = false;
+  group.add(mesh);
+  return mesh;
+}
+
+function createChapterArchitecture({ chapter, group, level, materials, resources }) {
+  const root = new THREE.Group();
+  const visual = CHAPTER_VISUALS[chapter];
+  root.name = visual.identity;
+  group.add(root);
+  const warm = resources.register(new THREE.MeshStandardMaterial({
+    color: 0xf3b36c, emissive: 0x6a2f11, emissiveIntensity: 0.82, metalness: 0.28, roughness: 0.4
+  }), `campaign-${chapter}-warm-material`);
+  const cool = resources.register(new THREE.MeshStandardMaterial({
+    color: 0x5de0c1, emissive: 0x124f4b, emissiveIntensity: 0.86, metalness: 0.32, roughness: 0.35
+  }), `campaign-${chapter}-cool-material`);
+  const danger = resources.register(new THREE.MeshStandardMaterial({
+    color: 0xd74732, emissive: 0x5d1814, emissiveIntensity: 0.78, metalness: 0.38, roughness: 0.4
+  }), `campaign-${chapter}-danger-material`);
+  const pbr = materials.get(visual.pbr);
+  const pylonGeometry = resources.register(new THREE.CylinderGeometry(0.38, 0.62, 5.2, 9), `campaign-${chapter}-pylon-geometry`);
+  for (const [index, segment] of level.segments.entries()) {
+    addAuthoredMesh(root, pylonGeometry, pbr, `campaign-${chapter}-pbr-pylon-${index}`, {
+      x: segment.anchor.x + (index % 2 === 0 ? -5.8 : 5.8), y: level.planeY + 2.6, z: segment.anchor.z - 1
+    });
+  }
+
+  if (chapter === 2) {
+    const stage = level.segments.at(-1).anchor;
+    const hoop = resources.register(new THREE.TorusGeometry(5.8, 0.2, 10, 48, Math.PI), 'media-stage-hoop');
+    addAuthoredMesh(root, hoop, warm, 'media-festival-stage-arch', { x: stage.x, y: 1.1, z: stage.z - 4 });
+    const pennant = resources.register(new THREE.ConeGeometry(0.5, 1.4, 3), 'media-festival-pennant');
+    for (let index = 0; index < 10; index += 1) {
+      addAuthoredMesh(root, pennant, index % 2 ? cool : danger, `media-festival-pennant-${index}`, {
+        x: stage.x - 5.4 + index * 1.2, y: level.planeY + 4.2 + (index % 2) * 0.35, z: stage.z - 3.9
+      }, { z: Math.PI });
+    }
+    const speaker = resources.register(new THREE.CylinderGeometry(0.55, 0.8, 1.6, 12), 'media-speaker-geometry');
+    for (const [index, x] of [-4.6, -2.9, 2.9, 4.6].entries()) {
+      addAuthoredMesh(root, speaker, danger, `media-festival-speaker-${index}`, { x: stage.x + x, y: 1, z: stage.z - 3.6 }, { x: Math.PI / 2 });
+    }
+  } else if (chapter === 3) {
+    const warmZone = level.segments[1].anchor;
+    const coldZone = level.segments[2].anchor;
+    const arch = resources.register(new THREE.TorusGeometry(3.5, 0.18, 9, 40, Math.PI), 'dual-school-arch');
+    addAuthoredMesh(root, arch, warm, 'dual-school-warm-arch', { x: warmZone.x, y: 0.2, z: warmZone.z - 3 });
+    addAuthoredMesh(root, arch, cool, 'dual-school-cold-arch', { x: coldZone.x, y: 0.2, z: coldZone.z - 3 });
+    const warmTree = resources.register(new THREE.ConeGeometry(0.9, 3.5, 7), 'dual-school-warm-tree');
+    const coldRecord = resources.register(new THREE.OctahedronGeometry(1.05, 0), 'dual-school-cold-record');
+    for (let index = 0; index < 7; index += 1) {
+      addAuthoredMesh(root, warmTree, warm, `dual-school-warm-canopy-${index}`, {
+        x: warmZone.x - 5.2 + index * 1.7, y: 1.75, z: warmZone.z + (index % 2 ? 2.4 : -2.2)
+      });
+      addAuthoredMesh(root, coldRecord, cool, `dual-school-cold-record-${index}`, {
+        x: coldZone.x - 5.2 + index * 1.7, y: 1.3 + (index % 3) * 0.7, z: coldZone.z + (index % 2 ? 2.4 : -2.2)
+      });
+    }
+    const divide = resources.register(new THREE.CylinderGeometry(0.12, 0.12, 8, 8), 'dual-school-divide-spine');
+    addAuthoredMesh(root, divide, danger, 'dual-school-central-split', { x: 0, y: 4, z: level.segments[0].anchor.z });
+  } else {
+    const conveyor = level.segments[1].anchor;
+    const roller = resources.register(new THREE.CylinderGeometry(0.38, 0.38, 5.2, 14), 'approval-conveyor-roller');
+    for (let index = 0; index < 10; index += 1) {
+      addAuthoredMesh(root, roller, index % 3 === 0 ? danger : pbr, `approval-conveyor-roller-${index}`, {
+        x: conveyor.x, y: 0.48, z: conveyor.z - 6.3 + index * 1.4
+      }, { z: Math.PI / 2 });
+    }
+    const gear = resources.register(new THREE.TorusGeometry(1.1, 0.2, 8, 20), 'approval-conveyor-gear');
+    for (const [index, x] of [-4.2, 4.2, -6.2, 6.2].entries()) {
+      addAuthoredMesh(root, gear, index % 2 ? warm : danger, `approval-conveyor-gear-${index}`, {
+        x: conveyor.x + x, y: 1.8 + (index > 1 ? 1.6 : 0), z: conveyor.z - 1
+      }, { y: Math.PI / 2 });
+    }
+    const piston = resources.register(new THREE.CylinderGeometry(0.45, 0.72, 4.2, 10), 'approval-stamp-piston');
+    for (const [index, x] of [-3.2, 0, 3.2].entries()) {
+      addAuthoredMesh(root, piston, danger, `approval-stamp-piston-${index}`, {
+        x: conveyor.x + x, y: 3.6, z: conveyor.z - 4 + index * 3.5
+      });
+    }
+  }
+  return Object.freeze({ meshCount: root.children.length, pbrMeshCount: 4 });
+}
+
 export function createCampaignChapterEnvironment({
   assetLoader = createEnvironmentAssetLoader(), chapter, level, scene
 }) {
@@ -115,6 +212,20 @@ export function createCampaignChapterEnvironment({
   surfaceRoot.name = `campaign-chapter-${chapter}-pbr-surfaces`;
   group.add(surfaceRoot, assetRoot);
   scene.add(group);
+  const allBounds = level.layers.collision.map(({ walkableBounds }) => walkableBounds);
+  const minZ = Math.min(...allBounds.map(({ minZ: value }) => value));
+  const maxZ = Math.max(...allBounds.map(({ maxZ: value }) => value));
+  const atmosphere = createLayeredCampusSilhouettes({
+    centerZ: (minZ + maxZ) / 2, colors: CHAPTER_VISUALS[chapter].colors, group,
+    prefix: `campaign-${chapter}`, resources, spanZ: maxZ - minZ
+  });
+  const accents = createEmissivePathAccents({
+    colors: [0xf3b36c, 0x5de0c1], group,
+    points: level.segments.flatMap((segment) => [-3, 0, 3].map((offset, index) => ({
+      x: segment.anchor.x + (index - 1) * 0.7, y: level.planeY, z: segment.anchor.z + offset
+    }))),
+    prefix: `campaign-${chapter}`, resources
+  });
   const placements = [
     ...level.segments.flatMap((segment) => RECIPES[segment.geometryId].map((entry) => ({
       ...entry, x: entry.x + segment.anchor.x, y: entry.y + level.planeY, z: entry.z + segment.anchor.z
@@ -125,6 +236,7 @@ export function createCampaignChapterEnvironment({
   const failedAssetIds = [];
   let disposed = false;
   let status = 'loading';
+  let architectureMetrics = Object.freeze({ meshCount: 0, pbrMeshCount: 0 });
 
   const materialPromise = Promise.all([...new Set(SURFACES[chapter])].map(async (id) => {
     const loaded = await assetLoader.loadMaterial(id);
@@ -163,6 +275,7 @@ export function createCampaignChapterEnvironment({
       });
       assetRoot.add(root);
     });
+    architectureMetrics = createChapterArchitecture({ chapter, group, level, materials, resources });
     status = failedAssetIds.length === 0 ? 'ready' : 'degraded';
   });
   const placementSignature = `${chapter}:${level.segments.map(({ geometryId }) => geometryId).join('|')}:${assetIds.join('|')}`;
@@ -179,8 +292,12 @@ export function createCampaignChapterEnvironment({
     },
     getDebugState: () => Object.freeze({
       assetInstances: assetRoot.children.length,
+      atmosphericLayers: atmosphere.layerCount,
+      authoredMeshes: atmosphere.instanceCount + architectureMetrics.meshCount,
+      emissiveAccents: accents.accentCount,
       failedAssetIds: Object.freeze([...failedAssetIds]),
       placementSignature,
+      pbrArchitectureMeshes: architectureMetrics.pbrMeshCount,
       status,
       texturedSurfaces: surfaceRoot.children.length,
       uniqueAssetIds: assetIds.length,

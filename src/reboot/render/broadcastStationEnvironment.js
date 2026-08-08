@@ -2,6 +2,7 @@ import * as THREE from 'three';
 
 import { BROADCAST_ZONES } from '../campaign/broadcastRoute.js';
 import { createEnvironmentAssetLoader } from '../environment/loader.js';
+import { createEmissivePathAccents, createLayeredCampusSilhouettes } from './campusEnvironmentLayers.js';
 import { createDisposableRegistry } from './dispose.js';
 
 const PLACEMENTS = Object.freeze([
@@ -15,7 +16,7 @@ const PLACEMENTS = Object.freeze([
   ['campus-column', -5.4, 0, -43, 1.3, 0], ['campus-column', 5.4, 0, -43, 1.3, 0],
   ['campus-column', -5.4, 0, -51, 1.3, 0], ['campus-column', 5.4, 0, -51, 1.3, 0],
   ['classroom-screen', -2.6, 1.1, -48, 1.15, Math.PI / 2], ['classroom-screen', 2.6, 1.1, -48, 1.15, -Math.PI / 2],
-  ['campus-doorway', 0, 0, -60, 1.7, 0], ['campus-window', -5.5, 0.4, -80.5, 1.45, 0],
+  ['campus-doorway', -7, 0, -60, 1.7, 0], ['campus-window', -5.5, 0.4, -80.5, 1.45, 0],
   ['campus-window', 5.5, 0.4, -80.5, 1.45, 0], ['campus-column', -9.5, 0, -70, 1.45, 0],
   ['campus-column', 9.5, 0, -70, 1.45, 0]
 ]);
@@ -66,6 +67,9 @@ function createArchitecture(resources) {
   const red = resources.register(new THREE.MeshStandardMaterial({
     color: 0xd74732, emissive: 0x651b17, emissiveIntensity: 0.92, metalness: 0.34, roughness: 0.36
   }), 'broadcast-red');
+  const cladding = resources.register(new THREE.MeshStandardMaterial({
+    color: 0x404952, emissive: 0x080e17, emissiveIntensity: 0.2, metalness: 0.18, roughness: 0.82
+  }), 'broadcast-station-cladding');
 
   const platforms = [
     [12, 16, -2, 2.5], [16, 24, -22, 3], [14, 24, -46, 2.4], [26, 26, -71, 4.8]
@@ -103,8 +107,28 @@ function createArchitecture(resources) {
   addMesh(group, core, red, 'broadcast-signal-core', { x: 0, y: 3.2, z: -75 });
   const coreRing = resources.register(new THREE.TorusGeometry(4.3, 0.22, 10, 52), 'broadcast-core-ring');
   for (const [index, y] of [1.2, 3.2, 5.2].entries()) {
-    addMesh(group, coreRing, index === 1 ? red : metal, `broadcast-core-ring-${index}`, { x: 0, y, z: -75 }, { x: Math.PI / 2, y: 0, z: 0 });
+      addMesh(group, coreRing, index === 1 ? red : metal, `broadcast-core-ring-${index}`, { x: 0, y, z: -75 }, { x: Math.PI / 2, y: 0, z: 0 });
   }
+
+  const antennaCrown = new THREE.Group();
+  antennaCrown.name = 'broadcast-antenna-crown';
+  group.add(antennaCrown);
+  const antenna = resources.register(new THREE.CylinderGeometry(0.18, 0.52, 7.2, 9), 'broadcast-antenna-mast');
+  for (let index = 0; index < 8; index += 1) {
+    const angle = Math.PI / 8 + index * Math.PI / 4;
+    addMesh(antennaCrown, antenna, cladding, `broadcast-antenna-mast-${index}`, {
+      x: Math.sin(angle) * (9 + (index % 2) * 1.5), y: 3.6 + (index % 3) * 0.7, z: -74 + Math.cos(angle) * 9
+    });
+  }
+  const dish = resources.register(new THREE.SphereGeometry(0.82, 14, 7, 0, Math.PI * 2, 0, Math.PI / 2), 'broadcast-signal-dish');
+  for (let index = 0; index < 6; index += 1) {
+    const angle = Math.PI / 6 + index * Math.PI / 3;
+    addMesh(antennaCrown, dish, index % 2 ? amber : cyan, `broadcast-signal-dish-${index}`, {
+      x: Math.sin(angle) * 11, y: 4 + (index % 2) * 1.2, z: -74 + Math.cos(angle) * 10
+    }, { x: Math.PI / 2, y: -angle, z: 0 });
+  }
+  const onAirHalo = resources.register(new THREE.TorusKnotGeometry(2.2, 0.12, 64, 8, 2, 3), 'broadcast-on-air-halo');
+  addMesh(antennaCrown, onAirHalo, red, 'broadcast-on-air-halo', { x: 0, y: 7.4, z: -75 });
 
   const beacons = BROADCAST_ZONES.map((zone, index) => {
     const geometry = resources.register(new THREE.TorusGeometry(0.86, 0.07, 8, 28), `broadcast-beacon-${index}`);
@@ -114,7 +138,7 @@ function createArchitecture(resources) {
     beacon.visible = index === 0;
     return beacon;
   });
-  return { beacons, concrete, group };
+  return { beacons, cladding, concrete, group, stationIdentityMeshes: antennaCrown.children.length };
 }
 
 export function createBroadcastStationEnvironment({ assetLoader = createEnvironmentAssetLoader(), scene } = {}) {
@@ -128,16 +152,30 @@ export function createBroadcastStationEnvironment({ assetLoader = createEnvironm
   assetRoot.name = 'broadcast-station-glb-assets';
   group.add(assetRoot);
   scene.add(group);
+  const atmosphere = createLayeredCampusSilhouettes({
+    centerZ: -41, colors: [0x25334b, 0x17283d, 0x0d172a], group,
+    prefix: 'broadcast-station', resources, spanZ: 86
+  });
+  const accents = createEmissivePathAccents({
+    colors: [0xf3b36c, 0x5de0c1, 0xd74732], group,
+    points: BROADCAST_ZONES.flatMap((zone) => [-3.2, 0, 3.2].map((offset, index) => ({
+      x: (index - 1) * 0.76, y: 0, z: zone.anchorZ + offset
+    }))),
+    prefix: 'broadcast-station', resources
+  });
   const failures = [];
   let disposed = false;
   const assetIds = [...new Set(PLACEMENTS.map(([id]) => id))];
-  const materialPromise = assetLoader.loadMaterial('structural-concrete').then((loaded) => {
-    if (loaded.isPlaceholder) failures.push('structural-concrete');
+  const materialPromise = Promise.all([
+    ['structural-concrete', architecture.concrete], ['road-asphalt', architecture.cladding]
+  ].map(async ([materialId, target]) => {
+    const loaded = await assetLoader.loadMaterial(materialId);
+    if (loaded.isPlaceholder) failures.push(materialId);
     if (disposed) return;
     architecture.group.traverse((object) => {
-      if (object.isMesh && object.material === architecture.concrete) object.material = loaded.material;
+      if (object.isMesh && object.material === target) object.material = loaded.material;
     });
-  });
+  }));
   const assetPromise = Promise.all(assetIds.map(async (assetId) => {
     const loaded = await assetLoader.load(assetId);
     if (loaded.isPlaceholder) failures.push(assetId);
@@ -172,8 +210,12 @@ export function createBroadcastStationEnvironment({ assetLoader = createEnvironm
     },
     getDebugState: () => Object.freeze({
       assetInstances: assetRoot.children.length,
+      atmosphericLayers: atmosphere.layerCount,
+      emissiveAccents: accents.accentCount,
       failedAssetIds: Object.freeze([...failures]),
       landmarkIds: Object.freeze(BROADCAST_ZONES.map(({ landmarkId }) => landmarkId)),
+      pbrArchitectureMeshes: 12,
+      stationIdentityMeshes: architecture.stationIdentityMeshes,
       status: assetRoot.children.length > 0 ? 'ready' : 'loading',
       zoneCount: BROADCAST_ZONES.length
     }),
