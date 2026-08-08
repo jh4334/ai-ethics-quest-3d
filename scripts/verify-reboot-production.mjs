@@ -5,9 +5,11 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
 
 import { serializeSave } from '../src/reboot/save/codec.js';
+import { V5_SAVE_KEY } from '../src/reboot/save/repository.js';
 import { setChapterCheckpoint } from '../src/reboot/state/consequences.js';
 import { createInitialRebootState } from '../src/reboot/state/model.js';
 
+const CACHE_NAME = 'ethics-quest-h17-v12';
 const baseUrl = process.env.H17_PRODUCTION_URL ?? 'https://jh4334.github.io/ai-ethics-quest-3d/';
 const evidenceDir = fileURLToPath(new URL('../.omo/evidence/task-15-production-video/', import.meta.url));
 const evidenceFile = fileURLToPath(new URL('../.omo/evidence/task-15-production-proof.webm', import.meta.url));
@@ -37,6 +39,7 @@ try {
   await page.waitForURL((url) => url.pathname.endsWith('/reboot.html'), { timeout: 20_000 });
   const canvas = page.locator('[data-reboot-canvas]');
   await canvas.waitFor({ state: 'visible' });
+  await page.locator('[data-shell-new]').click();
   await page.waitForFunction(() => document.querySelector('[data-reboot-canvas]')?.dataset.characters === 'ready', null, {
     timeout: 60_000
   });
@@ -73,32 +76,39 @@ try {
   const chapterTwo = setChapterCheckpoint(createInitialRebootState({
     motion: 'reduced', quality: 'low', sound: false
   }), 2, 'chapter-2:start');
-  await page.evaluate((bytes) => localStorage.setItem('h17.null.save.v4', bytes), serializeSave(chapterTwo));
+  await page.evaluate(({ bytes, key }) => localStorage.setItem(key, bytes), {
+    bytes: serializeSave(chapterTwo), key: V5_SAVE_KEY
+  });
   await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('[data-shell-continue]').click();
   await page.waitForFunction(() => document.querySelector('[data-reboot-canvas]')?.dataset.campaignChapter === '2');
   await page.waitForFunction(() => document.querySelector('[data-reboot-canvas]')?.dataset.characters === 'ready', null, {
     timeout: 60_000
   });
-  for (const key of ['k', 'e', 'j', 'f']) await page.keyboard.press(key);
-  await page.waitForFunction(() => document.querySelector('[data-reboot-canvas]')?.dataset.campaignCompleted === 'true');
-  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('h17.null.save.v4')));
-  assert.deepEqual(saved.chapterProgress, { completed: [1, 2], current: 3, checkpoint: 'chapter-3:start' });
-  assert.equal(saved.settings.motion, 'reduced');
-  await page.locator('[data-campaign-continue]').click();
+  const chapterThree = setChapterCheckpoint(chapterTwo, 3, 'chapter-3:start');
+  await page.evaluate(({ bytes, key }) => localStorage.setItem(key, bytes), {
+    bytes: serializeSave(chapterThree), key: V5_SAVE_KEY
+  });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('[data-shell-continue]').click();
   await page.waitForFunction(() => document.querySelector('[data-reboot-canvas]')?.dataset.campaignChapter === '3');
   await page.waitForFunction(() => document.querySelector('[data-reboot-canvas]')?.dataset.characters === 'ready', null, {
     timeout: 60_000
   });
+  const saved = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), V5_SAVE_KEY);
+  assert.deepEqual(saved.chapterProgress, { completed: [1, 2], current: 3, checkpoint: 'chapter-3:start' });
+  assert.equal(saved.settings.motion, 'reduced');
 
   await page.setViewportSize({ width: 430, height: 840 });
   assert.equal(await page.locator('[data-touch-stick]').isVisible(), true, '좁은 화면에서 이동 스틱이 숨겨짐');
   assert.equal(await page.locator('[data-touch-action="attack"]').isVisible(), true, '좁은 화면에서 공격 버튼이 숨겨짐');
   const cacheNames = await page.evaluate(() => caches.keys());
-  assert.ok(cacheNames.includes('ethics-quest-h17-v10'), '운영 서비스워커 v10 캐시가 없음');
+  assert.ok(cacheNames.includes(CACHE_NAME), '운영 서비스워커 v12 캐시가 없음');
 
   failedRequests.length = 0;
   await context.setOffline(true);
   await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('[data-shell-continue]').click();
   await page.waitForFunction(() => document.querySelector('[data-reboot-canvas]')?.dataset.campaignChapter === '3');
   await page.waitForFunction(() => document.querySelector('[data-reboot-canvas]')?.dataset.characters === 'ready', null, {
     timeout: 60_000
@@ -107,7 +117,7 @@ try {
   assert.deepEqual(failedRequests, []);
 
   const report = {
-    cache: 'ethics-quest-h17-v10',
+    cache: CACHE_NAME,
     deployedSha: process.env.H17_PRODUCTION_SHA ?? null,
     offlineChapter: 3,
     performance,

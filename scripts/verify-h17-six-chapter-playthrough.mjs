@@ -12,9 +12,13 @@ const baseUrl = process.env.H17_PLAYTHROUGH_URL ?? 'http://127.0.0.1:4174/';
 const evidenceDirectory = fileURLToPath(new URL('../.omo/evidence/h17-six-chapter/playthrough/', import.meta.url));
 const query = 'testHook=h17&tools=hidden&motion=reduced&sound=off&sw=off&quality=low';
 const startingChapter = Number(process.env.H17_PLAYTHROUGH_START ?? 1);
+const endingChapter = Number(process.env.H17_PLAYTHROUGH_END ?? 6);
 const inputMode = process.env.H17_PLAYTHROUGH_INPUT ?? 'keyboard';
 if (!Number.isInteger(startingChapter) || startingChapter < 1 || startingChapter > 6) {
   throw new RangeError('H17_PLAYTHROUGH_START는 1~6이어야 합니다.');
+}
+if (!Number.isInteger(endingChapter) || endingChapter < startingChapter || endingChapter > 6) {
+  throw new RangeError('H17_PLAYTHROUGH_END는 시작 장 이상 6 이하여야 합니다.');
 }
 if (!['keyboard', 'touch'].includes(inputMode)) throw new RangeError('입력 모드는 keyboard 또는 touch여야 합니다.');
 const chapterStartedAt = new Map();
@@ -370,14 +374,18 @@ await page.addInitScript(({ bytes, key }) => {
 
 try {
   await page.goto(new URL(`reboot.html?${query}`, baseUrl).href, { waitUntil: 'domcontentloaded', timeout: 90_000 });
-  if (startingChapter <= 1) await completeChapterOne(page);
-  if (startingChapter <= 2) await completeCampaignChapter(page, 2, ['KeyK', 'KeyE', 'KeyJ']);
-  if (startingChapter <= 3) await completeCampaignChapter(page, 3, ['KeyE', 'KeyE', 'KeyJ']);
-  if (startingChapter <= 4) await completeCampaignChapter(page, 4, ['KeyK', 'KeyE', 'KeyJ']);
-  if (startingChapter <= 5) await completeTestimonyArchive(page);
-  if (startingChapter <= 6) await completeFinalBroadcast(page);
+  if (startingChapter <= 1 && endingChapter >= 1) await completeChapterOne(page);
+  if (startingChapter <= 2 && endingChapter >= 2) await completeCampaignChapter(page, 2, ['KeyK', 'KeyE', 'KeyJ']);
+  if (startingChapter <= 3 && endingChapter >= 3) await completeCampaignChapter(page, 3, ['KeyE', 'KeyE', 'KeyJ']);
+  if (startingChapter <= 4 && endingChapter >= 4) await completeCampaignChapter(page, 4, ['KeyK', 'KeyE', 'KeyJ']);
+  if (startingChapter <= 5 && endingChapter >= 5) await completeTestimonyArchive(page);
+  if (startingChapter <= 6 && endingChapter >= 6) await completeFinalBroadcast(page);
   const finalSave = await page.evaluate(() => JSON.parse(localStorage.getItem('h17.null.save.v5')));
-  assert(finalSave.chapterProgress.checkpoint.startsWith('chapter-6:resolved-'), '6장 결말 저장이 없습니다.');
+  if (endingChapter === 6) {
+    assert(finalSave.chapterProgress.checkpoint.startsWith('chapter-6:resolved-'), '6장 결말 저장이 없습니다.');
+  } else {
+    assert(finalSave.chapterProgress.completed.includes(endingChapter), `${endingChapter}장 완료 저장이 없습니다.`);
+  }
   assert(consoleErrors.length === 0, `콘솔 오류:\n${consoleErrors.join('\n')}`);
   assert(failedResponses.length === 0, `누락 응답:\n${failedResponses.join('\n')}`);
   const touch = inputMode === 'touch' ? await page.evaluate(() => {
@@ -389,9 +397,13 @@ try {
   }) : null;
   const report = {
     baseUrl, chapterReports, consoleErrors, failedResponses,
-    finalCheckpoint: finalSave.chapterProgress.checkpoint, inputMode, touch
+    endingChapter, finalCheckpoint: finalSave.chapterProgress.checkpoint,
+    inputMode, startingChapter, touch
   };
-  await writeFile(`${evidenceDirectory}/${inputMode}-playthrough-report.json`, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+  const reportName = startingChapter === 1 && endingChapter === 6
+    ? `${inputMode}-playthrough-report.json`
+    : `${inputMode}-chapter-${startingChapter}-to-${endingChapter}-report.json`;
+  await writeFile(`${evidenceDirectory}/${reportName}`, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
   console.log(JSON.stringify(report, null, 2));
 } finally {
   await context.close();

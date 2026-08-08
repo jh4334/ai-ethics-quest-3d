@@ -3,9 +3,16 @@ import { chromium } from '@playwright/test';
 
 const baseUrl = process.env.H17_BASE_URL ?? 'http://127.0.0.1:4174';
 const outputDirectory = '.omo/evidence/h17-six-chapter/p0';
+const rendererProfile = process.env.H17_CAPTURE_RENDERER === 'hardware' ? 'hardware' : 'swiftshader';
+const headless = process.env.H17_CAPTURE_HEADFUL !== 'true';
 await mkdir(outputDirectory, { recursive: true });
 
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({
+  headless,
+  args: rendererProfile === 'hardware'
+    ? ['--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding']
+    : ['--enable-unsafe-swiftshader', '--use-angle=swiftshader']
+});
 const captures = [];
 
 async function capture(name, viewport, options = {}) {
@@ -50,6 +57,15 @@ async function capture(name, viewport, options = {}) {
       state: item.dataset.state
     })),
     debug: window.__ethicsReboot.getSceneDebugState(),
+    renderer: (() => {
+      const canvas = document.querySelector('[data-reboot-canvas]');
+      const gl = canvas?.getContext('webgl2');
+      const info = gl?.getExtension('WEBGL_debug_renderer_info');
+      return {
+        renderer: info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl?.getParameter(gl.RENDERER),
+        vendor: info ? gl.getParameter(info.UNMASKED_VENDOR_WEBGL) : gl?.getParameter(gl.VENDOR)
+      };
+    })(),
     save: window.__ethicsReboot.getSaveState()
   }));
   captures.push({ consoleErrors, failedResponses, name, screenshotPath, surface, viewport });
@@ -58,6 +74,8 @@ async function capture(name, viewport, options = {}) {
 
 try {
   await capture('chapter-1-classroom-desktop-1440x900', { width: 1440, height: 900 });
+  await capture('chapter-1-classroom-tablet-768x1024', { width: 768, height: 1024 });
+  await capture('chapter-1-classroom-mobile-390x844', { width: 390, height: 844 }, { hasTouch: true });
   await capture('chapter-1-desktop-1440x900', { width: 1440, height: 900 }, {
     checkpoint: 'chapter-1:first-arena'
   });
@@ -68,7 +86,9 @@ try {
   await browser.close();
 }
 
-await writeFile(`${outputDirectory}/capture-report.json`, `${JSON.stringify({ baseUrl, captures }, null, 2)}\n`, 'utf8');
+await writeFile(`${outputDirectory}/capture-report.json`, `${JSON.stringify({
+  baseUrl, captures, headless, rendererProfile
+}, null, 2)}\n`, 'utf8');
 
 const failures = captures.flatMap(({ consoleErrors, failedResponses, name }) => [
   ...consoleErrors.map((message) => `${name}: console: ${message}`),
