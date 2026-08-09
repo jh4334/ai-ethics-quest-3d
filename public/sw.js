@@ -109,10 +109,11 @@ self.addEventListener('fetch', (event) => {
       if (hit) {
         return hit;
       }
-      return fetch(request).then((response) => {
+      return fetch(request).then(async (response) => {
         if (response.ok) {
           const copy = response.clone();
-          caches.open(CACHE).then((cache) => cache.put(request, copy));
+          const cache = await caches.open(CACHE);
+          await cache.put(request, copy);
         }
         return response;
       });

@@ -7,7 +7,7 @@ const serviceWorkerSource = readFileSync(new URL('../public/sw.js', import.meta.
 const characterAsset = './assets/reboot/characters/base/player.gltf';
 const environmentAsset = './assets/reboot/environment/building/wall.glb';
 
-function createServiceWorkerHarness({ cacheKeys = [], cachedAssetUrls = [] } = {}) {
+function createServiceWorkerHarness({ cacheKeys = [], cachedAssetUrls = [], deferCachePut = false } = {}) {
   const listeners = new Map();
   const addedAssets = [];
   const deletedCaches = [];
@@ -15,12 +15,16 @@ function createServiceWorkerHarness({ cacheKeys = [], cachedAssetUrls = [] } = {
   const openedCaches = [];
   const cachedRequests = [];
   const networkRequests = [];
+  let releaseCachePut = () => {};
+  const cachePutGate = deferCachePut
+    ? new Promise((resolve) => { releaseCachePut = resolve; })
+    : Promise.resolve();
   const cache = {
     async add(path) { addedAssets.push(path); },
     async addAll() {},
     async delete(request) { deletedEntries.push(request.url); return true; },
     async keys() { return cachedAssetUrls.map((url) => ({ url })); },
-    async put(request) { cachedRequests.push(request.url); }
+    async put(request) { cachedRequests.push(request.url); await cachePutGate; }
   };
   const context = {
     URL,
@@ -73,7 +77,8 @@ function createServiceWorkerHarness({ cacheKeys = [], cachedAssetUrls = [] } = {
     dispatch,
     dispatchFetch,
     networkRequests,
-    openedCaches
+    openedCaches,
+    releaseCachePut
   };
 }
 
@@ -131,4 +136,22 @@ test('Given a chapter environment cache miss, When the scene requests it, Then t
   assert.ok(harness.networkRequests.includes(url));
   assert.deepEqual(harness.cachedRequests, [url]);
   assert.ok(harness.openedCaches.every((key) => key === 'ethics-quest-h17-v12'));
+});
+
+test('Given a slow lazy cache write, When an environment response resolves, Then the worker keeps the response lifecycle open until caching finishes', async () => {
+  const url = 'https://school.example/ai-ethics/assets/reboot/environment/building/wall.glb';
+  const request = { method: 'GET', mode: 'cors', url };
+  const harness = createServiceWorkerHarness({ deferCachePut: true });
+  let responseSettled = false;
+
+  const responsePromise = harness.dispatchFetch(request).then((response) => {
+    responseSettled = true;
+    return response;
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.deepEqual(harness.cachedRequests, [url]);
+  assert.equal(responseSettled, false);
+  harness.releaseCachePut();
+  assert.equal((await responsePromise).ok, true);
 });
