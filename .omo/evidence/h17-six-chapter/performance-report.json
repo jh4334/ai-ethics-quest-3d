@@ -1,19 +1,19 @@
 {
   "build": {
     "modules": 172,
-    "rebootJavaScriptBytes": 328690,
-    "rebootJavaScriptGzipBytes": 109064,
+    "rebootJavaScriptBytes": 328860,
+    "rebootJavaScriptGzipBytes": 109097,
     "threeJavaScriptBytes": 681282,
     "threeJavaScriptGzipBytes": 172207,
     "chunkWarningOverBytes": 500000
   },
   "assets": {
-    "initialShell": { "bytes": 1365944, "files": 12 },
-    "installPrecache": { "bytes": 37811751, "files": 56 },
+    "initialShell": { "bytes": 1366114, "files": 12 },
+    "installPrecache": { "bytes": 37811921, "files": 56 },
     "chapterEnvironment": { "bytes": 13254711, "files": 42 },
     "character": { "bytes": 34100927, "files": 42 },
     "animation": { "bytes": 2344880, "files": 2 },
-    "total": { "bytes": 51066462, "files": 98 }
+    "total": { "bytes": 51066632, "files": 98 }
   },
   "firstPlayableChapter": {
     "encodedBodyBytes": 63393992,
