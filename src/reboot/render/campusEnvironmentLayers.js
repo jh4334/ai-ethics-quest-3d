@@ -248,9 +248,57 @@ function registerMaterial(resources, name, color, emissive) {
   }), name);
 }
 
+function createMountainRidges({ centerZ, colors, group, prefix, resources, spanZ }) {
+  const profiles = [
+    Object.freeze({
+      color: colors[2],
+      heights: [3, 7, 4, 12, 6, 9, 5, 14, 7, 10, 4, 8, 3],
+      opacity: 0.46,
+      scaleX: 1.08,
+      z: centerZ - spanZ * 0.9
+    }),
+    Object.freeze({
+      color: colors[1],
+      heights: [2, 5, 9, 4, 7, 13, 5, 8, 4, 11, 6, 4, 2],
+      opacity: 0.34,
+      scaleX: 1.22,
+      z: centerZ - spanZ * 1.05
+    })
+  ];
+  const halfWidth = 66;
+  for (const [index, profile] of profiles.entries()) {
+    const shape = new THREE.Shape();
+    shape.moveTo(-halfWidth, -8);
+    for (const [peakIndex, height] of profile.heights.entries()) {
+      const x = -halfWidth + peakIndex * (halfWidth * 2 / (profile.heights.length - 1));
+      shape.lineTo(x, height);
+    }
+    shape.lineTo(halfWidth, -8);
+    shape.closePath();
+    const geometry = resources.register(
+      new THREE.ShapeGeometry(shape, 1), `${prefix}-mountain-ridge-geometry-${index}`
+    );
+    const material = resources.register(new THREE.MeshBasicMaterial({
+      color: profile.color,
+      depthWrite: false,
+      fog: true,
+      opacity: profile.opacity,
+      transparent: true
+    }), `${prefix}-mountain-ridge-material-${index}`);
+    const ridge = disableShadows(new THREE.Mesh(geometry, material));
+    ridge.name = `${prefix}-mountain-ridge-${index}`;
+    ridge.position.set(0, -3.4 - index * 1.2, profile.z);
+    ridge.scale.x = profile.scaleX;
+    ridge.renderOrder = -12 + index;
+    group.add(ridge);
+  }
+  return profiles.length;
+}
+
 export function createLayeredCampusSilhouettes({
   centerZ, colors, group, prefix, resources, spanZ
 }) {
+  const ridgeCount = createMountainRidges({ centerZ, colors, group, prefix, resources, spanZ });
   const islandGeometry = resources.register(new THREE.ConeGeometry(2.8, 4.8, 7, 1, true), `${prefix}-island-geometry`);
   const towerGeometry = resources.register(new THREE.CylinderGeometry(0.5, 0.72, 3.6, 7), `${prefix}-tower-geometry`);
   const roofGeometry = resources.register(new THREE.ConeGeometry(0.82, 1.35, 4), `${prefix}-roof-geometry`);
@@ -317,7 +365,7 @@ export function createLayeredCampusSilhouettes({
     instanceCount += islandCount * 5;
   }
 
-  return Object.freeze({ instanceCount, layerCount: LAYERS.length });
+  return Object.freeze({ instanceCount, layerCount: LAYERS.length, ridgeCount });
 }
 
 export function createEmissivePathAccents({ colors, group, points, prefix, resources }) {

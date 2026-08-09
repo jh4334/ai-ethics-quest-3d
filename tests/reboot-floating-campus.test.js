@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import {
   CAMPUS_ASSET_PLACEMENTS,
   CAMPUS_DISTRICTS,
+  CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS,
   CAMPUS_LANDMARKS,
   CAMPUS_MEMORY_PATH,
   CAMPUS_MATERIAL_ROLES,
@@ -85,6 +86,30 @@ test('Given the campus asset plan, When compared with the licensed catalog, Then
   )), true);
 });
 
+test('Given the first campus vista, When framed from the route camera, Then licensed assets form two foreground wings and preserve the center path', () => {
+  const leftWing = CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.filter(({ vistaRole }) => vistaRole === 'foreground-left');
+  const rightWing = CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.filter(({ vistaRole }) => vistaRole === 'foreground-right');
+  const allowedAssets = new Set([
+    'campus-bush', 'campus-fence', 'campus-grass', 'campus-hero-rock',
+    'campus-rock', 'campus-tree', 'memory-flower'
+  ]);
+
+  assert.equal(CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.length >= 18, true);
+  assert.equal(leftWing.length >= 8, true);
+  assert.equal(rightWing.length >= 8, true);
+  assert.equal(leftWing.every(({ position }) => position.x <= -3.7 && position.z >= 3.2), true);
+  assert.equal(rightWing.every(({ position }) => position.x >= 3.7 && position.z >= 3.2), true);
+  assert.equal(leftWing.filter(({ position }) => (
+    position.x >= -4.4 && position.x <= -3.7 && position.z >= 4.2 && position.z <= 5.4
+  )).length >= 4, true);
+  assert.equal(rightWing.filter(({ position }) => (
+    position.x >= 3.7 && position.x <= 4.4 && position.z >= 4.2 && position.z <= 5.4
+  )).length >= 4, true);
+  assert.equal(CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.every(({ assetId }) => allowedAssets.has(assetId)), true);
+  assert.equal(CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.filter(({ assetId }) => assetId === 'campus-hero-rock').length, 1);
+  assert.equal(CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.every((entry) => CAMPUS_ASSET_PLACEMENTS.includes(entry)), true);
+});
+
 test('Given licensed assets load successfully, When the floating campus becomes ready, Then architecture and placed GLBs share one disposable scene layer', async () => {
   const assetLoader = createFakeAssetLoader();
   const scene = new THREE.Scene();
@@ -102,6 +127,16 @@ test('Given licensed assets load successfully, When the floating campus becomes 
   assert.ok(scene.getObjectByName('floating-gym'));
   assert.equal(campus.getDebugState().architecture.materialRoles.length, 7);
   assert.equal(campus.getDebugState().memoryPathAccents, CAMPUS_MEMORY_PATH.length);
+  assert.equal(campus.getDebugState().firstVistaAssets, CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.length);
+  assert.equal(campus.getDebugState().mountainRidges >= 2, true);
+  const treeBatch = scene.getObjectByName('campus-asset-campus-tree-batch-0');
+  assert.equal(treeBatch.material.emissive.getHex(), 0x14362f);
+  assert.equal(treeBatch.material.emissiveIntensity, 0.42);
+  assert.equal(treeBatch.material.roughness, 0.92);
+  const heroRockBatch = scene.getObjectByName('campus-asset-campus-hero-rock-batch-0');
+  assert.equal(heroRockBatch.material.emissive.getHex(), 0x31445f);
+  assert.equal(heroRockBatch.material.emissiveIntensity, 0.48);
+  assert.equal(heroRockBatch.material.metalness, 0);
 
   campus.dispose();
   assert.equal(assetLoader.getDebugState().loaderDisposed, true);

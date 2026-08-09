@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 
 import {
-  CAMPUS_ASSET_PLACEMENTS, CAMPUS_DISTRICTS, CAMPUS_MEMORY_PATH, CAMPUS_REQUIRED_ASSET_IDS
+  CAMPUS_ASSET_PLACEMENTS, CAMPUS_DISTRICTS, CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS,
+  CAMPUS_MEMORY_PATH, CAMPUS_REQUIRED_ASSET_IDS
 } from '../content/campus/chapterOneCampus.js';
 import { CAMPUS_VISUAL_PROFILE, WORLD_COLORS } from '../design/tokens.js';
 import { createEnvironmentAssetLoader } from '../environment/loader.js';
@@ -26,9 +27,25 @@ const ASSET_MATERIAL_ROLES = Object.freeze({
   'campus-floor': 'wood'
 });
 
+const ASSET_NIGHT_TREATMENTS = Object.freeze({
+  'campus-bush': Object.freeze({ emissive: 0x163d32, intensity: 0.38, roughness: 0.92 }),
+  'campus-grass': Object.freeze({ emissive: 0x163d32, intensity: 0.36, roughness: 0.94 }),
+  'campus-hero-rock': Object.freeze({
+    clearMetalRoughnessMaps: true,
+    emissive: 0x31445f,
+    intensity: 0.48,
+    metalness: 0,
+    normalScale: 0.42,
+    roughness: 0.96
+  }),
+  'campus-rock': Object.freeze({ emissive: 0x162033, intensity: 0.24, roughness: 0.96 }),
+  'campus-tree': Object.freeze({ emissive: 0x14362f, intensity: 0.42, roughness: 0.92 }),
+  'memory-flower': Object.freeze({ emissive: 0x6a4a18, intensity: 0.34, roughness: 0.88 })
+});
+
 const CONTACT_ASSET_IDS = new Set([
   'archive-box', 'campus-bench', 'campus-bush', 'campus-lamp', 'campus-planter',
-  'campus-rock', 'campus-sofa', 'campus-tree', 'classroom-chair', 'classroom-desk',
+  'campus-hero-rock', 'campus-rock', 'campus-sofa', 'campus-tree', 'classroom-chair', 'classroom-desk',
   'library-bookcase'
 ]);
 
@@ -162,8 +179,26 @@ function applyPbrMaterial(architecture, role, material) {
 
 function applyAssetPbrMaterials(assetRoot, materials) {
   assetRoot.traverse((object) => {
-    const role = ASSET_MATERIAL_ROLES[object.userData.campusAssetId];
+    const assetId = object.userData.campusAssetId;
+    const role = ASSET_MATERIAL_ROLES[assetId];
     if (object.isInstancedMesh && role && materials.has(role)) object.material = materials.get(role);
+    const treatment = ASSET_NIGHT_TREATMENTS[assetId];
+    if (!object.isInstancedMesh || !treatment) return;
+    const objectMaterials = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of objectMaterials) {
+      if (!material?.isMeshStandardMaterial) continue;
+      material.emissive.setHex(treatment.emissive);
+      material.emissiveIntensity = treatment.intensity;
+      if (Number.isFinite(treatment.metalness)) material.metalness = treatment.metalness;
+      if (treatment.clearMetalRoughnessMaps) {
+        material.metalnessMap = null;
+        material.roughnessMap = null;
+      }
+      if (Number.isFinite(treatment.normalScale) && material.normalScale) {
+        material.normalScale.setScalar(treatment.normalScale);
+      }
+      material.roughness = treatment.roughness;
+    }
   });
 }
 
@@ -263,9 +298,11 @@ export function createFloatingCampusEnvironment({
       districtSigns: backdrop.signCount,
       edgeDressingInstances: edgeDressing.postCount + edgeDressing.lanternCount
         + edgeDressing.shrubCount + edgeDressing.shardCount,
+      firstVistaAssets: CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.length,
       failedAssetIds: Object.freeze([...failedAssetIds]),
       failedMaterialIds: Object.freeze([...failedMaterialIds]),
       memoryPathAccents: memoryPath.footprintCount,
+      mountainRidges: silhouettes.ridgeCount,
       requiredAssetIds: CAMPUS_REQUIRED_ASSET_IDS,
       skyObjects: sky.skyObjects,
       atmosphericLayers: silhouettes.layerCount,

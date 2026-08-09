@@ -114,16 +114,29 @@ export function updateSchoolCamera({
     && encounter.enemies.some((enemy) => ['windup', 'active'].includes(enemy.phase))) || inBoss;
   const mode = inBoss ? 'boss' : combatFocus ? 'arena' : 'route';
   const portraitArena = viewport.mode === 'touch' && viewport.height > viewport.width;
+  const profile = viewport.mode === 'touch'
+    ? CAMPUS_VISUAL_PROFILE.camera.touch
+    : CAMPUS_VISUAL_PROFILE.camera.desktop;
   const heightShift = mode === 'boss' ? 2 : 0;
   const distanceShift = mode === 'boss' ? 5 : 0;
-  camera.position.set(next.position.x, next.position.y - heightShift, next.position.z - distanceShift);
-  camera.fov = mode === 'arena' ? portraitArena ? 66 : 50 : mode === 'boss' ? 36 : next.fov;
+  const routeDistanceShift = mode === 'route' ? profile.routeDistanceShift ?? 0 : 0;
+  const routeLateralShift = mode === 'route' ? profile.routeLateralShift ?? 0 : 0;
+  const routeLookLift = mode === 'route' ? profile.routeLookLift ?? 0 : 0;
+  camera.position.set(
+    next.position.x + routeLateralShift,
+    next.position.y - heightShift,
+    next.position.z - distanceShift + routeDistanceShift
+  );
+  camera.fov = mode === 'arena'
+    ? portraitArena ? 66 : 50
+    : mode === 'boss' ? 36 : profile.routeFov ?? next.fov;
   camera.updateProjectionMatrix();
-  camera.lookAt(next.lookAt.x, next.lookAt.y, next.lookAt.z);
+  camera.lookAt(next.lookAt.x, next.lookAt.y + routeLookLift, next.lookAt.z);
   return Object.freeze({
     cameraState: next,
     combatSafeArea: inspectCombatSafeArea(camera, targets, viewport, mode),
     targets
   });
 }
+import { CAMPUS_VISUAL_PROFILE } from '../design/tokens.js';
 import { updateCameraController } from '../camera/controller.js';

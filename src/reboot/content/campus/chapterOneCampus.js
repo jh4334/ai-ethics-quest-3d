@@ -1,6 +1,7 @@
-const placement = (assetId, districtId, position, scale = 1, rotationY = 0) => Object.freeze({
+const placement = (assetId, districtId, position, scale = 1, rotationY = 0, metadata = {}) => Object.freeze({
   assetId,
   districtId,
+  ...metadata,
   position: Object.freeze(position),
   rotationY,
   scale
@@ -63,8 +64,8 @@ export const CAMPUS_LANDMARKS = Object.freeze([
 ]);
 
 const classroomFurniture = [
-  [-3.4, 1.9], [-1.2, 1.9], [1.2, 1.9], [3.4, 1.9],
-  [-3.4, -0.2], [-1.2, -0.2], [1.2, -0.2], [3.4, -0.2]
+  [-4, 1.2], [-2.5, 1.2], [2.5, 1.2], [4, 1.2],
+  [-4, -1.2], [-2.5, -1.2], [2.5, -1.2], [4, -1.2]
 ].flatMap(([x, z], index) => [
   placement('classroom-desk', 'open-classroom', { x, y: 0.08, z }, 0.82, Math.PI),
   placement('classroom-chair', 'open-classroom', { x, y: 0.08, z: z + 0.7 }, 0.78, Math.PI),
@@ -74,15 +75,15 @@ const classroomFurniture = [
 const classroomShell = [
   placement('campus-floor', 'open-classroom', { x: -4, y: -0.08, z: 0 }, 2),
   placement('campus-floor', 'open-classroom', { x: 4, y: -0.08, z: 0 }, 2),
-  placement('campus-window', 'open-classroom', { x: -5.85, y: 0, z: -2 }, 1.45, Math.PI / 2),
-  placement('campus-window', 'open-classroom', { x: -5.85, y: 0, z: 2 }, 1.45, Math.PI / 2),
-  placement('campus-wall', 'open-classroom', { x: 5.85, y: 0, z: 2 }, 1.45, Math.PI / 2),
-  placement('campus-doorway', 'open-classroom', { x: 5.85, y: 0, z: -2 }, 1.45, Math.PI / 2),
+  placement('campus-window', 'open-classroom', { x: -5.7, y: 0, z: -2.6 }, 1.08, Math.PI / 2),
+  placement('campus-window', 'open-classroom', { x: -5.7, y: 0, z: 1.9 }, 1.08, Math.PI / 2),
+  placement('campus-wall', 'open-classroom', { x: 5.7, y: 0, z: 1.9 }, 1.08, Math.PI / 2),
+  placement('campus-doorway', 'open-classroom', { x: 5.7, y: 0, z: -2.6 }, 1.08, Math.PI / 2),
   ...[-5.7, 5.7].flatMap((x) => [-4.8, 4.8].map((z) => placement('campus-column', 'open-classroom', { x, y: 0, z }, 1.35)))
 ];
 
 const classroomLife = [
-  [-3.4, 1.9], [-1.2, 1.9], [1.2, 1.9], [3.4, 1.9]
+  [-4, 1.2], [-2.5, 1.2], [2.5, 1.2], [4, 1.2]
 ].map(([x, z], index) => placement(
   'record-laptop', 'open-classroom', { x, y: 0.88, z: z - 0.08 }, 0.72, Math.PI + (index % 2) * 0.08
 )).concat([
@@ -92,23 +93,30 @@ const classroomLife = [
   placement('campus-bench', 'open-classroom', { x: 4.4, y: 0.04, z: -4.3 }, 1.15, Math.PI)
 ]);
 
-const classroomLandscape = [
-  placement('campus-tree', 'open-classroom', { x: -5.25, y: 0, z: 4.25 }, 1.85, 0.2),
-  placement('campus-tree', 'open-classroom', { x: 5.15, y: 0, z: -4.35 }, 1.7, -0.45),
-  placement('campus-bush', 'open-classroom', { x: -5.15, y: 0, z: 2.4 }, 1.2, 0.4),
-  placement('campus-bush', 'open-classroom', { x: -4.95, y: 0, z: -3.5 }, 1.1, -0.2),
-  placement('campus-bush', 'open-classroom', { x: 5.05, y: 0, z: 3.2 }, 1.25, 0.8),
-  placement('campus-bush', 'open-classroom', { x: 5.15, y: 0, z: -2.2 }, 1.05, -0.7),
-  placement('campus-grass', 'open-classroom', { x: -4.45, y: 0.02, z: 4.65 }, 1.2, 0.25),
-  placement('campus-grass', 'open-classroom', { x: -5.35, y: 0.02, z: -1.1 }, 1.05, 0.9),
-  placement('campus-grass', 'open-classroom', { x: 4.55, y: 0.02, z: 4.55 }, 1.15, -0.5),
-  placement('campus-rock', 'open-classroom', { x: -4.65, y: 0.02, z: 3.65 }, 0.72, 0.15),
-  placement('campus-rock', 'open-classroom', { x: 4.8, y: 0.02, z: 3.7 }, 0.66, 0.8),
-  placement('campus-rock', 'open-classroom', { x: 5.15, y: 0.02, z: -3.35 }, 0.58, -0.35),
-  placement('memory-flower', 'open-classroom', { x: -4.15, y: 0.03, z: 4.35 }, 1.35, 0.1),
-  placement('memory-flower', 'open-classroom', { x: 4.2, y: 0.03, z: 4.25 }, 1.45, -0.1),
-  placement('memory-flower', 'open-classroom', { x: 5.2, y: 0.03, z: 2.35 }, 1.2, 0.4)
-];
+const vistaPlacement = (assetId, side, position, scale, rotationY = 0) => placement(
+  assetId, 'open-classroom', position, scale, rotationY, { vistaRole: `foreground-${side}` }
+);
+
+export const CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS = Object.freeze([
+  vistaPlacement('campus-tree', 'left', { x: -4.3, y: 0, z: 4.35 }, 1.65, 0.2),
+  vistaPlacement('campus-rock', 'left', { x: -3.75, y: 0.02, z: 5.2 }, 1.28, 0.15),
+  vistaPlacement('campus-bush', 'left', { x: -4.35, y: 0, z: 4.9 }, 1.58, 0.4),
+  vistaPlacement('campus-grass', 'left', { x: -3.72, y: 0.02, z: 4.3 }, 1.42, 0.25),
+  vistaPlacement('campus-fence', 'left', { x: -4.85, y: 0.04, z: 3.8 }, 1.22, 0.08),
+  vistaPlacement('campus-rock', 'left', { x: -4.2, y: 0.02, z: 3.65 }, 0.92, 0.8),
+  vistaPlacement('campus-bush', 'left', { x: -3.82, y: 0, z: 3.25 }, 1.08, -0.2),
+  vistaPlacement('campus-grass', 'left', { x: -4.6, y: 0.02, z: 4.1 }, 1.12, 0.9),
+  vistaPlacement('memory-flower', 'left', { x: -3.75, y: 0.03, z: 3.6 }, 1.5, 0.1),
+  vistaPlacement('campus-hero-rock', 'right', { x: 4.15, y: 0.02, z: 4.3 }, 5, -0.45),
+  vistaPlacement('campus-rock', 'right', { x: 3.75, y: 0.02, z: 5.1 }, 1.35, 0.8),
+  vistaPlacement('campus-bush', 'right', { x: 4.35, y: 0, z: 4.8 }, 1.38, 0.8),
+  vistaPlacement('campus-grass', 'right', { x: 3.72, y: 0.02, z: 4.25 }, 1.4, -0.5),
+  vistaPlacement('campus-fence', 'right', { x: 4.85, y: 0.04, z: 3.8 }, 1.22, -0.08),
+  vistaPlacement('campus-rock', 'right', { x: 4.2, y: 0.02, z: 3.7 }, 0.96, -0.35),
+  vistaPlacement('campus-bush', 'right', { x: 3.82, y: 0, z: 3.25 }, 1.12, -0.7),
+  vistaPlacement('campus-grass', 'right', { x: 4.6, y: 0.02, z: 4.1 }, 1.15, 0.6),
+  vistaPlacement('memory-flower', 'right', { x: 3.75, y: 0.03, z: 3.6 }, 1.55, -0.1)
+]);
 
 const rosterFacade = [
   ...radialPlacements('campus-window', 'roster-tower', {
@@ -169,7 +177,7 @@ export const CAMPUS_ASSET_PLACEMENTS = Object.freeze([
   ...classroomShell,
   ...classroomFurniture,
   ...classroomLife,
-  ...classroomLandscape,
+  ...CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS,
   ...rosterFacade,
   ...administrationFacade,
   ...libraryProps,
