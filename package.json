@@ -4,6 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "assets:build-hero-rock": "node scripts/build-polyhaven-hero-rock.mjs",
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "test": "node tests/run-node-tests.mjs",
@@ -24,6 +25,8 @@
     "@gltf-transform/core": "4.4.2",
     "@gltf-transform/functions": "4.4.2",
     "@playwright/test": "1.62.0",
+    "meshoptimizer": "1.2.0",
+    "sharp": "0.35.3",
     "vite": "8.1.0"
   },
   "engines": {

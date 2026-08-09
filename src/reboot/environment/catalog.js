@@ -20,6 +20,13 @@ const SOURCE_DEFINITIONS = {
     archiveSha256: 'FA7974A0D342BFE63C38664BA9F8EC1A4AAB8EA25F099BDC56870E33588C4D9D',
     license: 'CC0 1.0'
   },
+  'polyhaven-rock07': {
+    name: 'Poly Haven Rock 07',
+    pageUrl: 'https://polyhaven.com/a/rock_07',
+    downloadUrl: 'https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/rock_07/rock_07_1k.gltf',
+    archiveSha256: '2F2369D7434570E9009CC425B863D6FA30B642838289794ADD7EBE2E66F5CE44',
+    license: 'CC0 1.0'
+  },
   bricks: {
     name: 'ambientCG Bricks 001',
     pageUrl: 'https://ambientcg.com/view?id=Bricks001',
@@ -92,6 +99,7 @@ export const ENVIRONMENT_ASSETS = Object.freeze([
   defineAsset('campus-tree', 'nature', 'tree_default_dark.glb', { width: 2.5, height: 5, depth: 2.5, color: 0x3c714c }),
   defineAsset('campus-bush', 'nature', 'plant_bushLarge.glb', { width: 1.8, height: 1.2, depth: 1.8, color: 0x477a52 }),
   defineAsset('campus-rock', 'nature', 'rock_largeA.glb', { width: 1.6, height: 1.2, depth: 1.4, color: 0x68727a }),
+  defineAsset('campus-hero-rock', 'polyhaven-rock07', 'rock_07_512_simplified.glb', { width: 2.2, height: 1.4, depth: 1.8, color: 0x6a5b55 }),
   defineAsset('campus-fence', 'nature', 'fence_simple.glb', { width: 2, height: 1.2, depth: 0.2, color: 0x6f5842 }),
   defineAsset('campus-grass', 'nature', 'grass_large.glb', { width: 1.4, height: 0.9, depth: 1.4, color: 0x3d6f54 }),
   defineAsset('memory-flower', 'nature', 'flower_yellowA.glb', { width: 0.5, height: 0.7, depth: 0.5, color: 0xf0c878 }),
