@@ -26,6 +26,7 @@ concurrency:
 
 jobs:
   build:
+    timeout-minutes: 120
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -49,9 +50,22 @@ jobs:
       - name: 수직 슬라이스 증거 게이트
         if: inputs.deploy_ref == ''
         run: npm run slice:gate
-      - name: reboot 브라우저·시각·오프라인 테스트
+      - name: 캠페인 브라우저 테스트
         if: inputs.deploy_ref == ''
-        run: npm run e2e
+        timeout-minutes: 30
+        run: npm run e2e -- tests/reboot-e2e/campaign.spec.js --max-failures=1
+      - name: 시각·접근성 브라우저 테스트
+        if: inputs.deploy_ref == ''
+        timeout-minutes: 30
+        run: npm run e2e -- tests/reboot-e2e/h17-polish.spec.js --max-failures=1
+      - name: 저장·오프라인 브라우저 테스트
+        if: inputs.deploy_ref == ''
+        timeout-minutes: 30
+        run: npm run e2e -- tests/reboot-e2e/reboot.spec.js --max-failures=1
+      - name: 결말 수직 슬라이스 브라우저 테스트
+        if: inputs.deploy_ref == ''
+        timeout-minutes: 30
+        run: npm run e2e -- tests/reboot-e2e/slice.spec.js --max-failures=1
       - uses: actions/upload-pages-artifact@v3
         if: github.event_name != 'pull_request'
         with:

@@ -43,6 +43,18 @@ test('Pages CI gates unit, build, smoke, slice, browser, visual, and offline cov
   assert.match(read('tests/reboot-e2e/campaign.spec.js'), /운영 루트는 저장된 2장/);
 });
 
+test('Pages CI bounds each browser suite instead of hiding a multi-hour aggregate hang', () => {
+  const workflow = read('.github/workflows/pages.yml');
+  assert.match(workflow, /build:\s+timeout-minutes: 120/);
+  for (const spec of ['campaign', 'h17-polish', 'reboot', 'slice']) {
+    assert.match(
+      workflow,
+      new RegExp(`npm run e2e -- tests/reboot-e2e/${spec}\\.spec\\.js --max-failures=1`)
+    );
+  }
+  assert.doesNotMatch(workflow, /^\s*run:\s*npm run e2e\s*$/m);
+});
+
 test('every imported runtime character family has provenance', () => {
   const licenses = read('ASSET_LICENSES.md');
   const manifest = JSON.parse(read('public/reboot-assets.json'));
