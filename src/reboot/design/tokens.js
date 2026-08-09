@@ -46,13 +46,13 @@ export const CAMPUS_VISUAL_PROFILE = Object.freeze({
   lighting: Object.freeze({
     deletionIntensity: 5.2,
     memoryIntensity: 8.8,
-    moonIntensity: 3.15
+    moonIntensity: 2.35
   }),
   materialTint: Object.freeze({
-    brick: 0xe6b9a5,
-    concrete: 0xb5bfd3,
+    brick: 0xb98470,
+    concrete: 0x8d96a6,
     track: 0xe39a94,
-    wood: 0xffffff
+    wood: 0xd6b68d
   }),
   silhouette: Object.freeze([0x314768, 0x233654, 0x17253f])
 });

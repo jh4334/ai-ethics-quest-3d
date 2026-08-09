@@ -32,8 +32,9 @@ const ASSET_NIGHT_TREATMENTS = Object.freeze({
   'campus-grass': Object.freeze({ emissive: 0x163d32, intensity: 0.36, roughness: 0.94 }),
   'campus-hero-rock': Object.freeze({
     clearMetalRoughnessMaps: true,
-    emissive: 0x31445f,
-    intensity: 0.48,
+    color: 0x4a4e5b,
+    emissive: 0x101927,
+    intensity: 0.08,
     metalness: 0,
     normalScale: 0.42,
     roughness: 0.96
@@ -187,6 +188,7 @@ function applyAssetPbrMaterials(assetRoot, materials) {
     const objectMaterials = Array.isArray(object.material) ? object.material : [object.material];
     for (const material of objectMaterials) {
       if (!material?.isMeshStandardMaterial) continue;
+      if (Number.isFinite(treatment.color)) material.color.setHex(treatment.color);
       material.emissive.setHex(treatment.emissive);
       material.emissiveIntensity = treatment.intensity;
       if (Number.isFinite(treatment.metalness)) material.metalness = treatment.metalness;

@@ -112,6 +112,11 @@ test('Given the first campus vista, When framed from the route camera, Then lice
   assert.equal(Math.max(...CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.map(({ position }) => position.y)) >= 0.42, true);
   assert.equal(CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.every(({ assetId }) => allowedAssets.has(assetId)), true);
   assert.equal(CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.filter(({ assetId }) => assetId === 'campus-hero-rock').length, 1);
+  const heroRock = CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.find(({ assetId }) => assetId === 'campus-hero-rock');
+  assert.equal(heroRock.position.x >= 5.2, true);
+  assert.equal(heroRock.position.z <= 3.2, true);
+  assert.equal(heroRock.scale <= 1.6, true);
+  assert.equal(rightWing.some(({ assetId }) => assetId === 'campus-tree'), false);
   assert.equal(CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.every((entry) => CAMPUS_ASSET_PLACEMENTS.includes(entry)), true);
 });
 
@@ -161,8 +166,9 @@ test('Given licensed assets load successfully, When the floating campus becomes 
   assert.equal(treeBatch.material.emissiveIntensity, 0.42);
   assert.equal(treeBatch.material.roughness, 0.92);
   const heroRockBatch = scene.getObjectByName('campus-asset-campus-hero-rock-batch-0');
-  assert.equal(heroRockBatch.material.emissive.getHex(), 0x31445f);
-  assert.equal(heroRockBatch.material.emissiveIntensity, 0.48);
+  assert.equal(heroRockBatch.material.color.getHex(), 0x4a4e5b);
+  assert.equal(heroRockBatch.material.emissive.getHex(), 0x101927);
+  assert.equal(heroRockBatch.material.emissiveIntensity, 0.08);
   assert.equal(heroRockBatch.material.metalness, 0);
 
   campus.dispose();

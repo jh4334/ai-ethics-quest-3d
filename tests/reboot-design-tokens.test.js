@@ -41,6 +41,15 @@ test('P0 캠퍼스 시각 프로필은 어깨너머 카메라와 황혼 대기 �
     horizon: 0x8d5f77,
     top: 0x18345c
   });
-  assert.equal(CAMPUS_VISUAL_PROFILE.lighting.memoryIntensity >= 8, true);
-  assert.equal(CAMPUS_VISUAL_PROFILE.lighting.moonIntensity >= 3, true);
+  assert.deepEqual(CAMPUS_VISUAL_PROFILE.lighting, {
+    deletionIntensity: 5.2,
+    memoryIntensity: 8.8,
+    moonIntensity: 2.35
+  });
+  assert.deepEqual(CAMPUS_VISUAL_PROFILE.materialTint, {
+    brick: 0xb98470,
+    concrete: 0x8d96a6,
+    track: 0xe39a94,
+    wood: 0xd6b68d
+  });
 });
