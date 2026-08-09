@@ -84,10 +84,38 @@ function createMaterialInstance(definition, material, isPlaceholder, release) {
 export function createEnvironmentAssetLoader({
   baseUrl = globalThis.document?.baseURI,
   loader = new GLTFLoader(),
+  serviceWorker = globalThis.navigator?.serviceWorker,
   textureLoader = new THREE.TextureLoader()
 } = {}) {
   const activeInstances = new Set();
+  const pendingCacheUrls = new Set();
   let disposed = false;
+  let waitingForController = false;
+
+  function flushPendingCacheUrls() {
+    waitingForController = false;
+    if (disposed || !serviceWorker?.controller || pendingCacheUrls.size === 0) return;
+    try {
+      serviceWorker.controller.postMessage({
+        type: 'CACHE_LAZY_ASSETS',
+        urls: [...pendingCacheUrls]
+      });
+      pendingCacheUrls.clear();
+    } catch {
+      pendingCacheUrls.clear();
+    }
+  }
+
+  function requestLazyCache(url) {
+    if (!serviceWorker || disposed) return;
+    pendingCacheUrls.add(url);
+    if (serviceWorker.controller) {
+      flushPendingCacheUrls();
+    } else if (!waitingForController && serviceWorker.addEventListener) {
+      waitingForController = true;
+      serviceWorker.addEventListener('controllerchange', flushPendingCacheUrls, { once: true });
+    }
+  }
 
   function release(instance) {
     activeInstances.delete(instance);
@@ -106,6 +134,7 @@ export function createEnvironmentAssetLoader({
         root = gltf.scene;
         if (!root?.isObject3D) throw new TypeError('GLB 장면이 없습니다.');
         root.userData.environmentAssetStatus = 'loaded';
+        requestLazyCache(url);
       } catch (error) {
         root = createPlaceholder(asset, error);
         isPlaceholder = true;
@@ -128,10 +157,12 @@ export function createEnvironmentAssetLoader({
 
       try {
         for (const path of Object.values(definition.maps)) {
-          const texture = await textureLoader.loadAsync(resolveEnvironmentAssetUrl({ path }, baseUrl));
+          const url = resolveEnvironmentAssetUrl({ path }, baseUrl);
+          const texture = await textureLoader.loadAsync(url);
           texture.wrapS = THREE.RepeatWrapping;
           texture.wrapT = THREE.RepeatWrapping;
           loadedTextures.push(texture);
+          requestLazyCache(url);
         }
         loadedTextures[0].colorSpace = THREE.SRGBColorSpace;
         material = new THREE.MeshStandardMaterial({
@@ -166,6 +197,10 @@ export function createEnvironmentAssetLoader({
     dispose() {
       if (disposed) return;
       disposed = true;
+      if (waitingForController && serviceWorker?.removeEventListener) {
+        serviceWorker.removeEventListener('controllerchange', flushPendingCacheUrls);
+      }
+      pendingCacheUrls.clear();
       for (const instance of [...activeInstances]) instance.dispose();
     }
   });

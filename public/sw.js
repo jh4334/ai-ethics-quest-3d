@@ -76,6 +76,31 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+self.addEventListener('message', (event) => {
+  if (event.data?.type !== 'CACHE_LAZY_ASSETS' || !Array.isArray(event.data.urls)) return;
+  const scopeUrl = new URL(self.registration.scope);
+  const lazyPrefix = new URL('./assets/reboot/environment/', scopeUrl);
+  const urls = [...new Set(event.data.urls.flatMap((value) => {
+    try {
+      const url = new URL(value, scopeUrl);
+      return url.origin === scopeUrl.origin && url.pathname.startsWith(lazyPrefix.pathname)
+        ? [url.href]
+        : [];
+    } catch {
+      return [];
+    }
+  }))];
+  if (urls.length === 0) return;
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    for (const url of urls) {
+      if (await cache.match(url)) continue;
+      const response = await fetch(url);
+      if (response.ok) await cache.put(url, response);
+    }
+  })());
+});
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const requestUrl = new URL(request.url);

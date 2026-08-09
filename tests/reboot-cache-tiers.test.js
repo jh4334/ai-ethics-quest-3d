@@ -24,7 +24,14 @@ function createServiceWorkerHarness({ cacheKeys = [], cachedAssetUrls = [], defe
     async addAll() {},
     async delete(request) { deletedEntries.push(request.url); return true; },
     async keys() { return cachedAssetUrls.map((url) => ({ url })); },
-    async put(request) { cachedRequests.push(request.url); await cachePutGate; }
+    async match(request) {
+      const url = typeof request === 'string' ? request : request.url;
+      return cachedAssetUrls.includes(url) ? { ok: true } : null;
+    },
+    async put(request) {
+      cachedRequests.push(typeof request === 'string' ? request : request.url);
+      await cachePutGate;
+    }
   };
   const context = {
     URL,
@@ -154,4 +161,18 @@ test('Given a slow lazy cache write, When an environment response resolves, Then
   assert.equal(responseSettled, false);
   harness.releaseCachePut();
   assert.equal((await responsePromise).ok, true);
+});
+
+test('Given a controlled chapter reports loaded assets, When the worker receives the handoff, Then only scoped environment URLs enter the lazy cache', async () => {
+  const environmentUrl = 'https://school.example/ai-ethics/assets/reboot/environment/building/wall.glb';
+  const characterUrl = 'https://school.example/ai-ethics/assets/reboot/characters/base/player.gltf';
+  const foreignUrl = 'https://cdn.example/environment/wall.glb';
+  const harness = createServiceWorkerHarness();
+
+  await harness.dispatch('message', {
+    data: { type: 'CACHE_LAZY_ASSETS', urls: [environmentUrl, characterUrl, foreignUrl] }
+  });
+
+  assert.deepEqual(harness.networkRequests.filter((url) => url !== './reboot-assets.json'), [environmentUrl]);
+  assert.deepEqual(harness.cachedRequests, [environmentUrl]);
 });

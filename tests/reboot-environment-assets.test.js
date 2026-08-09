@@ -197,6 +197,35 @@ test('Given a loaded environment scene, When the factory is disposed, Then geome
   await assert.rejects(() => factory.load('campus-wall'), /폐기/);
 });
 
+test('Given a chapter asset loads before worker control, When control arrives, Then its URL is handed to the worker for durable lazy caching', async () => {
+  const messages = [];
+  let onControllerChange = () => {};
+  const scene = new THREE.Group();
+  const serviceWorker = {
+    controller: null,
+    addEventListener(type, listener) {
+      if (type === 'controllerchange') onControllerChange = listener;
+    },
+    removeEventListener() {}
+  };
+  const factory = createEnvironmentAssetLoader({
+    baseUrl: 'https://school.example/ai-ethics/reboot.html',
+    loader: { async loadAsync() { return { scene }; } },
+    serviceWorker
+  });
+
+  await factory.load('classroom-desk');
+  assert.deepEqual(messages, []);
+  serviceWorker.controller = { postMessage(message) { messages.push(message); } };
+  onControllerChange();
+
+  assert.deepEqual(messages, [{
+    type: 'CACHE_LAZY_ASSETS',
+    urls: ['https://school.example/ai-ethics/assets/reboot/environment/furniture/desk.glb']
+  }]);
+  factory.dispose();
+});
+
 test('Given a PBR material definition, When it loads, Then distinct color, normal, and roughness maps are configured and disposed', async () => {
   // Given: a deterministic texture loader standing in for the browser decoder.
   const loadedUrls = [];
