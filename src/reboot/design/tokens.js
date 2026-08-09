@@ -42,7 +42,7 @@ export const CAMPUS_VISUAL_PROFILE = Object.freeze({
   }),
   materialTint: Object.freeze({
     brick: 0xe6b9a5,
-    concrete: 0xffffff,
+    concrete: 0xb5bfd3,
     track: 0xe39a94,
     wood: 0xffffff
   }),

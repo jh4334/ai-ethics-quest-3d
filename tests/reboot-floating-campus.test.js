@@ -129,6 +129,20 @@ test('Given licensed assets load successfully, When the floating campus becomes 
   assert.equal(campus.getDebugState().memoryPathAccents, CAMPUS_MEMORY_PATH.length);
   assert.equal(campus.getDebugState().firstVistaAssets, CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.length);
   assert.equal(campus.getDebugState().mountainRidges >= 2, true);
+  assert.deepEqual(campus.getDebugState().architecture.firstVistaSurface, {
+    cliffRockCount: 16,
+    cliffRockHeightLevels: 4,
+    deckMaterialRole: 'brick',
+    paverCount: 18,
+    paverHeightLevels: 3
+  });
+  assert.equal(scene.getObjectByName('campus-platform-deck-open-classroom').material.name, 'masonry-brick');
+  assert.equal(scene.getObjectByName('campus-platform-open-classroom').material.name, 'structural-concrete');
+  assert.equal(scene.getObjectByName('campus-memory-route-open-classroom').material.name, 'interior-wood');
+  assert.equal(scene.getObjectByName('athletics-track').material.name, 'road-asphalt');
+  assert.equal(scene.getObjectByName('campus-first-vista-stone-pavers').isInstancedMesh, true);
+  assert.equal(scene.getObjectByName('campus-first-vista-stone-pavers').material.name, 'structural-concrete');
+  assert.equal(scene.getObjectByName('campus-first-vista-cliff-rocks').isInstancedMesh, true);
   const treeBatch = scene.getObjectByName('campus-asset-campus-tree-batch-0');
   assert.equal(treeBatch.material.emissive.getHex(), 0x14362f);
   assert.equal(treeBatch.material.emissiveIntensity, 0.42);

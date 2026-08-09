@@ -52,6 +52,37 @@ function roundedDeck(resources, width, depth, radius, id) {
   return geometry;
 }
 
+function irregularDeck(resources, width, depth, id) {
+  const halfWidth = width / 2;
+  const halfDepth = depth / 2;
+  const outline = [
+    [-0.74, -1], [0.54, -0.99], [0.96, -0.78], [1, -0.31],
+    [0.92, 0.17], [0.99, 0.62], [0.73, 0.97], [0.17, 1],
+    [-0.33, 0.95], [-0.84, 0.82], [-0.98, 0.38], [-0.94, -0.16],
+    [-1, -0.62]
+  ];
+  const shape = new THREE.Shape();
+  outline.forEach(([x, z], index) => {
+    const point = [x * halfWidth, z * halfDepth];
+    if (index === 0) shape.moveTo(...point);
+    else shape.lineTo(...point);
+  });
+  shape.closePath();
+  const geometry = resources.register(new THREE.ShapeGeometry(shape, 1), id);
+  const position = geometry.getAttribute('position');
+  const uv = geometry.getAttribute('uv');
+  for (let index = 0; index < uv.count; index += 1) {
+    uv.setXY(
+      index,
+      position.getX(index) / width + 0.5,
+      position.getY(index) / depth + 0.5
+    );
+  }
+  uv.needsUpdate = true;
+  geometry.rotateX(-Math.PI / 2);
+  return geometry;
+}
+
 function mesh(parent, geometry, material, name, position, rotation = null, scale = null) {
   const object = new THREE.Mesh(geometry, material);
   object.name = name;
@@ -62,6 +93,82 @@ function mesh(parent, geometry, material, name, position, rotation = null, scale
   object.receiveShadow = false;
   parent.add(object);
   return object;
+}
+
+function createFirstVistaSurface(group, resources, materials) {
+  const paverCount = 18;
+  const stoneColors = [0xb8c1d5, 0xd0d6e2, 0xa5b0c8, 0xc0c9da];
+  const paverScaleX = [0.78, 1.02, 0.9, 1.18];
+  const paverScaleZ = [1.08, 0.82, 0.96, 1.15, 0.88];
+  const paverGeometry = resources.register(
+    new THREE.DodecahedronGeometry(0.88, 0), 'campus-first-vista-paver-geometry'
+  );
+  const pavers = new THREE.InstancedMesh(paverGeometry, materials.concrete, paverCount);
+  pavers.name = 'campus-first-vista-stone-pavers';
+  pavers.castShadow = false;
+  pavers.receiveShadow = false;
+  const matrix = new THREE.Matrix4();
+  const quaternion = new THREE.Quaternion();
+  for (let index = 0; index < paverCount; index += 1) {
+    const row = Math.floor(index / 3);
+    const column = index % 3;
+    quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), (index % 5 - 2) * 0.09);
+    matrix.compose(
+      new THREE.Vector3(
+        (column - 1) * 1.38 + [-0.18, 0.12, 0.24, -0.08][row % 4],
+        0.19 + (index % 3) * 0.025,
+        5.15 - row * 1.86 + [-0.12, 0.08, 0.18][column]
+      ),
+      quaternion,
+      new THREE.Vector3(
+        paverScaleX[index % paverScaleX.length],
+        0.12 + (index % 3) * 0.014,
+        paverScaleZ[index % paverScaleZ.length]
+      )
+    );
+    pavers.setMatrixAt(index, matrix);
+    pavers.setColorAt(index, new THREE.Color(stoneColors[index % stoneColors.length]));
+  }
+  pavers.instanceMatrix.needsUpdate = true;
+  pavers.instanceColor.needsUpdate = true;
+  pavers.computeBoundingBox();
+  pavers.computeBoundingSphere();
+
+  const cliffPositions = [
+    [-6.25, -4.65], [-6.48, -2.35], [-6.55, 0], [-6.28, 2.35],
+    [-5.9, 4.65], [-4.78, 5.58], [-3.42, 6], [-2.28, 6.12],
+    [6.25, -4.65], [6.48, -2.35], [6.55, 0], [6.28, 2.35],
+    [5.9, 4.65], [4.78, 5.58], [3.42, 6], [2.28, 6.12]
+  ];
+  const cliffGeometry = resources.register(
+    new THREE.DodecahedronGeometry(0.82, 0), 'campus-first-vista-cliff-rock-geometry'
+  );
+  const cliffRocks = new THREE.InstancedMesh(cliffGeometry, materials.concrete, cliffPositions.length);
+  cliffRocks.name = 'campus-first-vista-cliff-rocks';
+  cliffRocks.castShadow = false;
+  cliffRocks.receiveShadow = false;
+  for (const [index, [x, z]] of cliffPositions.entries()) {
+    quaternion.setFromEuler(new THREE.Euler(index * 0.17, index * 0.39, index * 0.13));
+    matrix.compose(
+      new THREE.Vector3(x, -0.28 - (index % 4) * 0.17, z),
+      quaternion,
+      new THREE.Vector3(0.88 + (index % 3) * 0.16, 0.82 + (index % 4) * 0.14, 0.94)
+    );
+    cliffRocks.setMatrixAt(index, matrix);
+    cliffRocks.setColorAt(index, new THREE.Color(stoneColors[(index + 1) % stoneColors.length]));
+  }
+  cliffRocks.instanceMatrix.needsUpdate = true;
+  cliffRocks.instanceColor.needsUpdate = true;
+  cliffRocks.computeBoundingBox();
+  cliffRocks.computeBoundingSphere();
+  group.add(pavers, cliffRocks);
+  return Object.freeze({
+    cliffRockCount: cliffPositions.length,
+    cliffRockHeightLevels: 4,
+    deckMaterialRole: 'brick',
+    paverCount,
+    paverHeightLevels: 3
+  });
 }
 
 function createPlatforms(group, resources, materials) {
@@ -79,8 +186,10 @@ function createPlatforms(group, resources, materials) {
   for (const [id, width, depth, x, z, radius] of platforms) {
     const slab = roundedSlab(resources, width, depth, 0.34, radius, `campus-${id}-slab`);
     mesh(group, slab, materials.concrete, `campus-platform-${id}`, { x, y: -0.34, z });
-    const deck = roundedDeck(resources, width - 0.22, depth - 0.22, Math.max(0.4, radius - 0.12), `campus-${id}-deck`);
-    mesh(group, deck, materials.concrete, `campus-platform-deck-${id}`, { x, y: 0.025, z });
+    const deck = id === 'open-classroom'
+      ? irregularDeck(resources, width - 0.22, depth - 0.22, `campus-${id}-deck`)
+      : roundedDeck(resources, width - 0.22, depth - 0.22, Math.max(0.4, radius - 0.12), `campus-${id}-deck`);
+    mesh(group, deck, id === 'open-classroom' ? materials.brick : materials.concrete, `campus-platform-deck-${id}`, { x, y: 0.025, z });
     const route = roundedDeck(
       resources,
       Math.min(3.4, width * 0.24),
@@ -97,6 +206,7 @@ function createPlatforms(group, resources, materials) {
     const underside = resources.register(new THREE.ConeGeometry(Math.min(width, depth) * 0.47, 5.5, 10, 1, true), `campus-${id}-underside`);
     mesh(group, underside, materials.brick, `campus-floating-foundation-${id}`, { x, y: -3.05, z }, { x: Math.PI, y: 0, z: 0 }, { x: 1, y: 1, z: depth / width });
   }
+  return createFirstVistaSurface(group, resources, materials);
 }
 
 function createRosterTower(group, resources, materials) {
@@ -175,11 +285,13 @@ export function createCampusArchitecture() {
   const resources = createDisposableRegistry();
   const group = new THREE.Group();
   group.name = 'h17-floating-campus-architecture';
-  const materials = Object.fromEntries(CAMPUS_MATERIAL_ROLES.map((role) => [
-    role,
-    resources.register(new THREE.MeshStandardMaterial(MATERIAL_PARAMETERS[role]), `campus-${role}-material`)
-  ]));
-  createPlatforms(group, resources, materials);
+  const materials = Object.fromEntries(CAMPUS_MATERIAL_ROLES.map((role) => {
+    const name = `campus-${role}-material`;
+    const material = resources.register(new THREE.MeshStandardMaterial(MATERIAL_PARAMETERS[role]), name);
+    material.name = name;
+    return [role, material];
+  }));
+  const firstVistaSurface = createPlatforms(group, resources, materials);
   createRosterTower(group, resources, materials);
   createAthleticsField(group, resources, materials);
   createLibrary(group, resources, materials);
@@ -193,6 +305,7 @@ export function createCampusArchitecture() {
     },
     getDebugState: () => Object.freeze({
       districts: CAMPUS_DISTRICTS.map(({ id }) => id),
+      firstVistaSurface,
       landmarks: CAMPUS_LANDMARKS.map(({ id }) => id),
       materialRoles: [...CAMPUS_MATERIAL_ROLES],
       visibleObjects: group.children.map(({ name }) => name)
