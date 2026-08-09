@@ -23,12 +23,12 @@
 - 최신 P0 캡처: `p0/chapter-1-classroom-desktop-1440x900.png`, `p0/chapter-1-classroom-tablet-768x1024.png`, `p0/chapter-1-classroom-mobile-390x844.png`, `p0/chapter-1-desktop-1440x900.png`, `p0/chapter-1-mobile-390x844.png`.
 - 동일 크기 비교: `p0/reference-vs-actual-chapter1-2880x900.png`. 저장소 기준 이미지 `docs/design/concepts/gameplay-screen-v3.webp`와 최신 1장 화면을 각각 1440×900으로 배치했다.
 
-![레퍼런스와 최신 1장 동일 크기 비교](https://raw.githubusercontent.com/jh4334/ai-ethics-quest-3d/b9e8d3ece365a91999b63beba51fd0c2c980f019/.omo/evidence/h17-six-chapter/p0/reference-vs-actual-chapter1-2880x900.png)
+![레퍼런스와 최신 1장 동일 크기 비교](https://raw.githubusercontent.com/jh4334/ai-ethics-quest-3d/b6bf81bd72481db46948aa22e763f0c5d67d3eb2/.omo/evidence/h17-six-chapter/p0/reference-vs-actual-chapter1-2880x900.png)
 
-![최신 모바일 1장 화면](https://raw.githubusercontent.com/jh4334/ai-ethics-quest-3d/b9e8d3ece365a91999b63beba51fd0c2c980f019/.omo/evidence/h17-six-chapter/p0/chapter-1-classroom-mobile-390x844.png)
+![최신 모바일 1장 화면](https://raw.githubusercontent.com/jh4334/ai-ethics-quest-3d/b6bf81bd72481db46948aa22e763f0c5d67d3eb2/.omo/evidence/h17-six-chapter/p0/chapter-1-classroom-mobile-390x844.png)
 
 - 자동 동일 크기 픽셀 비교는 유사도 0/100이다. 구도·아트 디렉션이 다른 상태라는 경고값이며 레퍼런스 충실도 승인으로 해석하지 않는다.
-- 1장 첫 화면은 세 겹 이상의 부유 캠퍼스 깊이, 황혼 하늘, GLB 외벽·수목·가구, 벽돌·콘크리트·유리·금속·목재 구분, 따뜻한 기억 동선, 3인칭 어깨너머 구도로 재구성했다. 최신 `b9e8d3ece365` 패스는 첫 조망에만 42도 시야각과 전용 측면·높이·주시점 오프셋을 적용해 플레이어를 왼쪽 1/3, 기억 동선을 중앙에 두고, 카메라를 가리던 오른쪽 전경 수목을 뒤로 물렸다. 4단 벽돌 PBR 테라스·36개 절벽 암석·44개 석재 포장·34개 전경 GLB 배치·90개 원거리 캠퍼스 인스턴스는 유지했다. 레퍼런스 이미지를 2D 배경으로 사용하지 않았다.
+- 1장 첫 화면은 세 겹 이상의 부유 캠퍼스 깊이, 황혼 하늘, GLB 외벽·수목·가구, 벽돌·콘크리트·유리·금속·목재 구분, 따뜻한 기억 동선, 3인칭 어깨너머 구도로 재구성했다. 최신 `b6bf81bd7248` 패스는 달빛 강도를 3.15에서 2.35로 낮추고 벽돌·콘크리트·목재 PBR 틴트를 야간 팔레트로 조정했다. 카메라를 가리던 3.2배 전경 암석은 1.55배로 축소·후퇴시키고 오른쪽 높은 수목은 낮은 관목으로 교체해 길과 건물 실루엣을 열었다. 첫 조망의 42도 시야각, 플레이어 왼쪽 1/3 배치, 4단 벽돌 PBR 테라스·36개 절벽 암석·44개 석재 포장·34개 전경 GLB 배치·90개 원거리 캠퍼스 인스턴스는 유지했다. 레퍼런스 이미지를 2D 배경으로 사용하지 않았다.
 - 최신 P0 5/5 캡처는 Chromium SwiftShader WebGL에서 생성했으며 환경·캐릭터 ready, 콘솔 오류와 4xx/5xx 실패 응답은 각각 0건이다. 직전 하드웨어 측정은 별도 `performance-report.json`에 보존했으며 최신 시각 SHA의 하드웨어 측정으로 가장하지 않는다.
 - 전 장 최신 캡처는 `chapters/chapter-1-desktop-1440x900.png`부터 `chapter-6-mobile-390x844.png`까지 12개이며 `chapters/capture-report.json`에 측정값이 있다.
 - 12/12 Intel Iris Xe D3D11 하드웨어 WebGL, 콘솔 오류 0건, 4xx/5xx 실패 응답 0건이며 모바일 6/6에서 터치 UI가 보였다.
@@ -72,11 +72,11 @@
 - 캐릭터: 34,100,927바이트, 42파일(32.52MiB). 애니메이션은 사용 클립만 남겨 15,709,880바이트에서 2,344,880바이트(2.24MiB)로 85.1% 줄였다.
 - 전체 분류 자산: 51,066,569바이트, 98파일(48.70MiB).
 - 최신 캡처의 장별 데스크톱 전송량: 1장 47.7MiB, 2장 32.1MiB, 3장 34.9MiB, 4장 40.5MiB, 5장 36.8MiB, 6장 41.3MiB. 로컬 서버의 장별 독립 진입 측정이므로 합산 다운로드로 해석하지 않는다.
-- 최신 P0 5개 SwiftShader 화면 최대치: 199 draw calls, 157,390 triangles, 4 lights, 계측 상한 p95 100ms. 첫 조우 화면은 166 calls·141,705 triangles이며 모바일 첫 조우 화면은 168 calls·141,965 triangles다. 직전 Intel Iris Xe D3D11 하드웨어 실행은 197 calls·152,654 triangles·4 lights·직접 rAF p95 16.7ms였지만 최신 지형 패스 직전 측정이다.
+- 최신 P0 5개 SwiftShader 화면 최대치: 199 draw calls, 154,958 triangles, 4 lights, 계측 상한 p95 100ms. 첫 조우 화면은 165 calls·141,465 triangles이며 모바일 첫 조우 화면은 165 calls·141,643 triangles다. 직전 Intel Iris Xe D3D11 하드웨어 실행은 197 calls·152,654 triangles·4 lights·직접 rAF p95 16.7ms였지만 최신 지형 패스 직전 측정이다.
 
 ## 남은 위험과 솔직한 품질 평가
 
-- 최신 1장은 실제 PBR 바인딩, 플레이어를 왼쪽 1/3에 둔 첫 조망 카메라, 56개 기억 발자국, 44개 석재 경로, 4단 지형과 34개 전경 GLB로 평평한 청색 블록아웃 인상을 더 줄였다. 그러나 반복되는 로우폴리 외벽 모듈, 제한된 식생 종류, 단순한 산악 실루엣 때문에 콘셉트의 회화적 밀도와 영화적 조명에는 아직 못 미친다. 현재 평가는 완주 가능한 스타일라이즈드 로우폴리 3D 게임이며, 자동 비교도 0/100이므로 레퍼런스 충실도나 AAA 수준이라고 주장하지 않는다.
+- 최신 1장은 실제 PBR 바인딩, 플레이어를 왼쪽 1/3에 둔 첫 조망 카메라, 낮아진 냉색 달빛, 56개 기억 발자국, 44개 석재 경로, 4단 지형과 34개 전경 GLB로 평평한 청색 블록아웃과 오른쪽 전경 오클루더를 줄였다. 그러나 반복되는 로우폴리 외벽 모듈, 제한된 식생 종류, 단순한 산악 실루엣 때문에 콘셉트의 회화적 밀도와 영화적 조명에는 아직 못 미친다. 현재 평가는 완주 가능한 스타일라이즈드 로우폴리 3D 게임이며, 자동 비교도 0/100이므로 레퍼런스 충실도나 AAA 수준이라고 주장하지 않는다.
 - 48.70MiB 전체 자산과 36.06MiB 설치 프리캐시는 크게 줄었지만 학교망 첫 설치에는 여전히 부담이다. 장 환경 지연 로딩과 저화질 프로필은 작동하며, 남은 캐릭터 본체·의상 GLB의 Meshopt/Draco 검토와 KTX2 텍스처화, 실제 저사양 기기·학교망 검증이 남았다.
 - `npm audit`의 high 1건(`nanoid`)·moderate 1건(`postcss`)은 Vite 8.1.0의 개발 전용 전이 의존성으로, 최적화 전 커밋과 동일 버전이다. 런타임 번들 경로는 아니지만 도구 체인 갱신 때 해소해야 한다.
 - 사람 기준 플레이 시간, 실제 학생용 모바일 기기, 실제 학교망 다운로드는 아직 측정하지 못했다.
