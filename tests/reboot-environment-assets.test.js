@@ -197,32 +197,35 @@ test('Given a loaded environment scene, When the factory is disposed, Then geome
   await assert.rejects(() => factory.load('campus-wall'), /폐기/);
 });
 
-test('Given a chapter asset loads before worker control, When control arrives, Then its URL is handed to the worker for durable lazy caching', async () => {
-  const messages = [];
-  let onControllerChange = () => {};
+test('Given a chapter asset loads before worker control, When loading completes, Then the environment runtime cache stores it directly', async () => {
+  const cachedUrls = [];
+  const fetchedUrls = [];
+  const openedCaches = [];
   const scene = new THREE.Group();
-  const serviceWorker = {
-    controller: null,
-    addEventListener(type, listener) {
-      if (type === 'controllerchange') onControllerChange = listener;
-    },
-    removeEventListener() {}
-  };
   const factory = createEnvironmentAssetLoader({
     baseUrl: 'https://school.example/ai-ethics/reboot.html',
+    cacheStorage: {
+      async open(name) {
+        openedCaches.push(name);
+        return {
+          async match() { return null; },
+          async put(url) { cachedUrls.push(url); }
+        };
+      }
+    },
+    fetcher: async (url) => {
+      fetchedUrls.push(url);
+      return { ok: true };
+    },
     loader: { async loadAsync() { return { scene }; } },
-    serviceWorker
   });
 
   await factory.load('classroom-desk');
-  assert.deepEqual(messages, []);
-  serviceWorker.controller = { postMessage(message) { messages.push(message); } };
-  onControllerChange();
 
-  assert.deepEqual(messages, [{
-    type: 'CACHE_LAZY_ASSETS',
-    urls: ['https://school.example/ai-ethics/assets/reboot/environment/furniture/desk.glb']
-  }]);
+  const url = 'https://school.example/ai-ethics/assets/reboot/environment/furniture/desk.glb';
+  assert.deepEqual(openedCaches, ['ethics-quest-h17-environment']);
+  assert.deepEqual(fetchedUrls, [url]);
+  assert.deepEqual(cachedUrls, [url]);
   factory.dispose();
 });
 

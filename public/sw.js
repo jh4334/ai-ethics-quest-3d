@@ -3,6 +3,7 @@
 // 해시 파일명 에셋(/assets/)은 캐시 우선(불변 파일이라 재다운로드 불필요).
 const CACHE_PREFIX = 'ethics-quest-h17-';
 const CACHE = `${CACHE_PREFIX}v12`;
+const LAZY_CACHE = `${CACHE_PREFIX}environment`;
 const ENTRY_DOCUMENTS = ['./index.html', './reboot.html', './legacy.html'];
 const ASSET_MANIFEST = './reboot-assets.json';
 const LAZY_ASSET_PREFIXES = ['./assets/reboot/environment/'];
@@ -50,55 +51,32 @@ self.addEventListener('activate', (event) => {
       const keys = await caches.keys();
       await Promise.all(
         keys
-          .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE)
+          .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE && key !== LAZY_CACHE)
           .map((key) => caches.delete(key))
       );
       // 같은 캐시 안에 남은 스테일 해시 에셋 정리: 현재 진입 문서가 참조하지 않는
       // /assets/ 항목을 지운다(배포가 거듭돼도 캐시가 무한히 불지 않게 — 루프5 리뷰 반영).
       try {
-        const cache = await caches.open(CACHE);
         const live = new Set((await readEntryAssets({ includeLazy: true })).map((asset) => asset.replace(/^\.?\//, '')));
-        const entries = await cache.keys();
-        await Promise.all(
-          entries
-            .filter((request) => {
-              const path = new URL(request.url).pathname;
-              const assetIdx = path.indexOf('assets/');
-              return assetIdx >= 0 && !live.has(path.slice(assetIdx));
-            })
-            .map((request) => cache.delete(request))
-        );
+        for (const cacheName of [CACHE, LAZY_CACHE]) {
+          const cache = await caches.open(cacheName);
+          const entries = await cache.keys();
+          await Promise.all(
+            entries
+              .filter((request) => {
+                const path = new URL(request.url).pathname;
+                const assetIdx = path.indexOf('assets/');
+                return assetIdx >= 0 && !live.has(path.slice(assetIdx));
+              })
+              .map((request) => cache.delete(request))
+          );
+        }
       } catch (error) {
         // 오프라인 중 activate면 정리를 건너뛴다 — 다음 온라인 activate에서 처리된다.
       }
       await self.clients.claim();
     })()
   );
-});
-
-self.addEventListener('message', (event) => {
-  if (event.data?.type !== 'CACHE_LAZY_ASSETS' || !Array.isArray(event.data.urls)) return;
-  const scopeUrl = new URL(self.registration.scope);
-  const lazyPrefix = new URL('./assets/reboot/environment/', scopeUrl);
-  const urls = [...new Set(event.data.urls.flatMap((value) => {
-    try {
-      const url = new URL(value, scopeUrl);
-      return url.origin === scopeUrl.origin && url.pathname.startsWith(lazyPrefix.pathname)
-        ? [url.href]
-        : [];
-    } catch {
-      return [];
-    }
-  }))];
-  if (urls.length === 0) return;
-  event.waitUntil((async () => {
-    const cache = await caches.open(CACHE);
-    for (const url of urls) {
-      if (await cache.match(url)) continue;
-      const response = await fetch(url);
-      if (response.ok) await cache.put(url, response);
-    }
-  })());
 });
 
 self.addEventListener('fetch', (event) => {
@@ -137,7 +115,8 @@ self.addEventListener('fetch', (event) => {
       return fetch(request).then(async (response) => {
         if (response.ok) {
           const copy = response.clone();
-          const cache = await caches.open(CACHE);
+          const cacheName = requestUrl.pathname.includes('/assets/reboot/environment/') ? LAZY_CACHE : CACHE;
+          const cache = await caches.open(cacheName);
           await cache.put(request, copy);
         }
         return response;

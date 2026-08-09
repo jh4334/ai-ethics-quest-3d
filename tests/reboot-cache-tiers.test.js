@@ -106,7 +106,10 @@ test('Given core, character, and environment assets, When the worker installs, T
 test('Given app and unrelated cache generations, When v12 activates, Then only older H-17 caches are removed', async () => {
   // Given: two old app caches, the current cache, and another product cache.
   const harness = createServiceWorkerHarness({
-    cacheKeys: ['ethics-quest-h17-v10', 'ethics-quest-h17-v11', 'ethics-quest-h17-v12', 'school-portal-v4']
+    cacheKeys: [
+      'ethics-quest-h17-v10', 'ethics-quest-h17-v11', 'ethics-quest-h17-v12',
+      'ethics-quest-h17-environment', 'school-portal-v4'
+    ]
   });
 
   // When: the real activate listener migrates cache generations.
@@ -116,7 +119,7 @@ test('Given app and unrelated cache generations, When v12 activates, Then only o
   assert.deepEqual(harness.deletedCaches.sort(), ['ethics-quest-h17-v10', 'ethics-quest-h17-v11']);
 });
 
-test('Given a lazily cached environment file, When v12 prunes stale assets, Then the manifest-owned file survives', async () => {
+test('Given a lazily cached environment file, When current cache tiers prune stale assets, Then the manifest-owned file survives', async () => {
   // Given: one lazy environment response and one removed bundle entry in the current cache.
   const environmentUrl = 'https://school.example/ai-ethics/assets/reboot/environment/building/wall.glb';
   const staleUrl = 'https://school.example/ai-ethics/assets/removed.js';
@@ -126,10 +129,11 @@ test('Given a lazily cached environment file, When v12 prunes stale assets, Then
   await harness.dispatch('activate');
 
   // Then: only the stale entry is removed.
-  assert.deepEqual(harness.deletedEntries, [staleUrl]);
+  assert.deepEqual(new Set(harness.deletedEntries), new Set([staleUrl]));
+  assert.equal(harness.deletedEntries.includes(environmentUrl), false);
 });
 
-test('Given a chapter environment cache miss, When the scene requests it, Then the response is fetched and stored in v12', async () => {
+test('Given a chapter environment cache miss, When the scene requests it, Then the response is fetched and stored in the environment tier', async () => {
   // Given: an uncached same-origin environment request.
   const url = 'https://school.example/ai-ethics/assets/reboot/environment/building/wall.glb';
   const request = { method: 'GET', mode: 'cors', url };
@@ -142,7 +146,7 @@ test('Given a chapter environment cache miss, When the scene requests it, Then t
   assert.equal(response.ok, true);
   assert.ok(harness.networkRequests.includes(url));
   assert.deepEqual(harness.cachedRequests, [url]);
-  assert.ok(harness.openedCaches.every((key) => key === 'ethics-quest-h17-v12'));
+  assert.ok(harness.openedCaches.includes('ethics-quest-h17-environment'));
 });
 
 test('Given a slow lazy cache write, When an environment response resolves, Then the worker keeps the response lifecycle open until caching finishes', async () => {
@@ -163,16 +167,13 @@ test('Given a slow lazy cache write, When an environment response resolves, Then
   assert.equal((await responsePromise).ok, true);
 });
 
-test('Given a controlled chapter reports loaded assets, When the worker receives the handoff, Then only scoped environment URLs enter the lazy cache', async () => {
-  const environmentUrl = 'https://school.example/ai-ethics/assets/reboot/environment/building/wall.glb';
-  const characterUrl = 'https://school.example/ai-ethics/assets/reboot/characters/base/player.gltf';
-  const foreignUrl = 'https://cdn.example/environment/wall.glb';
+test('Given a non-environment app asset misses, When the worker fetches it, Then the install cache stores the response', async () => {
+  const url = 'https://school.example/ai-ethics/assets/reboot-shell.js';
   const harness = createServiceWorkerHarness();
 
-  await harness.dispatch('message', {
-    data: { type: 'CACHE_LAZY_ASSETS', urls: [environmentUrl, characterUrl, foreignUrl] }
-  });
+  const response = await harness.dispatchFetch({ method: 'GET', mode: 'cors', url });
 
-  assert.deepEqual(harness.networkRequests.filter((url) => url !== './reboot-assets.json'), [environmentUrl]);
-  assert.deepEqual(harness.cachedRequests, [environmentUrl]);
+  assert.equal(response.ok, true);
+  assert.deepEqual(harness.cachedRequests, [url]);
+  assert.ok(harness.openedCaches.includes('ethics-quest-h17-v12'));
 });
