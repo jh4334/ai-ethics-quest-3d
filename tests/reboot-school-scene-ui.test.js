@@ -41,10 +41,20 @@ test('학교 장면 카메라는 아직 만나지 않은 먼 적 대신 현재 �
 test('학교 HUD는 보스와 결말 상태를 사용자 화면과 QA 텔레메트리에 함께 반영한다', () => {
   const canvas = { dataset: {} };
   const element = () => ({ hidden: true, textContent: '' });
+  const resultWrites = { action: 0, consequence: 0, reversal: 0 };
+  const countedResult = (key) => {
+    let textContent = '';
+    return {
+      hidden: true,
+      get textContent() { return textContent; },
+      set textContent(value) { resultWrites[key] += 1; textContent = value; }
+    };
+  };
   const ui = {
     action: element(), chain: element(), enemy: element(), health: element(), objective: element(),
     radio: element(), radioSpeaker: element(), radioText: element(), result: element(),
-    resultAction: element(), resultConsequence: element(), resultReversal: element()
+    resultAction: countedResult('action'), resultConsequence: countedResult('consequence'),
+    resultReversal: countedResult('reversal')
   };
   const encounter = {
     enemies: [
@@ -52,7 +62,8 @@ test('학교 HUD는 보스와 결말 상태를 사용자 화면과 QA 텔레메�
       { definition: { id: 'stamper' }, id: 'stamper-1', phase: 'windup', phaseTick: 12 }
     ]
   };
-  createSchoolSceneHud({ canvas, ui }).sync({
+  const hud = createSchoolSceneHud({ canvas, ui });
+  const presentation = {
     bossEvents: [{ type: 'mastery-success' }],
     bossState: {
       definition: { phases: [{ id: 'reflect' }] }, hp: 180, phaseIndex: 0,
@@ -79,7 +90,9 @@ test('학교 HUD는 보스와 결말 상태를 사용자 화면과 QA 텔레메�
       effects: { backupVisible: true, extraWave: true }, memoryOutcome: 'secure', phase: 'chapter-ending'
     },
     viewportMode: 'desktop'
-  });
+  };
+  hud.sync(presentation);
+  hud.sync({ ...presentation, frame: { ...presentation.frame, tick: 43 } });
 
   assert.equal(ui.enemy.textContent, '감독관 180');
   assert.match(ui.objective.textContent, /선택.*승인 기록/);
@@ -92,4 +105,5 @@ test('학교 HUD는 보스와 결말 상태를 사용자 화면과 QA 텔레메�
   assert.equal(canvas.dataset.musicLayer, 'boss-chain');
   assert.equal(canvas.dataset.p95FrameMs, '15.8');
   assert.equal(canvas.dataset.quality, 'low');
+  assert.deepEqual(resultWrites, { action: 1, consequence: 1, reversal: 1 });
 });
