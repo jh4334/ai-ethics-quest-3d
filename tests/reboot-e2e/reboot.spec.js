@@ -129,7 +129,7 @@ test('온라인 체크포인트는 오프라인 재실행 뒤 보스 승리까�
                 scope: registration.scope,
                 waiting: registration.waiting?.state ?? null
               })),
-              storage: await navigator.storage.estimate()
+              storageEstimateSupported: typeof navigator.storage?.estimate === 'function'
             });
           } catch (error) {
             return JSON.stringify({
