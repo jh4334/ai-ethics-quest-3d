@@ -1,70 +1,72 @@
 {
-  "baseUrl": "http://127.0.0.1:4174/",
+  "baseUrl": "http://127.0.0.1:8899/",
   "chapterReports": [
     {
       "checkpoint": "chapter-2:start",
-      "drawCalls": 65,
+      "drawCalls": 78,
       "p95FrameMs": 100,
-      "triangles": 65469,
+      "triangles": 70549,
       "chapter": 1,
-      "elapsedSeconds": 130.1,
+      "elapsedSeconds": 82.8,
       "inputMode": "keyboard",
       "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-1-keyboard-result.png"
     },
     {
       "checkpoint": "chapter-3:start",
-      "drawCalls": 86,
+      "drawCalls": 88,
       "p95FrameMs": 100,
-      "triangles": 100301,
+      "triangles": 100327,
       "chapter": 2,
-      "elapsedSeconds": 95.5,
+      "elapsedSeconds": 57,
       "inputMode": "keyboard",
       "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-2-keyboard-result.png"
     },
     {
       "checkpoint": "chapter-4:start",
-      "drawCalls": 85,
+      "drawCalls": 75,
       "p95FrameMs": 100,
-      "triangles": 101771,
+      "triangles": 101125,
       "chapter": 3,
-      "elapsedSeconds": 97.9,
+      "elapsedSeconds": 53,
       "inputMode": "keyboard",
       "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-3-keyboard-result.png"
     },
     {
       "checkpoint": "chapter-5:start",
-      "drawCalls": 80,
+      "drawCalls": 79,
       "p95FrameMs": 100,
-      "triangles": 100375,
+      "triangles": 99677,
       "chapter": 4,
-      "elapsedSeconds": 118.3,
+      "elapsedSeconds": 68,
       "inputMode": "keyboard",
       "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-4-keyboard-result.png"
     },
     {
       "checkpoint": "chapter-6:broadcast-room",
-      "drawCalls": 67,
+      "drawCalls": 75,
       "p95FrameMs": 100,
-      "triangles": 119179,
+      "triangles": 123705,
       "chapter": 5,
-      "elapsedSeconds": 112.8,
+      "elapsedSeconds": 69.7,
       "inputMode": "keyboard",
       "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-5-keyboard-result.png"
     },
     {
       "checkpoint": "chapter-6:resolved-redacted",
-      "drawCalls": 81,
+      "drawCalls": 83,
       "p95FrameMs": 100,
-      "triangles": 85997,
+      "triangles": 86023,
       "chapter": 6,
-      "elapsedSeconds": 71.6,
+      "elapsedSeconds": 42.6,
       "inputMode": "keyboard",
       "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-6-keyboard-result.png"
     }
   ],
   "consoleErrors": [],
   "failedResponses": [],
+  "endingChapter": 6,
   "finalCheckpoint": "chapter-6:resolved-redacted",
   "inputMode": "keyboard",
+  "startingChapter": 1,
   "touch": null
 }

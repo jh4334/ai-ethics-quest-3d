@@ -1,31 +1,31 @@
 {
   "build": {
     "modules": 172,
-    "rebootJavaScriptBytes": 323381,
-    "rebootJavaScriptGzipBytes": 107013,
+    "rebootJavaScriptBytes": 326100,
+    "rebootJavaScriptGzipBytes": 108061,
     "threeJavaScriptBytes": 681282,
     "threeJavaScriptGzipBytes": 172207,
     "chunkWarningOverBytes": 500000
   },
   "assets": {
-    "initialShell": { "bytes": 1360558, "files": 12 },
-    "installPrecache": { "bytes": 37806365, "files": 56 },
-    "chapterEnvironment": { "bytes": 13035875, "files": 41 },
+    "initialShell": { "bytes": 1363354, "files": 12 },
+    "installPrecache": { "bytes": 37809161, "files": 56 },
+    "chapterEnvironment": { "bytes": 13254711, "files": 42 },
     "character": { "bytes": 34100927, "files": 42 },
     "animation": { "bytes": 2344880, "files": 2 },
-    "total": { "bytes": 50842240, "files": 97 }
+    "total": { "bytes": 51063872, "files": 98 }
   },
   "firstPlayableChapter": {
-    "encodedBodyBytes": 63172437,
-    "requests": 104,
-    "transferBytes": 49788663,
+    "encodedBodyBytes": 63393992,
+    "requests": 105,
+    "transferBytes": 50010518,
     "measurementSurface": "Vite preview server, empty browser context, chapter 1 desktop 1440x900"
   },
   "captures": {
     "profiles": ["desktop-1440x900", "mobile-390x844"],
     "renderer": "ANGLE Intel Iris Xe Direct3D11",
-    "maxDrawCalls": 187,
-    "maxTriangles": 148205,
+    "maxDrawCalls": 195,
+    "maxTriangles": 151441,
     "maxLights": 4,
     "desktopDirectRafP95FrameMs": 16.7,
     "mobileDirectRafP95FrameMs": 16.7,
@@ -35,8 +35,8 @@
     "failedResponses": 0
   },
   "automatedPlaythrough": {
-    "keyboardSeconds": 390.2,
-    "touchSeconds": 258.0,
+    "keyboardSeconds": 373.1,
+    "touchSeconds": 267.3,
     "humanPlaytimeMeasured": false,
     "note": "실제 이동·전투·퍼즐·저장 재접속을 수행하지만 테스트 훅과 자동 입력을 사용하므로 사람의 실제 플레이 시간으로 해석하지 않는다."
   }

@@ -4,7 +4,7 @@
     {
       "chapter": 1,
       "consoleErrors": [],
-      "directRafP95FrameMs": 16.7,
+      "directRafP95FrameMs": 16.6,
       "failedResponses": [],
       "name": "chapter-1-desktop-1440x900",
       "profile": "desktop-1440x900",
@@ -12,16 +12,16 @@
       "dataset": {
         "campaignChapter": "1",
         "characters": "ready",
-        "drawCalls": 187,
+        "drawCalls": 195,
         "environmentStatus": "ready",
         "lightCount": 4,
-        "p95FrameMs": 16.8,
-        "triangles": 148205
+        "p95FrameMs": 16.7,
+        "triangles": 151441
       },
       "resources": {
-        "encodedBodyBytes": 63172437,
-        "requests": 104,
-        "transferBytes": 49788663
+        "encodedBodyBytes": 63393992,
+        "requests": 105,
+        "transferBytes": 50010518
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": false
@@ -38,16 +38,16 @@
         "campaignChapter": "2",
         "campaignStep": "0",
         "characters": "ready",
-        "drawCalls": 167,
+        "drawCalls": 169,
         "environmentStatus": "ready",
         "lightCount": 2,
         "p95FrameMs": 16.7,
-        "triangles": 84647
+        "triangles": 84673
       },
       "resources": {
-        "encodedBodyBytes": 40093483,
+        "encodedBodyBytes": 40096202,
         "requests": 72,
-        "transferBytes": 33604562
+        "transferBytes": 33607281
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": false
@@ -55,7 +55,7 @@
     {
       "chapter": 3,
       "consoleErrors": [],
-      "directRafP95FrameMs": 16.6,
+      "directRafP95FrameMs": 8.5,
       "failedResponses": [],
       "name": "chapter-3-desktop-1440x900",
       "profile": "desktop-1440x900",
@@ -64,16 +64,16 @@
         "campaignChapter": "3",
         "campaignStep": "0",
         "characters": "ready",
-        "drawCalls": 184,
+        "drawCalls": 186,
         "environmentStatus": "ready",
         "lightCount": 2,
-        "p95FrameMs": 16.7,
-        "triangles": 88087
+        "p95FrameMs": 16.6,
+        "triangles": 88113
       },
       "resources": {
-        "encodedBodyBytes": 36590743,
+        "encodedBodyBytes": 36593462,
         "requests": 65,
-        "transferBytes": 36579190
+        "transferBytes": 36581909
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": false
@@ -81,7 +81,7 @@
     {
       "chapter": 4,
       "consoleErrors": [],
-      "directRafP95FrameMs": 16.4,
+      "directRafP95FrameMs": 16.7,
       "failedResponses": [],
       "name": "chapter-4-desktop-1440x900",
       "profile": "desktop-1440x900",
@@ -90,16 +90,16 @@
         "campaignChapter": "4",
         "campaignStep": "0",
         "characters": "ready",
-        "drawCalls": 187,
+        "drawCalls": 189,
         "environmentStatus": "ready",
         "lightCount": 2,
-        "p95FrameMs": 16.6,
-        "triangles": 131069
+        "p95FrameMs": 16.8,
+        "triangles": 131095
       },
       "resources": {
-        "encodedBodyBytes": 50005794,
+        "encodedBodyBytes": 50008513,
         "requests": 73,
-        "transferBytes": 42480142
+        "transferBytes": 42482861
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": false
@@ -107,7 +107,7 @@
     {
       "chapter": 5,
       "consoleErrors": [],
-      "directRafP95FrameMs": 8.6,
+      "directRafP95FrameMs": 16.6,
       "failedResponses": [],
       "name": "chapter-5-desktop-1440x900",
       "profile": "desktop-1440x900",
@@ -116,16 +116,16 @@
         "campaignChapter": "5",
         "campaignStep": "0",
         "characters": "ready",
-        "drawCalls": 175,
+        "drawCalls": 177,
         "environmentStatus": "ready",
         "lightCount": 2,
-        "p95FrameMs": 16.6,
-        "triangles": 120103
+        "p95FrameMs": 16.7,
+        "triangles": 120129
       },
       "resources": {
-        "encodedBodyBytes": 44382481,
+        "encodedBodyBytes": 44385200,
         "requests": 69,
-        "transferBytes": 38546110
+        "transferBytes": 38548829
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": false
@@ -133,7 +133,7 @@
     {
       "chapter": 6,
       "consoleErrors": [],
-      "directRafP95FrameMs": 16.7,
+      "directRafP95FrameMs": 8.5,
       "failedResponses": [],
       "name": "chapter-6-desktop-1440x900",
       "profile": "desktop-1440x900",
@@ -142,16 +142,16 @@
         "campaignChapter": "6",
         "campaignStep": "0",
         "characters": "ready",
-        "drawCalls": 173,
+        "drawCalls": 175,
         "environmentStatus": "ready",
         "lightCount": 2,
         "p95FrameMs": 16.8,
-        "triangles": 122939
+        "triangles": 122965
       },
       "resources": {
-        "encodedBodyBytes": 53539408,
+        "encodedBodyBytes": 53542127,
         "requests": 76,
-        "transferBytes": 43277938
+        "transferBytes": 43280657
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": false
@@ -167,16 +167,16 @@
       "dataset": {
         "campaignChapter": "1",
         "characters": "ready",
-        "drawCalls": 184,
+        "drawCalls": 186,
         "environmentStatus": "ready",
         "lightCount": 4,
-        "p95FrameMs": 16.8,
-        "triangles": 148179
+        "p95FrameMs": 16.9,
+        "triangles": 148461
       },
       "resources": {
-        "encodedBodyBytes": 63172437,
-        "requests": 104,
-        "transferBytes": 49788663
+        "encodedBodyBytes": 63393992,
+        "requests": 105,
+        "transferBytes": 50010518
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": true
@@ -193,16 +193,16 @@
         "campaignChapter": "2",
         "campaignStep": "0",
         "characters": "ready",
-        "drawCalls": 160,
+        "drawCalls": 162,
         "environmentStatus": "ready",
         "lightCount": 2,
         "p95FrameMs": 8.5,
-        "triangles": 84573
+        "triangles": 84599
       },
       "resources": {
-        "encodedBodyBytes": 40093483,
+        "encodedBodyBytes": 40096202,
         "requests": 72,
-        "transferBytes": 33604562
+        "transferBytes": 33607281
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": true
@@ -219,16 +219,16 @@
         "campaignChapter": "3",
         "campaignStep": "0",
         "characters": "ready",
-        "drawCalls": 163,
+        "drawCalls": 165,
         "environmentStatus": "ready",
         "lightCount": 2,
         "p95FrameMs": 8.5,
-        "triangles": 86657
+        "triangles": 86683
       },
       "resources": {
-        "encodedBodyBytes": 36590743,
+        "encodedBodyBytes": 36593462,
         "requests": 65,
-        "transferBytes": 36579190
+        "transferBytes": 36581909
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": true
@@ -245,16 +245,16 @@
         "campaignChapter": "4",
         "campaignStep": "0",
         "characters": "ready",
-        "drawCalls": 175,
+        "drawCalls": 177,
         "environmentStatus": "ready",
         "lightCount": 2,
-        "p95FrameMs": 16.5,
-        "triangles": 130021
+        "p95FrameMs": 8.6,
+        "triangles": 130047
       },
       "resources": {
-        "encodedBodyBytes": 50005794,
+        "encodedBodyBytes": 50008513,
         "requests": 73,
-        "transferBytes": 42480142
+        "transferBytes": 42482861
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": true
@@ -262,7 +262,7 @@
     {
       "chapter": 5,
       "consoleErrors": [],
-      "directRafP95FrameMs": 8.6,
+      "directRafP95FrameMs": 8.5,
       "failedResponses": [],
       "name": "chapter-5-mobile-390x844",
       "profile": "mobile-390x844",
@@ -271,16 +271,16 @@
         "campaignChapter": "5",
         "campaignStep": "0",
         "characters": "ready",
-        "drawCalls": 169,
+        "drawCalls": 171,
         "environmentStatus": "ready",
         "lightCount": 2,
-        "p95FrameMs": 8.6,
-        "triangles": 119905
+        "p95FrameMs": 8.7,
+        "triangles": 119931
       },
       "resources": {
-        "encodedBodyBytes": 44382481,
+        "encodedBodyBytes": 44385200,
         "requests": 69,
-        "transferBytes": 38546110
+        "transferBytes": 38548829
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": true
@@ -288,7 +288,7 @@
     {
       "chapter": 6,
       "consoleErrors": [],
-      "directRafP95FrameMs": 8.6,
+      "directRafP95FrameMs": 8.5,
       "failedResponses": [],
       "name": "chapter-6-mobile-390x844",
       "profile": "mobile-390x844",
@@ -297,16 +297,16 @@
         "campaignChapter": "6",
         "campaignStep": "0",
         "characters": "ready",
-        "drawCalls": 171,
+        "drawCalls": 175,
         "environmentStatus": "ready",
         "lightCount": 2,
         "p95FrameMs": 8.7,
-        "triangles": 122719
+        "triangles": 122905
       },
       "resources": {
-        "encodedBodyBytes": 53539408,
+        "encodedBodyBytes": 53542127,
         "requests": 76,
-        "transferBytes": 43277938
+        "transferBytes": 43280657
       },
       "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
       "touchControlsVisible": true

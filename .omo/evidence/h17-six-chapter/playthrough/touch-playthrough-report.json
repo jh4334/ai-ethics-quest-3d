@@ -1,43 +1,43 @@
 {
-  "baseUrl": "http://127.0.0.1:4174/",
+  "baseUrl": "http://127.0.0.1:8899/",
   "chapterReports": [
     {
       "checkpoint": "chapter-2:start",
-      "drawCalls": 69,
+      "drawCalls": 84,
       "p95FrameMs": 100,
-      "triangles": 66197,
+      "triangles": 73149,
       "chapter": 1,
-      "elapsedSeconds": 88.6,
+      "elapsedSeconds": 62.5,
       "inputMode": "touch",
       "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-1-touch-result.png"
     },
     {
       "checkpoint": "chapter-3:start",
-      "drawCalls": 79,
+      "drawCalls": 81,
       "p95FrameMs": 100,
-      "triangles": 99825,
+      "triangles": 99851,
       "chapter": 2,
-      "elapsedSeconds": 59.5,
+      "elapsedSeconds": 36.6,
       "inputMode": "touch",
       "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-2-touch-result.png"
     },
     {
       "checkpoint": "chapter-4:start",
-      "drawCalls": 76,
+      "drawCalls": 79,
       "p95FrameMs": 100,
-      "triangles": 101155,
+      "triangles": 101259,
       "chapter": 3,
-      "elapsedSeconds": 61.1,
+      "elapsedSeconds": 36.7,
       "inputMode": "touch",
       "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-3-touch-result.png"
     },
     {
       "checkpoint": "chapter-5:start",
-      "drawCalls": 49,
+      "drawCalls": 79,
       "p95FrameMs": 100,
-      "triangles": 62797,
+      "triangles": 99999,
       "chapter": 4,
-      "elapsedSeconds": 72.7,
+      "elapsedSeconds": 45.2,
       "inputMode": "touch",
       "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-4-touch-result.png"
     },
@@ -45,27 +45,29 @@
       "checkpoint": "chapter-6:broadcast-room",
       "drawCalls": 79,
       "p95FrameMs": 100,
-      "triangles": 133957,
+      "triangles": 133903,
       "chapter": 5,
-      "elapsedSeconds": 82.9,
+      "elapsedSeconds": 56.7,
       "inputMode": "touch",
       "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-5-touch-result.png"
     },
     {
       "checkpoint": "chapter-6:resolved-redacted",
-      "drawCalls": 58,
+      "drawCalls": 62,
       "p95FrameMs": 100,
-      "triangles": 56111,
+      "triangles": 61065,
       "chapter": 6,
-      "elapsedSeconds": 47.1,
+      "elapsedSeconds": 29.6,
       "inputMode": "touch",
       "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-6-touch-result.png"
     }
   ],
   "consoleErrors": [],
   "failedResponses": [],
+  "endingChapter": 6,
   "finalCheckpoint": "chapter-6:resolved-redacted",
   "inputMode": "touch",
+  "startingChapter": 1,
   "touch": {
     "buttons": [
       {
