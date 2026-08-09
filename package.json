@@ -11,6 +11,7 @@
     "test:legacy": "node tests/run-node-tests.mjs --suite=legacy",
     "smoke": "node tests/dom-smoke.mjs",
     "browser:install": "playwright install chromium",
+    "assets:trim-animations": "node scripts/trim-reboot-animations.mjs",
     "preview:test": "node tests/reboot-e2e/previewServer.mjs",
     "e2e": "playwright test --config=playwright.config.js",
     "e2e:legacy": "node tests/e2e-playthrough.mjs",
@@ -20,6 +21,8 @@
     "three": "0.185.0"
   },
   "devDependencies": {
+    "@gltf-transform/core": "4.4.2",
+    "@gltf-transform/functions": "4.4.2",
     "@playwright/test": "1.62.0",
     "vite": "8.1.0"
   },
