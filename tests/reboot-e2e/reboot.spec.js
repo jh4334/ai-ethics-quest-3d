@@ -87,7 +87,7 @@ test('결과·손상 저장·저품질 fixture가 사용자 의미와 예산을 
   expect(errors).toEqual([]);
 });
 
-test('온라인 체크포인트는 오프라인 재실행 뒤 보스 승리까지 이어진다', async ({ page }) => {
+test('온라인 체크포인트는 HTTP 캐시 없는 오프라인 재실행 뒤 보스 승리까지 이어진다', async ({ context, page }) => {
   const errors = captureErrors(page);
   const failedRequests = [];
   page.on('requestfailed', (request) => failedRequests.push(`${request.url()}: ${request.failure()?.errorText}`));
@@ -100,85 +100,36 @@ test('온라인 체크포인트는 오프라인 재실행 뒤 보스 승리까�
   await page.reload({ waitUntil: 'domcontentloaded' });
   await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-characters', 'ready', { timeout: 20_000 });
   await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-environment-status', 'ready', { timeout: 20_000 });
-  let lastEnvironmentCacheSnapshot = '';
-  try {
-    await expect.poll(async () => {
-      try {
-        lastEnvironmentCacheSnapshot = await page.evaluate(async () => {
-          try {
-            const cacheNames = await caches.keys();
-            const cacheEntries = await Promise.all(cacheNames.map(async (name) => {
-              const requests = await (await caches.open(name)).keys();
-              const environmentUrls = requests.map(({ url }) => url)
-                .filter((url) => url.includes('/assets/reboot/environment/'));
-              return {
-                environmentCount: environmentUrls.length,
-                environmentSamples: environmentUrls.slice(0, 3),
-                name,
-                totalEntries: requests.length
-              };
-            }));
-            const registrations = await navigator.serviceWorker.getRegistrations();
-            return JSON.stringify({
-              cacheEntries,
-              environmentStatus: document.querySelector('[data-reboot-canvas]')?.dataset.environmentStatus,
-              hasEnvironmentAsset: cacheEntries.some(({ environmentCount }) => environmentCount > 0),
-              serviceWorkers: registrations.map((registration) => ({
-                active: registration.active?.state ?? null,
-                installing: registration.installing?.state ?? null,
-                scope: registration.scope,
-                waiting: registration.waiting?.state ?? null
-              })),
-              storageEstimateSupported: typeof navigator.storage?.estimate === 'function'
-            });
-          } catch (error) {
-            return JSON.stringify({
-              browserEvaluationError: {
-                message: error instanceof Error ? error.message : String(error),
-                name: error instanceof Error ? error.name : typeof error
-              }
-            });
-          }
-        });
-      } catch (error) {
-        lastEnvironmentCacheSnapshot = JSON.stringify({
-          playwrightEvaluationError: {
-            message: error instanceof Error ? error.message : String(error),
-            name: error instanceof Error ? error.name : typeof error
-          }
-        });
-      }
-      return lastEnvironmentCacheSnapshot.includes('"hasEnvironmentAsset":true');
-    }, {
-      message: '환경 에셋 캐시가 생성되어야 한다.'
-    }).toBe(true);
-  } catch (error) {
-    throw new Error(`환경 에셋 캐시의 마지막 상태:\n${lastEnvironmentCacheSnapshot}\n${error.message}`);
-  }
-  const cachedUrls = await page.evaluate(async () => {
-    const names = await caches.keys();
-    const requests = await Promise.all(names.map(async (name) => (await caches.open(name)).keys()));
-    return requests.flat().map((request) => request.url);
-  });
-  expect(cachedUrls.some((url) => /assets\/reboot-[^/]+\.js$/.test(url))).toBe(true);
-  expect(cachedUrls.some((url) => /assets\/three-[^/]+\.js$/.test(url))).toBe(true);
   await page.evaluate(() => window.__ethicsReboot.setCheckpointForTest('chapter-1:offline-boss'));
 
   const offlineResponse = await page.evaluate(() => fetch('/__qa__/offline', { method: 'POST' }).then((response) => response.status));
   expect(offlineResponse).toBe(204);
-  failedRequests.length = 0;
-  await page.reload({ waitUntil: 'domcontentloaded' });
-  await expect.poll(() => page.evaluate(() => Boolean(window.__ethicsReboot))).toBe(true);
-  await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-characters', 'ready', { timeout: 20_000 });
-  await expect.poll(() => page.evaluate(() => window.__ethicsReboot.getSaveState().chapterProgress.checkpoint))
-    .toBe('chapter-1:offline-boss');
+  const cdpSession = await context.newCDPSession(page);
+  await cdpSession.send('Network.enable');
+  await cdpSession.send('Network.setCacheDisabled', { cacheDisabled: true });
+  await cdpSession.send('Network.clearBrowserCache');
 
-  for (const [key, hp] of [['k', 210], ['k', 180], ['e', 150], ['e', 120], ['j', 80], ['j', 40], ['j', 0]]) {
-    await pressForHp(page, key, hp);
+  try {
+    failedRequests.length = 0;
+    await context.setOffline(true);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await expect.poll(() => page.evaluate(() => Boolean(window.__ethicsReboot))).toBe(true);
+    await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-characters', 'ready', { timeout: 20_000 });
+    await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-environment-status', 'ready', { timeout: 20_000 });
+    await expect.poll(() => page.evaluate(() => window.__ethicsReboot.getSaveState().chapterProgress.checkpoint))
+      .toBe('chapter-1:offline-boss');
+
+    for (const [key, hp] of [['k', 210], ['k', 180], ['e', 150], ['e', 120], ['j', 80], ['j', 40], ['j', 0]]) {
+      await pressForHp(page, key, hp);
+    }
+    await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-boss-status', 'victory');
+    expect(errors).toEqual([]);
+    expect(failedRequests).toEqual([]);
+  } finally {
+    await context.setOffline(false);
+    await cdpSession.send('Network.setCacheDisabled', { cacheDisabled: false });
+    await cdpSession.detach();
   }
-  await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-boss-status', 'victory');
-  expect(errors).toEqual([]);
-  expect(failedRequests).toEqual([]);
   const video = page.video();
   await page.close();
   await copyFile(await video.path(), '.omo/evidence/task-11-offline.webm');
