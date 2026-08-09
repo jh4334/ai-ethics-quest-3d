@@ -83,6 +83,33 @@ function irregularDeck(resources, width, depth, id) {
   return geometry;
 }
 
+function irregularTerraceSlab(resources, width, depth, height, id, mirrored = false) {
+  const halfWidth = width / 2;
+  const halfDepth = depth / 2;
+  const direction = mirrored ? -1 : 1;
+  const outline = [
+    [-0.9, -0.96], [0.34, -1], [0.94, -0.62], [0.82, 0.12],
+    [1, 0.72], [0.42, 1], [-0.36, 0.9], [-1, 0.42], [-0.84, -0.28]
+  ];
+  const shape = new THREE.Shape();
+  outline.forEach(([x, z], index) => {
+    const point = [x * halfWidth * direction, z * halfDepth];
+    if (index === 0) shape.moveTo(...point);
+    else shape.lineTo(...point);
+  });
+  shape.closePath();
+  const geometry = resources.register(new THREE.ExtrudeGeometry(shape, {
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize: 0.08,
+    bevelThickness: 0.06,
+    curveSegments: 1,
+    depth: height
+  }), id);
+  geometry.rotateX(-Math.PI / 2);
+  return geometry;
+}
+
 function mesh(parent, geometry, material, name, position, rotation = null, scale = null) {
   const object = new THREE.Mesh(geometry, material);
   object.name = name;
@@ -96,7 +123,7 @@ function mesh(parent, geometry, material, name, position, rotation = null, scale
 }
 
 function createFirstVistaSurface(group, resources, materials) {
-  const paverCount = 32;
+  const paverCount = 44;
   const stoneColors = [0x737d94, 0x8f8790, 0x68768f, 0x927f78];
   const paverScaleX = [0.58, 0.72, 0.64, 0.8];
   const paverScaleZ = [0.72, 0.6, 0.68, 0.82, 0.63];
@@ -116,13 +143,13 @@ function createFirstVistaSurface(group, resources, materials) {
     matrix.compose(
       new THREE.Vector3(
         (column - 1.5) * 1.05 + [-0.16, 0.1, 0.2, -0.08][row % 4],
-        0.18 + (index % 3) * 0.018,
+        0.18 + (index % 4) * 0.018,
         5.35 - row * 1.55 + [-0.1, 0.06, 0.14, -0.04][column]
       ),
       quaternion,
       new THREE.Vector3(
         paverScaleX[index % paverScaleX.length],
-        0.08 + (index % 3) * 0.012,
+        0.08 + (index % 4) * 0.01,
         paverScaleZ[index % paverScaleZ.length]
       )
     );
@@ -134,12 +161,12 @@ function createFirstVistaSurface(group, resources, materials) {
   pavers.computeBoundingBox();
   pavers.computeBoundingSphere();
 
-  const cliffPositions = [
-    [-6.25, -4.65], [-6.48, -2.35], [-6.55, 0], [-6.28, 2.35],
-    [-5.9, 4.65], [-4.78, 5.58], [-3.42, 6], [-2.28, 6.12],
-    [6.25, -4.65], [6.48, -2.35], [6.55, 0], [6.28, 2.35],
-    [5.9, 4.65], [4.78, 5.58], [3.42, 6], [2.28, 6.12]
-  ];
+  const cliffPositions = Array.from({ length: 18 }, (_, index) => {
+    const t = index / 17;
+    const z = -5.45 + t * 11.25;
+    const x = 6.08 + Math.sin(t * Math.PI) * 0.62 + (index % 3) * 0.08;
+    return [[-x, z], [x, z]];
+  }).flat();
   const cliffGeometry = resources.register(
     new THREE.DodecahedronGeometry(0.82, 0), 'campus-first-vista-cliff-rock-geometry'
   );
@@ -152,7 +179,11 @@ function createFirstVistaSurface(group, resources, materials) {
     matrix.compose(
       new THREE.Vector3(x, -0.28 - (index % 4) * 0.17, z),
       quaternion,
-      new THREE.Vector3(0.88 + (index % 3) * 0.16, 0.82 + (index % 4) * 0.14, 0.94)
+      new THREE.Vector3(
+        0.88 + (index % 3) * 0.16,
+        0.82 + (index % 6) * 0.13,
+        0.9 + (index % 4) * 0.08
+      )
     );
     cliffRocks.setMatrixAt(index, matrix);
     cliffRocks.setColorAt(index, new THREE.Color(stoneColors[(index + 1) % stoneColors.length]));
@@ -161,13 +192,29 @@ function createFirstVistaSurface(group, resources, materials) {
   cliffRocks.instanceColor.needsUpdate = true;
   cliffRocks.computeBoundingBox();
   cliffRocks.computeBoundingSphere();
+
+  const terraces = [
+    [-4.72, 0.12, 3.92, 3.45, 4.8, 0.3, false],
+    [4.8, 0.18, 3.8, 3.35, 4.65, 0.36, true],
+    [-4.82, 0.24, 0.15, 3.2, 3.25, 0.42, true],
+    [4.9, 0.3, 0.08, 3.1, 3.15, 0.48, false]
+  ];
+  terraces.forEach(([x, y, z, width, depth, height, mirrored], index) => {
+    const terrace = irregularTerraceSlab(
+      resources, width, depth, height, `campus-first-vista-garden-terrace-geometry-${index}`, mirrored
+    );
+    mesh(group, terrace, materials.brick, `campus-first-vista-garden-terrace-${index}`, { x, y, z });
+  });
+
   group.add(pavers, cliffRocks);
   return Object.freeze({
     cliffRockCount: cliffPositions.length,
-    cliffRockHeightLevels: 4,
+    cliffRockHeightLevels: 6,
     deckMaterialRole: 'brick',
+    gardenTerraceCount: terraces.length,
+    gardenTerraceHeightLevels: 4,
     paverCount,
-    paverHeightLevels: 3
+    paverHeightLevels: 4
   });
 }
 

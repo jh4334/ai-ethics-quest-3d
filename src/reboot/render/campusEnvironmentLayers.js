@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 
 const LAYERS = Object.freeze([
-  Object.freeze({ distance: 19, height: 3.4, name: 'foreground', opacity: 0.82, scale: 0.84 }),
-  Object.freeze({ distance: 30, height: 5.2, name: 'midground', opacity: 0.56, scale: 1.08 }),
-  Object.freeze({ distance: 45, height: 7.2, name: 'background', opacity: 0.32, scale: 1.42 })
+  Object.freeze({ distance: 18, height: 4.6, name: 'foreground', opacity: 0.84, scale: 0.94 }),
+  Object.freeze({ distance: 29, height: 6.4, name: 'midground', opacity: 0.58, scale: 1.18 }),
+  Object.freeze({ distance: 43, height: 8.8, name: 'background', opacity: 0.34, scale: 1.56 })
 ]);
 
 function disableShadows(object) {
@@ -308,9 +308,9 @@ export function createLayeredCampusSilhouettes({
   centerZ, colors, group, prefix, resources, spanZ
 }) {
   const ridgeCount = createMountainRidges({ centerZ, colors, group, prefix, resources, spanZ });
-  const islandGeometry = resources.register(new THREE.ConeGeometry(2.8, 4.8, 7, 1, true), `${prefix}-island-geometry`);
-  const towerGeometry = resources.register(new THREE.CylinderGeometry(0.5, 0.72, 3.6, 7), `${prefix}-tower-geometry`);
-  const roofGeometry = resources.register(new THREE.ConeGeometry(0.82, 1.35, 4), `${prefix}-roof-geometry`);
+  const islandGeometry = resources.register(new THREE.ConeGeometry(4.2, 7.6, 9, 1, true), `${prefix}-island-geometry`);
+  const towerGeometry = resources.register(new THREE.CylinderGeometry(0.62, 0.88, 4.6, 8), `${prefix}-tower-geometry`);
+  const roofGeometry = resources.register(new THREE.ConeGeometry(1.05, 1.7, 5), `${prefix}-roof-geometry`);
   let instanceCount = 0;
 
   for (const [layerIndex, layer] of LAYERS.entries()) {
@@ -320,7 +320,7 @@ export function createLayeredCampusSilhouettes({
       resources, `${prefix}-${layer.name}-material`, colors[layerIndex], colors[layerIndex]
     );
     material.opacity = layer.opacity;
-    const islandCount = 4;
+    const islandCount = 6;
     const islands = new THREE.InstancedMesh(islandGeometry, material, islandCount);
     islands.name = `${prefix}-${layer.name}-floating-campus`;
     islands.castShadow = false;
@@ -339,7 +339,7 @@ export function createLayeredCampusSilhouettes({
       const side = index % 2 === 0 ? -1 : 1;
       const band = Math.floor(index / 2);
       const x = side * (layer.distance + band * 6.5);
-      const z = centerZ + (index - 1.5) * spanZ * 0.3;
+      const z = centerZ + (index - 2.5) * spanZ * 0.18;
       matrix.compose(
         new THREE.Vector3(x, -layer.height * 0.72, z), quaternion,
         new THREE.Vector3(layer.scale * (1 + band * 0.12), layer.scale, layer.scale * 1.35)

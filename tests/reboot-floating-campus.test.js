@@ -94,14 +94,14 @@ test('Given the first campus vista, When framed from the route camera, Then lice
     'campus-rock', 'campus-tree', 'memory-flower'
   ]);
 
-  assert.equal(CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.length >= 18, true);
-  assert.equal(leftWing.length >= 8, true);
-  assert.equal(rightWing.length >= 8, true);
+  assert.equal(CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.length >= 34, true);
+  assert.equal(leftWing.length >= 16, true);
+  assert.equal(rightWing.length >= 16, true);
   assert.equal(leftWing.every(({ position }) => (
-    position.x >= -3.6 && position.x <= -2.8 && position.z >= 2.2 && position.z <= 4.3
+    position.x >= -5.8 && position.x <= -2.8 && position.z >= 1.2 && position.z <= 6.2
   )), true);
   assert.equal(rightWing.every(({ position }) => (
-    position.x >= 3.2 && position.x <= 4.2 && position.z >= 2.2 && position.z <= 4.3
+    position.x >= 3.2 && position.x <= 5.8 && position.z >= 1.2 && position.z <= 6.2
   )), true);
   assert.equal(leftWing.filter(({ position }) => (
     position.x >= -3.5 && position.x <= -2.9 && position.z >= 3.2 && position.z <= 4.3
@@ -109,6 +109,7 @@ test('Given the first campus vista, When framed from the route camera, Then lice
   assert.equal(rightWing.filter(({ position }) => (
     position.x >= 3.3 && position.x <= 4.1 && position.z >= 3.2 && position.z <= 4.3
   )).length >= 4, true);
+  assert.equal(Math.max(...CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.map(({ position }) => position.y)) >= 0.42, true);
   assert.equal(CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.every(({ assetId }) => allowedAssets.has(assetId)), true);
   assert.equal(CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.filter(({ assetId }) => assetId === 'campus-hero-rock').length, 1);
   assert.equal(CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.every((entry) => CAMPUS_ASSET_PLACEMENTS.includes(entry)), true);
@@ -133,16 +134,19 @@ test('Given licensed assets load successfully, When the floating campus becomes 
   assert.equal(campus.getDebugState().memoryPathAccents, CAMPUS_MEMORY_PATH.length);
   assert.equal(campus.getDebugState().firstVistaAssets, CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.length);
   assert.equal(campus.getDebugState().mountainRidges >= 2, true);
+  assert.equal(campus.getDebugState().distantCampusInstances >= 90, true);
   assert.match(
     scene.getObjectByName('floating-campus-cinematic-night-sky').material.fragmentShader,
     /twilightCloud/
   );
   assert.deepEqual(campus.getDebugState().architecture.firstVistaSurface, {
-    cliffRockCount: 16,
-    cliffRockHeightLevels: 4,
+    cliffRockCount: 36,
+    cliffRockHeightLevels: 6,
     deckMaterialRole: 'brick',
-    paverCount: 32,
-    paverHeightLevels: 3
+    gardenTerraceCount: 4,
+    gardenTerraceHeightLevels: 4,
+    paverCount: 44,
+    paverHeightLevels: 4
   });
   assert.equal(scene.getObjectByName('campus-platform-deck-open-classroom').material.name, 'masonry-brick');
   assert.equal(scene.getObjectByName('campus-platform-open-classroom').material.name, 'structural-concrete');
@@ -151,6 +155,7 @@ test('Given licensed assets load successfully, When the floating campus becomes 
   assert.equal(scene.getObjectByName('campus-first-vista-stone-pavers').isInstancedMesh, true);
   assert.equal(scene.getObjectByName('campus-first-vista-stone-pavers').material.name, 'structural-concrete');
   assert.equal(scene.getObjectByName('campus-first-vista-cliff-rocks').isInstancedMesh, true);
+  assert.equal(scene.getObjectByName('campus-first-vista-garden-terrace-0').material.name, 'masonry-brick');
   const treeBatch = scene.getObjectByName('campus-asset-campus-tree-batch-0');
   assert.equal(treeBatch.material.emissive.getHex(), 0x14362f);
   assert.equal(treeBatch.material.emissiveIntensity, 0.42);

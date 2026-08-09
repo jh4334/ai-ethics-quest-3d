@@ -301,6 +301,7 @@ export function createFloatingCampusEnvironment({
       firstVistaAssets: CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.length,
       failedAssetIds: Object.freeze([...failedAssetIds]),
       failedMaterialIds: Object.freeze([...failedMaterialIds]),
+      distantCampusInstances: silhouettes.instanceCount,
       memoryPathAccents: memoryPath.footprintCount,
       mountainRidges: silhouettes.ridgeCount,
       requiredAssetIds: CAMPUS_REQUIRED_ASSET_IDS,
