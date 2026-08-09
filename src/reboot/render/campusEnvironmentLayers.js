@@ -39,11 +39,20 @@ export function createCinematicNightSky({
       uniform vec2 resolution;
       uniform vec3 topColor;
       void main() {
+        float screenX = clamp(gl_FragCoord.x / max(resolution.x, 1.0), 0.0, 1.0);
         float screenY = clamp(gl_FragCoord.y / max(resolution.y, 1.0), 0.0, 1.0);
         vec3 lower = mix(bottomColor, horizonColor, smoothstep(0.54, 0.8, screenY));
         vec3 color = mix(lower, topColor, smoothstep(0.8, 1.0, screenY));
         float twilightBand = 1.0 - smoothstep(0.0, 0.12, abs(screenY - 0.79));
         color += horizonColor * twilightBand * 0.12;
+        float cloudBand = 1.0 - smoothstep(0.0, 0.24, abs(screenY - 0.72));
+        float broadWave = sin(screenX * 18.0 + sin(screenX * 5.0) * 2.2 + screenY * 12.0) * 0.5 + 0.5;
+        float cloudDetail = sin(screenX * 43.0 - screenY * 9.0) * 0.5 + 0.5;
+        float twilightCloud = smoothstep(0.48, 0.74, broadWave * 0.7 + cloudDetail * 0.3) * cloudBand;
+        vec3 cloudColor = mix(horizonColor, bottomColor, 0.28) * 1.18;
+        color = mix(color, cloudColor, twilightCloud * 0.22);
+        float horizonGlow = 1.0 - smoothstep(0.0, 0.08, abs(screenY - 0.67));
+        color += vec3(0.13, 0.18, 0.28) * horizonGlow * 0.12;
         gl_FragColor = vec4(color, 1.0);
       }
     `
@@ -101,14 +110,14 @@ export function createCinematicNightSky({
 
 export function createMemoryFootprintPath({ color, group, points, prefix, resources }) {
   const footprintShape = new THREE.Shape();
-  footprintShape.absellipse(0, 0, 0.11, 0.27, 0, Math.PI * 2, false, 0);
+  footprintShape.absellipse(0, 0, 0.14, 0.34, 0, Math.PI * 2, false, 0);
   const geometry = resources.register(
     new THREE.ShapeGeometry(footprintShape, 10), `${prefix}-memory-footprint-geometry`
   );
   const material = resources.register(new THREE.MeshStandardMaterial({
-    color: new THREE.Color(color).multiplyScalar(0.46),
+    color: new THREE.Color(color).multiplyScalar(0.68),
     emissive: color,
-    emissiveIntensity: 1.05,
+    emissiveIntensity: 1.75,
     metalness: 0.18,
     roughness: 0.28
   }), `${prefix}-memory-footprint-material`);

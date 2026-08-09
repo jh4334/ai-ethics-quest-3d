@@ -28,9 +28,9 @@ export const CAMPUS_VISUAL_PROFILE = Object.freeze({
       fov: 42,
       height: 2.55,
       lateral: 2.35,
-      routeDistanceShift: 3.6,
-      routeFov: 50,
-      routeLateralShift: -0.65,
+      routeDistanceShift: 1.8,
+      routeFov: 46,
+      routeLateralShift: 0.05,
       routeLookLift: 1.5
     }),
     touch: Object.freeze({ distance: 9.8, fov: 52, height: 5.7, lateral: 2.35 })

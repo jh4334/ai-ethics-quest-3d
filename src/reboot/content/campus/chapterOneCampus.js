@@ -98,24 +98,24 @@ const vistaPlacement = (assetId, side, position, scale, rotationY = 0) => placem
 );
 
 export const CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS = Object.freeze([
-  vistaPlacement('campus-tree', 'left', { x: -4.3, y: 0, z: 4.35 }, 1.65, 0.2),
-  vistaPlacement('campus-rock', 'left', { x: -3.75, y: 0.02, z: 5.2 }, 1.28, 0.15),
-  vistaPlacement('campus-bush', 'left', { x: -4.35, y: 0, z: 4.9 }, 1.58, 0.4),
-  vistaPlacement('campus-grass', 'left', { x: -3.72, y: 0.02, z: 4.3 }, 1.42, 0.25),
-  vistaPlacement('campus-fence', 'left', { x: -4.85, y: 0.04, z: 3.8 }, 1.22, 0.08),
-  vistaPlacement('campus-rock', 'left', { x: -4.2, y: 0.02, z: 3.65 }, 0.92, 0.8),
-  vistaPlacement('campus-bush', 'left', { x: -3.82, y: 0, z: 3.25 }, 1.08, -0.2),
-  vistaPlacement('campus-grass', 'left', { x: -4.6, y: 0.02, z: 4.1 }, 1.12, 0.9),
-  vistaPlacement('memory-flower', 'left', { x: -3.75, y: 0.03, z: 3.6 }, 1.5, 0.1),
-  vistaPlacement('campus-hero-rock', 'right', { x: 4.15, y: 0.02, z: 4.3 }, 5, -0.45),
-  vistaPlacement('campus-rock', 'right', { x: 3.75, y: 0.02, z: 5.1 }, 1.35, 0.8),
-  vistaPlacement('campus-bush', 'right', { x: 4.35, y: 0, z: 4.8 }, 1.38, 0.8),
-  vistaPlacement('campus-grass', 'right', { x: 3.72, y: 0.02, z: 4.25 }, 1.4, -0.5),
-  vistaPlacement('campus-fence', 'right', { x: 4.85, y: 0.04, z: 3.8 }, 1.22, -0.08),
-  vistaPlacement('campus-rock', 'right', { x: 4.2, y: 0.02, z: 3.7 }, 0.96, -0.35),
-  vistaPlacement('campus-bush', 'right', { x: 3.82, y: 0, z: 3.25 }, 1.12, -0.7),
-  vistaPlacement('campus-grass', 'right', { x: 4.6, y: 0.02, z: 4.1 }, 1.15, 0.6),
-  vistaPlacement('memory-flower', 'right', { x: 3.75, y: 0.03, z: 3.6 }, 1.55, -0.1)
+  vistaPlacement('campus-tree', 'left', { x: -3.3, y: 0, z: 4 }, 1.45, 0.2),
+  vistaPlacement('campus-rock', 'left', { x: -3.05, y: 0.02, z: 4.25 }, 1.05, 0.15),
+  vistaPlacement('campus-bush', 'left', { x: -3.45, y: 0, z: 3.85 }, 1.35, 0.4),
+  vistaPlacement('campus-grass', 'left', { x: -2.9, y: 0.02, z: 3.6 }, 1.25, 0.25),
+  vistaPlacement('campus-fence', 'left', { x: -3.55, y: 0.04, z: 2.4 }, 1, 0.08),
+  vistaPlacement('campus-rock', 'left', { x: -3.2, y: 0.02, z: 2.35 }, 0.8, 0.8),
+  vistaPlacement('campus-bush', 'left', { x: -2.85, y: 0, z: 2.75 }, 1, -0.2),
+  vistaPlacement('campus-grass', 'left', { x: -3.45, y: 0.02, z: 3.1 }, 1, 0.9),
+  vistaPlacement('memory-flower', 'left', { x: -3.05, y: 0.03, z: 3.25 }, 1.4, 0.1),
+  vistaPlacement('campus-hero-rock', 'right', { x: 3.9, y: 0.02, z: 4 }, 3.2, -0.45),
+  vistaPlacement('campus-rock', 'right', { x: 3.4, y: 0.02, z: 4.3 }, 1.1, 0.8),
+  vistaPlacement('campus-bush', 'right', { x: 4.05, y: 0, z: 3.85 }, 1.25, 0.8),
+  vistaPlacement('campus-grass', 'right', { x: 3.3, y: 0.02, z: 3.55 }, 1.25, -0.5),
+  vistaPlacement('campus-fence', 'right', { x: 4.15, y: 0.04, z: 2.4 }, 1, -0.08),
+  vistaPlacement('campus-rock', 'right', { x: 3.85, y: 0.02, z: 2.35 }, 0.82, -0.35),
+  vistaPlacement('campus-bush', 'right', { x: 3.25, y: 0, z: 2.75 }, 1, -0.7),
+  vistaPlacement('campus-grass', 'right', { x: 4.1, y: 0.02, z: 3.1 }, 1.02, 0.6),
+  vistaPlacement('memory-flower', 'right', { x: 3.55, y: 0.03, z: 3.25 }, 1.45, -0.1)
 ]);
 
 const rosterFacade = [
@@ -203,11 +203,11 @@ export const CAMPUS_ASSET_PLACEMENTS = Object.freeze([
   placement('classroom-screen', 'glass-administration', { x: 2.8, y: 1.25, z: -77 }, 1.1, -Math.PI / 2)
 ]);
 
-export const CAMPUS_MEMORY_PATH = Object.freeze(Array.from({ length: 28 }, (_, index) => {
-  const t = index / 27;
+export const CAMPUS_MEMORY_PATH = Object.freeze(Array.from({ length: 56 }, (_, index) => {
+  const t = index / 55;
   return Object.freeze({
     rotationY: Math.sin(t * Math.PI * 3.2) * 0.18,
-    x: Math.sin(t * Math.PI * 4.4) * 0.72 + (index % 2 === 0 ? -0.16 : 0.16),
+    x: Math.sin(t * Math.PI * 4.4) * 0.42 + (index % 2 === 0 ? -0.22 : 0.22),
     y: 0.22,
     z: 3.4 - t * 93.5
   });

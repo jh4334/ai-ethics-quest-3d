@@ -96,10 +96,10 @@ function mesh(parent, geometry, material, name, position, rotation = null, scale
 }
 
 function createFirstVistaSurface(group, resources, materials) {
-  const paverCount = 18;
-  const stoneColors = [0xb8c1d5, 0xd0d6e2, 0xa5b0c8, 0xc0c9da];
-  const paverScaleX = [0.78, 1.02, 0.9, 1.18];
-  const paverScaleZ = [1.08, 0.82, 0.96, 1.15, 0.88];
+  const paverCount = 32;
+  const stoneColors = [0x737d94, 0x8f8790, 0x68768f, 0x927f78];
+  const paverScaleX = [0.58, 0.72, 0.64, 0.8];
+  const paverScaleZ = [0.72, 0.6, 0.68, 0.82, 0.63];
   const paverGeometry = resources.register(
     new THREE.DodecahedronGeometry(0.88, 0), 'campus-first-vista-paver-geometry'
   );
@@ -110,19 +110,19 @@ function createFirstVistaSurface(group, resources, materials) {
   const matrix = new THREE.Matrix4();
   const quaternion = new THREE.Quaternion();
   for (let index = 0; index < paverCount; index += 1) {
-    const row = Math.floor(index / 3);
-    const column = index % 3;
+    const row = Math.floor(index / 4);
+    const column = index % 4;
     quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), (index % 5 - 2) * 0.09);
     matrix.compose(
       new THREE.Vector3(
-        (column - 1) * 1.38 + [-0.18, 0.12, 0.24, -0.08][row % 4],
-        0.19 + (index % 3) * 0.025,
-        5.15 - row * 1.86 + [-0.12, 0.08, 0.18][column]
+        (column - 1.5) * 1.05 + [-0.16, 0.1, 0.2, -0.08][row % 4],
+        0.18 + (index % 3) * 0.018,
+        5.35 - row * 1.55 + [-0.1, 0.06, 0.14, -0.04][column]
       ),
       quaternion,
       new THREE.Vector3(
         paverScaleX[index % paverScaleX.length],
-        0.12 + (index % 3) * 0.014,
+        0.08 + (index % 3) * 0.012,
         paverScaleZ[index % paverScaleZ.length]
       )
     );

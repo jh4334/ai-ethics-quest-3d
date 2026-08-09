@@ -17,7 +17,7 @@
           "lastAction": "none",
           "lastEnemyEvent": "none",
           "playerSignal": "100",
-          "combatTick": "252",
+          "combatTick": "207",
           "cameraMode": "desktop",
           "routeSegment": "classroom-cold-open",
           "storyPhase": "corridor",
@@ -29,14 +29,14 @@
           "feedbackPoolActive": "0",
           "audioVoices": "0",
           "musicLayer": "ambient",
-          "p95FrameMs": "8.4",
-          "drawCalls": "197",
-          "triangles": "152654",
+          "p95FrameMs": "100",
+          "drawCalls": "195",
+          "triangles": "151012",
           "lightCount": "4",
           "particleCount": "0",
-          "heapBytes": "46728815",
+          "heapBytes": "27600000",
           "quality": "auto",
-          "dpr": "1.0000000121549135",
+          "dpr": "1",
           "bossVerb": "none",
           "enemyCount": "2",
           "enemyPhases": "eraser-mixed:idle,stamper-mixed:idle",
@@ -297,7 +297,7 @@
               "z": 1
             },
             "signal": 100,
-            "tick": 252
+            "tick": 207
           },
           "enemies": {
             "disposed": false,
@@ -349,7 +349,7 @@
                 "cliffRockCount": 16,
                 "cliffRockHeightLevels": 4,
                 "deckMaterialRole": "brick",
-                "paverCount": 18,
+                "paverCount": 32,
                 "paverHeightLevels": 3
               },
               "landmarks": [
@@ -437,7 +437,7 @@
             "firstVistaAssets": 18,
             "failedAssetIds": [],
             "failedMaterialIds": [],
-            "memoryPathAccents": 28,
+            "memoryPathAccents": 56,
             "mountainRidges": 2,
             "requiredAssetIds": [
               "campus-floor",
@@ -498,15 +498,15 @@
             "reducedMotion": false
           },
           "performance": {
-            "p95FrameMs": 8.4,
+            "p95FrameMs": 100,
             "render": {
-              "calls": 197,
-              "heapBytes": 47272535,
+              "calls": 195,
+              "heapBytes": 27600000,
               "lights": 4,
               "particles": 0,
-              "triangles": 152654
+              "triangles": 151012
             },
-            "samples": 398,
+            "samples": 30,
             "simulationHz": 60
           },
           "enemyEventTypes": [],
@@ -704,7 +704,7 @@
                 "zoneId": "arena"
               }
             ],
-            "tick": 252
+            "tick": 207
           },
           "eventTypes": [],
           "route": {
@@ -1529,8 +1529,8 @@
           }
         },
         "renderer": {
-          "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
-          "vendor": "Google Inc. (Intel)"
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)"
         },
         "save": {
           "schemaVersion": 5,
@@ -1584,7 +1584,7 @@
           "lastAction": "none",
           "lastEnemyEvent": "none",
           "playerSignal": "100",
-          "combatTick": "281",
+          "combatTick": "198",
           "cameraMode": "touch",
           "routeSegment": "classroom-cold-open",
           "storyPhase": "corridor",
@@ -1596,14 +1596,14 @@
           "feedbackPoolActive": "0",
           "audioVoices": "0",
           "musicLayer": "ambient",
-          "p95FrameMs": "16.7",
+          "p95FrameMs": "100",
           "drawCalls": "190",
-          "triangles": "152354",
+          "triangles": "153390",
           "lightCount": "4",
           "particleCount": "0",
-          "heapBytes": "37026181",
+          "heapBytes": "29400000",
           "quality": "auto",
-          "dpr": "1.0000000121549135",
+          "dpr": "1",
           "bossVerb": "none",
           "enemyCount": "2",
           "enemyPhases": "eraser-mixed:idle,stamper-mixed:idle",
@@ -1864,7 +1864,7 @@
               "z": 1
             },
             "signal": 100,
-            "tick": 281
+            "tick": 198
           },
           "enemies": {
             "disposed": false,
@@ -1916,7 +1916,7 @@
                 "cliffRockCount": 16,
                 "cliffRockHeightLevels": 4,
                 "deckMaterialRole": "brick",
-                "paverCount": 18,
+                "paverCount": 32,
                 "paverHeightLevels": 3
               },
               "landmarks": [
@@ -2004,7 +2004,7 @@
             "firstVistaAssets": 18,
             "failedAssetIds": [],
             "failedMaterialIds": [],
-            "memoryPathAccents": 28,
+            "memoryPathAccents": 56,
             "mountainRidges": 2,
             "requiredAssetIds": [
               "campus-floor",
@@ -2065,15 +2065,15 @@
             "reducedMotion": false
           },
           "performance": {
-            "p95FrameMs": 16.7,
+            "p95FrameMs": 100,
             "render": {
               "calls": 190,
-              "heapBytes": 37026181,
+              "heapBytes": 29400000,
               "lights": 4,
               "particles": 0,
-              "triangles": 152354
+              "triangles": 153390
             },
-            "samples": 361,
+            "samples": 42,
             "simulationHz": 60
           },
           "enemyEventTypes": [],
@@ -2271,7 +2271,7 @@
                 "zoneId": "arena"
               }
             ],
-            "tick": 281
+            "tick": 198
           },
           "eventTypes": [],
           "route": {
@@ -3096,8 +3096,8 @@
           }
         },
         "renderer": {
-          "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
-          "vendor": "Google Inc. (Intel)"
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)"
         },
         "save": {
           "schemaVersion": 5,
@@ -3151,7 +3151,7 @@
           "lastAction": "none",
           "lastEnemyEvent": "none",
           "playerSignal": "100",
-          "combatTick": "282",
+          "combatTick": "224",
           "cameraMode": "touch",
           "routeSegment": "classroom-cold-open",
           "storyPhase": "corridor",
@@ -3163,14 +3163,14 @@
           "feedbackPoolActive": "0",
           "audioVoices": "0",
           "musicLayer": "ambient",
-          "p95FrameMs": "16.7",
+          "p95FrameMs": "100",
           "drawCalls": "188",
-          "triangles": "149674",
+          "triangles": "150710",
           "lightCount": "4",
           "particleCount": "0",
-          "heapBytes": "38499014",
+          "heapBytes": "29400000",
           "quality": "auto",
-          "dpr": "1.0000000121549135",
+          "dpr": "1",
           "bossVerb": "none",
           "enemyCount": "2",
           "enemyPhases": "eraser-mixed:idle,stamper-mixed:idle",
@@ -3431,7 +3431,7 @@
               "z": 1
             },
             "signal": 100,
-            "tick": 282
+            "tick": 224
           },
           "enemies": {
             "disposed": false,
@@ -3483,7 +3483,7 @@
                 "cliffRockCount": 16,
                 "cliffRockHeightLevels": 4,
                 "deckMaterialRole": "brick",
-                "paverCount": 18,
+                "paverCount": 32,
                 "paverHeightLevels": 3
               },
               "landmarks": [
@@ -3571,7 +3571,7 @@
             "firstVistaAssets": 18,
             "failedAssetIds": [],
             "failedMaterialIds": [],
-            "memoryPathAccents": 28,
+            "memoryPathAccents": 56,
             "mountainRidges": 2,
             "requiredAssetIds": [
               "campus-floor",
@@ -3632,15 +3632,15 @@
             "reducedMotion": false
           },
           "performance": {
-            "p95FrameMs": 16.7,
+            "p95FrameMs": 100,
             "render": {
               "calls": 188,
-              "heapBytes": 39879737,
+              "heapBytes": 29400000,
               "lights": 4,
               "particles": 0,
-              "triangles": 149674
+              "triangles": 150710
             },
-            "samples": 353,
+            "samples": 40,
             "simulationHz": 60
           },
           "enemyEventTypes": [],
@@ -3838,7 +3838,7 @@
                 "zoneId": "arena"
               }
             ],
-            "tick": 282
+            "tick": 224
           },
           "eventTypes": [],
           "route": {
@@ -4663,8 +4663,8 @@
           }
         },
         "renderer": {
-          "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
-          "vendor": "Google Inc. (Intel)"
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)"
         },
         "save": {
           "schemaVersion": 5,
@@ -4716,9 +4716,9 @@
           "enemies": "ready",
           "environmentStatus": "ready",
           "lastAction": "stagger",
-          "lastEnemyEvent": "attack-contact",
+          "lastEnemyEvent": "attack-committed",
           "playerSignal": "100",
-          "combatTick": "230",
+          "combatTick": "170",
           "cameraMode": "desktop",
           "routeSegment": "first-arena",
           "storyPhase": "first-arena",
@@ -4727,1595 +4727,26 @@
           "backupVisible": "true",
           "feedbackPromptCount": "3",
           "feedbackKinds": "damage,contact,telegraph",
-          "feedbackPoolActive": "7",
+          "feedbackPoolActive": "3",
           "audioVoices": "0",
           "musicLayer": "ambient",
-          "p95FrameMs": "8.5",
-          "drawCalls": "168",
-          "triangles": "138631",
+          "p95FrameMs": "100",
+          "drawCalls": "166",
+          "triangles": "139129",
           "lightCount": "4",
-          "particleCount": "12",
-          "heapBytes": "64703328",
+          "particleCount": "10",
+          "heapBytes": "27600000",
           "quality": "auto",
-          "dpr": "1.0000000121549135",
+          "dpr": "1",
           "bossVerb": "none",
           "enemyCount": "2",
-          "enemyPhases": "eraser-mixed:recover,stamper-mixed:recover",
-          "enemyPhaseTicks": "eraser-mixed:1,stamper-mixed:12",
-          "stamperTelegraph": "recover:12",
+          "enemyPhases": "eraser-mixed:windup,stamper-mixed:recover",
+          "enemyPhaseTicks": "eraser-mixed:16,stamper-mixed:35",
+          "stamperTelegraph": "recover:35",
           "eraserArmor": "1",
           "armorBreaks": "0",
           "reflections": "0",
-          "playerHits": "7",
-          "cancelledAttacks": "0",
-          "blockerActive": "false",
-          "offscreenActive": "false",
-          "characterCount": "7",
-          "boss": "ready"
-        },
-        "chapterStrip": [
-          {
-            "chapter": "1",
-            "state": "current"
-          },
-          {
-            "chapter": "2",
-            "state": "locked"
-          },
-          {
-            "chapter": "3",
-            "state": "locked"
-          },
-          {
-            "chapter": "4",
-            "state": "locked"
-          },
-          {
-            "chapter": "5",
-            "state": "locked"
-          },
-          {
-            "chapter": "6",
-            "state": "locked"
-          }
-        ],
-        "debug": {
-          "boss": {
-            "consequencePath": "secure",
-            "cycleIndex": 0,
-            "definition": {
-              "id": "attendance-proctor",
-              "maxHp": 240,
-              "retryTicks": 90,
-              "signature": "H-17",
-              "patchChoices": [
-                "reflect-arc",
-                "trace-speed",
-                "chain-persistence"
-              ],
-              "consequenceCallouts": {
-                "purge": "지운 사본에도 승인 번호는 남아 있다.",
-                "secure": "네가 지킨 원본에 승인 번호가 선명하다."
-              },
-              "phases": [
-                {
-                  "id": "reflect-scan",
-                  "response": "reflect",
-                  "requiredSuccesses": 2,
-                  "damagePerSuccess": 30,
-                  "timing": {
-                    "activeTicks": 20,
-                    "recoveryTicks": 12,
-                    "windupTicks": 24
-                  },
-                  "patterns": [
-                    {
-                      "id": "scan-east",
-                      "beamLane": "east",
-                      "safeLane": "west"
-                    },
-                    {
-                      "id": "scan-west",
-                      "beamLane": "west",
-                      "safeLane": "east"
-                    }
-                  ]
-                },
-                {
-                  "id": "trace-roster",
-                  "response": "trace",
-                  "requiredSuccesses": 2,
-                  "damagePerSuccess": 30,
-                  "timing": {
-                    "activeTicks": 30,
-                    "recoveryTicks": 10,
-                    "windupTicks": 20
-                  },
-                  "patterns": [
-                    {
-                      "id": "roster-a",
-                      "targetIds": [
-                        "clone-a",
-                        "clone-b",
-                        "approval-h17"
-                      ],
-                      "trueTargetId": "approval-h17"
-                    },
-                    {
-                      "id": "roster-b",
-                      "targetIds": [
-                        "clone-b",
-                        "approval-h17",
-                        "clone-a"
-                      ],
-                      "trueTargetId": "approval-h17"
-                    }
-                  ]
-                },
-                {
-                  "id": "approval-core",
-                  "response": "attack",
-                  "requiredSuccesses": 3,
-                  "damagePerSuccess": 40,
-                  "timing": {
-                    "activeTicks": 20,
-                    "recoveryTicks": 12,
-                    "windupTicks": 24
-                  },
-                  "patterns": [
-                    {
-                      "id": "erase-north-east",
-                      "erasedSectors": [
-                        "north",
-                        "east"
-                      ],
-                      "safeSectors": [
-                        "south",
-                        "west"
-                      ],
-                      "collisionChanged": false
-                    },
-                    {
-                      "id": "erase-south-west",
-                      "erasedSectors": [
-                        "south",
-                        "west"
-                      ],
-                      "safeSectors": [
-                        "north",
-                        "east"
-                      ],
-                      "collisionChanged": false
-                    }
-                  ]
-                }
-              ]
-            },
-            "hp": 240,
-            "introSeen": false,
-            "knowledge": [],
-            "phaseIndex": 0,
-            "phaseSuccesses": 0,
-            "phaseTick": 0,
-            "processedActionIds": [],
-            "retries": 0,
-            "retryTicks": 0,
-            "staggerTicks": 0,
-            "status": "active",
-            "tick": 0
-          },
-          "camera": {
-            "allIncluded": true,
-            "includedIds": [
-              "player",
-              "eraser-mixed",
-              "eraser-mixed",
-              "route-cue-first-arena"
-            ],
-            "combatSafeArea": null
-          },
-          "characters": {
-            "errors": [],
-            "identities": [
-              {
-                "id": "player",
-                "accessory": "record-ring",
-                "body": "female",
-                "face": "visible",
-                "hair": "simpleParted",
-                "kind": "human",
-                "outfit": "peasant",
-                "silhouette": "parted-hair-record-ring",
-                "presentation": {
-                  "hairEmissive": 0.2,
-                  "outfitEmissive": 0.12,
-                  "skinEmissive": 0.17
-                },
-                "visualScale": 1.3
-              },
-              {
-                "id": "dot",
-                "accessory": "scan-ring",
-                "body": "machine",
-                "face": "sensor",
-                "hair": "none",
-                "kind": "audit-drone",
-                "outfit": "none",
-                "silhouette": "orb-ring-twin-fin",
-                "presentation": {
-                  "hairEmissive": 0.14,
-                  "outfitEmissive": 0.08,
-                  "skinEmissive": 0.12
-                },
-                "visualScale": 1.1
-              },
-              {
-                "id": "haru",
-                "accessory": "scarf-pauldron",
-                "body": "male",
-                "face": "visible",
-                "hair": "long",
-                "kind": "human",
-                "outfit": "ranger",
-                "silhouette": "long-hair-scarf-pauldron",
-                "presentation": {
-                  "hairEmissive": 0.19,
-                  "outfitEmissive": 0.11,
-                  "skinEmissive": 0.16
-                },
-                "visualScale": 1.3
-              },
-              {
-                "id": "yoonseo",
-                "accessory": "policy-tablet-line",
-                "body": "female",
-                "face": "visible",
-                "hair": "buns",
-                "kind": "human",
-                "outfit": "ranger",
-                "silhouette": "twin-buns-policy-tablet-line",
-                "presentation": {
-                  "hairEmissive": 0.2,
-                  "outfitEmissive": 0.12,
-                  "skinEmissive": 0.17
-                },
-                "visualScale": 1.3
-              }
-            ],
-            "loaded": 4,
-            "total": 4,
-            "visibleIds": [
-              "player",
-              "dot"
-            ]
-          },
-          "combat": {
-            "action": "stagger",
-            "chainLevel": 0,
-            "hp": 54,
-            "player": {
-              "x": 0,
-              "z": -33
-            },
-            "signal": 100,
-            "tick": 230
-          },
-          "enemies": {
-            "disposed": false,
-            "enemies": [
-              {
-                "cueId": "attack-contact",
-                "facing": 1.8157749899217592,
-                "id": "eraser-mixed",
-                "phase": "recover",
-                "position": [
-                  0.4231418248386883,
-                  0,
-                  -34.692567299354764
-                ],
-                "profileId": "eraser"
-              },
-              {
-                "cueId": null,
-                "facing": 1.1071487177940904,
-                "id": "stamper-mixed",
-                "phase": "recover",
-                "position": [
-                  -2,
-                  0,
-                  -37
-                ],
-                "profileId": "stamper"
-              }
-            ],
-            "errors": [],
-            "ids": [
-              "eraser-mixed",
-              "stamper-mixed"
-            ],
-            "loaded": 2,
-            "total": 2
-          },
-          "environment": {
-            "architecture": {
-              "districts": [
-                "open-classroom",
-                "roster-tower",
-                "athletics-field",
-                "library-archive",
-                "glass-administration",
-                "gymnasium"
-              ],
-              "firstVistaSurface": {
-                "cliffRockCount": 16,
-                "cliffRockHeightLevels": 4,
-                "deckMaterialRole": "brick",
-                "paverCount": 18,
-                "paverHeightLevels": 3
-              },
-              "landmarks": [
-                "h17-empty-seat",
-                "classroom-record-terminal",
-                "central-roster-spire",
-                "athletics-track",
-                "fingerprint-recorder",
-                "night-library",
-                "memory-archive",
-                "deletion-glass-tower",
-                "floating-gym"
-              ],
-              "materialRoles": [
-                "brick",
-                "concrete",
-                "glass",
-                "metal",
-                "wood",
-                "track",
-                "foliage"
-              ],
-              "visibleObjects": [
-                "campus-platform-open-classroom",
-                "campus-platform-deck-open-classroom",
-                "campus-memory-route-open-classroom",
-                "campus-platform-edge-open-classroom",
-                "campus-floating-foundation-open-classroom",
-                "campus-platform-roster-tower",
-                "campus-platform-deck-roster-tower",
-                "campus-memory-route-roster-tower",
-                "campus-platform-edge-roster-tower",
-                "campus-floating-foundation-roster-tower",
-                "campus-platform-athletics-field",
-                "campus-platform-deck-athletics-field",
-                "campus-memory-route-athletics-field",
-                "campus-platform-edge-athletics-field",
-                "campus-floating-foundation-athletics-field",
-                "campus-platform-library-archive",
-                "campus-platform-deck-library-archive",
-                "campus-memory-route-library-archive",
-                "campus-platform-edge-library-archive",
-                "campus-floating-foundation-library-archive",
-                "campus-platform-glass-administration",
-                "campus-platform-deck-glass-administration",
-                "campus-memory-route-glass-administration",
-                "campus-platform-edge-glass-administration",
-                "campus-floating-foundation-glass-administration",
-                "campus-platform-gymnasium",
-                "campus-platform-deck-gymnasium",
-                "campus-memory-route-gymnasium",
-                "campus-platform-edge-gymnasium",
-                "campus-floating-foundation-gymnasium",
-                "campus-first-vista-stone-pavers",
-                "campus-first-vista-cliff-rocks",
-                "central-roster-spire",
-                "roster-spire-core",
-                "roster-record-ring-1.2",
-                "roster-record-ring-4.5",
-                "roster-record-ring-7.8",
-                "athletics-field",
-                "athletics-track",
-                "athletics-lane-line-0",
-                "athletics-lane-line-1",
-                "athletics-lane-line-2",
-                "fingerprint-recorder",
-                "fingerprint-recorder-pedestal",
-                "night-library",
-                "memory-archive",
-                "library-archive-canopy",
-                "deletion-glass-tower",
-                "administration-ring-1.1",
-                "administration-ring-4.6",
-                "administration-ring-8.1",
-                "administration-ring-11.6",
-                "deletion-beam-column",
-                "floating-gym",
-                "gym-wood-court"
-              ]
-            },
-            "assetInstances": 154,
-            "contactPatches": 54,
-            "districtSigns": 6,
-            "edgeDressingInstances": 108,
-            "firstVistaAssets": 18,
-            "failedAssetIds": [],
-            "failedMaterialIds": [],
-            "memoryPathAccents": 28,
-            "mountainRidges": 2,
-            "requiredAssetIds": [
-              "campus-floor",
-              "campus-window",
-              "campus-wall",
-              "campus-doorway",
-              "campus-column",
-              "classroom-desk",
-              "classroom-chair",
-              "classroom-screen",
-              "record-laptop",
-              "campus-planter",
-              "campus-lamp",
-              "campus-bench",
-              "campus-tree",
-              "campus-rock",
-              "campus-bush",
-              "campus-grass",
-              "campus-fence",
-              "memory-flower",
-              "campus-hero-rock",
-              "campus-roof-edge",
-              "library-bookcase",
-              "library-books",
-              "campus-bridge",
-              "archive-box",
-              "campus-sofa",
-              "broadcast-antenna",
-              "campus-roof",
-              "campus-stairs"
-            ],
-            "skyObjects": 4,
-            "atmosphericLayers": 3,
-            "status": "loaded"
-          },
-          "feedback": {
-            "attached": true,
-            "audio": {
-              "activeVoices": 0,
-              "disposed": false,
-              "hidden": false,
-              "musicLayer": "ambient",
-              "muted": false,
-              "started": false,
-              "voiceLimit": 4
-            },
-            "cueCount": 3,
-            "disposed": false,
-            "pool": {
-              "active": 7,
-              "allocated": 16,
-              "capacity": 16,
-              "disposed": false,
-              "kinds": [
-                "contact",
-                "damage",
-                "telegraph",
-                "telegraph",
-                "damage",
-                "telegraph",
-                "contact"
-              ]
-            },
-            "promptCount": 3,
-            "promptKinds": [
-              "damage",
-              "contact",
-              "telegraph"
-            ],
-            "reducedMotion": false
-          },
-          "performance": {
-            "p95FrameMs": 8.5,
-            "render": {
-              "calls": 174,
-              "heapBytes": 38088089,
-              "lights": 4,
-              "particles": 14,
-              "triangles": 138941
-            },
-            "samples": 390,
-            "simulationHz": 60
-          },
-          "enemyEventTypes": [
-            "attack-contact"
-          ],
-          "encounter": {
-            "definition": {
-              "id": "eraser-stamper-mixed-arena",
-              "objective": "스탬퍼의 투사체를 반사해 이레이저의 방어를 열기",
-              "decision": "근접 압박을 피하며 원거리 명령을 공격 기회로 바꾼다.",
-              "spawns": [
-                {
-                  "definitionId": "eraser",
-                  "facing": 0,
-                  "id": "eraser-mixed",
-                  "position": {
-                    "x": 1.5,
-                    "z": -39
-                  },
-                  "zoneId": "arena"
-                },
-                {
-                  "definitionId": "stamper",
-                  "facing": 0,
-                  "id": "stamper-mixed",
-                  "position": {
-                    "x": -2,
-                    "z": -37
-                  },
-                  "zoneId": "arena"
-                }
-              ]
-            },
-            "deviceClass": "desktop",
-            "enemies": [
-              {
-                "armor": 1,
-                "cooldownTicks": 0,
-                "definition": {
-                  "id": "eraser",
-                  "role": "melee-pressure",
-                  "stats": {
-                    "maxHp": 72,
-                    "speed": 0.12,
-                    "turnRadians": 0.32
-                  },
-                  "perception": {
-                    "acquireRange": 8,
-                    "lossRange": 10
-                  },
-                  "collider": {
-                    "height": 1.8,
-                    "radius": 0.62
-                  },
-                  "armor": {
-                    "hits": 1,
-                    "breaksOnKinds": [
-                      "reflected-projectile"
-                    ]
-                  },
-                  "reward": {
-                    "id": "eraser-armor-open",
-                    "onceOn": "armor-broken"
-                  },
-                  "moves": [
-                    {
-                      "id": "eraser-sweep",
-                      "kind": "melee",
-                      "socket": "right-hand",
-                      "timing": {
-                        "activeTicks": 1,
-                        "recoveryTicks": 30,
-                        "windupTicks": 20
-                      },
-                      "range": {
-                        "max": 1.8,
-                        "min": 0,
-                        "preferred": 1.2
-                      },
-                      "facingDot": 0.85,
-                      "requiredFacingTicks": 2,
-                      "damage": 7,
-                      "feedback": {
-                        "windup": "eraser-sweep-windup",
-                        "contact": "eraser-sweep-contact",
-                        "recover": "eraser-sweep-recover"
-                      }
-                    }
-                  ]
-                },
-                "faceTicks": 2,
-                "facing": 1.8157749899217592,
-                "hp": 72,
-                "id": "eraser-mixed",
-                "lastIntent": "commit-attack",
-                "phase": "recover",
-                "phaseDuration": 0,
-                "phaseTick": 1,
-                "position": {
-                  "x": 0.4231418248386883,
-                  "z": -34.692567299354764
-                },
-                "processedContacts": [],
-                "rewardGranted": false,
-                "spawn": {
-                  "facing": 0,
-                  "position": {
-                    "x": 1.5,
-                    "z": -39
-                  },
-                  "zoneId": "arena"
-                },
-                "targetId": "player",
-                "zoneId": "arena"
-              },
-              {
-                "armor": 0,
-                "cooldownTicks": 0,
-                "definition": {
-                  "id": "stamper",
-                  "role": "reflected-ranged-command",
-                  "stats": {
-                    "maxHp": 48,
-                    "speed": 0.08,
-                    "turnRadians": 0.25
-                  },
-                  "perception": {
-                    "acquireRange": 11,
-                    "lossRange": 13
-                  },
-                  "collider": {
-                    "height": 1.7,
-                    "radius": 0.55
-                  },
-                  "armor": {
-                    "hits": 0,
-                    "breaksOnKinds": []
-                  },
-                  "reward": {
-                    "id": "stamper-command-ended",
-                    "onceOn": "defeat"
-                  },
-                  "moves": [
-                    {
-                      "id": "stamper-shot",
-                      "kind": "projectile",
-                      "socket": "stamp-muzzle",
-                      "timing": {
-                        "activeTicks": 1,
-                        "recoveryTicks": 36,
-                        "windupTicks": 42
-                      },
-                      "range": {
-                        "max": 9,
-                        "min": 3,
-                        "preferred": 6
-                      },
-                      "facingDot": 0.9,
-                      "requiredFacingTicks": 3,
-                      "damage": 6,
-                      "projectile": {
-                        "radius": 0.28,
-                        "reflectable": true,
-                        "speed": 0.34
-                      },
-                      "feedback": {
-                        "windup": "stamper-shot-windup",
-                        "contact": "stamper-shot-launch",
-                        "recover": "stamper-shot-recover"
-                      }
-                    }
-                  ]
-                },
-                "faceTicks": 3,
-                "facing": 1.1071487177940904,
-                "hp": 48,
-                "id": "stamper-mixed",
-                "lastIntent": "commit-attack",
-                "phase": "recover",
-                "phaseDuration": 0,
-                "phaseTick": 12,
-                "position": {
-                  "x": -2,
-                  "z": -37
-                },
-                "processedContacts": [],
-                "rewardGranted": false,
-                "spawn": {
-                  "facing": 0,
-                  "position": {
-                    "x": -2,
-                    "z": -37
-                  },
-                  "zoneId": "arena"
-                },
-                "targetId": "player",
-                "zoneId": "arena"
-              }
-            ],
-            "tick": 230
-          },
-          "eventTypes": [
-            "player-hit",
-            "action-started"
-          ],
-          "route": {
-            "budget": {
-              "drawCalls": 11,
-              "dressing": {
-                "drawCalls": 5,
-                "instances": 97,
-                "resources": 6,
-                "triangles": 1164
-              },
-              "resources": 13,
-              "triangles": 1764
-            },
-            "checkpointIds": [
-              "checkpoint-classroom",
-              "checkpoint-corridor",
-              "checkpoint-first-arena",
-              "checkpoint-memory",
-              "checkpoint-pursuit",
-              "checkpoint-gym"
-            ],
-            "checkpoints": [
-              {
-                "id": "checkpoint-classroom",
-                "position": {
-                  "x": 0,
-                  "y": 0,
-                  "z": 1
-                },
-                "segmentId": "classroom-cold-open"
-              },
-              {
-                "id": "checkpoint-corridor",
-                "position": {
-                  "x": 0,
-                  "y": 0,
-                  "z": -9
-                },
-                "segmentId": "collapsing-corridor"
-              },
-              {
-                "id": "checkpoint-first-arena",
-                "position": {
-                  "x": 0,
-                  "y": 0,
-                  "z": -33
-                },
-                "segmentId": "first-arena"
-              },
-              {
-                "id": "checkpoint-memory",
-                "position": {
-                  "x": 0,
-                  "y": 0,
-                  "z": -51
-                },
-                "segmentId": "memory-backup-decision"
-              },
-              {
-                "id": "checkpoint-pursuit",
-                "position": {
-                  "x": 0,
-                  "y": 0,
-                  "z": -64
-                },
-                "segmentId": "scanner-pursuit"
-              },
-              {
-                "id": "checkpoint-gym",
-                "position": {
-                  "x": 0,
-                  "y": 0,
-                  "z": -95
-                },
-                "segmentId": "gym-boss-arena"
-              }
-            ],
-            "colliderIds": [
-              "collision-classroom",
-              "collision-corridor",
-              "collision-first-arena",
-              "collision-memory",
-              "collision-pursuit",
-              "collision-gym"
-            ],
-            "colliders": [
-              {
-                "bounds": {
-                  "maxX": 6,
-                  "maxZ": 6,
-                  "minX": -6,
-                  "minZ": -6
-                },
-                "id": "collision-classroom",
-                "segmentId": "classroom-cold-open",
-                "surface": "flat"
-              },
-              {
-                "bounds": {
-                  "maxX": 6,
-                  "maxZ": -6,
-                  "minX": -6,
-                  "minZ": -30
-                },
-                "id": "collision-corridor",
-                "segmentId": "collapsing-corridor",
-                "surface": "flat"
-              },
-              {
-                "bounds": {
-                  "maxX": 9,
-                  "maxZ": -30,
-                  "minX": -9,
-                  "minZ": -48
-                },
-                "id": "collision-first-arena",
-                "segmentId": "first-arena",
-                "surface": "flat"
-              },
-              {
-                "bounds": {
-                  "maxX": 6,
-                  "maxZ": -48,
-                  "minX": -6,
-                  "minZ": -61
-                },
-                "id": "collision-memory",
-                "segmentId": "memory-backup-decision",
-                "surface": "flat"
-              },
-              {
-                "bounds": {
-                  "maxX": 4,
-                  "maxZ": -61,
-                  "minX": -4,
-                  "minZ": -91
-                },
-                "id": "collision-pursuit",
-                "segmentId": "scanner-pursuit",
-                "surface": "flat"
-              },
-              {
-                "bounds": {
-                  "maxX": 13,
-                  "maxZ": -91,
-                  "minX": -13,
-                  "minZ": -119
-                },
-                "id": "collision-gym",
-                "segmentId": "gym-boss-arena",
-                "surface": "flat"
-              }
-            ],
-            "disposed": false,
-            "encounterIds": [
-              "encounter-corridor-collapse",
-              "encounter-first-trace",
-              "encounter-memory-choice",
-              "encounter-scanner-chase",
-              "encounter-gym-boss"
-            ],
-            "localLightIds": [
-              "light-classroom",
-              "light-corridor",
-              "light-arena",
-              "light-memory",
-              "light-pursuit",
-              "light-gym"
-            ],
-            "localLights": [
-              {
-                "color": "#f3b36c",
-                "id": "light-classroom",
-                "position": {
-                  "x": 0,
-                  "y": 2.8,
-                  "z": 0
-                },
-                "segmentId": "classroom-cold-open",
-                "visualId": "visual-classroom-lamps"
-              },
-              {
-                "color": "#d74732",
-                "id": "light-corridor",
-                "position": {
-                  "x": 0,
-                  "y": 2.4,
-                  "z": -18
-                },
-                "segmentId": "collapsing-corridor",
-                "visualId": "visual-corridor-emergency"
-              },
-              {
-                "color": "#6aa9ff",
-                "id": "light-arena",
-                "position": {
-                  "x": 0,
-                  "y": 4,
-                  "z": -39
-                },
-                "segmentId": "first-arena",
-                "visualId": "visual-arena-projector"
-              },
-              {
-                "color": "#f3b36c",
-                "id": "light-memory",
-                "position": {
-                  "x": 0,
-                  "y": 2.2,
-                  "z": -54
-                },
-                "segmentId": "memory-backup-decision",
-                "visualId": "visual-memory-terminal"
-              },
-              {
-                "color": "#d74732",
-                "id": "light-pursuit",
-                "position": {
-                  "x": 0,
-                  "y": 2.5,
-                  "z": -76
-                },
-                "segmentId": "scanner-pursuit",
-                "visualId": "visual-scanner-beacons"
-              },
-              {
-                "color": "#6aa9ff",
-                "id": "light-gym",
-                "position": {
-                  "x": 0,
-                  "y": 5,
-                  "z": -104
-                },
-                "segmentId": "gym-boss-arena",
-                "visualId": "visual-gym-scoreboard"
-              }
-            ],
-            "landmarksBySegment": {
-              "classroom-cold-open": [
-                {
-                  "id": "classroom-teacher-terminal",
-                  "kind": "classroom",
-                  "partCount": 3,
-                  "role": "teacher-terminal",
-                  "segmentId": "classroom-cold-open"
-                },
-                {
-                  "id": "classroom-student-desks",
-                  "kind": "classroom",
-                  "partCount": 6,
-                  "role": "student-desk-rows",
-                  "segmentId": "classroom-cold-open"
-                },
-                {
-                  "id": "classroom-board",
-                  "kind": "classroom",
-                  "partCount": 1,
-                  "role": "board-silhouette",
-                  "segmentId": "classroom-cold-open"
-                },
-                {
-                  "id": "classroom-clock",
-                  "kind": "classroom",
-                  "partCount": 2,
-                  "role": "clock-silhouette",
-                  "segmentId": "classroom-cold-open"
-                }
-              ],
-              "collapsing-corridor": [
-                {
-                  "id": "corridor-locker-banks",
-                  "kind": "corridor",
-                  "partCount": 12,
-                  "role": "locker-banks",
-                  "segmentId": "collapsing-corridor"
-                },
-                {
-                  "id": "corridor-room-number",
-                  "kind": "corridor",
-                  "partCount": 4,
-                  "role": "room-number-cues",
-                  "segmentId": "collapsing-corridor"
-                },
-                {
-                  "id": "corridor-emergency-sign",
-                  "kind": "corridor",
-                  "partCount": 2,
-                  "role": "emergency-sign",
-                  "segmentId": "collapsing-corridor"
-                }
-              ],
-              "first-arena": [
-                {
-                  "id": "arena-projector-source",
-                  "kind": "arena",
-                  "partCount": 3,
-                  "role": "projector-source",
-                  "segmentId": "first-arena"
-                },
-                {
-                  "id": "arena-source-grid",
-                  "kind": "arena",
-                  "partCount": 7,
-                  "role": "source-grid",
-                  "segmentId": "first-arena"
-                },
-                {
-                  "id": "arena-damaged-desk-perimeter",
-                  "kind": "arena",
-                  "partCount": 6,
-                  "role": "damaged-desk-perimeter",
-                  "segmentId": "first-arena"
-                }
-              ],
-              "memory-backup-decision": [
-                {
-                  "id": "memory-backup-terminal",
-                  "kind": "decision",
-                  "partCount": 3,
-                  "role": "backup-terminal",
-                  "segmentId": "memory-backup-decision"
-                },
-                {
-                  "id": "memory-server-rack",
-                  "kind": "decision",
-                  "partCount": 6,
-                  "role": "server-rack",
-                  "segmentId": "memory-backup-decision"
-                },
-                {
-                  "id": "memory-evidence-frame",
-                  "kind": "decision",
-                  "partCount": 4,
-                  "role": "evidence-frame",
-                  "segmentId": "memory-backup-decision"
-                }
-              ],
-              "scanner-pursuit": [
-                {
-                  "id": "pursuit-scanner-beacons",
-                  "kind": "pursuit",
-                  "partCount": 8,
-                  "role": "scanner-beacons",
-                  "segmentId": "scanner-pursuit"
-                },
-                {
-                  "id": "pursuit-gate-rhythm",
-                  "kind": "pursuit",
-                  "partCount": 12,
-                  "role": "scanner-gate-rhythm",
-                  "segmentId": "scanner-pursuit"
-                }
-              ],
-              "gym-boss-arena": [
-                {
-                  "id": "gym-court-markings",
-                  "kind": "boss-arena",
-                  "partCount": 7,
-                  "role": "court-markings",
-                  "segmentId": "gym-boss-arena"
-                },
-                {
-                  "id": "gym-scoreboard",
-                  "kind": "boss-arena",
-                  "partCount": 3,
-                  "role": "scoreboard",
-                  "segmentId": "gym-boss-arena"
-                },
-                {
-                  "id": "gym-broadcast-door",
-                  "kind": "boss-arena",
-                  "partCount": 3,
-                  "role": "broadcast-door",
-                  "segmentId": "gym-boss-arena"
-                },
-                {
-                  "id": "gym-approval-server",
-                  "kind": "boss-arena",
-                  "partCount": 5,
-                  "role": "approval-server-focus",
-                  "segmentId": "gym-boss-arena"
-                }
-              ]
-            },
-            "noticeFade": {
-              "panelCount": 12,
-              "panels": [
-                {
-                  "id": "notice-collapsing-corridor-left-0",
-                  "whiten": 0,
-                  "z": -8
-                },
-                {
-                  "id": "notice-collapsing-corridor-right-0",
-                  "whiten": 0,
-                  "z": -8
-                },
-                {
-                  "id": "notice-collapsing-corridor-left-1",
-                  "whiten": 0,
-                  "z": -12
-                },
-                {
-                  "id": "notice-collapsing-corridor-right-1",
-                  "whiten": 0,
-                  "z": -12
-                },
-                {
-                  "id": "notice-collapsing-corridor-left-2",
-                  "whiten": 0,
-                  "z": -16
-                },
-                {
-                  "id": "notice-collapsing-corridor-right-2",
-                  "whiten": 0,
-                  "z": -16
-                },
-                {
-                  "id": "notice-collapsing-corridor-left-3",
-                  "whiten": 0.19999999999999996,
-                  "z": -20
-                },
-                {
-                  "id": "notice-collapsing-corridor-right-3",
-                  "whiten": 0.19999999999999996,
-                  "z": -20
-                },
-                {
-                  "id": "notice-collapsing-corridor-left-4",
-                  "whiten": 0.6000000000000001,
-                  "z": -24
-                },
-                {
-                  "id": "notice-collapsing-corridor-right-4",
-                  "whiten": 0.6000000000000001,
-                  "z": -24
-                },
-                {
-                  "id": "notice-collapsing-corridor-left-5",
-                  "whiten": 1,
-                  "z": -28
-                },
-                {
-                  "id": "notice-collapsing-corridor-right-5",
-                  "whiten": 1,
-                  "z": -28
-                }
-              ],
-              "whitenedCount": 6
-            },
-            "renderedLightIds": [],
-            "navigationIds": [
-              "nav-classroom",
-              "nav-corridor",
-              "nav-first-arena",
-              "nav-memory",
-              "nav-pursuit",
-              "nav-gym"
-            ],
-            "occluders": [
-              {
-                "bounds": {
-                  "maxX": -6,
-                  "maxY": 3.6,
-                  "maxZ": 6,
-                  "minX": -6.279999999999999,
-                  "minY": 0,
-                  "minZ": -6
-                },
-                "id": "collision-classroom:wall-left"
-              },
-              {
-                "bounds": {
-                  "maxX": 6.279999999999999,
-                  "maxY": 3.6,
-                  "maxZ": 6,
-                  "minX": 6,
-                  "minY": 0,
-                  "minZ": -6
-                },
-                "id": "collision-classroom:wall-right"
-              },
-              {
-                "bounds": {
-                  "maxX": -6,
-                  "maxY": 3.6,
-                  "maxZ": -6,
-                  "minX": -6.279999999999999,
-                  "minY": 0,
-                  "minZ": -30
-                },
-                "id": "collision-corridor:wall-left"
-              },
-              {
-                "bounds": {
-                  "maxX": 6.279999999999999,
-                  "maxY": 3.6,
-                  "maxZ": -6,
-                  "minX": 6,
-                  "minY": 0,
-                  "minZ": -30
-                },
-                "id": "collision-corridor:wall-right"
-              },
-              {
-                "bounds": {
-                  "maxX": -9,
-                  "maxY": 3.6,
-                  "maxZ": -30,
-                  "minX": -9.280000000000001,
-                  "minY": 0,
-                  "minZ": -48
-                },
-                "id": "collision-first-arena:wall-left"
-              },
-              {
-                "bounds": {
-                  "maxX": 9.280000000000001,
-                  "maxY": 3.6,
-                  "maxZ": -30,
-                  "minX": 9,
-                  "minY": 0,
-                  "minZ": -48
-                },
-                "id": "collision-first-arena:wall-right"
-              },
-              {
-                "bounds": {
-                  "maxX": -6,
-                  "maxY": 3.6,
-                  "maxZ": -48,
-                  "minX": -6.279999999999999,
-                  "minY": 0,
-                  "minZ": -61
-                },
-                "id": "collision-memory:wall-left"
-              },
-              {
-                "bounds": {
-                  "maxX": 6.279999999999999,
-                  "maxY": 3.6,
-                  "maxZ": -48,
-                  "minX": 6,
-                  "minY": 0,
-                  "minZ": -61
-                },
-                "id": "collision-memory:wall-right"
-              },
-              {
-                "bounds": {
-                  "maxX": -3.9999999999999996,
-                  "maxY": 3.6,
-                  "maxZ": -61,
-                  "minX": -4.279999999999999,
-                  "minY": 0,
-                  "minZ": -91
-                },
-                "id": "collision-pursuit:wall-left"
-              },
-              {
-                "bounds": {
-                  "maxX": 4.279999999999999,
-                  "maxY": 3.6,
-                  "maxZ": -61,
-                  "minX": 3.9999999999999996,
-                  "minY": 0,
-                  "minZ": -91
-                },
-                "id": "collision-pursuit:wall-right"
-              },
-              {
-                "bounds": {
-                  "maxX": -13,
-                  "maxY": 3.6,
-                  "maxZ": -91,
-                  "minX": -13.280000000000001,
-                  "minY": 0,
-                  "minZ": -119
-                },
-                "id": "collision-gym:wall-left"
-              },
-              {
-                "bounds": {
-                  "maxX": 13.280000000000001,
-                  "maxY": 3.6,
-                  "maxZ": -91,
-                  "minX": 13,
-                  "minY": 0,
-                  "minZ": -119
-                },
-                "id": "collision-gym:wall-right"
-              },
-              {
-                "bounds": {
-                  "maxX": 6.28,
-                  "maxY": 3.6,
-                  "maxZ": 6.279999999999999,
-                  "minX": -6.28,
-                  "minY": 0,
-                  "minZ": 6
-                },
-                "id": "collision-classroom:wall-north-cap"
-              },
-              {
-                "bounds": {
-                  "maxX": 13.28,
-                  "maxY": 3.6,
-                  "maxZ": -119,
-                  "minX": -13.28,
-                  "minY": 0,
-                  "minZ": -119.28
-                },
-                "id": "collision-gym:wall-south-cap"
-              }
-            ],
-            "routeCues": [
-              {
-                "fromSegmentId": "classroom-cold-open",
-                "id": "route-cue-classroom-cold-open",
-                "kind": "segment",
-                "position": {
-                  "x": 0,
-                  "y": 0.03,
-                  "z": -4.8
-                },
-                "to": "collapsing-corridor"
-              },
-              {
-                "fromSegmentId": "collapsing-corridor",
-                "id": "route-cue-collapsing-corridor",
-                "kind": "segment",
-                "position": {
-                  "x": 0,
-                  "y": 0.03,
-                  "z": -28.8
-                },
-                "to": "first-arena"
-              },
-              {
-                "fromSegmentId": "first-arena",
-                "id": "route-cue-first-arena",
-                "kind": "segment",
-                "position": {
-                  "x": 0,
-                  "y": 0.03,
-                  "z": -46.8
-                },
-                "to": "memory-backup-decision"
-              },
-              {
-                "fromSegmentId": "memory-backup-decision",
-                "id": "route-cue-memory-backup-decision",
-                "kind": "segment",
-                "position": {
-                  "x": 0,
-                  "y": 0.03,
-                  "z": -59.8
-                },
-                "to": "scanner-pursuit"
-              },
-              {
-                "fromSegmentId": "scanner-pursuit",
-                "id": "route-cue-scanner-pursuit",
-                "kind": "segment",
-                "position": {
-                  "x": 0,
-                  "y": 0.03,
-                  "z": -89.8
-                },
-                "to": "gym-boss-arena"
-              },
-              {
-                "fromSegmentId": "gym-boss-arena",
-                "id": "route-cue-gym-boss-arena",
-                "kind": "chapter-exit",
-                "position": {
-                  "x": 0,
-                  "y": 0.03,
-                  "z": -117.8
-                },
-                "to": "chapter-one-complete"
-              }
-            ],
-            "segmentIds": [
-              "classroom-cold-open",
-              "collapsing-corridor",
-              "first-arena",
-              "memory-backup-decision",
-              "scanner-pursuit",
-              "gym-boss-arena"
-            ],
-            "visualIds": [
-              "visual-classroom-lamps",
-              "visual-corridor-emergency",
-              "visual-arena-projector",
-              "visual-memory-terminal",
-              "visual-scanner-beacons",
-              "visual-gym-scoreboard"
-            ],
-            "visuals": [
-              {
-                "id": "visual-classroom-lamps",
-                "kind": "classroom",
-                "landmarkIds": [
-                  "classroom-teacher-terminal",
-                  "classroom-student-desks",
-                  "classroom-board",
-                  "classroom-clock"
-                ],
-                "segmentId": "classroom-cold-open"
-              },
-              {
-                "id": "visual-corridor-emergency",
-                "kind": "corridor",
-                "landmarkIds": [
-                  "corridor-locker-banks",
-                  "corridor-room-number",
-                  "corridor-emergency-sign"
-                ],
-                "segmentId": "collapsing-corridor"
-              },
-              {
-                "id": "visual-arena-projector",
-                "kind": "arena",
-                "landmarkIds": [
-                  "arena-projector-source",
-                  "arena-source-grid",
-                  "arena-damaged-desk-perimeter"
-                ],
-                "segmentId": "first-arena"
-              },
-              {
-                "id": "visual-memory-terminal",
-                "kind": "decision",
-                "landmarkIds": [
-                  "memory-backup-terminal",
-                  "memory-server-rack",
-                  "memory-evidence-frame"
-                ],
-                "segmentId": "memory-backup-decision"
-              },
-              {
-                "id": "visual-scanner-beacons",
-                "kind": "pursuit",
-                "landmarkIds": [
-                  "pursuit-scanner-beacons",
-                  "pursuit-gate-rhythm"
-                ],
-                "segmentId": "scanner-pursuit"
-              },
-              {
-                "id": "visual-gym-scoreboard",
-                "kind": "boss-arena",
-                "landmarkIds": [
-                  "gym-court-markings",
-                  "gym-scoreboard",
-                  "gym-broadcast-door",
-                  "gym-approval-server"
-                ],
-                "segmentId": "gym-boss-arena"
-              }
-            ]
-          },
-          "routeSegmentId": "first-arena",
-          "story": {
-            "campaign": {
-              "schemaVersion": 5,
-              "integrity": {
-                "secured": 0,
-                "lost": 0
-              },
-              "exposure": {
-                "contained": 0,
-                "disclosed": 0
-              },
-              "trust": {
-                "dot": 0,
-                "haru": 0,
-                "lumen": 0,
-                "yoonseo": 0
-              },
-              "chapterProgress": {
-                "completed": [],
-                "current": 1,
-                "checkpoint": "chapter-1:first-arena"
-              },
-              "patchChoice": null,
-              "evidence": [],
-              "gateAttempts": [],
-              "settings": {
-                "motion": "full",
-                "quality": "auto",
-                "sound": true
-              }
-            },
-            "phase": "first-arena",
-            "memoryOutcome": null,
-            "effects": {
-              "arenaDressing": "sealed-terminal",
-              "backupVisible": true,
-              "bossCallout": "오염 표적 판정이 대기 중이다.",
-              "extraWave": false
-            },
-            "transcript": [],
-            "lastTriggerId": null
-          }
-        },
-        "renderer": {
-          "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
-          "vendor": "Google Inc. (Intel)"
-        },
-        "save": {
-          "schemaVersion": 5,
-          "integrity": {
-            "secured": 0,
-            "lost": 0
-          },
-          "exposure": {
-            "contained": 0,
-            "disclosed": 0
-          },
-          "trust": {
-            "dot": 0,
-            "haru": 0,
-            "lumen": 0,
-            "yoonseo": 0
-          },
-          "chapterProgress": {
-            "completed": [],
-            "current": 1,
-            "checkpoint": "chapter-1:first-arena"
-          },
-          "patchChoice": null,
-          "evidence": [],
-          "gateAttempts": [],
-          "settings": {
-            "motion": "full",
-            "quality": "auto",
-            "sound": true
-          }
-        }
-      },
-      "viewport": {
-        "width": 1440,
-        "height": 900
-      }
-    },
-    {
-      "consoleErrors": [],
-      "failedResponses": [],
-      "name": "chapter-1-mobile-390x844",
-      "screenshotPath": ".omo/evidence/h17-six-chapter/p0/chapter-1-mobile-390x844.png",
-      "surface": {
-        "canvas": {
-          "rebootCanvas": "",
-          "engine": "three.js r185",
-          "campaignChapter": "1",
-          "characters": "ready",
-          "enemies": "ready",
-          "environmentStatus": "ready",
-          "lastAction": "stagger",
-          "lastEnemyEvent": "attack-contact",
-          "playerSignal": "100",
-          "combatTick": "228",
-          "cameraMode": "touch",
-          "routeSegment": "first-arena",
-          "storyPhase": "first-arena",
-          "memoryOutcome": "none",
-          "extraWave": "false",
-          "backupVisible": "true",
-          "feedbackPromptCount": "3",
-          "feedbackKinds": "damage,contact,telegraph",
-          "feedbackPoolActive": "7",
-          "audioVoices": "0",
-          "musicLayer": "ambient",
-          "p95FrameMs": "16.6",
-          "drawCalls": "167",
-          "triangles": "138623",
-          "lightCount": "4",
-          "particleCount": "12",
-          "heapBytes": "63407573",
-          "quality": "auto",
-          "dpr": "1.0000000121549135",
-          "bossVerb": "none",
-          "enemyCount": "2",
-          "enemyPhases": "eraser-mixed:active,stamper-mixed:recover",
-          "enemyPhaseTicks": "eraser-mixed:0,stamper-mixed:10",
-          "stamperTelegraph": "recover:10",
-          "eraserArmor": "1",
-          "armorBreaks": "0",
-          "reflections": "0",
-          "playerHits": "6",
+          "playerHits": "4",
           "cancelledAttacks": "0",
           "blockerActive": "false",
           "offscreenActive": "false",
@@ -6486,27 +4917,27 @@
               "bounds": [
                 {
                   "id": "player",
-                  "bottom": 522.6597098212823,
+                  "bottom": 668.4414824234982,
                   "depthValid": true,
-                  "left": 129.7743525891869,
-                  "right": 223.18375866983348,
-                  "top": 357.0938935332693
+                  "left": 537.6929078299837,
+                  "right": 744.4987455100326,
+                  "top": 324.95812133151503
                 },
                 {
                   "id": "threat",
-                  "bottom": 478.0828721503867,
+                  "bottom": 593.7500822625797,
                   "depthValid": true,
-                  "left": 173.03633212399032,
-                  "right": 265.94491675004724,
-                  "top": 316.00530097289135
+                  "left": 646.2902981031917,
+                  "right": 836.9931241280876,
+                  "top": 281.0132791265646
                 },
                 {
                   "id": "telegraph",
-                  "bottom": 506.4872708935572,
+                  "bottom": 643.1187114214486,
                   "depthValid": true,
-                  "left": 124.26535087230927,
-                  "right": 300.1710537886901,
-                  "top": 409.4415543258361
+                  "left": 540.9211174715529,
+                  "right": 909.6573579930932,
+                  "top": 486.42817392961916
                 }
               ],
               "includedIds": [
@@ -6516,10 +4947,10 @@
               ],
               "mode": "arena",
               "safeRect": {
-                "bottom": 694,
-                "left": 16,
-                "right": 374,
-                "top": 135
+                "bottom": 810,
+                "left": 24,
+                "right": 1416,
+                "top": 80
               }
             }
           },
@@ -6601,22 +5032,22 @@
           "combat": {
             "action": "idle",
             "chainLevel": 0,
-            "hp": 61,
+            "hp": 74,
             "player": {
               "x": 0,
               "z": -33
             },
             "signal": 100,
-            "tick": 228
+            "tick": 170
           },
           "enemies": {
             "disposed": false,
             "enemies": [
               {
-                "cueId": "attack-contact",
+                "cueId": null,
                 "facing": 1.8157749899217592,
                 "id": "eraser-mixed",
-                "phase": "active",
+                "phase": "windup",
                 "position": [
                   0.4231418248386883,
                   0,
@@ -6659,7 +5090,7 @@
                 "cliffRockCount": 16,
                 "cliffRockHeightLevels": 4,
                 "deckMaterialRole": "brick",
-                "paverCount": 18,
+                "paverCount": 32,
                 "paverHeightLevels": 3
               },
               "landmarks": [
@@ -6747,7 +5178,7 @@
             "firstVistaAssets": 18,
             "failedAssetIds": [],
             "failedMaterialIds": [],
-            "memoryPathAccents": 28,
+            "memoryPathAccents": 56,
             "mountainRidges": 2,
             "requiredAssetIds": [
               "campus-floor",
@@ -6794,21 +5225,17 @@
               "started": false,
               "voiceLimit": 4
             },
-            "cueCount": 1,
+            "cueCount": 0,
             "disposed": false,
             "pool": {
-              "active": 7,
+              "active": 3,
               "allocated": 16,
               "capacity": 16,
               "disposed": false,
               "kinds": [
-                "contact",
+                "telegraph",
                 "damage",
-                "telegraph",
-                "telegraph",
-                "telegraph",
-                "telegraph",
-                "contact"
+                "telegraph"
               ]
             },
             "promptCount": 3,
@@ -6820,20 +5247,18 @@
             "reducedMotion": false
           },
           "performance": {
-            "p95FrameMs": 16.6,
+            "p95FrameMs": 100,
             "render": {
-              "calls": 169,
-              "heapBytes": 64253481,
+              "calls": 162,
+              "heapBytes": 27600000,
               "lights": 4,
-              "particles": 14,
-              "triangles": 138657
+              "particles": 6,
+              "triangles": 139061
             },
-            "samples": 378,
+            "samples": 43,
             "simulationHz": 60
           },
-          "enemyEventTypes": [
-            "attack-contact"
-          ],
+          "enemyEventTypes": [],
           "encounter": {
             "definition": {
               "id": "eraser-stamper-mixed-arena",
@@ -6862,7 +5287,7 @@
                 }
               ]
             },
-            "deviceClass": "touch",
+            "deviceClass": "desktop",
             "enemies": [
               {
                 "armor": 1,
@@ -6924,9 +5349,9 @@
                 "hp": 72,
                 "id": "eraser-mixed",
                 "lastIntent": "commit-attack",
-                "phase": "active",
+                "phase": "windup",
                 "phaseDuration": 0,
-                "phaseTick": 0,
+                "phaseTick": 16,
                 "position": {
                   "x": 0.4231418248386883,
                   "z": -34.692567299354764
@@ -7009,7 +5434,7 @@
                 "lastIntent": "commit-attack",
                 "phase": "recover",
                 "phaseDuration": 0,
-                "phaseTick": 10,
+                "phaseTick": 35,
                 "position": {
                   "x": -2,
                   "z": -37
@@ -7028,7 +5453,7 @@
                 "zoneId": "arena"
               }
             ],
-            "tick": 228
+            "tick": 170
           },
           "eventTypes": [],
           "route": {
@@ -7838,8 +6263,1610 @@
           }
         },
         "renderer": {
-          "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
-          "vendor": "Google Inc. (Intel)"
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)"
+        },
+        "save": {
+          "schemaVersion": 5,
+          "integrity": {
+            "secured": 0,
+            "lost": 0
+          },
+          "exposure": {
+            "contained": 0,
+            "disclosed": 0
+          },
+          "trust": {
+            "dot": 0,
+            "haru": 0,
+            "lumen": 0,
+            "yoonseo": 0
+          },
+          "chapterProgress": {
+            "completed": [],
+            "current": 1,
+            "checkpoint": "chapter-1:first-arena"
+          },
+          "patchChoice": null,
+          "evidence": [],
+          "gateAttempts": [],
+          "settings": {
+            "motion": "full",
+            "quality": "auto",
+            "sound": true
+          }
+        }
+      },
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      }
+    },
+    {
+      "consoleErrors": [],
+      "failedResponses": [],
+      "name": "chapter-1-mobile-390x844",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/p0/chapter-1-mobile-390x844.png",
+      "surface": {
+        "canvas": {
+          "rebootCanvas": "",
+          "engine": "three.js r185",
+          "campaignChapter": "1",
+          "characters": "ready",
+          "enemies": "ready",
+          "environmentStatus": "ready",
+          "lastAction": "stagger",
+          "lastEnemyEvent": "attack-committed",
+          "playerSignal": "100",
+          "combatTick": "188",
+          "cameraMode": "touch",
+          "routeSegment": "first-arena",
+          "storyPhase": "first-arena",
+          "memoryOutcome": "none",
+          "extraWave": "false",
+          "backupVisible": "true",
+          "feedbackPromptCount": "3",
+          "feedbackKinds": "damage,contact,telegraph",
+          "feedbackPoolActive": "5",
+          "audioVoices": "0",
+          "musicLayer": "ambient",
+          "p95FrameMs": "100",
+          "drawCalls": "167",
+          "triangles": "139155",
+          "lightCount": "4",
+          "particleCount": "12",
+          "heapBytes": "29400000",
+          "quality": "auto",
+          "dpr": "1",
+          "bossVerb": "none",
+          "enemyCount": "2",
+          "enemyPhases": "eraser-mixed:recover,stamper-mixed:windup",
+          "enemyPhaseTicks": "eraser-mixed:13,stamper-mixed:13",
+          "stamperTelegraph": "windup:13",
+          "eraserArmor": "1",
+          "armorBreaks": "0",
+          "reflections": "0",
+          "playerHits": "5",
+          "cancelledAttacks": "0",
+          "blockerActive": "false",
+          "offscreenActive": "false",
+          "characterCount": "7",
+          "boss": "ready"
+        },
+        "chapterStrip": [
+          {
+            "chapter": "1",
+            "state": "current"
+          },
+          {
+            "chapter": "2",
+            "state": "locked"
+          },
+          {
+            "chapter": "3",
+            "state": "locked"
+          },
+          {
+            "chapter": "4",
+            "state": "locked"
+          },
+          {
+            "chapter": "5",
+            "state": "locked"
+          },
+          {
+            "chapter": "6",
+            "state": "locked"
+          }
+        ],
+        "debug": {
+          "boss": {
+            "consequencePath": "secure",
+            "cycleIndex": 0,
+            "definition": {
+              "id": "attendance-proctor",
+              "maxHp": 240,
+              "retryTicks": 90,
+              "signature": "H-17",
+              "patchChoices": [
+                "reflect-arc",
+                "trace-speed",
+                "chain-persistence"
+              ],
+              "consequenceCallouts": {
+                "purge": "지운 사본에도 승인 번호는 남아 있다.",
+                "secure": "네가 지킨 원본에 승인 번호가 선명하다."
+              },
+              "phases": [
+                {
+                  "id": "reflect-scan",
+                  "response": "reflect",
+                  "requiredSuccesses": 2,
+                  "damagePerSuccess": 30,
+                  "timing": {
+                    "activeTicks": 20,
+                    "recoveryTicks": 12,
+                    "windupTicks": 24
+                  },
+                  "patterns": [
+                    {
+                      "id": "scan-east",
+                      "beamLane": "east",
+                      "safeLane": "west"
+                    },
+                    {
+                      "id": "scan-west",
+                      "beamLane": "west",
+                      "safeLane": "east"
+                    }
+                  ]
+                },
+                {
+                  "id": "trace-roster",
+                  "response": "trace",
+                  "requiredSuccesses": 2,
+                  "damagePerSuccess": 30,
+                  "timing": {
+                    "activeTicks": 30,
+                    "recoveryTicks": 10,
+                    "windupTicks": 20
+                  },
+                  "patterns": [
+                    {
+                      "id": "roster-a",
+                      "targetIds": [
+                        "clone-a",
+                        "clone-b",
+                        "approval-h17"
+                      ],
+                      "trueTargetId": "approval-h17"
+                    },
+                    {
+                      "id": "roster-b",
+                      "targetIds": [
+                        "clone-b",
+                        "approval-h17",
+                        "clone-a"
+                      ],
+                      "trueTargetId": "approval-h17"
+                    }
+                  ]
+                },
+                {
+                  "id": "approval-core",
+                  "response": "attack",
+                  "requiredSuccesses": 3,
+                  "damagePerSuccess": 40,
+                  "timing": {
+                    "activeTicks": 20,
+                    "recoveryTicks": 12,
+                    "windupTicks": 24
+                  },
+                  "patterns": [
+                    {
+                      "id": "erase-north-east",
+                      "erasedSectors": [
+                        "north",
+                        "east"
+                      ],
+                      "safeSectors": [
+                        "south",
+                        "west"
+                      ],
+                      "collisionChanged": false
+                    },
+                    {
+                      "id": "erase-south-west",
+                      "erasedSectors": [
+                        "south",
+                        "west"
+                      ],
+                      "safeSectors": [
+                        "north",
+                        "east"
+                      ],
+                      "collisionChanged": false
+                    }
+                  ]
+                }
+              ]
+            },
+            "hp": 240,
+            "introSeen": false,
+            "knowledge": [],
+            "phaseIndex": 0,
+            "phaseSuccesses": 0,
+            "phaseTick": 0,
+            "processedActionIds": [],
+            "retries": 0,
+            "retryTicks": 0,
+            "staggerTicks": 0,
+            "status": "active",
+            "tick": 0
+          },
+          "camera": {
+            "allIncluded": true,
+            "includedIds": [
+              "player",
+              "stamper-mixed",
+              "stamper-mixed",
+              "route-cue-first-arena"
+            ],
+            "combatSafeArea": {
+              "allIncluded": true,
+              "bounds": [
+                {
+                  "id": "player",
+                  "bottom": 530.0215524579752,
+                  "depthValid": true,
+                  "left": 186.76273786570647,
+                  "right": 271.7385827800691,
+                  "top": 370.09092215096996
+                },
+                {
+                  "id": "threat",
+                  "bottom": 425.86090266038445,
+                  "depthValid": true,
+                  "left": 131.96539626902842,
+                  "right": 209.58243434189583,
+                  "top": 295.04485959169455
+                },
+                {
+                  "id": "telegraph",
+                  "bottom": 444.6132535412828,
+                  "depthValid": true,
+                  "left": 94.06560052559834,
+                  "right": 243.45185428361242,
+                  "top": 377.7543384823919
+                }
+              ],
+              "includedIds": [
+                "player",
+                "threat",
+                "telegraph"
+              ],
+              "mode": "arena",
+              "safeRect": {
+                "bottom": 694,
+                "left": 16,
+                "right": 374,
+                "top": 135
+              }
+            }
+          },
+          "characters": {
+            "errors": [],
+            "identities": [
+              {
+                "id": "player",
+                "accessory": "record-ring",
+                "body": "female",
+                "face": "visible",
+                "hair": "simpleParted",
+                "kind": "human",
+                "outfit": "peasant",
+                "silhouette": "parted-hair-record-ring",
+                "presentation": {
+                  "hairEmissive": 0.2,
+                  "outfitEmissive": 0.12,
+                  "skinEmissive": 0.17
+                },
+                "visualScale": 1.3
+              },
+              {
+                "id": "dot",
+                "accessory": "scan-ring",
+                "body": "machine",
+                "face": "sensor",
+                "hair": "none",
+                "kind": "audit-drone",
+                "outfit": "none",
+                "silhouette": "orb-ring-twin-fin",
+                "presentation": {
+                  "hairEmissive": 0.14,
+                  "outfitEmissive": 0.08,
+                  "skinEmissive": 0.12
+                },
+                "visualScale": 1.1
+              },
+              {
+                "id": "haru",
+                "accessory": "scarf-pauldron",
+                "body": "male",
+                "face": "visible",
+                "hair": "long",
+                "kind": "human",
+                "outfit": "ranger",
+                "silhouette": "long-hair-scarf-pauldron",
+                "presentation": {
+                  "hairEmissive": 0.19,
+                  "outfitEmissive": 0.11,
+                  "skinEmissive": 0.16
+                },
+                "visualScale": 1.3
+              },
+              {
+                "id": "yoonseo",
+                "accessory": "policy-tablet-line",
+                "body": "female",
+                "face": "visible",
+                "hair": "buns",
+                "kind": "human",
+                "outfit": "ranger",
+                "silhouette": "twin-buns-policy-tablet-line",
+                "presentation": {
+                  "hairEmissive": 0.2,
+                  "outfitEmissive": 0.12,
+                  "skinEmissive": 0.17
+                },
+                "visualScale": 1.3
+              }
+            ],
+            "loaded": 4,
+            "total": 4,
+            "visibleIds": [
+              "player",
+              "dot"
+            ]
+          },
+          "combat": {
+            "action": "idle",
+            "chainLevel": 0,
+            "hp": 67,
+            "player": {
+              "x": 0,
+              "z": -33
+            },
+            "signal": 100,
+            "tick": 188
+          },
+          "enemies": {
+            "disposed": false,
+            "enemies": [
+              {
+                "cueId": null,
+                "facing": 1.8157749899217592,
+                "id": "eraser-mixed",
+                "phase": "recover",
+                "position": [
+                  0.4231418248386883,
+                  0,
+                  -34.692567299354764
+                ],
+                "profileId": "eraser"
+              },
+              {
+                "cueId": null,
+                "facing": 1.1071487177940904,
+                "id": "stamper-mixed",
+                "phase": "windup",
+                "position": [
+                  -2,
+                  0,
+                  -37
+                ],
+                "profileId": "stamper"
+              }
+            ],
+            "errors": [],
+            "ids": [
+              "eraser-mixed",
+              "stamper-mixed"
+            ],
+            "loaded": 2,
+            "total": 2
+          },
+          "environment": {
+            "architecture": {
+              "districts": [
+                "open-classroom",
+                "roster-tower",
+                "athletics-field",
+                "library-archive",
+                "glass-administration",
+                "gymnasium"
+              ],
+              "firstVistaSurface": {
+                "cliffRockCount": 16,
+                "cliffRockHeightLevels": 4,
+                "deckMaterialRole": "brick",
+                "paverCount": 32,
+                "paverHeightLevels": 3
+              },
+              "landmarks": [
+                "h17-empty-seat",
+                "classroom-record-terminal",
+                "central-roster-spire",
+                "athletics-track",
+                "fingerprint-recorder",
+                "night-library",
+                "memory-archive",
+                "deletion-glass-tower",
+                "floating-gym"
+              ],
+              "materialRoles": [
+                "brick",
+                "concrete",
+                "glass",
+                "metal",
+                "wood",
+                "track",
+                "foliage"
+              ],
+              "visibleObjects": [
+                "campus-platform-open-classroom",
+                "campus-platform-deck-open-classroom",
+                "campus-memory-route-open-classroom",
+                "campus-platform-edge-open-classroom",
+                "campus-floating-foundation-open-classroom",
+                "campus-platform-roster-tower",
+                "campus-platform-deck-roster-tower",
+                "campus-memory-route-roster-tower",
+                "campus-platform-edge-roster-tower",
+                "campus-floating-foundation-roster-tower",
+                "campus-platform-athletics-field",
+                "campus-platform-deck-athletics-field",
+                "campus-memory-route-athletics-field",
+                "campus-platform-edge-athletics-field",
+                "campus-floating-foundation-athletics-field",
+                "campus-platform-library-archive",
+                "campus-platform-deck-library-archive",
+                "campus-memory-route-library-archive",
+                "campus-platform-edge-library-archive",
+                "campus-floating-foundation-library-archive",
+                "campus-platform-glass-administration",
+                "campus-platform-deck-glass-administration",
+                "campus-memory-route-glass-administration",
+                "campus-platform-edge-glass-administration",
+                "campus-floating-foundation-glass-administration",
+                "campus-platform-gymnasium",
+                "campus-platform-deck-gymnasium",
+                "campus-memory-route-gymnasium",
+                "campus-platform-edge-gymnasium",
+                "campus-floating-foundation-gymnasium",
+                "campus-first-vista-stone-pavers",
+                "campus-first-vista-cliff-rocks",
+                "central-roster-spire",
+                "roster-spire-core",
+                "roster-record-ring-1.2",
+                "roster-record-ring-4.5",
+                "roster-record-ring-7.8",
+                "athletics-field",
+                "athletics-track",
+                "athletics-lane-line-0",
+                "athletics-lane-line-1",
+                "athletics-lane-line-2",
+                "fingerprint-recorder",
+                "fingerprint-recorder-pedestal",
+                "night-library",
+                "memory-archive",
+                "library-archive-canopy",
+                "deletion-glass-tower",
+                "administration-ring-1.1",
+                "administration-ring-4.6",
+                "administration-ring-8.1",
+                "administration-ring-11.6",
+                "deletion-beam-column",
+                "floating-gym",
+                "gym-wood-court"
+              ]
+            },
+            "assetInstances": 154,
+            "contactPatches": 54,
+            "districtSigns": 6,
+            "edgeDressingInstances": 108,
+            "firstVistaAssets": 18,
+            "failedAssetIds": [],
+            "failedMaterialIds": [],
+            "memoryPathAccents": 56,
+            "mountainRidges": 2,
+            "requiredAssetIds": [
+              "campus-floor",
+              "campus-window",
+              "campus-wall",
+              "campus-doorway",
+              "campus-column",
+              "classroom-desk",
+              "classroom-chair",
+              "classroom-screen",
+              "record-laptop",
+              "campus-planter",
+              "campus-lamp",
+              "campus-bench",
+              "campus-tree",
+              "campus-rock",
+              "campus-bush",
+              "campus-grass",
+              "campus-fence",
+              "memory-flower",
+              "campus-hero-rock",
+              "campus-roof-edge",
+              "library-bookcase",
+              "library-books",
+              "campus-bridge",
+              "archive-box",
+              "campus-sofa",
+              "broadcast-antenna",
+              "campus-roof",
+              "campus-stairs"
+            ],
+            "skyObjects": 4,
+            "atmosphericLayers": 3,
+            "status": "loaded"
+          },
+          "feedback": {
+            "attached": true,
+            "audio": {
+              "activeVoices": 0,
+              "disposed": false,
+              "hidden": false,
+              "musicLayer": "ambient",
+              "muted": false,
+              "started": false,
+              "voiceLimit": 4
+            },
+            "cueCount": 0,
+            "disposed": false,
+            "pool": {
+              "active": 5,
+              "allocated": 16,
+              "capacity": 16,
+              "disposed": false,
+              "kinds": [
+                "telegraph",
+                "damage",
+                "telegraph",
+                "contact",
+                "telegraph"
+              ]
+            },
+            "promptCount": 3,
+            "promptKinds": [
+              "damage",
+              "contact",
+              "telegraph"
+            ],
+            "reducedMotion": false
+          },
+          "performance": {
+            "p95FrameMs": 100,
+            "render": {
+              "calls": 165,
+              "heapBytes": 29400000,
+              "lights": 4,
+              "particles": 10,
+              "triangles": 139121
+            },
+            "samples": 48,
+            "simulationHz": 60
+          },
+          "enemyEventTypes": [],
+          "encounter": {
+            "definition": {
+              "id": "eraser-stamper-mixed-arena",
+              "objective": "스탬퍼의 투사체를 반사해 이레이저의 방어를 열기",
+              "decision": "근접 압박을 피하며 원거리 명령을 공격 기회로 바꾼다.",
+              "spawns": [
+                {
+                  "definitionId": "eraser",
+                  "facing": 0,
+                  "id": "eraser-mixed",
+                  "position": {
+                    "x": 1.5,
+                    "z": -39
+                  },
+                  "zoneId": "arena"
+                },
+                {
+                  "definitionId": "stamper",
+                  "facing": 0,
+                  "id": "stamper-mixed",
+                  "position": {
+                    "x": -2,
+                    "z": -37
+                  },
+                  "zoneId": "arena"
+                }
+              ]
+            },
+            "deviceClass": "touch",
+            "enemies": [
+              {
+                "armor": 1,
+                "cooldownTicks": 0,
+                "definition": {
+                  "id": "eraser",
+                  "role": "melee-pressure",
+                  "stats": {
+                    "maxHp": 72,
+                    "speed": 0.12,
+                    "turnRadians": 0.32
+                  },
+                  "perception": {
+                    "acquireRange": 8,
+                    "lossRange": 10
+                  },
+                  "collider": {
+                    "height": 1.8,
+                    "radius": 0.62
+                  },
+                  "armor": {
+                    "hits": 1,
+                    "breaksOnKinds": [
+                      "reflected-projectile"
+                    ]
+                  },
+                  "reward": {
+                    "id": "eraser-armor-open",
+                    "onceOn": "armor-broken"
+                  },
+                  "moves": [
+                    {
+                      "id": "eraser-sweep",
+                      "kind": "melee",
+                      "socket": "right-hand",
+                      "timing": {
+                        "activeTicks": 1,
+                        "recoveryTicks": 30,
+                        "windupTicks": 20
+                      },
+                      "range": {
+                        "max": 1.8,
+                        "min": 0,
+                        "preferred": 1.2
+                      },
+                      "facingDot": 0.85,
+                      "requiredFacingTicks": 2,
+                      "damage": 7,
+                      "feedback": {
+                        "windup": "eraser-sweep-windup",
+                        "contact": "eraser-sweep-contact",
+                        "recover": "eraser-sweep-recover"
+                      }
+                    }
+                  ]
+                },
+                "faceTicks": 2,
+                "facing": 1.8157749899217592,
+                "hp": 72,
+                "id": "eraser-mixed",
+                "lastIntent": "commit-attack",
+                "phase": "recover",
+                "phaseDuration": 0,
+                "phaseTick": 13,
+                "position": {
+                  "x": 0.4231418248386883,
+                  "z": -34.692567299354764
+                },
+                "processedContacts": [],
+                "rewardGranted": false,
+                "spawn": {
+                  "facing": 0,
+                  "position": {
+                    "x": 1.5,
+                    "z": -39
+                  },
+                  "zoneId": "arena"
+                },
+                "targetId": "player",
+                "zoneId": "arena"
+              },
+              {
+                "armor": 0,
+                "cooldownTicks": 0,
+                "definition": {
+                  "id": "stamper",
+                  "role": "reflected-ranged-command",
+                  "stats": {
+                    "maxHp": 48,
+                    "speed": 0.08,
+                    "turnRadians": 0.25
+                  },
+                  "perception": {
+                    "acquireRange": 11,
+                    "lossRange": 13
+                  },
+                  "collider": {
+                    "height": 1.7,
+                    "radius": 0.55
+                  },
+                  "armor": {
+                    "hits": 0,
+                    "breaksOnKinds": []
+                  },
+                  "reward": {
+                    "id": "stamper-command-ended",
+                    "onceOn": "defeat"
+                  },
+                  "moves": [
+                    {
+                      "id": "stamper-shot",
+                      "kind": "projectile",
+                      "socket": "stamp-muzzle",
+                      "timing": {
+                        "activeTicks": 1,
+                        "recoveryTicks": 36,
+                        "windupTicks": 42
+                      },
+                      "range": {
+                        "max": 9,
+                        "min": 3,
+                        "preferred": 6
+                      },
+                      "facingDot": 0.9,
+                      "requiredFacingTicks": 3,
+                      "damage": 6,
+                      "projectile": {
+                        "radius": 0.28,
+                        "reflectable": true,
+                        "speed": 0.34
+                      },
+                      "feedback": {
+                        "windup": "stamper-shot-windup",
+                        "contact": "stamper-shot-launch",
+                        "recover": "stamper-shot-recover"
+                      }
+                    }
+                  ]
+                },
+                "faceTicks": 3,
+                "facing": 1.1071487177940904,
+                "hp": 48,
+                "id": "stamper-mixed",
+                "lastIntent": "commit-attack",
+                "phase": "windup",
+                "phaseDuration": 0,
+                "phaseTick": 13,
+                "position": {
+                  "x": -2,
+                  "z": -37
+                },
+                "processedContacts": [],
+                "rewardGranted": false,
+                "spawn": {
+                  "facing": 0,
+                  "position": {
+                    "x": -2,
+                    "z": -37
+                  },
+                  "zoneId": "arena"
+                },
+                "targetId": "player",
+                "zoneId": "arena"
+              }
+            ],
+            "tick": 188
+          },
+          "eventTypes": [],
+          "route": {
+            "budget": {
+              "drawCalls": 11,
+              "dressing": {
+                "drawCalls": 5,
+                "instances": 97,
+                "resources": 6,
+                "triangles": 1164
+              },
+              "resources": 13,
+              "triangles": 1764
+            },
+            "checkpointIds": [
+              "checkpoint-classroom",
+              "checkpoint-corridor",
+              "checkpoint-first-arena",
+              "checkpoint-memory",
+              "checkpoint-pursuit",
+              "checkpoint-gym"
+            ],
+            "checkpoints": [
+              {
+                "id": "checkpoint-classroom",
+                "position": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 1
+                },
+                "segmentId": "classroom-cold-open"
+              },
+              {
+                "id": "checkpoint-corridor",
+                "position": {
+                  "x": 0,
+                  "y": 0,
+                  "z": -9
+                },
+                "segmentId": "collapsing-corridor"
+              },
+              {
+                "id": "checkpoint-first-arena",
+                "position": {
+                  "x": 0,
+                  "y": 0,
+                  "z": -33
+                },
+                "segmentId": "first-arena"
+              },
+              {
+                "id": "checkpoint-memory",
+                "position": {
+                  "x": 0,
+                  "y": 0,
+                  "z": -51
+                },
+                "segmentId": "memory-backup-decision"
+              },
+              {
+                "id": "checkpoint-pursuit",
+                "position": {
+                  "x": 0,
+                  "y": 0,
+                  "z": -64
+                },
+                "segmentId": "scanner-pursuit"
+              },
+              {
+                "id": "checkpoint-gym",
+                "position": {
+                  "x": 0,
+                  "y": 0,
+                  "z": -95
+                },
+                "segmentId": "gym-boss-arena"
+              }
+            ],
+            "colliderIds": [
+              "collision-classroom",
+              "collision-corridor",
+              "collision-first-arena",
+              "collision-memory",
+              "collision-pursuit",
+              "collision-gym"
+            ],
+            "colliders": [
+              {
+                "bounds": {
+                  "maxX": 6,
+                  "maxZ": 6,
+                  "minX": -6,
+                  "minZ": -6
+                },
+                "id": "collision-classroom",
+                "segmentId": "classroom-cold-open",
+                "surface": "flat"
+              },
+              {
+                "bounds": {
+                  "maxX": 6,
+                  "maxZ": -6,
+                  "minX": -6,
+                  "minZ": -30
+                },
+                "id": "collision-corridor",
+                "segmentId": "collapsing-corridor",
+                "surface": "flat"
+              },
+              {
+                "bounds": {
+                  "maxX": 9,
+                  "maxZ": -30,
+                  "minX": -9,
+                  "minZ": -48
+                },
+                "id": "collision-first-arena",
+                "segmentId": "first-arena",
+                "surface": "flat"
+              },
+              {
+                "bounds": {
+                  "maxX": 6,
+                  "maxZ": -48,
+                  "minX": -6,
+                  "minZ": -61
+                },
+                "id": "collision-memory",
+                "segmentId": "memory-backup-decision",
+                "surface": "flat"
+              },
+              {
+                "bounds": {
+                  "maxX": 4,
+                  "maxZ": -61,
+                  "minX": -4,
+                  "minZ": -91
+                },
+                "id": "collision-pursuit",
+                "segmentId": "scanner-pursuit",
+                "surface": "flat"
+              },
+              {
+                "bounds": {
+                  "maxX": 13,
+                  "maxZ": -91,
+                  "minX": -13,
+                  "minZ": -119
+                },
+                "id": "collision-gym",
+                "segmentId": "gym-boss-arena",
+                "surface": "flat"
+              }
+            ],
+            "disposed": false,
+            "encounterIds": [
+              "encounter-corridor-collapse",
+              "encounter-first-trace",
+              "encounter-memory-choice",
+              "encounter-scanner-chase",
+              "encounter-gym-boss"
+            ],
+            "localLightIds": [
+              "light-classroom",
+              "light-corridor",
+              "light-arena",
+              "light-memory",
+              "light-pursuit",
+              "light-gym"
+            ],
+            "localLights": [
+              {
+                "color": "#f3b36c",
+                "id": "light-classroom",
+                "position": {
+                  "x": 0,
+                  "y": 2.8,
+                  "z": 0
+                },
+                "segmentId": "classroom-cold-open",
+                "visualId": "visual-classroom-lamps"
+              },
+              {
+                "color": "#d74732",
+                "id": "light-corridor",
+                "position": {
+                  "x": 0,
+                  "y": 2.4,
+                  "z": -18
+                },
+                "segmentId": "collapsing-corridor",
+                "visualId": "visual-corridor-emergency"
+              },
+              {
+                "color": "#6aa9ff",
+                "id": "light-arena",
+                "position": {
+                  "x": 0,
+                  "y": 4,
+                  "z": -39
+                },
+                "segmentId": "first-arena",
+                "visualId": "visual-arena-projector"
+              },
+              {
+                "color": "#f3b36c",
+                "id": "light-memory",
+                "position": {
+                  "x": 0,
+                  "y": 2.2,
+                  "z": -54
+                },
+                "segmentId": "memory-backup-decision",
+                "visualId": "visual-memory-terminal"
+              },
+              {
+                "color": "#d74732",
+                "id": "light-pursuit",
+                "position": {
+                  "x": 0,
+                  "y": 2.5,
+                  "z": -76
+                },
+                "segmentId": "scanner-pursuit",
+                "visualId": "visual-scanner-beacons"
+              },
+              {
+                "color": "#6aa9ff",
+                "id": "light-gym",
+                "position": {
+                  "x": 0,
+                  "y": 5,
+                  "z": -104
+                },
+                "segmentId": "gym-boss-arena",
+                "visualId": "visual-gym-scoreboard"
+              }
+            ],
+            "landmarksBySegment": {
+              "classroom-cold-open": [
+                {
+                  "id": "classroom-teacher-terminal",
+                  "kind": "classroom",
+                  "partCount": 3,
+                  "role": "teacher-terminal",
+                  "segmentId": "classroom-cold-open"
+                },
+                {
+                  "id": "classroom-student-desks",
+                  "kind": "classroom",
+                  "partCount": 6,
+                  "role": "student-desk-rows",
+                  "segmentId": "classroom-cold-open"
+                },
+                {
+                  "id": "classroom-board",
+                  "kind": "classroom",
+                  "partCount": 1,
+                  "role": "board-silhouette",
+                  "segmentId": "classroom-cold-open"
+                },
+                {
+                  "id": "classroom-clock",
+                  "kind": "classroom",
+                  "partCount": 2,
+                  "role": "clock-silhouette",
+                  "segmentId": "classroom-cold-open"
+                }
+              ],
+              "collapsing-corridor": [
+                {
+                  "id": "corridor-locker-banks",
+                  "kind": "corridor",
+                  "partCount": 12,
+                  "role": "locker-banks",
+                  "segmentId": "collapsing-corridor"
+                },
+                {
+                  "id": "corridor-room-number",
+                  "kind": "corridor",
+                  "partCount": 4,
+                  "role": "room-number-cues",
+                  "segmentId": "collapsing-corridor"
+                },
+                {
+                  "id": "corridor-emergency-sign",
+                  "kind": "corridor",
+                  "partCount": 2,
+                  "role": "emergency-sign",
+                  "segmentId": "collapsing-corridor"
+                }
+              ],
+              "first-arena": [
+                {
+                  "id": "arena-projector-source",
+                  "kind": "arena",
+                  "partCount": 3,
+                  "role": "projector-source",
+                  "segmentId": "first-arena"
+                },
+                {
+                  "id": "arena-source-grid",
+                  "kind": "arena",
+                  "partCount": 7,
+                  "role": "source-grid",
+                  "segmentId": "first-arena"
+                },
+                {
+                  "id": "arena-damaged-desk-perimeter",
+                  "kind": "arena",
+                  "partCount": 6,
+                  "role": "damaged-desk-perimeter",
+                  "segmentId": "first-arena"
+                }
+              ],
+              "memory-backup-decision": [
+                {
+                  "id": "memory-backup-terminal",
+                  "kind": "decision",
+                  "partCount": 3,
+                  "role": "backup-terminal",
+                  "segmentId": "memory-backup-decision"
+                },
+                {
+                  "id": "memory-server-rack",
+                  "kind": "decision",
+                  "partCount": 6,
+                  "role": "server-rack",
+                  "segmentId": "memory-backup-decision"
+                },
+                {
+                  "id": "memory-evidence-frame",
+                  "kind": "decision",
+                  "partCount": 4,
+                  "role": "evidence-frame",
+                  "segmentId": "memory-backup-decision"
+                }
+              ],
+              "scanner-pursuit": [
+                {
+                  "id": "pursuit-scanner-beacons",
+                  "kind": "pursuit",
+                  "partCount": 8,
+                  "role": "scanner-beacons",
+                  "segmentId": "scanner-pursuit"
+                },
+                {
+                  "id": "pursuit-gate-rhythm",
+                  "kind": "pursuit",
+                  "partCount": 12,
+                  "role": "scanner-gate-rhythm",
+                  "segmentId": "scanner-pursuit"
+                }
+              ],
+              "gym-boss-arena": [
+                {
+                  "id": "gym-court-markings",
+                  "kind": "boss-arena",
+                  "partCount": 7,
+                  "role": "court-markings",
+                  "segmentId": "gym-boss-arena"
+                },
+                {
+                  "id": "gym-scoreboard",
+                  "kind": "boss-arena",
+                  "partCount": 3,
+                  "role": "scoreboard",
+                  "segmentId": "gym-boss-arena"
+                },
+                {
+                  "id": "gym-broadcast-door",
+                  "kind": "boss-arena",
+                  "partCount": 3,
+                  "role": "broadcast-door",
+                  "segmentId": "gym-boss-arena"
+                },
+                {
+                  "id": "gym-approval-server",
+                  "kind": "boss-arena",
+                  "partCount": 5,
+                  "role": "approval-server-focus",
+                  "segmentId": "gym-boss-arena"
+                }
+              ]
+            },
+            "noticeFade": {
+              "panelCount": 12,
+              "panels": [
+                {
+                  "id": "notice-collapsing-corridor-left-0",
+                  "whiten": 0,
+                  "z": -8
+                },
+                {
+                  "id": "notice-collapsing-corridor-right-0",
+                  "whiten": 0,
+                  "z": -8
+                },
+                {
+                  "id": "notice-collapsing-corridor-left-1",
+                  "whiten": 0,
+                  "z": -12
+                },
+                {
+                  "id": "notice-collapsing-corridor-right-1",
+                  "whiten": 0,
+                  "z": -12
+                },
+                {
+                  "id": "notice-collapsing-corridor-left-2",
+                  "whiten": 0,
+                  "z": -16
+                },
+                {
+                  "id": "notice-collapsing-corridor-right-2",
+                  "whiten": 0,
+                  "z": -16
+                },
+                {
+                  "id": "notice-collapsing-corridor-left-3",
+                  "whiten": 0.19999999999999996,
+                  "z": -20
+                },
+                {
+                  "id": "notice-collapsing-corridor-right-3",
+                  "whiten": 0.19999999999999996,
+                  "z": -20
+                },
+                {
+                  "id": "notice-collapsing-corridor-left-4",
+                  "whiten": 0.6000000000000001,
+                  "z": -24
+                },
+                {
+                  "id": "notice-collapsing-corridor-right-4",
+                  "whiten": 0.6000000000000001,
+                  "z": -24
+                },
+                {
+                  "id": "notice-collapsing-corridor-left-5",
+                  "whiten": 1,
+                  "z": -28
+                },
+                {
+                  "id": "notice-collapsing-corridor-right-5",
+                  "whiten": 1,
+                  "z": -28
+                }
+              ],
+              "whitenedCount": 6
+            },
+            "renderedLightIds": [],
+            "navigationIds": [
+              "nav-classroom",
+              "nav-corridor",
+              "nav-first-arena",
+              "nav-memory",
+              "nav-pursuit",
+              "nav-gym"
+            ],
+            "occluders": [
+              {
+                "bounds": {
+                  "maxX": -6,
+                  "maxY": 3.6,
+                  "maxZ": 6,
+                  "minX": -6.279999999999999,
+                  "minY": 0,
+                  "minZ": -6
+                },
+                "id": "collision-classroom:wall-left"
+              },
+              {
+                "bounds": {
+                  "maxX": 6.279999999999999,
+                  "maxY": 3.6,
+                  "maxZ": 6,
+                  "minX": 6,
+                  "minY": 0,
+                  "minZ": -6
+                },
+                "id": "collision-classroom:wall-right"
+              },
+              {
+                "bounds": {
+                  "maxX": -6,
+                  "maxY": 3.6,
+                  "maxZ": -6,
+                  "minX": -6.279999999999999,
+                  "minY": 0,
+                  "minZ": -30
+                },
+                "id": "collision-corridor:wall-left"
+              },
+              {
+                "bounds": {
+                  "maxX": 6.279999999999999,
+                  "maxY": 3.6,
+                  "maxZ": -6,
+                  "minX": 6,
+                  "minY": 0,
+                  "minZ": -30
+                },
+                "id": "collision-corridor:wall-right"
+              },
+              {
+                "bounds": {
+                  "maxX": -9,
+                  "maxY": 3.6,
+                  "maxZ": -30,
+                  "minX": -9.280000000000001,
+                  "minY": 0,
+                  "minZ": -48
+                },
+                "id": "collision-first-arena:wall-left"
+              },
+              {
+                "bounds": {
+                  "maxX": 9.280000000000001,
+                  "maxY": 3.6,
+                  "maxZ": -30,
+                  "minX": 9,
+                  "minY": 0,
+                  "minZ": -48
+                },
+                "id": "collision-first-arena:wall-right"
+              },
+              {
+                "bounds": {
+                  "maxX": -6,
+                  "maxY": 3.6,
+                  "maxZ": -48,
+                  "minX": -6.279999999999999,
+                  "minY": 0,
+                  "minZ": -61
+                },
+                "id": "collision-memory:wall-left"
+              },
+              {
+                "bounds": {
+                  "maxX": 6.279999999999999,
+                  "maxY": 3.6,
+                  "maxZ": -48,
+                  "minX": 6,
+                  "minY": 0,
+                  "minZ": -61
+                },
+                "id": "collision-memory:wall-right"
+              },
+              {
+                "bounds": {
+                  "maxX": -3.9999999999999996,
+                  "maxY": 3.6,
+                  "maxZ": -61,
+                  "minX": -4.279999999999999,
+                  "minY": 0,
+                  "minZ": -91
+                },
+                "id": "collision-pursuit:wall-left"
+              },
+              {
+                "bounds": {
+                  "maxX": 4.279999999999999,
+                  "maxY": 3.6,
+                  "maxZ": -61,
+                  "minX": 3.9999999999999996,
+                  "minY": 0,
+                  "minZ": -91
+                },
+                "id": "collision-pursuit:wall-right"
+              },
+              {
+                "bounds": {
+                  "maxX": -13,
+                  "maxY": 3.6,
+                  "maxZ": -91,
+                  "minX": -13.280000000000001,
+                  "minY": 0,
+                  "minZ": -119
+                },
+                "id": "collision-gym:wall-left"
+              },
+              {
+                "bounds": {
+                  "maxX": 13.280000000000001,
+                  "maxY": 3.6,
+                  "maxZ": -91,
+                  "minX": 13,
+                  "minY": 0,
+                  "minZ": -119
+                },
+                "id": "collision-gym:wall-right"
+              },
+              {
+                "bounds": {
+                  "maxX": 6.28,
+                  "maxY": 3.6,
+                  "maxZ": 6.279999999999999,
+                  "minX": -6.28,
+                  "minY": 0,
+                  "minZ": 6
+                },
+                "id": "collision-classroom:wall-north-cap"
+              },
+              {
+                "bounds": {
+                  "maxX": 13.28,
+                  "maxY": 3.6,
+                  "maxZ": -119,
+                  "minX": -13.28,
+                  "minY": 0,
+                  "minZ": -119.28
+                },
+                "id": "collision-gym:wall-south-cap"
+              }
+            ],
+            "routeCues": [
+              {
+                "fromSegmentId": "classroom-cold-open",
+                "id": "route-cue-classroom-cold-open",
+                "kind": "segment",
+                "position": {
+                  "x": 0,
+                  "y": 0.03,
+                  "z": -4.8
+                },
+                "to": "collapsing-corridor"
+              },
+              {
+                "fromSegmentId": "collapsing-corridor",
+                "id": "route-cue-collapsing-corridor",
+                "kind": "segment",
+                "position": {
+                  "x": 0,
+                  "y": 0.03,
+                  "z": -28.8
+                },
+                "to": "first-arena"
+              },
+              {
+                "fromSegmentId": "first-arena",
+                "id": "route-cue-first-arena",
+                "kind": "segment",
+                "position": {
+                  "x": 0,
+                  "y": 0.03,
+                  "z": -46.8
+                },
+                "to": "memory-backup-decision"
+              },
+              {
+                "fromSegmentId": "memory-backup-decision",
+                "id": "route-cue-memory-backup-decision",
+                "kind": "segment",
+                "position": {
+                  "x": 0,
+                  "y": 0.03,
+                  "z": -59.8
+                },
+                "to": "scanner-pursuit"
+              },
+              {
+                "fromSegmentId": "scanner-pursuit",
+                "id": "route-cue-scanner-pursuit",
+                "kind": "segment",
+                "position": {
+                  "x": 0,
+                  "y": 0.03,
+                  "z": -89.8
+                },
+                "to": "gym-boss-arena"
+              },
+              {
+                "fromSegmentId": "gym-boss-arena",
+                "id": "route-cue-gym-boss-arena",
+                "kind": "chapter-exit",
+                "position": {
+                  "x": 0,
+                  "y": 0.03,
+                  "z": -117.8
+                },
+                "to": "chapter-one-complete"
+              }
+            ],
+            "segmentIds": [
+              "classroom-cold-open",
+              "collapsing-corridor",
+              "first-arena",
+              "memory-backup-decision",
+              "scanner-pursuit",
+              "gym-boss-arena"
+            ],
+            "visualIds": [
+              "visual-classroom-lamps",
+              "visual-corridor-emergency",
+              "visual-arena-projector",
+              "visual-memory-terminal",
+              "visual-scanner-beacons",
+              "visual-gym-scoreboard"
+            ],
+            "visuals": [
+              {
+                "id": "visual-classroom-lamps",
+                "kind": "classroom",
+                "landmarkIds": [
+                  "classroom-teacher-terminal",
+                  "classroom-student-desks",
+                  "classroom-board",
+                  "classroom-clock"
+                ],
+                "segmentId": "classroom-cold-open"
+              },
+              {
+                "id": "visual-corridor-emergency",
+                "kind": "corridor",
+                "landmarkIds": [
+                  "corridor-locker-banks",
+                  "corridor-room-number",
+                  "corridor-emergency-sign"
+                ],
+                "segmentId": "collapsing-corridor"
+              },
+              {
+                "id": "visual-arena-projector",
+                "kind": "arena",
+                "landmarkIds": [
+                  "arena-projector-source",
+                  "arena-source-grid",
+                  "arena-damaged-desk-perimeter"
+                ],
+                "segmentId": "first-arena"
+              },
+              {
+                "id": "visual-memory-terminal",
+                "kind": "decision",
+                "landmarkIds": [
+                  "memory-backup-terminal",
+                  "memory-server-rack",
+                  "memory-evidence-frame"
+                ],
+                "segmentId": "memory-backup-decision"
+              },
+              {
+                "id": "visual-scanner-beacons",
+                "kind": "pursuit",
+                "landmarkIds": [
+                  "pursuit-scanner-beacons",
+                  "pursuit-gate-rhythm"
+                ],
+                "segmentId": "scanner-pursuit"
+              },
+              {
+                "id": "visual-gym-scoreboard",
+                "kind": "boss-arena",
+                "landmarkIds": [
+                  "gym-court-markings",
+                  "gym-scoreboard",
+                  "gym-broadcast-door",
+                  "gym-approval-server"
+                ],
+                "segmentId": "gym-boss-arena"
+              }
+            ]
+          },
+          "routeSegmentId": "first-arena",
+          "story": {
+            "campaign": {
+              "schemaVersion": 5,
+              "integrity": {
+                "secured": 0,
+                "lost": 0
+              },
+              "exposure": {
+                "contained": 0,
+                "disclosed": 0
+              },
+              "trust": {
+                "dot": 0,
+                "haru": 0,
+                "lumen": 0,
+                "yoonseo": 0
+              },
+              "chapterProgress": {
+                "completed": [],
+                "current": 1,
+                "checkpoint": "chapter-1:first-arena"
+              },
+              "patchChoice": null,
+              "evidence": [],
+              "gateAttempts": [],
+              "settings": {
+                "motion": "full",
+                "quality": "auto",
+                "sound": true
+              }
+            },
+            "phase": "first-arena",
+            "memoryOutcome": null,
+            "effects": {
+              "arenaDressing": "sealed-terminal",
+              "backupVisible": true,
+              "bossCallout": "오염 표적 판정이 대기 중이다.",
+              "extraWave": false
+            },
+            "transcript": [],
+            "lastTriggerId": null
+          }
+        },
+        "renderer": {
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)"
         },
         "save": {
           "schemaVersion": 5,
@@ -7878,6 +7905,6 @@
       }
     }
   ],
-  "headless": false,
-  "rendererProfile": "hardware"
+  "headless": true,
+  "rendererProfile": "swiftshader"
 }
