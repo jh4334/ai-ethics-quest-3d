@@ -101,10 +101,34 @@ test('온라인 체크포인트는 오프라인 재실행 뒤 보스 승리까�
   await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-characters', 'ready', { timeout: 20_000 });
   await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-environment-status', 'ready', { timeout: 20_000 });
   await expect.poll(async () => page.evaluate(async () => {
-    const names = await caches.keys();
-    const requests = await Promise.all(names.map(async (name) => (await caches.open(name)).keys()));
-    return requests.flat().some(({ url }) => url.includes('/assets/reboot/environment/'));
-  })).toBe(true);
+    const cacheNames = await caches.keys();
+    const cacheEntries = await Promise.all(cacheNames.map(async (name) => {
+      const requests = await (await caches.open(name)).keys();
+      const environmentUrls = requests.map(({ url }) => url)
+        .filter((url) => url.includes('/assets/reboot/environment/'));
+      return {
+        environmentCount: environmentUrls.length,
+        environmentSamples: environmentUrls.slice(0, 3),
+        name,
+        totalEntries: requests.length
+      };
+    }));
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    return JSON.stringify({
+      cacheEntries,
+      environmentStatus: document.querySelector('[data-reboot-canvas]')?.dataset.environmentStatus,
+      hasEnvironmentAsset: cacheEntries.some(({ environmentCount }) => environmentCount > 0),
+      serviceWorkers: registrations.map((registration) => ({
+        active: registration.active?.state ?? null,
+        installing: registration.installing?.state ?? null,
+        scope: registration.scope,
+        waiting: registration.waiting?.state ?? null
+      })),
+      storage: await navigator.storage.estimate()
+    });
+  }), {
+    message: '환경 에셋 캐시가 생성되어야 한다. 실패 시 마지막 Cache Storage와 서비스워커 상태를 출력한다.'
+  }).toContain('"hasEnvironmentAsset":true');
   const cachedUrls = await page.evaluate(async () => {
     const names = await caches.keys();
     const requests = await Promise.all(names.map(async (name) => (await caches.open(name)).keys()));
