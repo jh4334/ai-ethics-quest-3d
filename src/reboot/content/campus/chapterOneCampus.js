@@ -124,7 +124,7 @@ export const CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS = Object.freeze([
   vistaPlacement('campus-bush', 'right', { x: 3.25, y: 0, z: 2.75 }, 1, -0.7),
   vistaPlacement('campus-grass', 'right', { x: 4.1, y: 0.02, z: 3.1 }, 1.02, 0.6),
   vistaPlacement('memory-flower', 'right', { x: 3.55, y: 0.03, z: 3.25 }, 1.45, -0.1),
-  vistaPlacement('campus-tree', 'right', { x: 5.35, y: 0.12, z: 5.05 }, 2.6, 0.28),
+  vistaPlacement('campus-tree', 'right', { x: 5.7, y: 0.1, z: 1.4 }, 1.65, 0.28),
   vistaPlacement('campus-rock', 'right', { x: 4.85, y: 0.34, z: 5.8 }, 1.55, -0.55),
   vistaPlacement('campus-bush', 'right', { x: 4.45, y: 0.44, z: 4.8 }, 1.75, 0.45),
   vistaPlacement('campus-grass', 'right', { x: 5.55, y: 0.2, z: 3.7 }, 1.6, -0.82),

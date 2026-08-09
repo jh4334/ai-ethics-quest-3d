@@ -29,6 +29,10 @@ test('제품 루트에 같은 토큰을 CSS 사용자 속성으로 적용한다'
 test('P0 캠퍼스 시각 프로필은 어깨너머 카메라와 황혼 대기 램프를 한 계약으로 고정한다', () => {
   assert.deepEqual(CAMPUS_VISUAL_PROFILE.camera.desktop, {
     distance: 7.2, fov: 42, height: 2.55, lateral: 2.35,
+    firstVista: {
+      distanceShift: 1.15, fov: 42, heightShift: 0.18,
+      lateralShift: 2.45, lookLateral: 1.4, lookLift: 1.25
+    },
     routeDistanceShift: 1.8, routeFov: 46, routeLateralShift: 0.05, routeLookLift: 1.5
   });
   assert.deepEqual(CAMPUS_VISUAL_PROFILE.atmosphere, {

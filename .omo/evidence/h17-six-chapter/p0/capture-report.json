@@ -17,7 +17,7 @@
           "lastAction": "none",
           "lastEnemyEvent": "none",
           "playerSignal": "100",
-          "combatTick": "205",
+          "combatTick": "185",
           "cameraMode": "desktop",
           "routeSegment": "classroom-cold-open",
           "storyPhase": "corridor",
@@ -34,7 +34,7 @@
           "triangles": "155012",
           "lightCount": "4",
           "particleCount": "0",
-          "heapBytes": "10600000",
+          "heapBytes": "10000000",
           "quality": "auto",
           "dpr": "1",
           "bossVerb": "none",
@@ -297,7 +297,7 @@
               "z": 1
             },
             "signal": 100,
-            "tick": 205
+            "tick": 185
           },
           "enemies": {
             "disposed": false,
@@ -508,12 +508,12 @@
             "p95FrameMs": 100,
             "render": {
               "calls": 199,
-              "heapBytes": 10600000,
+              "heapBytes": 10000000,
               "lights": 4,
               "particles": 0,
               "triangles": 155012
             },
-            "samples": 33,
+            "samples": 27,
             "simulationHz": 60
           },
           "enemyEventTypes": [],
@@ -711,7 +711,7 @@
                 "zoneId": "arena"
               }
             ],
-            "tick": 205
+            "tick": 185
           },
           "eventTypes": [],
           "route": {
@@ -1591,7 +1591,7 @@
           "lastAction": "none",
           "lastEnemyEvent": "none",
           "playerSignal": "100",
-          "combatTick": "208",
+          "combatTick": "198",
           "cameraMode": "touch",
           "routeSegment": "classroom-cold-open",
           "storyPhase": "corridor",
@@ -1871,7 +1871,7 @@
               "z": 1
             },
             "signal": 100,
-            "tick": 208
+            "tick": 198
           },
           "enemies": {
             "disposed": false,
@@ -2087,7 +2087,7 @@
               "particles": 0,
               "triangles": 157390
             },
-            "samples": 38,
+            "samples": 29,
             "simulationHz": 60
           },
           "enemyEventTypes": [],
@@ -2285,7 +2285,7 @@
                 "zoneId": "arena"
               }
             ],
-            "tick": 208
+            "tick": 198
           },
           "eventTypes": [],
           "route": {
@@ -3165,7 +3165,7 @@
           "lastAction": "none",
           "lastEnemyEvent": "none",
           "playerSignal": "100",
-          "combatTick": "197",
+          "combatTick": "186",
           "cameraMode": "touch",
           "routeSegment": "classroom-cold-open",
           "storyPhase": "corridor",
@@ -3445,7 +3445,7 @@
               "z": 1
             },
             "signal": 100,
-            "tick": 197
+            "tick": 186
           },
           "enemies": {
             "disposed": false,
@@ -3859,7 +3859,7 @@
                 "zoneId": "arena"
               }
             ],
-            "tick": 197
+            "tick": 186
           },
           "eventTypes": [],
           "route": {
@@ -4737,9 +4737,9 @@
           "enemies": "ready",
           "environmentStatus": "ready",
           "lastAction": "stagger",
-          "lastEnemyEvent": "attack-contact",
+          "lastEnemyEvent": "attack-recovered",
           "playerSignal": "100",
-          "combatTick": "174",
+          "combatTick": "171",
           "cameraMode": "desktop",
           "routeSegment": "first-arena",
           "storyPhase": "first-arena",
@@ -4748,22 +4748,22 @@
           "backupVisible": "true",
           "feedbackPromptCount": "3",
           "feedbackKinds": "damage,contact,telegraph",
-          "feedbackPoolActive": "3",
+          "feedbackPoolActive": "2",
           "audioVoices": "0",
           "musicLayer": "ambient",
           "p95FrameMs": "100",
-          "drawCalls": "160",
-          "triangles": "141603",
+          "drawCalls": "166",
+          "triangles": "141705",
           "lightCount": "4",
-          "particleCount": "4",
+          "particleCount": "10",
           "heapBytes": "10000000",
           "quality": "auto",
           "dpr": "1",
           "bossVerb": "none",
           "enemyCount": "2",
-          "enemyPhases": "eraser-mixed:active,stamper-mixed:reposition",
-          "enemyPhaseTicks": "eraser-mixed:0,stamper-mixed:0",
-          "stamperTelegraph": "reposition:0",
+          "enemyPhases": "eraser-mixed:windup,stamper-mixed:idle",
+          "enemyPhaseTicks": "eraser-mixed:17,stamper-mixed:0",
+          "stamperTelegraph": "idle:0",
           "eraserArmor": "1",
           "armorBreaks": "0",
           "reflections": "0",
@@ -4938,27 +4938,27 @@
               "bounds": [
                 {
                   "id": "player",
-                  "bottom": 664.6314354609025,
+                  "bottom": 665.6512941823424,
                   "depthValid": true,
-                  "left": 539.1356467087885,
-                  "right": 747.2089579490017,
-                  "top": 319.74754733244305
+                  "left": 539.5787139253446,
+                  "right": 747.4126278728723,
+                  "top": 320.8727289033463
                 },
                 {
                   "id": "threat",
-                  "bottom": 589.9544276324285,
+                  "bottom": 590.9024761008167,
                   "depthValid": true,
-                  "left": 648.7488499366142,
-                  "right": 840.6564010009519,
-                  "top": 275.8574527517476
+                  "left": 648.9195597213358,
+                  "right": 840.5874025337255,
+                  "top": 276.94454465903016
                 },
                 {
                   "id": "telegraph",
-                  "bottom": 639.6915743304475,
+                  "bottom": 640.6089638488588,
                   "depthValid": true,
-                  "left": 542.8537512877479,
-                  "right": 913.4206630444709,
-                  "top": 482.0767899125191
+                  "left": 543.0711504059641,
+                  "right": 913.2784482778534,
+                  "top": 483.0618211914741
                 }
               ],
               "includedIds": [
@@ -5059,16 +5059,16 @@
               "z": -33
             },
             "signal": 100,
-            "tick": 174
+            "tick": 171
           },
           "enemies": {
             "disposed": false,
             "enemies": [
               {
-                "cueId": "attack-contact",
+                "cueId": null,
                 "facing": 1.8157749899217592,
                 "id": "eraser-mixed",
-                "phase": "active",
+                "phase": "windup",
                 "position": [
                   0.4231418248386883,
                   0,
@@ -5077,10 +5077,10 @@
                 "profileId": "eraser"
               },
               {
-                "cueId": null,
+                "cueId": "attack-recovered",
                 "facing": 1.1071487177940904,
                 "id": "stamper-mixed",
-                "phase": "reposition",
+                "phase": "idle",
                 "position": [
                   -2,
                   0,
@@ -5253,16 +5253,15 @@
               "started": false,
               "voiceLimit": 4
             },
-            "cueCount": 1,
+            "cueCount": 0,
             "disposed": false,
             "pool": {
-              "active": 3,
+              "active": 2,
               "allocated": 16,
               "capacity": 16,
               "disposed": false,
               "kinds": [
                 "telegraph",
-                "contact",
                 "telegraph"
               ]
             },
@@ -5277,17 +5276,17 @@
           "performance": {
             "p95FrameMs": 100,
             "render": {
-              "calls": 162,
+              "calls": 160,
               "heapBytes": 10000000,
               "lights": 4,
-              "particles": 6,
-              "triangles": 141637
+              "particles": 4,
+              "triangles": 141603
             },
-            "samples": 39,
+            "samples": 40,
             "simulationHz": 60
           },
           "enemyEventTypes": [
-            "attack-contact"
+            "attack-recovered"
           ],
           "encounter": {
             "definition": {
@@ -5379,9 +5378,9 @@
                 "hp": 72,
                 "id": "eraser-mixed",
                 "lastIntent": "commit-attack",
-                "phase": "active",
+                "phase": "windup",
                 "phaseDuration": 0,
-                "phaseTick": 0,
+                "phaseTick": 17,
                 "position": {
                   "x": 0.4231418248386883,
                   "z": -34.692567299354764
@@ -5457,12 +5456,12 @@
                     }
                   ]
                 },
-                "faceTicks": 3,
+                "faceTicks": 0,
                 "facing": 1.1071487177940904,
                 "hp": 48,
                 "id": "stamper-mixed",
-                "lastIntent": "face",
-                "phase": "reposition",
+                "lastIntent": "commit-attack",
+                "phase": "idle",
                 "phaseDuration": 0,
                 "phaseTick": 0,
                 "position": {
@@ -5483,7 +5482,7 @@
                 "zoneId": "arena"
               }
             ],
-            "tick": 174
+            "tick": 171
           },
           "eventTypes": [],
           "route": {
@@ -6348,7 +6347,7 @@
           "lastAction": "stagger",
           "lastEnemyEvent": "attack-committed",
           "playerSignal": "100",
-          "combatTick": "185",
+          "combatTick": "165",
           "cameraMode": "touch",
           "routeSegment": "first-arena",
           "storyPhase": "first-arena",
@@ -6361,22 +6360,22 @@
           "audioVoices": "0",
           "musicLayer": "ambient",
           "p95FrameMs": "100",
-          "drawCalls": "167",
-          "triangles": "141731",
+          "drawCalls": "168",
+          "triangles": "141965",
           "lightCount": "4",
-          "particleCount": "12",
+          "particleCount": "10",
           "heapBytes": "12700000",
           "quality": "auto",
           "dpr": "1",
           "bossVerb": "none",
           "enemyCount": "2",
-          "enemyPhases": "eraser-mixed:recover,stamper-mixed:windup",
-          "enemyPhaseTicks": "eraser-mixed:10,stamper-mixed:10",
-          "stamperTelegraph": "windup:10",
+          "enemyPhases": "eraser-mixed:windup,stamper-mixed:recover",
+          "enemyPhaseTicks": "eraser-mixed:11,stamper-mixed:30",
+          "stamperTelegraph": "recover:30",
           "eraserArmor": "1",
           "armorBreaks": "0",
           "reflections": "0",
-          "playerHits": "5",
+          "playerHits": "4",
           "cancelledAttacks": "0",
           "blockerActive": "false",
           "offscreenActive": "false",
@@ -6538,8 +6537,8 @@
             "allIncluded": true,
             "includedIds": [
               "player",
-              "stamper-mixed",
-              "stamper-mixed",
+              "eraser-mixed",
+              "eraser-mixed",
               "route-cue-first-arena"
             ],
             "combatSafeArea": {
@@ -6547,27 +6546,27 @@
               "bounds": [
                 {
                   "id": "player",
-                  "bottom": 528.9154210226136,
+                  "bottom": 511.5116900429791,
                   "depthValid": true,
-                  "left": 179.283698815935,
-                  "right": 265.14475138521107,
-                  "top": 368.59269125752456
+                  "left": 133.2547584148347,
+                  "right": 214.890961366019,
+                  "top": 364.3980011297092
                 },
                 {
                   "id": "threat",
-                  "bottom": 424.43137638651893,
+                  "bottom": 474.0878700528108,
                   "depthValid": true,
-                  "left": 126.56311334950125,
-                  "right": 204.7769817861801,
-                  "top": 293.3021416029005
+                  "left": 169.75106185804273,
+                  "right": 251.82701901040178,
+                  "top": 329.4212905523836
                 },
                 {
                   "id": "telegraph",
-                  "bottom": 443.25021586307497,
+                  "bottom": 497.15585883664664,
                   "depthValid": true,
-                  "left": 88.80749042528215,
-                  "right": 239.2147968645423,
-                  "top": 376.1746791653431
+                  "left": 126.28061888264125,
+                  "right": 284.0826317136275,
+                  "top": 416.6664256039713
                 }
               ],
               "includedIds": [
@@ -6662,13 +6661,13 @@
           "combat": {
             "action": "idle",
             "chainLevel": 0,
-            "hp": 67,
+            "hp": 74,
             "player": {
               "x": 0,
               "z": -33
             },
             "signal": 100,
-            "tick": 185
+            "tick": 165
           },
           "enemies": {
             "disposed": false,
@@ -6677,7 +6676,7 @@
                 "cueId": null,
                 "facing": 1.8157749899217592,
                 "id": "eraser-mixed",
-                "phase": "recover",
+                "phase": "windup",
                 "position": [
                   0.4231418248386883,
                   0,
@@ -6689,7 +6688,7 @@
                 "cueId": null,
                 "facing": 1.1071487177940904,
                 "id": "stamper-mixed",
-                "phase": "windup",
+                "phase": "recover",
                 "position": [
                   -2,
                   0,
@@ -6871,10 +6870,10 @@
               "disposed": false,
               "kinds": [
                 "telegraph",
-                "contact",
+                "telegraph",
                 "damage",
                 "telegraph",
-                "telegraph"
+                "contact"
               ]
             },
             "promptCount": 3,
@@ -6888,13 +6887,13 @@
           "performance": {
             "p95FrameMs": 100,
             "render": {
-              "calls": 165,
+              "calls": 168,
               "heapBytes": 12700000,
               "lights": 4,
               "particles": 10,
-              "triangles": 141697
+              "triangles": 141933
             },
-            "samples": 45,
+            "samples": 40,
             "simulationHz": 60
           },
           "enemyEventTypes": [],
@@ -6988,9 +6987,9 @@
                 "hp": 72,
                 "id": "eraser-mixed",
                 "lastIntent": "commit-attack",
-                "phase": "recover",
+                "phase": "windup",
                 "phaseDuration": 0,
-                "phaseTick": 10,
+                "phaseTick": 11,
                 "position": {
                   "x": 0.4231418248386883,
                   "z": -34.692567299354764
@@ -7071,9 +7070,9 @@
                 "hp": 48,
                 "id": "stamper-mixed",
                 "lastIntent": "commit-attack",
-                "phase": "windup",
+                "phase": "recover",
                 "phaseDuration": 0,
-                "phaseTick": 10,
+                "phaseTick": 30,
                 "position": {
                   "x": -2,
                   "z": -37
@@ -7092,7 +7091,7 @@
                 "zoneId": "arena"
               }
             ],
-            "tick": 185
+            "tick": 165
           },
           "eventTypes": [],
           "route": {

@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import * as THREE from 'three';
 
+import { createCameraController } from '../src/reboot/camera/controller.js';
 import {
-  closestRouteSegment, getBossCameraTargets, getEncounterCameraTargets, getSceneViewport
+  closestRouteSegment, getBossCameraTargets, getEncounterCameraTargets, getSceneViewport,
+  updateSchoolCamera
 } from '../src/reboot/render/schoolSceneCamera.js';
 import { createSchoolSceneHud } from '../src/reboot/render/schoolSceneHud.js';
 
@@ -36,6 +39,42 @@ test('학교 장면 카메라는 아직 만나지 않은 먼 적 대신 현재 �
 
   assert.equal(targets.threat.id, 'player');
   assert.equal(targets.routeCue.id, 'classroom-exit');
+});
+
+test('1장 첫 조망은 플레이어를 왼쪽 1/3에 두고 중앙 기억 동선과 열린 교실을 함께 잡는다', () => {
+  // Given: 전투가 시작되기 전 열린 교실과 데스크톱 레퍼런스 뷰포트.
+  const viewport = { height: 900, mode: 'desktop', width: 1440 };
+  const frame = { player: { position: { x: 0, y: 0, z: 1 } }, targets: [] };
+  const encounter = { enemies: [] };
+  const routeCue = { id: 'classroom-exit', position: { x: 0, y: 0, z: -4.8 } };
+  const targets = getEncounterCameraTargets(frame, routeCue, encounter);
+  const cameraState = createCameraController(targets, viewport);
+  const camera = new THREE.PerspectiveCamera(42, viewport.width / viewport.height, 0.1, 200);
+
+  // When: 첫 조망 전용 카메라를 실제 Three.js 투영 행렬에 적용한다.
+  updateSchoolCamera({
+    bossEnabled: false, camera, cameraState,
+    currentSegment: { id: 'classroom-cold-open' }, delta: 0,
+    encounter, frame, routeCue, viewport
+  });
+  camera.updateMatrixWorld(true);
+  const project = (x, y, z) => {
+    const point = new THREE.Vector3(x, y, z).project(camera);
+    return {
+      x: (point.x + 1) * viewport.width / 2,
+      y: (1 - point.y) * viewport.height / 2
+    };
+  };
+  const playerBottom = project(0, 0, 1);
+  const playerTop = project(0, 2, 1);
+  const route = project(0, 0, -4.8);
+
+  // Then: 캐릭터는 왼쪽 1/3에서 읽히고, 목표는 중앙이며, 화면 높이 24~29%를 차지한다.
+  assert.equal(camera.fov, 42);
+  assert.ok(playerBottom.x >= 420 && playerBottom.x <= 470, `player x ${playerBottom.x}`);
+  assert.ok(route.x >= 650 && route.x <= 710, `route x ${route.x}`);
+  assert.ok((playerBottom.y - playerTop.y) / viewport.height >= 0.24);
+  assert.ok((playerBottom.y - playerTop.y) / viewport.height <= 0.29);
 });
 
 test('학교 HUD는 보스와 결말 상태를 사용자 화면과 QA 텔레메트리에 함께 반영한다', () => {

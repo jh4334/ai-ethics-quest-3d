@@ -26,6 +26,14 @@ export const CAMPUS_VISUAL_PROFILE = Object.freeze({
     desktop: Object.freeze({
       distance: 7.2,
       fov: 42,
+      firstVista: Object.freeze({
+        distanceShift: 1.15,
+        fov: 42,
+        heightShift: 0.18,
+        lateralShift: 2.45,
+        lookLateral: 1.4,
+        lookLift: 1.25
+      }),
       height: 2.55,
       lateral: 2.35,
       routeDistanceShift: 1.8,
