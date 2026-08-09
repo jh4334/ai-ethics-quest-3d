@@ -3,11 +3,11 @@
   "chapterReports": [
     {
       "checkpoint": "chapter-5:start",
-      "drawCalls": 49,
+      "drawCalls": 66,
       "p95FrameMs": 100,
-      "triangles": 64233,
+      "triangles": 99411,
       "chapter": 4,
-      "elapsedSeconds": 33.4,
+      "elapsedSeconds": 43.1,
       "inputMode": "touch",
       "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-4-touch-result.png"
     }

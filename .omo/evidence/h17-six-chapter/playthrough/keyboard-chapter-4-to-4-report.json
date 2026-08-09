@@ -3,11 +3,11 @@
   "chapterReports": [
     {
       "checkpoint": "chapter-5:start",
-      "drawCalls": 74,
+      "drawCalls": 79,
       "p95FrameMs": 100,
-      "triangles": 99909,
+      "triangles": 100055,
       "chapter": 4,
-      "elapsedSeconds": 138.8,
+      "elapsedSeconds": 66.3,
       "inputMode": "keyboard",
       "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-4-keyboard-result.png"
     }

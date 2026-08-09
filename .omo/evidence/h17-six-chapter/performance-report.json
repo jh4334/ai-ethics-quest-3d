@@ -1,42 +1,42 @@
 {
   "build": {
     "modules": 172,
-    "rebootJavaScriptBytes": 317746,
-    "rebootJavaScriptGzipBytes": 105820,
-    "threeJavaScriptBytes": 679932,
-    "threeJavaScriptGzipBytes": 173170,
+    "rebootJavaScriptBytes": 323381,
+    "rebootJavaScriptGzipBytes": 107013,
+    "threeJavaScriptBytes": 681282,
+    "threeJavaScriptGzipBytes": 172207,
     "chunkWarningOverBytes": 500000
   },
   "assets": {
-    "initialShell": { "bytes": 1353574, "files": 12 },
-    "installPrecache": { "bytes": 51164381, "files": 56 },
+    "initialShell": { "bytes": 1360558, "files": 12 },
+    "installPrecache": { "bytes": 37806365, "files": 56 },
     "chapterEnvironment": { "bytes": 13035875, "files": 41 },
     "character": { "bytes": 34100927, "files": 42 },
-    "animation": { "bytes": 15709880, "files": 2 },
-    "total": { "bytes": 64200256, "files": 97 }
+    "animation": { "bytes": 2344880, "files": 2 },
+    "total": { "bytes": 50842240, "files": 97 }
   },
   "firstPlayableChapter": {
-    "encodedBodyBytes": 85493849,
-    "requests": 233,
-    "transferBytes": 72154175,
-    "measurementSurface": "Vite dev server, empty browser context, chapter 1 high-quality profile"
+    "encodedBodyBytes": 63172437,
+    "requests": 104,
+    "transferBytes": 49788663,
+    "measurementSurface": "Vite preview server, empty browser context, chapter 1 desktop 1440x900"
   },
   "captures": {
     "profiles": ["desktop-1440x900", "mobile-390x844"],
     "renderer": "ANGLE Intel Iris Xe Direct3D11",
     "maxDrawCalls": 187,
-    "maxTriangles": 140247,
+    "maxTriangles": 148205,
     "maxLights": 4,
-    "desktopDirectRafP95FrameMs": 16.8,
-    "mobileDirectRafP95FrameMs": 24.8,
+    "desktopDirectRafP95FrameMs": 16.7,
+    "mobileDirectRafP95FrameMs": 16.7,
     "sceneProbeP95FrameMs": 100,
     "sceneProbeNote": "초기 로딩과 포커스 전환을 포함한 장면 누적값이라 정상 프레임의 직접 rAF 표본과 분리한다.",
     "consoleErrors": 0,
     "failedResponses": 0
   },
   "automatedPlaythrough": {
-    "keyboardSeconds": 626.2,
-    "touchSeconds": 411.9,
+    "keyboardSeconds": 390.2,
+    "touchSeconds": 258.0,
     "humanPlaytimeMeasured": false,
     "note": "실제 이동·전투·퍼즐·저장 재접속을 수행하지만 테스트 훅과 자동 입력을 사용하므로 사람의 실제 플레이 시간으로 해석하지 않는다."
   }
