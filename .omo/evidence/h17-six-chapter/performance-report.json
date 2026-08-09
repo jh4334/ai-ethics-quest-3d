@@ -1,19 +1,19 @@
 {
   "build": {
     "modules": 172,
-    "rebootJavaScriptBytes": 326100,
-    "rebootJavaScriptGzipBytes": 108061,
+    "rebootJavaScriptBytes": 328690,
+    "rebootJavaScriptGzipBytes": 109064,
     "threeJavaScriptBytes": 681282,
     "threeJavaScriptGzipBytes": 172207,
     "chunkWarningOverBytes": 500000
   },
   "assets": {
-    "initialShell": { "bytes": 1363354, "files": 12 },
-    "installPrecache": { "bytes": 37809161, "files": 56 },
+    "initialShell": { "bytes": 1365944, "files": 12 },
+    "installPrecache": { "bytes": 37811751, "files": 56 },
     "chapterEnvironment": { "bytes": 13254711, "files": 42 },
     "character": { "bytes": 34100927, "files": 42 },
     "animation": { "bytes": 2344880, "files": 2 },
-    "total": { "bytes": 51063872, "files": 98 }
+    "total": { "bytes": 51066462, "files": 98 }
   },
   "firstPlayableChapter": {
     "encodedBodyBytes": 63393992,
@@ -24,10 +24,10 @@
   "captures": {
     "profiles": ["desktop-1440x900", "mobile-390x844"],
     "renderer": "ANGLE Intel Iris Xe Direct3D11",
-    "maxDrawCalls": 195,
-    "maxTriangles": 151441,
+    "maxDrawCalls": 197,
+    "maxTriangles": 152654,
     "maxLights": 4,
-    "desktopDirectRafP95FrameMs": 16.7,
+    "desktopDirectRafP95FrameMs": 8.5,
     "mobileDirectRafP95FrameMs": 16.7,
     "sceneProbeP95FrameMs": 100,
     "sceneProbeNote": "초기 로딩과 포커스 전환을 포함한 장면 누적값이라 정상 프레임의 직접 rAF 표본과 분리한다.",
