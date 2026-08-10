@@ -49,7 +49,7 @@
 - `npm run test:legacy`: 200/200 통과.
 - Playwright E2E: 리부트 3/3, 슬라이스 2/2, 캠페인 7/7, 폴리시 11/11, 합계 23/23 통과. 리부트 오프라인 시나리오는 CDP로 HTTP 캐시를 비활성화·삭제하고 브라우저 네트워크까지 차단한 뒤 환경·캐릭터·저장 체크포인트·보스 승리·요청 실패 0을 실제 reload로 검증한다. 서비스워커 등록과 CacheStorage를 지운 음성 대조군은 `net::ERR_INTERNET_DISCONNECTED`, 복원한 동일 시나리오는 3/3 통과했다.
 - GitHub Actions는 23개를 한 무제한 단계에서 돌리지 않고 캠페인·시각/접근성·저장/오프라인·결말 파일로 나눴다. 각 단계는 30분, 전체 빌드 작업은 120분으로 제한하며 첫 확정 실패에서 중단한다.
-- 최신 구현 SHA `6d79bdf982c0`의 [GitHub Actions 실행 31345712772](https://github.com/jh4334/ai-ethics-quest-3d/actions/runs/31345712772)은 단위·빌드·스모크·슬라이스·캠페인·시각/접근성·저장/오프라인·결말 전 단계를 통과했다.
+- 이전 원격 기준 SHA `6d79bdf982c0`의 [GitHub Actions 실행 31345712772](https://github.com/jh4334/ai-ethics-quest-3d/actions/runs/31345712772)은 단위·빌드·스모크·슬라이스·캠페인·시각/접근성·저장/오프라인·결말 전 단계를 통과했다. 현재 HEAD의 원격 CI 결과는 [PR #112](https://github.com/jh4334/ai-ethics-quest-3d/pull/112) 체크에서 별도로 확인한다.
 - `npm run build`: 통과, 176개 모듈. 리부트 청크 344.70kB(gzip 114.98kB), Three.js 681.29kB(gzip 173.48kB).
 - `npm run smoke`, `npm run slice:gate`: 통과. H-17 기본 진입점과 legacy 롤백 경로를 확인했다.
 - 현재 dist 프로덕션 검증: v5 저장 키, v12 설치 캐시, 별도 `ethics-quest-h17-environment` runtime cache, 오프라인 재접속 뒤 `chapter-3:start` 복원 통과. 환경 로더는 서비스워커 제어 전에도 성공한 현재 장 에셋을 runtime cache에 직접 저장한다. 워커는 환경 요청을 같은 tier로 라우팅하고 activate 때 해당 tier를 보존하면서 매니페스트 밖의 항목은 정리한다. CI의 페이지 CacheStorage 목록 API가 정지하는 환경 차이는 내부 목록 assertion을 제거하고 더 강한 HTTP 캐시 제거·브라우저 오프라인 reload 검증으로 대체했으며 Linux CI 리부트 3/3이 통과했다.
