@@ -117,8 +117,11 @@ export function updateSchoolCamera({
   const profile = viewport.mode === 'touch'
     ? CAMPUS_VISUAL_PROFILE.camera.touch
     : CAMPUS_VISUAL_PROFILE.camera.desktop;
+  const touchFirstVista = viewport.mode === 'touch' && viewport.width >= 700
+    ? profile.tabletFirstVista
+    : profile.firstVista;
   const firstVista = mode === 'route' && currentSegment.id === 'classroom-cold-open'
-    ? profile.firstVista
+    ? touchFirstVista
     : null;
   const heightShift = mode === 'boss' ? 2 : 0;
   const distanceShift = mode === 'boss' ? 5 : 0;

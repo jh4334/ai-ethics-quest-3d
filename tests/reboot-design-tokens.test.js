@@ -43,6 +43,14 @@ test('P0 캠퍼스 시각 프로필은 어깨너머 카메라와 황혼 대기 �
     lookLateral: 0,
     lookLift: -0.55
   });
+  assert.deepEqual(CAMPUS_VISUAL_PROFILE.camera.touch.tabletFirstVista, {
+    distanceShift: -1.2,
+    fov: 46,
+    heightShift: -0.1,
+    lateralShift: -0.15,
+    lookLateral: 0,
+    lookLift: -0.3
+  });
   assert.deepEqual(CAMPUS_VISUAL_PROFILE.atmosphere, {
     bottom: 0x315f82,
     fog: 0x172842,

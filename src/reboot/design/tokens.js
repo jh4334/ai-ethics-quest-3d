@@ -52,6 +52,14 @@ export const CAMPUS_VISUAL_PROFILE = Object.freeze({
         lookLateral: 0,
         lookLift: -0.55
       }),
+      tabletFirstVista: Object.freeze({
+        distanceShift: -1.2,
+        fov: 46,
+        heightShift: -0.1,
+        lateralShift: -0.15,
+        lookLateral: 0,
+        lookLift: -0.3
+      }),
       height: 5.7,
       lateral: 2.35
     })

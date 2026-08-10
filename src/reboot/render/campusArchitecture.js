@@ -190,14 +190,28 @@ function mesh(parent, geometry, material, name, position, rotation = null, scale
 }
 
 function createFirstVistaSurface(group, resources, materials) {
-  const rowWidths = [6, 6, 6, 5, 5, 5, 4, 4, 4, 4, 3, 3, 3, 3, 2, 2, 2, 2];
+  const rowWidths = [7, 7, 6, 6, 6, 6, 6, 5, 5, 5, 4, 4, 4, 4, 3, 3, 3, 3, 2, 2, 2, 2];
   const paverCount = rowWidths.reduce((sum, count) => sum + count, 0);
-  const stoneColors = [0xb8a6b0, 0xc4a1a0, 0x9da3b5, 0xc29b8c];
-  const paverScaleX = [0.62, 0.76, 0.68, 0.84];
-  const paverScaleZ = [0.76, 0.64, 0.72, 0.86, 0.68];
-  const paverGeometry = resources.register(
-    new THREE.DodecahedronGeometry(0.88, 0), 'campus-first-vista-paver-geometry'
-  );
+  const stoneColors = [0x666575, 0x75656f, 0x596172, 0x79665f];
+  const paverScaleX = [0.86, 0.98, 0.92, 1.06];
+  const paverScaleZ = [0.88, 0.82, 0.94, 1.02, 0.86];
+  const paverShape = new THREE.Shape();
+  paverShape.moveTo(-0.72, -0.58);
+  paverShape.lineTo(0.48, -0.66);
+  paverShape.lineTo(0.72, -0.18);
+  paverShape.lineTo(0.61, 0.55);
+  paverShape.lineTo(-0.42, 0.67);
+  paverShape.lineTo(-0.74, 0.22);
+  paverShape.closePath();
+  const paverGeometry = resources.register(new THREE.ExtrudeGeometry(paverShape, {
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize: 0.055,
+    bevelThickness: 0.035,
+    curveSegments: 1,
+    depth: 0.15
+  }), 'campus-first-vista-paver-geometry');
+  paverGeometry.rotateX(-Math.PI / 2);
   const pavers = new THREE.InstancedMesh(paverGeometry, materials.path, paverCount);
   pavers.name = 'campus-first-vista-stone-pavers';
   pavers.castShadow = false;
@@ -218,13 +232,13 @@ function createFirstVistaSurface(group, resources, materials) {
       matrix.compose(
         new THREE.Vector3(
           curve + columnOffset * rowWidth,
-          0.2 + (paverIndex % 4) * 0.02,
-          5.45 - row * 1.32 + (column % 2 === 0 ? -0.08 : 0.08)
+          0.17 + (paverIndex % 4) * 0.018,
+          10.33 - row * 1.22 + (column % 2 === 0 ? -0.06 : 0.06)
         ),
         quaternion,
         new THREE.Vector3(
           paverScaleX[paverIndex % paverScaleX.length],
-          0.09 + (paverIndex % 4) * 0.012,
+          1,
           paverScaleZ[paverIndex % paverScaleZ.length]
         )
       );
@@ -346,7 +360,7 @@ function createFirstVistaSurface(group, resources, materials) {
 
 function createPlatforms(group, resources, materials) {
   const platforms = [
-    ['open-classroom', 14, 13, 0, 0, 3],
+    ['open-classroom', 14, 21, 0, 4, 3],
     ['roster-tower', 14, 23, -1.2, -18, 3.5],
     ['athletics-field', 22, 18, 1.25, -39, 4],
     ['library-archive', 18, 14, -1.2, -54, 3.5],

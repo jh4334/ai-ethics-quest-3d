@@ -318,6 +318,7 @@ export function createLayeredCampusSilhouettes({
   const islandGeometry = resources.register(new THREE.ConeGeometry(4.2, 7.6, 9, 1, true), `${prefix}-island-geometry`);
   const towerGeometry = resources.register(new THREE.CylinderGeometry(0.62, 0.88, 4.6, 8), `${prefix}-tower-geometry`);
   const roofGeometry = resources.register(new THREE.ConeGeometry(1.05, 1.7, 5), `${prefix}-roof-geometry`);
+  const windowMatrices = [];
   let instanceCount = 0;
 
   for (const [layerIndex, layer] of LAYERS.entries()) {
@@ -361,6 +362,15 @@ export function createLayeredCampusSilhouettes({
           new THREE.Vector3(layer.scale * 0.75, towerScaleY, layer.scale * 0.75)
         );
         towers.setMatrixAt(index * 2 + towerIndex, matrix);
+        windowMatrices.push(new THREE.Matrix4().compose(
+          new THREE.Vector3(
+            x + side * (towerIndex ? 1.1 : -0.7),
+            towerY + 0.12,
+            z + layer.scale * 0.7
+          ),
+          quaternion,
+          new THREE.Vector3(layer.scale * 0.72, layer.scale * 0.94, 1)
+        ));
         matrix.compose(
           new THREE.Vector3(
             x + side * (towerIndex ? 1.1 : -0.7),
@@ -381,7 +391,30 @@ export function createLayeredCampusSilhouettes({
     instanceCount += islandCount * 5;
   }
 
-  return Object.freeze({ instanceCount, layerCount: LAYERS.length, ridgeCount });
+  const windowGeometry = resources.register(
+    new THREE.PlaneGeometry(0.25, 0.34), `${prefix}-distant-window-geometry`
+  );
+  const windowMaterial = resources.register(new THREE.MeshBasicMaterial({
+    color: 0xf3b36c,
+    depthWrite: false,
+    fog: true,
+    opacity: 0.72,
+    transparent: true
+  }), `${prefix}-distant-window-material`);
+  const windowLights = disableShadows(new THREE.InstancedMesh(
+    windowGeometry, windowMaterial, windowMatrices.length
+  ));
+  windowLights.name = `${prefix}-distant-window-lights`;
+  windowMatrices.forEach((windowMatrix, index) => windowLights.setMatrixAt(index, windowMatrix));
+  windowLights.instanceMatrix.needsUpdate = true;
+  group.add(windowLights);
+
+  return Object.freeze({
+    instanceCount,
+    layerCount: LAYERS.length,
+    ridgeCount,
+    windowLightCount: windowMatrices.length
+  });
 }
 
 export function createEmissivePathAccents({ colors, group, points, prefix, resources }) {

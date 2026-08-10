@@ -47,25 +47,25 @@ const ASSET_NIGHT_TREATMENTS = Object.freeze({
     color: 0x66758d, emissive: 0x18243a, intensity: 0.22, roughness: 0.76
   }),
   'campus-bush': Object.freeze({
-    color: 0xa66f74, emissive: 0x6b3c44, intensity: 0.78, roughness: 0.94
+    color: 0x755a66, emissive: 0x1b141a, intensity: 0.1, roughness: 0.94
   }),
   'campus-grass': Object.freeze({
-    color: 0xb58c72, emissive: 0x6a4934, intensity: 0.72, roughness: 0.96
+    color: 0x88715d, emissive: 0x211810, intensity: 0.1, roughness: 0.96
   }),
   'campus-hero-rock': Object.freeze({
     clearMetalRoughnessMaps: true,
-    color: 0x747080,
-    emissive: 0x28233b,
-    intensity: 0.34,
+    color: 0x585b67,
+    emissive: 0x10131b,
+    intensity: 0.08,
     metalness: 0,
     normalScale: 0.42,
     roughness: 0.96
   }),
   'campus-rock': Object.freeze({
-    color: 0x736b7c, emissive: 0x28223a, intensity: 0.36, roughness: 0.98
+    color: 0x545965, emissive: 0x11151d, intensity: 0.08, roughness: 0.98
   }),
   'campus-tree': Object.freeze({
-    color: 0x925a75, emissive: 0x6a344d, intensity: 0.86, roughness: 0.94
+    color: 0x4d645c, emissive: 0x14241f, intensity: 0.16, roughness: 0.94
   }),
   'classroom-chair': Object.freeze({
     color: 0x74534f, emissive: 0x24151a, intensity: 0.15, roughness: 0.9
@@ -209,15 +209,15 @@ function applyPbrMaterial(architecture, role, material) {
   }
   if (['path', 'terrain', 'track', 'wood'].includes(role)) {
     const emissive = {
-      path: 0x7a4c58,
-      terrain: 0x40384b,
-      track: 0x280a08,
-      wood: 0x4a2814
+      path: 0x1c111a,
+      terrain: 0x10131a,
+      track: 0x180807,
+      wood: 0x21140c
     }[role];
-    const intensity = { path: 0.65, terrain: 0.4, track: 0.42, wood: 0.52 }[role];
+    const intensity = { path: 0.12, terrain: 0.08, track: 0.18, wood: 0.16 }[role];
     material.emissive.set(emissive);
     material.emissiveIntensity = intensity;
-    if ((role === 'path' || role === 'terrain') && material.map) material.emissiveMap = material.map;
+    material.emissiveMap = null;
   }
   material.color.setHex(CAMPUS_VISUAL_PROFILE.materialTint[role]);
   if (material.normalScale) material.normalScale.setScalar(0.82);
@@ -354,6 +354,7 @@ export function createFloatingCampusEnvironment({
       failedAssetIds: Object.freeze([...failedAssetIds]),
       failedMaterialIds: Object.freeze([...failedMaterialIds]),
       distantCampusInstances: silhouettes.instanceCount,
+      distantWindowLights: silhouettes.windowLightCount,
       memoryPathAccents: memoryPath.footprintCount,
       mountainRidges: silhouettes.ridgeCount,
       requiredAssetIds: CAMPUS_REQUIRED_ASSET_IDS,
