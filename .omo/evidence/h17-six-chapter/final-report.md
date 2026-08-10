@@ -23,12 +23,13 @@
 - 최신 P0 캡처: `p0/chapter-1-classroom-desktop-1440x900.png`, `p0/chapter-1-classroom-tablet-768x1024.png`, `p0/chapter-1-classroom-mobile-390x844.png`, `p0/chapter-1-desktop-1440x900.png`, `p0/chapter-1-mobile-390x844.png`.
 - 동일 크기 비교: `p0/reference-vs-actual-chapter1-2880x900.png`. 저장소 기준 이미지 `docs/design/concepts/gameplay-screen-v3.webp`와 최신 1장 화면을 각각 1440×900으로 배치했다.
 
-![레퍼런스와 최신 1장 동일 크기 비교](https://raw.githubusercontent.com/jh4334/ai-ethics-quest-3d/b6bf81bd72481db46948aa22e763f0c5d67d3eb2/.omo/evidence/h17-six-chapter/p0/reference-vs-actual-chapter1-2880x900.png)
+![레퍼런스와 최신 1장 동일 크기 비교](https://raw.githubusercontent.com/jh4334/ai-ethics-quest-3d/6d79bdf982c057b8575c0ac03b1e0f041ab5e5bd/.omo/evidence/h17-six-chapter/p0/reference-vs-actual-chapter1-2880x900.png)
 
-![최신 모바일 1장 화면](https://raw.githubusercontent.com/jh4334/ai-ethics-quest-3d/b6bf81bd72481db46948aa22e763f0c5d67d3eb2/.omo/evidence/h17-six-chapter/p0/chapter-1-classroom-mobile-390x844.png)
+![최신 모바일 1장 화면](https://raw.githubusercontent.com/jh4334/ai-ethics-quest-3d/6d79bdf982c057b8575c0ac03b1e0f041ab5e5bd/.omo/evidence/h17-six-chapter/p0/chapter-1-classroom-mobile-390x844.png)
 
 - 자동 동일 크기 픽셀 비교는 유사도 0/100이다. 구도·아트 디렉션이 다른 상태라는 경고값이며 레퍼런스 충실도 승인으로 해석하지 않는다.
-- 1장 첫 화면은 세 겹 이상의 부유 캠퍼스 깊이, 황혼 하늘, GLB 외벽·수목·가구, 벽돌·콘크리트·유리·금속·목재 구분, 따뜻한 기억 동선, 3인칭 어깨너머 구도로 재구성했다. 최신 `b6bf81bd7248` 패스는 달빛 강도를 3.15에서 2.35로 낮추고 벽돌·콘크리트·목재 PBR 틴트를 야간 팔레트로 조정했다. 카메라를 가리던 3.2배 전경 암석은 1.55배로 축소·후퇴시키고 오른쪽 높은 수목은 낮은 관목으로 교체해 길과 건물 실루엣을 열었다. 첫 조망의 42도 시야각, 플레이어 왼쪽 1/3 배치, 4단 벽돌 PBR 테라스·36개 절벽 암석·44개 석재 포장·34개 전경 GLB 배치·90개 원거리 캠퍼스 인스턴스는 유지했다. 레퍼런스 이미지를 2D 배경으로 사용하지 않았다.
+- 1장 첫 화면은 레퍼런스의 시선 축을 따라 넓은 전경에서 좁아지는 암석 부유섬, 43개 석재 포장, 44개 절벽 암석, 황금 목표 광선, 구멍 표식이 있는 공중 기록 조각 11개, 좌우 CC0 GLB 식생·암석 프레임, 후방 열린 교실로 재구성했다. 플레이어를 왼쪽 중심대에 크게 배치하고 중앙 길·기억 발자국·목표 광선을 한 축에 맞췄다. 기존 교실 가구는 길을 막던 전경에서 후방 생활 공간으로 옮겼고, 외벽·계단·가구·식생 재질을 남색 달빛과 호박빛 기억 팔레트로 통일했다. 충돌·저장·전투 동선은 바꾸지 않았으며 레퍼런스 이미지를 2D 배경으로 사용하지 않았다.
+- 목표 링 6개는 하나의 InstancedMesh로 합쳐 공중 기록 조각과 목표 광선을 추가하고도 드로콜 예산을 지켰다. 이번 패스는 새 외부 에셋을 추가하지 않고 기존 Kenney·Poly Haven·ambientCG CC0 자산과 Three.js 메시만 재구성했다.
 - 최신 P0 5/5 캡처는 Chromium SwiftShader WebGL에서 생성했으며 환경·캐릭터 ready, 콘솔 오류와 4xx/5xx 실패 응답은 각각 0건이다. 직전 하드웨어 측정은 별도 `performance-report.json`에 보존했으며 최신 시각 SHA의 하드웨어 측정으로 가장하지 않는다.
 - 전 장 최신 캡처는 `chapters/chapter-1-desktop-1440x900.png`부터 `chapter-6-mobile-390x844.png`까지 12개이며 `chapters/capture-report.json`에 측정값이 있다.
 - 12/12 Intel Iris Xe D3D11 하드웨어 WebGL, 콘솔 오류 0건, 4xx/5xx 실패 응답 0건이며 모바일 6/6에서 터치 UI가 보였다.
@@ -43,13 +44,13 @@
 
 ## 테스트·빌드·호환성
 
-- `npm test`: 507/507 통과.
-- `npm run test:h17`: 307/307 통과.
+- `npm test`: 508/508 통과.
+- `npm run test:h17`: 308/308 통과.
 - `npm run test:legacy`: 200/200 통과.
 - Playwright E2E: 리부트 3/3, 슬라이스 2/2, 캠페인 7/7, 폴리시 11/11, 합계 23/23 통과. 리부트 오프라인 시나리오는 CDP로 HTTP 캐시를 비활성화·삭제하고 브라우저 네트워크까지 차단한 뒤 환경·캐릭터·저장 체크포인트·보스 승리·요청 실패 0을 실제 reload로 검증한다. 서비스워커 등록과 CacheStorage를 지운 음성 대조군은 `net::ERR_INTERNET_DISCONNECTED`, 복원한 동일 시나리오는 3/3 통과했다.
 - GitHub Actions는 23개를 한 무제한 단계에서 돌리지 않고 캠페인·시각/접근성·저장/오프라인·결말 파일로 나눴다. 각 단계는 30분, 전체 빌드 작업은 120분으로 제한하며 첫 확정 실패에서 중단한다.
-- 최신 구현 SHA `2965e93f14f4`의 [GitHub Actions 실행 31303178149](https://github.com/jh4334/ai-ethics-quest-3d/actions/runs/31303178149)은 단위·빌드·스모크·슬라이스·캠페인·시각/접근성·저장/오프라인·결말 전 단계를 통과했다.
-- `npm run build`: 통과, 172개 모듈. 리부트 청크 329.49kB(gzip 109.98kB), Three.js 681.28kB(gzip 173.47kB).
+- 최신 구현 SHA `6d79bdf982c0`의 [GitHub Actions 실행 31345712772](https://github.com/jh4334/ai-ethics-quest-3d/actions/runs/31345712772)은 단위·빌드·스모크·슬라이스·캠페인·시각/접근성·저장/오프라인·결말 전 단계를 통과했다.
+- `npm run build`: 통과, 172개 모듈. 리부트 청크 334.50kB(gzip 111.63kB), Three.js 681.29kB(gzip 173.48kB).
 - `npm run smoke`, `npm run slice:gate`: 통과. H-17 기본 진입점과 legacy 롤백 경로를 확인했다.
 - 현재 dist 프로덕션 검증: v5 저장 키, v12 설치 캐시, 별도 `ethics-quest-h17-environment` runtime cache, 오프라인 재접속 뒤 `chapter-3:start` 복원 통과. 환경 로더는 서비스워커 제어 전에도 성공한 현재 장 에셋을 runtime cache에 직접 저장한다. 워커는 환경 요청을 같은 tier로 라우팅하고 activate 때 해당 tier를 보존하면서 매니페스트 밖의 항목은 정리한다. CI의 페이지 CacheStorage 목록 API가 정지하는 환경 차이는 내부 목록 assertion을 제거하고 더 강한 HTTP 캐시 제거·브라우저 오프라인 reload 검증으로 대체했으며 Linux CI 리부트 3/3이 통과했다.
 - v4 저장을 v5 6장 구조로 마이그레이션하고 원본 v4 바이트를 보존한다. 기존 5장 완료 상태, 손상·미래 버전·중단 쓰기 회복 테스트가 통과했다.
@@ -72,11 +73,11 @@
 - 캐릭터: 34,100,927바이트, 42파일(32.52MiB). 애니메이션은 사용 클립만 남겨 15,709,880바이트에서 2,344,880바이트(2.24MiB)로 85.1% 줄였다.
 - 전체 분류 자산: 51,066,569바이트, 98파일(48.70MiB).
 - 최신 캡처의 장별 데스크톱 전송량: 1장 47.7MiB, 2장 32.1MiB, 3장 34.9MiB, 4장 40.5MiB, 5장 36.8MiB, 6장 41.3MiB. 로컬 서버의 장별 독립 진입 측정이므로 합산 다운로드로 해석하지 않는다.
-- 최신 P0 5개 SwiftShader 화면 최대치: 199 draw calls, 154,958 triangles, 4 lights, 계측 상한 p95 100ms. 첫 조우 화면은 165 calls·141,465 triangles이며 모바일 첫 조우 화면은 165 calls·141,643 triangles다. 직전 Intel Iris Xe D3D11 하드웨어 실행은 197 calls·152,654 triangles·4 lights·직접 rAF p95 16.7ms였지만 최신 지형 패스 직전 측정이다.
+- 최신 P0 5개 SwiftShader 화면 최대치: 196 draw calls, 158,275 triangles, 4 lights, 콘솔 오류·실패 응답 0건. 첫 조우 데스크톱은 171 calls·142,681 triangles, 모바일은 162 calls·142,329 triangles다. 최신 기록 조각은 양면 인스턴스 메시로 경량화해 160k 삼각형 상한 아래에 1,725 triangles의 여유를 남겼다. 직전 Intel Iris Xe D3D11 하드웨어 실행은 197 calls·152,654 triangles·4 lights·직접 rAF p95 16.7ms였지만 최신 지형 패스 직전 측정이다.
 
 ## 남은 위험과 솔직한 품질 평가
 
-- 최신 1장은 실제 PBR 바인딩, 플레이어를 왼쪽 1/3에 둔 첫 조망 카메라, 낮아진 냉색 달빛, 56개 기억 발자국, 44개 석재 경로, 4단 지형과 34개 전경 GLB로 평평한 청색 블록아웃과 오른쪽 전경 오클루더를 줄였다. 그러나 반복되는 로우폴리 외벽 모듈, 제한된 식생 종류, 단순한 산악 실루엣 때문에 콘셉트의 회화적 밀도와 영화적 조명에는 아직 못 미친다. 현재 평가는 완주 가능한 스타일라이즈드 로우폴리 3D 게임이며, 자동 비교도 0/100이므로 레퍼런스 충실도나 AAA 수준이라고 주장하지 않는다.
+- 최신 1장은 실제 PBR 바인딩, 더 낮고 가까운 어깨너머 카메라, 좁아지는 암석 동선, 황금 광선, 기록 조각, 화면 안으로 투영한 전경 GLB 식생으로 기존의 넓은 청색 평면보다 레퍼런스의 구도와 목표 가독성에 가까워졌다. 그러나 반복되는 로우폴리 학교 외벽, 제한된 식생 종류, 단순한 산악 실루엣과 회화적 후처리 부족 때문에 픽셀 단위 자동 비교는 여전히 0/100이다. 현재 평가는 완주 가능한 스타일라이즈드 로우폴리 3D 게임이며 레퍼런스와 동일하거나 AAA 수준이라고 주장하지 않는다.
 - 48.70MiB 전체 자산과 36.06MiB 설치 프리캐시는 크게 줄었지만 학교망 첫 설치에는 여전히 부담이다. 장 환경 지연 로딩과 저화질 프로필은 작동하며, 남은 캐릭터 본체·의상 GLB의 Meshopt/Draco 검토와 KTX2 텍스처화, 실제 저사양 기기·학교망 검증이 남았다.
 - `npm audit`의 high 1건(`nanoid`)·moderate 1건(`postcss`)은 Vite 8.1.0의 개발 전용 전이 의존성으로, 최적화 전 커밋과 동일 버전이다. 런타임 번들 경로는 아니지만 도구 체인 갱신 때 해소해야 한다.
 - 사람 기준 플레이 시간, 실제 학생용 모바일 기기, 실제 학교망 다운로드는 아직 측정하지 못했다.
