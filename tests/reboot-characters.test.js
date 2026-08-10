@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
+import sharp from 'sharp';
 import * as THREE from 'three';
 
 import {
@@ -43,7 +44,7 @@ test('reboot roster gives every story role an explicit licensed or procedural pr
       assert.equal(profile.outfit, null);
     } else {
       assert.match(profile.body, /^(female|male)$/);
-      assert.match(profile.outfit, /^(peasant|ranger)$/);
+      assert.match(profile.outfit, /^(peasant|ranger|student)$/);
     }
     assert.match(profile.tint, /^#[0-9a-f]{6}$/i);
     const minimumScale = id === 'dot' ? 0.6 : id === 'player' ? 0.7 : 0.8;
@@ -185,15 +186,15 @@ test('main cast presentation stays large and texture-lit enough for the live sch
   assert.equal(humans.filter(({ id }) => id !== 'player').every((profile) => profile.scale === 1.3), true);
   assert.equal(getCharacterProfile('dot').scale, 0.62);
   assert.equal(getCharacterProfile('player').body, 'male');
-  assert.equal(getCharacterProfile('player').outfit, 'peasant');
-  assert.equal(getCharacterProfile('player').outfitTint, '#45557f');
+  assert.equal(getCharacterProfile('player').outfit, 'student');
+  assert.equal(getCharacterProfile('player').outfitTint, '#ffffff');
   assert.equal(getCharacterProfile('player').hairTint, '#1c2538');
   assert.equal(getCharacterProfile('player').hair, 'simpleParted');
   assert.equal(getCharacterProfile('player').standaloneAsset, null);
   assert.deepEqual(getCharacterProfile('player').animations, {
     action: 'Interact', defeat: 'Death01', hit: 'Hit_Chest', idle: 'Idle_Loop', move: 'Jog_Fwd_Loop'
   });
-  assert.equal(getCharacterProfile('player').identity.silhouette, 'dark-haired-navy-student-ranger-scarf');
+  assert.equal(getCharacterProfile('player').identity.silhouette, 'reference-navy-student-coat-scarf');
   for (const profile of humans) {
     assert.deepEqual(Object.keys(profile.presentation).sort(), ['hairEmissive', 'outfitEmissive', 'skinEmissive']);
     assert.ok(profile.presentation.outfitEmissive >= 0.08);
@@ -228,9 +229,15 @@ test('character factory assembles the visible-haired student ranger and adds onl
       } else if (url.includes('/base/')) {
         scene.add(makeMesh('MI_Regular_Female'), makeMesh('MI_Eyes'));
       } else if (url.includes('/outfits/')) {
-        const outfit = makeMesh(url.includes('Ranger') ? 'MI_Ranger' : 'MI_Peasant');
-        if (url.includes('Male_Ranger')) outfit.name = 'Male_Ranger_Head_Hood';
-        scene.add(outfit);
+        if (url.includes('Player_Student')) {
+          const hood = makeMesh('MI_Ranger');
+          hood.name = 'Male_Ranger_Head_Hood';
+          scene.add(makeMesh('MI_Ranger'), hood);
+        } else {
+          const outfit = makeMesh(url.includes('Ranger') ? 'MI_Ranger' : 'MI_Peasant');
+          if (url.includes('Male_Ranger')) outfit.name = 'Male_Ranger_Head_Hood';
+          scene.add(outfit);
+        }
       }
       const animations = [
         'Interact', 'Death01', 'Hit_Chest', 'Idle_Loop', 'Jog_Fwd_Loop',
@@ -244,6 +251,7 @@ test('character factory assembles the visible-haired student ranger and adds onl
   t.after(() => factory.dispose());
 
   // When: the player presentation is assembled.
+  assert.deepEqual(getCharacterProfile('player').hiddenParts, ['Male_Ranger_Head_Hood']);
   const character = await factory.create('player');
   const materials = [];
   character.root.traverse((object) => {
@@ -256,16 +264,16 @@ test('character factory assembles the visible-haired student ranger and adds onl
   const importedMaterials = materials.filter((material) => material.name);
   assert.deepEqual(loadedUrls, [
     CHARACTER_ASSET_PATHS.maleBody,
-    CHARACTER_ASSET_PATHS.malePeasant,
+    CHARACTER_ASSET_PATHS.maleStudent,
     CHARACTER_ASSET_PATHS.hairSimpleParted,
     CHARACTER_ASSET_PATHS.animationLibrary1
   ]);
-  assert.equal(importedMaterials.length, 4);
+  assert.equal(importedMaterials.length, 5);
   assert.equal(importedMaterials.every((material) => material.map?.isTexture), true);
   assert.equal(importedMaterials.every((material) => material.emissiveMap === material.map), true);
-  assert.equal(importedMaterials.find((material) => material.name === 'MI_Peasant').polygonOffset, true);
+  assert.equal(importedMaterials.find((material) => material.name === 'MI_Ranger').polygonOffset, true);
   assert.equal(character.root.getObjectByName('character-player-outfit').scale.x, 1.01);
-  assert.equal(character.root.getObjectByName('Male_Ranger_Head_Hood'), undefined);
+  assert.equal(character.root.getObjectByName('Male_Ranger_Head_Hood').visible, false);
   assert.equal(importedMaterials.every((material) => material.emissiveIntensity <= 0.22), true);
   assert.equal(Boolean(character.root.getObjectByName('player-navy-coat')), false);
   assert.equal(Boolean(character.root.getObjectByName('player-gold-coat-trim')), false);
@@ -337,6 +345,25 @@ test('runtime character assets exist locally and are documented as CC0', () => {
   assert.match(licenses, /RPG Character Pack/i);
   assert.match(licenses, /CC0 1\.0/i);
   assert.ok(projectRoot);
+});
+
+test('reference-derived player texture fully decodes as a browser-ready RGBA atlas', async () => {
+  // Given: 플레이어 GLTF가 상대 경로로 읽는 생성 텍스처.
+  const texture = readFileSync(new URL(
+    '../public/assets/reboot/characters/outfits/T_Player_Student_BaseColor.png',
+    import.meta.url
+  ));
+
+  // When: PNG 전체 픽셀을 디코드한다. 헤더만 읽으면 잘린 파일을 놓칠 수 있다.
+  const image = sharp(texture);
+  const metadata = await image.metadata();
+  await image.stats();
+
+  // Then: Three.js가 기대하는 Ranger 아틀라스 크기와 알파 채널을 유지한다.
+  assert.equal(metadata.width, 1024);
+  assert.equal(metadata.height, 1024);
+  assert.equal(metadata.channels, 4);
+  assert.equal(metadata.hasAlpha, true);
 });
 
 test('school scene uses the imported character pipeline instead of primitive avatars', () => {

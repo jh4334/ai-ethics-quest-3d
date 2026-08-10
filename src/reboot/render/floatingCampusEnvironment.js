@@ -18,7 +18,7 @@ import { createDisposableRegistry } from './dispose.js';
 const PBR_MATERIAL_BINDINGS = Object.freeze({
   brick: 'masonry-brick',
   concrete: 'structural-concrete',
-  path: 'structural-concrete',
+  path: 'reference-stone',
   terrain: 'structural-concrete',
   track: 'road-asphalt',
   wood: 'interior-wood'

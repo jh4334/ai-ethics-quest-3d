@@ -89,6 +89,7 @@ test('Given the environment catalog, When release assets are audited, Then files
   for (const item of [...ENVIRONMENT_ASSETS, ...ENVIRONMENT_MATERIALS]) {
     assert.ok(ENVIRONMENT_SOURCES[item.source], `${item.id}: ${item.source}`);
   }
+  assert.equal(ENVIRONMENT_MATERIALS.find(({ id }) => id === 'reference-stone')?.source, 'h17-generated');
 
   const materialBytes = new Map();
   for (const material of ENVIRONMENT_MATERIALS) {

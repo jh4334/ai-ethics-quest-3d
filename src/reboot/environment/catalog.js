@@ -61,6 +61,13 @@ const SOURCE_DEFINITIONS = {
     downloadUrl: 'https://ambientcg.com/get?file=Asphalt009_1K-JPG.zip',
     archiveSha256: '3282415AFAD2C74A4665FF191481545138C33C963B4EE0D7E7D292B66B1B4C7E',
     license: 'CC0 1.0'
+  },
+  'h17-generated': {
+    name: 'H-17 Reference Stone',
+    pageUrl: 'docs/design/concepts/gameplay-screen-v3.webp',
+    downloadUrl: 'OpenAI image generation tool (built-in)',
+    archiveSha256: '9A978385D82CD65D0CDACFB8FF722756B773F95FEE91985759CCD7EFDACDCFE5',
+    license: 'Project-generated asset'
   }
 };
 
@@ -135,6 +142,7 @@ function defineMaterial(id, source, folder, filePrefix, placeholderColor) {
 export const ENVIRONMENT_MATERIALS = Object.freeze([
   defineMaterial('masonry-brick', 'bricks', 'bricks', 'Bricks001', 0x7b4938),
   defineMaterial('structural-concrete', 'concrete', 'concrete', 'Concrete004', 0x777875),
+  defineMaterial('reference-stone', 'h17-generated', 'h17-stone', 'H17Stone', 0x716574),
   defineMaterial('interior-wood', 'wood', 'wood', 'WoodFloor041', 0x9a7049),
   defineMaterial('road-asphalt', 'asphalt', 'asphalt', 'Asphalt009', 0x42484c)
 ]);

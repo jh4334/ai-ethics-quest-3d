@@ -188,7 +188,7 @@ test('Given licensed assets load successfully, When the floating campus becomes 
   });
   assert.equal(scene.getObjectByName('campus-platform-deck-open-classroom').material.name, 'structural-concrete');
   assert.equal(scene.getObjectByName('campus-platform-open-classroom').material.name, 'structural-concrete');
-  assert.equal(scene.getObjectByName('campus-memory-route-open-classroom').material.name, 'structural-concrete');
+  assert.equal(scene.getObjectByName('campus-memory-route-open-classroom').material.name, 'reference-stone');
   assert.equal(scene.getObjectByName('campus-first-vista-floating-records').count, 11);
   assert.equal(scene.getObjectByName('campus-first-vista-floating-records').material.name, 'campus-floating-record-material');
   assert.equal(scene.getObjectByName('campus-first-vista-goal-beam').material.name, 'campus-goal-beam-material');
@@ -211,7 +211,7 @@ test('Given licensed assets load successfully, When the floating campus becomes 
   assert.equal(scene.getObjectByName('athletics-track').material.name, 'road-asphalt');
   assert.equal(scene.getObjectByName('campus-first-vista-stone-pavers').isInstancedMesh, true);
   assert.equal(scene.getObjectByName('campus-first-vista-stone-pavers').geometry.type, 'ExtrudeGeometry');
-  assert.equal(scene.getObjectByName('campus-first-vista-stone-pavers').material.name, 'structural-concrete');
+  assert.equal(scene.getObjectByName('campus-first-vista-stone-pavers').material.name, 'reference-stone');
   assert.equal(scene.getObjectByName('campus-first-vista-stone-pavers').material.emissiveMap, null);
   assert.equal(scene.getObjectByName('campus-first-vista-stone-pavers').material.emissiveIntensity <= 0.14, true);
   assert.equal(scene.getObjectByName('campus-first-vista-cliff-rocks').isInstancedMesh, true);

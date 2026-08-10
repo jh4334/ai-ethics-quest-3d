@@ -13,6 +13,7 @@ export const CHARACTER_ASSET_PATHS = Object.freeze({
   maleBody: `${ASSET_ROOT}/base/Superhero_Male_FullBody.gltf`,
   malePeasant: `${ASSET_ROOT}/outfits/Male_Peasant.gltf`,
   maleRanger: `${ASSET_ROOT}/outfits/Male_Ranger.gltf`,
+  maleStudent: `${ASSET_ROOT}/outfits/Player_Student.gltf`,
   rpgRanger: `${ASSET_ROOT}/rpg/Ranger-runtime.glb`
 });
 
@@ -28,7 +29,8 @@ export const OUTFIT_ASSETS = Object.freeze({
   }),
   male: Object.freeze({
     peasant: CHARACTER_ASSET_PATHS.malePeasant,
-    ranger: CHARACTER_ASSET_PATHS.maleRanger
+    ranger: CHARACTER_ASSET_PATHS.maleRanger,
+    student: CHARACTER_ASSET_PATHS.maleStudent
   })
 });
 
@@ -99,10 +101,10 @@ function createProfile({
 export const CHARACTER_ROSTER = Object.freeze({
   player: createProfile({
     accessory: 'record-ring', body: 'male', hair: 'simpleParted',
-    hairTint: '#1c2538', id: 'player', label: '기록자',
-    outfit: 'peasant', outfitTint: '#45557f',
+    hairTint: '#1c2538', hiddenParts: ['Male_Ranger_Head_Hood'], id: 'player', label: '기록자',
+    outfit: 'student', outfitTint: '#ffffff',
     presentation: { hairEmissive: 0.2, outfitEmissive: 0.12, skinEmissive: 0.17 },
-    scale: 1.18, silhouette: 'dark-haired-navy-student-ranger-scarf', tint: '#4f618f'
+    scale: 1.18, silhouette: 'reference-navy-student-coat-scarf', tint: '#4f618f'
   }),
   dot: createProfile({
     accessory: 'scan-ring', body: null, face: 'sensor', id: 'dot', kind: 'audit-drone', label: 'DOT',
