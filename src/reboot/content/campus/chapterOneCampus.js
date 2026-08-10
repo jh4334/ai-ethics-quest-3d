@@ -98,6 +98,12 @@ const vistaPlacement = (assetId, side, position, scale, rotationY = 0) => placem
 );
 
 export const CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS = Object.freeze([
+  vistaPlacement('campus-bush', 'left', { x: -5.85, y: 0.06, z: 8.2 }, 4.1, 0.52),
+  vistaPlacement('campus-bush', 'left', { x: -5.25, y: 0.08, z: 5.65 }, 3.45, -0.35),
+  vistaPlacement('campus-grass', 'left', { x: -6.1, y: 0.1, z: 6.8 }, 2.65, 0.75),
+  vistaPlacement('campus-grass', 'right', { x: 5.85, y: 0.08, z: 8.15 }, 4.25, -0.58),
+  vistaPlacement('campus-grass', 'right', { x: 5.3, y: 0.08, z: 5.55 }, 3.5, 0.42),
+  vistaPlacement('campus-bush', 'right', { x: 6.05, y: 0.06, z: 6.7 }, 2.7, -0.7),
   vistaPlacement('campus-grass', 'left', { x: -4.8, y: 0.12, z: 0.35 }, 3.2, 0.2),
   vistaPlacement('campus-rock', 'left', { x: -3.2, y: 0.02, z: 1.2 }, 1.05, 0.15),
   vistaPlacement('campus-bush', 'left', { x: -3.6, y: 0, z: 1 }, 3, 0.4),

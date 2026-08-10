@@ -190,11 +190,14 @@ function mesh(parent, geometry, material, name, position, rotation = null, scale
 }
 
 function createFirstVistaSurface(group, resources, materials) {
-  const rowWidths = [7, 7, 6, 6, 6, 6, 6, 5, 5, 5, 4, 4, 4, 4, 3, 3, 3, 3, 2, 2, 2, 2];
+  const rowWidths = [
+    9, 9, 8, 8, 8, 7, 7, 7, 7, 6, 6, 6, 6, 6, 5,
+    5, 5, 5, 5, 4, 4, 4, 4, 4, 3, 3, 3, 3, 2, 2
+  ];
   const paverCount = rowWidths.reduce((sum, count) => sum + count, 0);
-  const stoneColors = [0x666575, 0x75656f, 0x596172, 0x79665f];
-  const paverScaleX = [0.86, 0.98, 0.92, 1.06];
-  const paverScaleZ = [0.88, 0.82, 0.94, 1.02, 0.86];
+  const stoneColors = [0x8a7d86, 0x9b7e7c, 0x72788a, 0x8d7770];
+  const paverScaleX = [0.58, 0.66, 0.62, 0.72];
+  const paverScaleZ = [0.62, 0.58, 0.68, 0.72, 0.61];
   const paverShape = new THREE.Shape();
   paverShape.moveTo(-0.72, -0.58);
   paverShape.lineTo(0.48, -0.66);
@@ -221,7 +224,7 @@ function createFirstVistaSurface(group, resources, materials) {
   let paverIndex = 0;
   for (const [row, columnCount] of rowWidths.entries()) {
     const t = row / (rowWidths.length - 1);
-    const rowWidth = 5.2 - t * 3.25;
+    const rowWidth = 4.8 - t * 3;
     const curve = Math.sin(t * Math.PI * 1.7) * 0.48;
     for (let column = 0; column < columnCount; column += 1) {
       const columnOffset = columnCount === 1 ? 0 : column / (columnCount - 1) - 0.5;
@@ -233,7 +236,7 @@ function createFirstVistaSurface(group, resources, materials) {
         new THREE.Vector3(
           curve + columnOffset * rowWidth,
           0.17 + (paverIndex % 4) * 0.018,
-          10.33 - row * 1.22 + (column % 2 === 0 ? -0.06 : 0.06)
+          10.33 - row * 1.02 + (column % 2 === 0 ? -0.05 : 0.05)
         ),
         quaternion,
         new THREE.Vector3(

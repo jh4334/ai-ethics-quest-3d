@@ -98,10 +98,10 @@ test('Given the first campus vista, When framed from the route camera, Then lice
   assert.equal(leftWing.length >= 16, true);
   assert.equal(rightWing.length >= 16, true);
   assert.equal(leftWing.every(({ position }) => (
-    position.x >= -5.3 && position.x <= -2.8 && position.z >= -11.5 && position.z <= 2.1
+    position.x >= -6.2 && position.x <= -2.8 && position.z >= -11.5 && position.z <= 8.5
   )), true);
   assert.equal(rightWing.every(({ position }) => (
-    position.x >= 2.8 && position.x <= 5.6 && position.z >= -11.5 && position.z <= 2.1
+    position.x >= 2.8 && position.x <= 6.2 && position.z >= -11.5 && position.z <= 8.5
   )), true);
   assert.equal(leftWing.filter(({ position }) => (
     position.x >= -4.4 && position.x <= -2.8 && position.z >= 0 && position.z <= 1.7
@@ -164,7 +164,7 @@ test('Given licensed assets load successfully, When the floating campus becomes 
     gardenTerraceCount: 4,
     gardenTerraceHeightLevels: 4,
     goalBeamCount: 1,
-    paverCount: 95,
+    paverCount: 161,
     paverHeightLevels: 4
   });
   assert.equal(scene.getObjectByName('campus-platform-deck-open-classroom').material.name, 'structural-concrete');
