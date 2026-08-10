@@ -1,42 +1,42 @@
 {
   "build": {
-    "modules": 172,
-    "rebootJavaScriptBytes": 328797,
-    "rebootJavaScriptGzipBytes": 109056,
-    "threeJavaScriptBytes": 681282,
-    "threeJavaScriptGzipBytes": 172207,
+    "modules": 176,
+    "rebootJavaScriptBytes": 344709,
+    "rebootJavaScriptGzipBytes": 113424,
+    "threeJavaScriptBytes": 681291,
+    "threeJavaScriptGzipBytes": 171562,
     "chunkWarningOverBytes": 500000
   },
   "assets": {
-    "initialShell": { "bytes": 1366051, "files": 12 },
-    "installPrecache": { "bytes": 37811858, "files": 56 },
-    "chapterEnvironment": { "bytes": 13254711, "files": 42 },
-    "character": { "bytes": 34100927, "files": 42 },
+    "initialShell": { "bytes": 1382997, "files": 12 },
+    "installPrecache": { "bytes": 39527688, "files": 57 },
+    "chapterEnvironment": { "bytes": 13539607, "files": 47 },
+    "character": { "bytes": 35799811, "files": 43 },
     "animation": { "bytes": 2344880, "files": 2 },
-    "total": { "bytes": 51066569, "files": 98 }
+    "total": { "bytes": 53067295, "files": 104 }
   },
   "firstPlayableChapter": {
-    "encodedBodyBytes": 63393992,
-    "requests": 105,
-    "transferBytes": 50010518,
+    "encodedBodyBytes": 79797924,
+    "requests": 146,
+    "transferBytes": 47517898,
     "measurementSurface": "Vite preview server, empty browser context, chapter 1 desktop 1440x900"
   },
   "captures": {
     "profiles": ["desktop-1440x900", "mobile-390x844"],
     "renderer": "ANGLE Intel Iris Xe Direct3D11",
-    "maxDrawCalls": 197,
-    "maxTriangles": 152654,
+    "maxDrawCalls": 199,
+    "maxTriangles": 147234,
     "maxLights": 4,
     "desktopDirectRafP95FrameMs": 8.5,
-    "mobileDirectRafP95FrameMs": 16.7,
-    "sceneProbeP95FrameMs": 100,
-    "sceneProbeNote": "초기 로딩과 포커스 전환을 포함한 장면 누적값이라 정상 프레임의 직접 rAF 표본과 분리한다.",
+    "hardwareSceneProbeP95FrameMs": 16.7,
+    "swiftShaderMaxDirectRafP95FrameMs": 866.6,
+    "sceneProbeNote": "Intel Iris Xe D3D11의 P0 headful 측정과 12화면 SwiftShader 캡처를 분리한다. SwiftShader 수치는 GPU 성능으로 해석하지 않는다.",
     "consoleErrors": 0,
     "failedResponses": 0
   },
   "automatedPlaythrough": {
-    "keyboardSeconds": 373.1,
-    "touchSeconds": 267.3,
+    "keyboardSeconds": 359,
+    "touchSeconds": 235.2,
     "humanPlaytimeMeasured": false,
     "note": "실제 이동·전투·퍼즐·저장 재접속을 수행하지만 테스트 훅과 자동 입력을 사용하므로 사람의 실제 플레이 시간으로 해석하지 않는다."
   }

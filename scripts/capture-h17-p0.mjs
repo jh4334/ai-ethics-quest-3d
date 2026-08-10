@@ -52,7 +52,7 @@ async function capture(name, viewport, options = {}) {
   await page.evaluate(() => window.dispatchEvent(new Event('resize')));
   await page.waitForTimeout(3200);
   const screenshotPath = `${outputDirectory}/${name}.png`;
-  await page.screenshot({ path: screenshotPath });
+  await page.screenshot({ path: screenshotPath, timeout: 120_000 });
   const surface = await page.evaluate(() => ({
     canvas: { ...document.querySelector('[data-reboot-canvas]').dataset },
     chapterStrip: [...document.querySelectorAll('[data-chapter-progress] [data-chapter]')].map((item) => ({

@@ -3,11 +3,11 @@
   "chapterReports": [
     {
       "checkpoint": "chapter-2:start",
-      "drawCalls": 84,
+      "drawCalls": 89,
       "p95FrameMs": 100,
-      "triangles": 73149,
+      "triangles": 50572,
       "chapter": 1,
-      "elapsedSeconds": 62.5,
+      "elapsedSeconds": 63.1,
       "inputMode": "touch",
       "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-1-touch-result.png"
     },
@@ -15,49 +15,49 @@
       "checkpoint": "chapter-3:start",
       "drawCalls": 81,
       "p95FrameMs": 100,
-      "triangles": 99851,
+      "triangles": 73540,
       "chapter": 2,
-      "elapsedSeconds": 36.6,
+      "elapsedSeconds": 33.5,
       "inputMode": "touch",
       "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-2-touch-result.png"
     },
     {
       "checkpoint": "chapter-4:start",
-      "drawCalls": 79,
+      "drawCalls": 75,
       "p95FrameMs": 100,
-      "triangles": 101259,
+      "triangles": 74514,
       "chapter": 3,
-      "elapsedSeconds": 36.7,
+      "elapsedSeconds": 32.7,
       "inputMode": "touch",
       "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-3-touch-result.png"
     },
     {
       "checkpoint": "chapter-5:start",
-      "drawCalls": 79,
+      "drawCalls": 52,
       "p95FrameMs": 100,
-      "triangles": 99999,
+      "triangles": 37954,
       "chapter": 4,
-      "elapsedSeconds": 45.2,
+      "elapsedSeconds": 37.5,
       "inputMode": "touch",
       "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-4-touch-result.png"
     },
     {
       "checkpoint": "chapter-6:broadcast-room",
-      "drawCalls": 79,
+      "drawCalls": 82,
       "p95FrameMs": 100,
-      "triangles": 133903,
+      "triangles": 107678,
       "chapter": 5,
-      "elapsedSeconds": 56.7,
+      "elapsedSeconds": 44.7,
       "inputMode": "touch",
       "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-5-touch-result.png"
     },
     {
       "checkpoint": "chapter-6:resolved-redacted",
-      "drawCalls": 62,
+      "drawCalls": 63,
       "p95FrameMs": 100,
-      "triangles": 61065,
+      "triangles": 34760,
       "chapter": 6,
-      "elapsedSeconds": 29.6,
+      "elapsedSeconds": 23.7,
       "inputMode": "touch",
       "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-6-touch-result.png"
     }
