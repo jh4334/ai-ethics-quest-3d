@@ -28,8 +28,27 @@ const ASSET_MATERIAL_ROLES = Object.freeze({
 });
 
 const ASSET_NIGHT_TREATMENTS = Object.freeze({
-  'campus-bush': Object.freeze({ emissive: 0x163d32, intensity: 0.38, roughness: 0.92 }),
-  'campus-grass': Object.freeze({ emissive: 0x163d32, intensity: 0.36, roughness: 0.94 }),
+  'campus-column': Object.freeze({
+    color: 0x59647a, emissive: 0x111827, intensity: 0.16, roughness: 0.9
+  }),
+  'campus-doorway': Object.freeze({
+    color: 0x6a6475, emissive: 0x1c1724, intensity: 0.18, roughness: 0.9
+  }),
+  'campus-stairs': Object.freeze({
+    color: 0x5e6272, emissive: 0x141725, intensity: 0.16, roughness: 0.92
+  }),
+  'campus-wall': Object.freeze({
+    color: 0x586378, emissive: 0x111827, intensity: 0.16, roughness: 0.92
+  }),
+  'campus-window': Object.freeze({
+    color: 0x66758d, emissive: 0x18243a, intensity: 0.22, roughness: 0.76
+  }),
+  'campus-bush': Object.freeze({
+    color: 0x7e5961, emissive: 0x4b293d, intensity: 0.48, roughness: 0.94
+  }),
+  'campus-grass': Object.freeze({
+    color: 0x8a756c, emissive: 0x49322f, intensity: 0.44, roughness: 0.96
+  }),
   'campus-hero-rock': Object.freeze({
     clearMetalRoughnessMaps: true,
     color: 0x4a4e5b,
@@ -39,8 +58,21 @@ const ASSET_NIGHT_TREATMENTS = Object.freeze({
     normalScale: 0.42,
     roughness: 0.96
   }),
-  'campus-rock': Object.freeze({ emissive: 0x162033, intensity: 0.24, roughness: 0.96 }),
-  'campus-tree': Object.freeze({ emissive: 0x14362f, intensity: 0.42, roughness: 0.92 }),
+  'campus-rock': Object.freeze({
+    color: 0x595766, emissive: 0x171827, intensity: 0.2, roughness: 0.98
+  }),
+  'campus-tree': Object.freeze({
+    color: 0x70445f, emissive: 0x5b2d4d, intensity: 0.68, roughness: 0.94
+  }),
+  'classroom-chair': Object.freeze({
+    color: 0x74534f, emissive: 0x24151a, intensity: 0.15, roughness: 0.9
+  }),
+  'classroom-desk': Object.freeze({
+    color: 0x72524c, emissive: 0x23161a, intensity: 0.15, roughness: 0.9
+  }),
+  'record-laptop': Object.freeze({
+    color: 0x43546a, emissive: 0x12243a, intensity: 0.22, roughness: 0.62
+  }),
   'memory-flower': Object.freeze({ emissive: 0x6a4a18, intensity: 0.34, roughness: 0.88 })
 });
 
@@ -91,16 +123,21 @@ function createDistrictBeacons(group) {
     transparent: true,
     depthWrite: false
   });
-  const beacons = [];
+  const beacons = new THREE.InstancedMesh(geometry, material, CAMPUS_DISTRICTS.length);
+  beacons.name = 'campus-objective-beacons';
+  const matrix = new THREE.Matrix4();
+  const quaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0));
   for (const [index, district] of CAMPUS_DISTRICTS.entries()) {
-    const ring = new THREE.Mesh(geometry, material);
-    ring.name = `campus-objective-beacon-${district.id}`;
-    ring.position.set(district.center.x, 2.55 + (index % 2) * 0.3, district.center.z);
-    ring.rotation.x = Math.PI / 2;
-    ring.userData.campusDistrictId = district.id;
-    group.add(ring);
-    beacons.push(ring);
+    matrix.compose(
+      new THREE.Vector3(district.center.x, 2.55 + (index % 2) * 0.3, district.center.z),
+      quaternion,
+      new THREE.Vector3(1, 1, 1)
+    );
+    beacons.setMatrixAt(index, matrix);
   }
+  beacons.instanceMatrix.needsUpdate = true;
+  beacons.userData.campusDistrictIds = CAMPUS_DISTRICTS.map(({ id }) => id);
+  group.add(beacons);
   return Object.freeze({
     beacons,
     dispose() {
@@ -153,7 +190,7 @@ function createCampusLights(group) {
   group.add(moon);
   const memory = new THREE.PointLight(0xffad59, CAMPUS_VISUAL_PROFILE.lighting.memoryIntensity, 66, 1.55);
   memory.name = 'campus-memory-light';
-  memory.position.set(-1, 5.4, -17);
+  memory.position.set(-1, 5.2, -5.5);
   memory.castShadow = false;
   group.add(memory);
   const deletion = new THREE.PointLight(0x6db9ff, CAMPUS_VISUAL_PROFILE.lighting.deletionIntensity, 42, 1.85);

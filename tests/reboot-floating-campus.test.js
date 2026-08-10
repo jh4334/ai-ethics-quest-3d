@@ -98,23 +98,23 @@ test('Given the first campus vista, When framed from the route camera, Then lice
   assert.equal(leftWing.length >= 16, true);
   assert.equal(rightWing.length >= 16, true);
   assert.equal(leftWing.every(({ position }) => (
-    position.x >= -5.8 && position.x <= -2.8 && position.z >= 1.2 && position.z <= 6.2
+    position.x >= -5.3 && position.x <= -2.8 && position.z >= -1.6 && position.z <= 2.1
   )), true);
   assert.equal(rightWing.every(({ position }) => (
-    position.x >= 3.2 && position.x <= 5.8 && position.z >= 1.2 && position.z <= 6.2
+    position.x >= 3.2 && position.x <= 5.6 && position.z >= -1.6 && position.z <= 2.1
   )), true);
   assert.equal(leftWing.filter(({ position }) => (
-    position.x >= -3.5 && position.x <= -2.9 && position.z >= 3.2 && position.z <= 4.3
+    position.x >= -4.4 && position.x <= -2.8 && position.z >= 0 && position.z <= 1.7
   )).length >= 4, true);
   assert.equal(rightWing.filter(({ position }) => (
-    position.x >= 3.3 && position.x <= 4.1 && position.z >= 3.2 && position.z <= 4.3
+    position.x >= 3.2 && position.x <= 5 && position.z >= 0 && position.z <= 1.8
   )).length >= 4, true);
   assert.equal(Math.max(...CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.map(({ position }) => position.y)) >= 0.42, true);
   assert.equal(CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.every(({ assetId }) => allowedAssets.has(assetId)), true);
   assert.equal(CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.filter(({ assetId }) => assetId === 'campus-hero-rock').length, 1);
   const heroRock = CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.find(({ assetId }) => assetId === 'campus-hero-rock');
-  assert.equal(heroRock.position.x >= 5.2, true);
-  assert.equal(heroRock.position.z <= 3.2, true);
+  assert.equal(heroRock.position.x >= 4.8, true);
+  assert.equal(heroRock.position.z <= 1.2, true);
   assert.equal(heroRock.scale <= 1.6, true);
   assert.equal(rightWing.some(({ assetId }) => assetId === 'campus-tree'), false);
   assert.equal(CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.every((entry) => CAMPUS_ASSET_PLACEMENTS.includes(entry)), true);
@@ -145,26 +145,47 @@ test('Given licensed assets load successfully, When the floating campus becomes 
     /twilightCloud/
   );
   assert.deepEqual(campus.getDebugState().architecture.firstVistaSurface, {
-    cliffRockCount: 36,
+    cliffRockCount: 44,
     cliffRockHeightLevels: 6,
-    deckMaterialRole: 'brick',
+    deckMaterialRole: 'terrain',
+    floatingRecordCount: 11,
     gardenTerraceCount: 4,
     gardenTerraceHeightLevels: 4,
-    paverCount: 44,
+    goalBeamCount: 1,
+    paverCount: 43,
     paverHeightLevels: 4
   });
-  assert.equal(scene.getObjectByName('campus-platform-deck-open-classroom').material.name, 'masonry-brick');
-  assert.equal(scene.getObjectByName('campus-platform-open-classroom').material.name, 'structural-concrete');
-  assert.equal(scene.getObjectByName('campus-memory-route-open-classroom').material.name, 'interior-wood');
+  assert.equal(scene.getObjectByName('campus-platform-deck-open-classroom').material.name, 'campus-terrain-material');
+  assert.equal(scene.getObjectByName('campus-platform-open-classroom').material.name, 'campus-terrain-material');
+  assert.equal(scene.getObjectByName('campus-memory-route-open-classroom').material.name, 'campus-path-stone-material');
+  assert.equal(scene.getObjectByName('campus-first-vista-floating-records').count, 11);
+  assert.equal(scene.getObjectByName('campus-first-vista-floating-records').material.name, 'campus-floating-record-material');
+  assert.equal(scene.getObjectByName('campus-first-vista-goal-beam').material.name, 'campus-goal-beam-material');
+  assert.equal(scene.getObjectByName('campus-objective-beacons').count, CAMPUS_DISTRICTS.length);
+  scene.updateMatrixWorld(true);
+  const classroomDeck = scene.getObjectByName('campus-platform-deck-open-classroom');
+  const deckVisibleAt = (x, z) => {
+    const ray = new THREE.Raycaster(new THREE.Vector3(x, 5, z), new THREE.Vector3(0, -1, 0));
+    return ray.intersectObject(classroomDeck, false).length > 0;
+  };
+  assert.equal(deckVisibleAt(0, 4.8), true);
+  assert.equal(deckVisibleAt(0, 0), true);
+  assert.equal(deckVisibleAt(5, -4), true);
+  assert.equal(deckVisibleAt(-6.2, 3.7), false);
+  assert.equal(deckVisibleAt(6.2, 3.7), false);
+  const terraceGeometry = scene.getObjectByName('campus-first-vista-garden-terrace-0').geometry;
+  terraceGeometry.computeBoundingBox();
+  assert.equal(terraceGeometry.boundingBox.max.y - terraceGeometry.boundingBox.min.y >= 0.7, true);
   assert.equal(scene.getObjectByName('athletics-track').material.name, 'road-asphalt');
   assert.equal(scene.getObjectByName('campus-first-vista-stone-pavers').isInstancedMesh, true);
-  assert.equal(scene.getObjectByName('campus-first-vista-stone-pavers').material.name, 'structural-concrete');
+  assert.equal(scene.getObjectByName('campus-first-vista-stone-pavers').material.name, 'campus-path-stone-material');
   assert.equal(scene.getObjectByName('campus-first-vista-cliff-rocks').isInstancedMesh, true);
-  assert.equal(scene.getObjectByName('campus-first-vista-garden-terrace-0').material.name, 'masonry-brick');
+  assert.equal(scene.getObjectByName('campus-first-vista-garden-terrace-0').material.name, 'campus-terrain-material');
   const treeBatch = scene.getObjectByName('campus-asset-campus-tree-batch-0');
-  assert.equal(treeBatch.material.emissive.getHex(), 0x14362f);
-  assert.equal(treeBatch.material.emissiveIntensity, 0.42);
-  assert.equal(treeBatch.material.roughness, 0.92);
+  assert.equal(treeBatch.material.color.getHex(), 0x70445f);
+  assert.equal(treeBatch.material.emissive.getHex(), 0x5b2d4d);
+  assert.equal(treeBatch.material.emissiveIntensity, 0.68);
+  assert.equal(treeBatch.material.roughness, 0.94);
   const heroRockBatch = scene.getObjectByName('campus-asset-campus-hero-rock-batch-0');
   assert.equal(heroRockBatch.material.color.getHex(), 0x4a4e5b);
   assert.equal(heroRockBatch.material.emissive.getHex(), 0x101927);

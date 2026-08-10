@@ -17,7 +17,7 @@
           "lastAction": "none",
           "lastEnemyEvent": "none",
           "playerSignal": "100",
-          "combatTick": "203",
+          "combatTick": "213",
           "cameraMode": "desktop",
           "routeSegment": "classroom-cold-open",
           "storyPhase": "corridor",
@@ -30,8 +30,8 @@
           "audioVoices": "0",
           "musicLayer": "ambient",
           "p95FrameMs": "100",
-          "drawCalls": "199",
-          "triangles": "154958",
+          "drawCalls": "196",
+          "triangles": "158275",
           "lightCount": "4",
           "particleCount": "0",
           "heapBytes": "10000000",
@@ -297,7 +297,7 @@
               "z": 1
             },
             "signal": 100,
-            "tick": 203
+            "tick": 213
           },
           "enemies": {
             "disposed": false,
@@ -346,12 +346,14 @@
                 "gymnasium"
               ],
               "firstVistaSurface": {
-                "cliffRockCount": 36,
+                "cliffRockCount": 44,
                 "cliffRockHeightLevels": 6,
-                "deckMaterialRole": "brick",
+                "deckMaterialRole": "terrain",
+                "floatingRecordCount": 11,
                 "gardenTerraceCount": 4,
                 "gardenTerraceHeightLevels": 4,
-                "paverCount": 44,
+                "goalBeamCount": 1,
+                "paverCount": 43,
                 "paverHeightLevels": 4
               },
               "landmarks": [
@@ -409,8 +411,10 @@
                 "campus-first-vista-garden-terrace-1",
                 "campus-first-vista-garden-terrace-2",
                 "campus-first-vista-garden-terrace-3",
+                "campus-first-vista-goal-beam",
                 "campus-first-vista-stone-pavers",
                 "campus-first-vista-cliff-rocks",
+                "campus-first-vista-floating-records",
                 "central-roster-spire",
                 "roster-spire-core",
                 "roster-record-ring-1.2",
@@ -436,7 +440,7 @@
                 "gym-wood-court"
               ]
             },
-            "assetInstances": 170,
+            "assetInstances": 167,
             "contactPatches": 55,
             "districtSigns": 6,
             "edgeDressingInstances": 108,
@@ -447,9 +451,7 @@
             "memoryPathAccents": 56,
             "mountainRidges": 2,
             "requiredAssetIds": [
-              "campus-floor",
               "campus-window",
-              "campus-wall",
               "campus-doorway",
               "campus-column",
               "classroom-desk",
@@ -459,12 +461,12 @@
               "campus-planter",
               "campus-lamp",
               "campus-bench",
-              "campus-tree",
+              "campus-grass",
               "campus-rock",
               "campus-bush",
-              "campus-grass",
               "campus-fence",
               "memory-flower",
+              "campus-tree",
               "campus-hero-rock",
               "campus-roof-edge",
               "library-bookcase",
@@ -507,13 +509,13 @@
           "performance": {
             "p95FrameMs": 100,
             "render": {
-              "calls": 199,
+              "calls": 196,
               "heapBytes": 10000000,
               "lights": 4,
               "particles": 0,
-              "triangles": 154958
+              "triangles": 158275
             },
-            "samples": 27,
+            "samples": 22,
             "simulationHz": 60
           },
           "enemyEventTypes": [],
@@ -711,7 +713,7 @@
                 "zoneId": "arena"
               }
             ],
-            "tick": 203
+            "tick": 213
           },
           "eventTypes": [],
           "route": {
@@ -1591,7 +1593,7 @@
           "lastAction": "none",
           "lastEnemyEvent": "none",
           "playerSignal": "100",
-          "combatTick": "201",
+          "combatTick": "264",
           "cameraMode": "touch",
           "routeSegment": "classroom-cold-open",
           "storyPhase": "corridor",
@@ -1604,11 +1606,11 @@
           "audioVoices": "0",
           "musicLayer": "ambient",
           "p95FrameMs": "100",
-          "drawCalls": "193",
-          "triangles": "154666",
+          "drawCalls": "190",
+          "triangles": "157983",
           "lightCount": "4",
           "particleCount": "0",
-          "heapBytes": "11900000",
+          "heapBytes": "10600000",
           "quality": "auto",
           "dpr": "1",
           "bossVerb": "none",
@@ -1871,7 +1873,7 @@
               "z": 1
             },
             "signal": 100,
-            "tick": 201
+            "tick": 264
           },
           "enemies": {
             "disposed": false,
@@ -1920,12 +1922,14 @@
                 "gymnasium"
               ],
               "firstVistaSurface": {
-                "cliffRockCount": 36,
+                "cliffRockCount": 44,
                 "cliffRockHeightLevels": 6,
-                "deckMaterialRole": "brick",
+                "deckMaterialRole": "terrain",
+                "floatingRecordCount": 11,
                 "gardenTerraceCount": 4,
                 "gardenTerraceHeightLevels": 4,
-                "paverCount": 44,
+                "goalBeamCount": 1,
+                "paverCount": 43,
                 "paverHeightLevels": 4
               },
               "landmarks": [
@@ -1983,8 +1987,10 @@
                 "campus-first-vista-garden-terrace-1",
                 "campus-first-vista-garden-terrace-2",
                 "campus-first-vista-garden-terrace-3",
+                "campus-first-vista-goal-beam",
                 "campus-first-vista-stone-pavers",
                 "campus-first-vista-cliff-rocks",
+                "campus-first-vista-floating-records",
                 "central-roster-spire",
                 "roster-spire-core",
                 "roster-record-ring-1.2",
@@ -2010,7 +2016,7 @@
                 "gym-wood-court"
               ]
             },
-            "assetInstances": 170,
+            "assetInstances": 167,
             "contactPatches": 55,
             "districtSigns": 6,
             "edgeDressingInstances": 108,
@@ -2021,9 +2027,7 @@
             "memoryPathAccents": 56,
             "mountainRidges": 2,
             "requiredAssetIds": [
-              "campus-floor",
               "campus-window",
-              "campus-wall",
               "campus-doorway",
               "campus-column",
               "classroom-desk",
@@ -2033,12 +2037,12 @@
               "campus-planter",
               "campus-lamp",
               "campus-bench",
-              "campus-tree",
+              "campus-grass",
               "campus-rock",
               "campus-bush",
-              "campus-grass",
               "campus-fence",
               "memory-flower",
+              "campus-tree",
               "campus-hero-rock",
               "campus-roof-edge",
               "library-bookcase",
@@ -2081,13 +2085,13 @@
           "performance": {
             "p95FrameMs": 100,
             "render": {
-              "calls": 193,
-              "heapBytes": 11900000,
+              "calls": 190,
+              "heapBytes": 10600000,
               "lights": 4,
               "particles": 0,
-              "triangles": 154666
+              "triangles": 157983
             },
-            "samples": 38,
+            "samples": 16,
             "simulationHz": 60
           },
           "enemyEventTypes": [],
@@ -2285,7 +2289,7 @@
                 "zoneId": "arena"
               }
             ],
-            "tick": 201
+            "tick": 264
           },
           "eventTypes": [],
           "route": {
@@ -3165,7 +3169,7 @@
           "lastAction": "none",
           "lastEnemyEvent": "none",
           "playerSignal": "100",
-          "combatTick": "225",
+          "combatTick": "322",
           "cameraMode": "touch",
           "routeSegment": "classroom-cold-open",
           "storyPhase": "corridor",
@@ -3178,11 +3182,11 @@
           "audioVoices": "0",
           "musicLayer": "ambient",
           "p95FrameMs": "100",
-          "drawCalls": "192",
-          "triangles": "154656",
+          "drawCalls": "189",
+          "triangles": "155313",
           "lightCount": "4",
           "particleCount": "0",
-          "heapBytes": "11900000",
+          "heapBytes": "10000000",
           "quality": "auto",
           "dpr": "1",
           "bossVerb": "none",
@@ -3445,7 +3449,7 @@
               "z": 1
             },
             "signal": 100,
-            "tick": 225
+            "tick": 322
           },
           "enemies": {
             "disposed": false,
@@ -3494,12 +3498,14 @@
                 "gymnasium"
               ],
               "firstVistaSurface": {
-                "cliffRockCount": 36,
+                "cliffRockCount": 44,
                 "cliffRockHeightLevels": 6,
-                "deckMaterialRole": "brick",
+                "deckMaterialRole": "terrain",
+                "floatingRecordCount": 11,
                 "gardenTerraceCount": 4,
                 "gardenTerraceHeightLevels": 4,
-                "paverCount": 44,
+                "goalBeamCount": 1,
+                "paverCount": 43,
                 "paverHeightLevels": 4
               },
               "landmarks": [
@@ -3557,8 +3563,10 @@
                 "campus-first-vista-garden-terrace-1",
                 "campus-first-vista-garden-terrace-2",
                 "campus-first-vista-garden-terrace-3",
+                "campus-first-vista-goal-beam",
                 "campus-first-vista-stone-pavers",
                 "campus-first-vista-cliff-rocks",
+                "campus-first-vista-floating-records",
                 "central-roster-spire",
                 "roster-spire-core",
                 "roster-record-ring-1.2",
@@ -3584,7 +3592,7 @@
                 "gym-wood-court"
               ]
             },
-            "assetInstances": 170,
+            "assetInstances": 167,
             "contactPatches": 55,
             "districtSigns": 6,
             "edgeDressingInstances": 108,
@@ -3595,9 +3603,7 @@
             "memoryPathAccents": 56,
             "mountainRidges": 2,
             "requiredAssetIds": [
-              "campus-floor",
               "campus-window",
-              "campus-wall",
               "campus-doorway",
               "campus-column",
               "classroom-desk",
@@ -3607,12 +3613,12 @@
               "campus-planter",
               "campus-lamp",
               "campus-bench",
-              "campus-tree",
+              "campus-grass",
               "campus-rock",
               "campus-bush",
-              "campus-grass",
               "campus-fence",
               "memory-flower",
+              "campus-tree",
               "campus-hero-rock",
               "campus-roof-edge",
               "library-bookcase",
@@ -3655,13 +3661,13 @@
           "performance": {
             "p95FrameMs": 100,
             "render": {
-              "calls": 192,
-              "heapBytes": 11900000,
+              "calls": 189,
+              "heapBytes": 10000000,
               "lights": 4,
               "particles": 0,
-              "triangles": 154656
+              "triangles": 155313
             },
-            "samples": 26,
+            "samples": 21,
             "simulationHz": 60
           },
           "enemyEventTypes": [],
@@ -3859,7 +3865,7 @@
                 "zoneId": "arena"
               }
             ],
-            "tick": 225
+            "tick": 322
           },
           "eventTypes": [],
           "route": {
@@ -4737,9 +4743,9 @@
           "enemies": "ready",
           "environmentStatus": "ready",
           "lastAction": "stagger",
-          "lastEnemyEvent": "attack-committed",
+          "lastEnemyEvent": "attack-contact",
           "playerSignal": "100",
-          "combatTick": "177",
+          "combatTick": "235",
           "cameraMode": "desktop",
           "routeSegment": "first-arena",
           "storyPhase": "first-arena",
@@ -4748,26 +4754,26 @@
           "backupVisible": "true",
           "feedbackPromptCount": "3",
           "feedbackKinds": "damage,contact,telegraph",
-          "feedbackPoolActive": "6",
+          "feedbackPoolActive": "7",
           "audioVoices": "0",
           "musicLayer": "ambient",
           "p95FrameMs": "100",
-          "drawCalls": "165",
-          "triangles": "141465",
+          "drawCalls": "171",
+          "triangles": "142681",
           "lightCount": "4",
-          "particleCount": "12",
-          "heapBytes": "10000000",
+          "particleCount": "14",
+          "heapBytes": "10600000",
           "quality": "auto",
           "dpr": "1",
           "bossVerb": "none",
           "enemyCount": "2",
-          "enemyPhases": "eraser-mixed:recover,stamper-mixed:windup",
-          "enemyPhaseTicks": "eraser-mixed:2,stamper-mixed:2",
-          "stamperTelegraph": "windup:2",
+          "enemyPhases": "eraser-mixed:recover,stamper-mixed:recover",
+          "enemyPhaseTicks": "eraser-mixed:6,stamper-mixed:17",
+          "stamperTelegraph": "recover:17",
           "eraserArmor": "1",
           "armorBreaks": "0",
           "reflections": "0",
-          "playerHits": "5",
+          "playerHits": "7",
           "cancelledAttacks": "0",
           "blockerActive": "false",
           "offscreenActive": "false",
@@ -4929,51 +4935,11 @@
             "allIncluded": true,
             "includedIds": [
               "player",
-              "stamper-mixed",
-              "stamper-mixed",
+              "eraser-mixed",
+              "eraser-mixed",
               "route-cue-first-arena"
             ],
-            "combatSafeArea": {
-              "allIncluded": true,
-              "bounds": [
-                {
-                  "id": "player",
-                  "bottom": 697.8553925826486,
-                  "depthValid": true,
-                  "left": 623.9254915224357,
-                  "right": 831.2201075238441,
-                  "top": 334.73199660977264
-                },
-                {
-                  "id": "threat",
-                  "bottom": 508.0376909593699,
-                  "depthValid": true,
-                  "left": 568.4016257684158,
-                  "right": 728.4506930283236,
-                  "top": 261.45590356203104
-                },
-                {
-                  "id": "telegraph",
-                  "bottom": 538.4947215587878,
-                  "depthValid": true,
-                  "left": 486.31706132578114,
-                  "right": 798.6097986323949,
-                  "top": 435.1529149775123
-                }
-              ],
-              "includedIds": [
-                "player",
-                "threat",
-                "telegraph"
-              ],
-              "mode": "arena",
-              "safeRect": {
-                "bottom": 810,
-                "left": 24,
-                "right": 1416,
-                "top": 80
-              }
-            }
+            "combatSafeArea": null
           },
           "characters": {
             "errors": [],
@@ -5051,15 +5017,15 @@
             ]
           },
           "combat": {
-            "action": "stagger",
+            "action": "idle",
             "chainLevel": 0,
-            "hp": 67,
+            "hp": 54,
             "player": {
               "x": 0,
               "z": -33
             },
             "signal": 100,
-            "tick": 177
+            "tick": 235
           },
           "enemies": {
             "disposed": false,
@@ -5080,7 +5046,7 @@
                 "cueId": null,
                 "facing": 1.1071487177940904,
                 "id": "stamper-mixed",
-                "phase": "windup",
+                "phase": "recover",
                 "position": [
                   -2,
                   0,
@@ -5108,12 +5074,14 @@
                 "gymnasium"
               ],
               "firstVistaSurface": {
-                "cliffRockCount": 36,
+                "cliffRockCount": 44,
                 "cliffRockHeightLevels": 6,
-                "deckMaterialRole": "brick",
+                "deckMaterialRole": "terrain",
+                "floatingRecordCount": 11,
                 "gardenTerraceCount": 4,
                 "gardenTerraceHeightLevels": 4,
-                "paverCount": 44,
+                "goalBeamCount": 1,
+                "paverCount": 43,
                 "paverHeightLevels": 4
               },
               "landmarks": [
@@ -5171,8 +5139,10 @@
                 "campus-first-vista-garden-terrace-1",
                 "campus-first-vista-garden-terrace-2",
                 "campus-first-vista-garden-terrace-3",
+                "campus-first-vista-goal-beam",
                 "campus-first-vista-stone-pavers",
                 "campus-first-vista-cliff-rocks",
+                "campus-first-vista-floating-records",
                 "central-roster-spire",
                 "roster-spire-core",
                 "roster-record-ring-1.2",
@@ -5198,7 +5168,7 @@
                 "gym-wood-court"
               ]
             },
-            "assetInstances": 170,
+            "assetInstances": 167,
             "contactPatches": 55,
             "districtSigns": 6,
             "edgeDressingInstances": 108,
@@ -5209,9 +5179,7 @@
             "memoryPathAccents": 56,
             "mountainRidges": 2,
             "requiredAssetIds": [
-              "campus-floor",
               "campus-window",
-              "campus-wall",
               "campus-doorway",
               "campus-column",
               "classroom-desk",
@@ -5221,12 +5189,12 @@
               "campus-planter",
               "campus-lamp",
               "campus-bench",
-              "campus-tree",
+              "campus-grass",
               "campus-rock",
               "campus-bush",
-              "campus-grass",
               "campus-fence",
               "memory-flower",
+              "campus-tree",
               "campus-hero-rock",
               "campus-roof-edge",
               "library-bookcase",
@@ -5256,17 +5224,18 @@
             "cueCount": 0,
             "disposed": false,
             "pool": {
-              "active": 6,
+              "active": 7,
               "allocated": 16,
               "capacity": 16,
               "disposed": false,
               "kinds": [
-                "telegraph",
+                "contact",
+                "damage",
                 "damage",
                 "telegraph",
-                "contact",
                 "telegraph",
-                "telegraph"
+                "telegraph",
+                "contact"
               ]
             },
             "promptCount": 3,
@@ -5280,13 +5249,13 @@
           "performance": {
             "p95FrameMs": 100,
             "render": {
-              "calls": 165,
-              "heapBytes": 10000000,
+              "calls": 171,
+              "heapBytes": 10600000,
               "lights": 4,
-              "particles": 12,
-              "triangles": 141465
+              "particles": 14,
+              "triangles": 142681
             },
-            "samples": 38,
+            "samples": 18,
             "simulationHz": 60
           },
           "enemyEventTypes": [],
@@ -5382,7 +5351,7 @@
                 "lastIntent": "commit-attack",
                 "phase": "recover",
                 "phaseDuration": 0,
-                "phaseTick": 2,
+                "phaseTick": 6,
                 "position": {
                   "x": 0.4231418248386883,
                   "z": -34.692567299354764
@@ -5463,9 +5432,9 @@
                 "hp": 48,
                 "id": "stamper-mixed",
                 "lastIntent": "commit-attack",
-                "phase": "windup",
+                "phase": "recover",
                 "phaseDuration": 0,
-                "phaseTick": 2,
+                "phaseTick": 17,
                 "position": {
                   "x": -2,
                   "z": -37
@@ -5484,9 +5453,11 @@
                 "zoneId": "arena"
               }
             ],
-            "tick": 177
+            "tick": 235
           },
-          "eventTypes": [],
+          "eventTypes": [
+            "action-completed"
+          ],
           "route": {
             "budget": {
               "drawCalls": 11,
@@ -6349,7 +6320,7 @@
           "lastAction": "stagger",
           "lastEnemyEvent": "attack-committed",
           "playerSignal": "100",
-          "combatTick": "193",
+          "combatTick": "203",
           "cameraMode": "touch",
           "routeSegment": "first-arena",
           "storyPhase": "first-arena",
@@ -6362,18 +6333,18 @@
           "audioVoices": "0",
           "musicLayer": "ambient",
           "p95FrameMs": "100",
-          "drawCalls": "165",
-          "triangles": "141643",
+          "drawCalls": "162",
+          "triangles": "142329",
           "lightCount": "4",
           "particleCount": "10",
-          "heapBytes": "11900000",
+          "heapBytes": "10000000",
           "quality": "auto",
           "dpr": "1",
           "bossVerb": "none",
           "enemyCount": "2",
           "enemyPhases": "eraser-mixed:recover,stamper-mixed:windup",
-          "enemyPhaseTicks": "eraser-mixed:18,stamper-mixed:18",
-          "stamperTelegraph": "windup:18",
+          "enemyPhaseTicks": "eraser-mixed:28,stamper-mixed:28",
+          "stamperTelegraph": "windup:28",
           "eraserArmor": "1",
           "armorBreaks": "0",
           "reflections": "0",
@@ -6548,27 +6519,27 @@
               "bounds": [
                 {
                   "id": "player",
-                  "bottom": 530.6193465120684,
+                  "bottom": 531.1516124609535,
                   "depthValid": true,
-                  "left": 189.2161982022374,
-                  "right": 274.1028426814271,
-                  "top": 370.48612837346144
+                  "left": 191.41096351168585,
+                  "right": 276.2155697058073,
+                  "top": 370.84014398171297
                 },
                 {
                   "id": "threat",
-                  "bottom": 426.2311987141944,
+                  "bottom": 426.5628361623009,
                   "depthValid": true,
-                  "left": 133.73192329924348,
-                  "right": 211.29856239888161,
-                  "top": 295.292074389681
+                  "left": 135.31125043174765,
+                  "right": 212.8313193668784,
+                  "top": 295.5156966154499
                 },
                 {
                   "id": "telegraph",
-                  "bottom": 445.01937222185256,
+                  "bottom": 445.3825446246643,
                   "depthValid": true,
-                  "left": 95.72794558994795,
-                  "right": 245.02603171565343,
-                  "top": 378.0458739128954
+                  "left": 97.21460413437613,
+                  "right": 246.43130004254198,
+                  "top": 378.308208856908
                 }
               ],
               "includedIds": [
@@ -6669,7 +6640,7 @@
               "z": -33
             },
             "signal": 100,
-            "tick": 193
+            "tick": 203
           },
           "enemies": {
             "disposed": false,
@@ -6718,12 +6689,14 @@
                 "gymnasium"
               ],
               "firstVistaSurface": {
-                "cliffRockCount": 36,
+                "cliffRockCount": 44,
                 "cliffRockHeightLevels": 6,
-                "deckMaterialRole": "brick",
+                "deckMaterialRole": "terrain",
+                "floatingRecordCount": 11,
                 "gardenTerraceCount": 4,
                 "gardenTerraceHeightLevels": 4,
-                "paverCount": 44,
+                "goalBeamCount": 1,
+                "paverCount": 43,
                 "paverHeightLevels": 4
               },
               "landmarks": [
@@ -6781,8 +6754,10 @@
                 "campus-first-vista-garden-terrace-1",
                 "campus-first-vista-garden-terrace-2",
                 "campus-first-vista-garden-terrace-3",
+                "campus-first-vista-goal-beam",
                 "campus-first-vista-stone-pavers",
                 "campus-first-vista-cliff-rocks",
+                "campus-first-vista-floating-records",
                 "central-roster-spire",
                 "roster-spire-core",
                 "roster-record-ring-1.2",
@@ -6808,7 +6783,7 @@
                 "gym-wood-court"
               ]
             },
-            "assetInstances": 170,
+            "assetInstances": 167,
             "contactPatches": 55,
             "districtSigns": 6,
             "edgeDressingInstances": 108,
@@ -6819,9 +6794,7 @@
             "memoryPathAccents": 56,
             "mountainRidges": 2,
             "requiredAssetIds": [
-              "campus-floor",
               "campus-window",
-              "campus-wall",
               "campus-doorway",
               "campus-column",
               "classroom-desk",
@@ -6831,12 +6804,12 @@
               "campus-planter",
               "campus-lamp",
               "campus-bench",
-              "campus-tree",
+              "campus-grass",
               "campus-rock",
               "campus-bush",
-              "campus-grass",
               "campus-fence",
               "memory-flower",
+              "campus-tree",
               "campus-hero-rock",
               "campus-roof-edge",
               "library-bookcase",
@@ -6889,13 +6862,13 @@
           "performance": {
             "p95FrameMs": 100,
             "render": {
-              "calls": 165,
-              "heapBytes": 11900000,
+              "calls": 162,
+              "heapBytes": 10000000,
               "lights": 4,
               "particles": 10,
-              "triangles": 141643
+              "triangles": 142329
             },
-            "samples": 51,
+            "samples": 22,
             "simulationHz": 60
           },
           "enemyEventTypes": [],
@@ -6991,7 +6964,7 @@
                 "lastIntent": "commit-attack",
                 "phase": "recover",
                 "phaseDuration": 0,
-                "phaseTick": 18,
+                "phaseTick": 28,
                 "position": {
                   "x": 0.4231418248386883,
                   "z": -34.692567299354764
@@ -7074,7 +7047,7 @@
                 "lastIntent": "commit-attack",
                 "phase": "windup",
                 "phaseDuration": 0,
-                "phaseTick": 18,
+                "phaseTick": 28,
                 "position": {
                   "x": -2,
                   "z": -37
@@ -7093,7 +7066,7 @@
                 "zoneId": "arena"
               }
             ],
-            "tick": 193
+            "tick": 203
           },
           "eventTypes": [],
           "route": {

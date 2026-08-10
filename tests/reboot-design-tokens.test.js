@@ -30,8 +30,8 @@ test('P0 캠퍼스 시각 프로필은 어깨너머 카메라와 황혼 대기 �
   assert.deepEqual(CAMPUS_VISUAL_PROFILE.camera.desktop, {
     distance: 7.2, fov: 42, height: 2.55, lateral: 2.35,
     firstVista: {
-      distanceShift: 1.15, fov: 42, heightShift: 0.18,
-      lateralShift: 2.45, lookLateral: 1.4, lookLift: 1.25
+      distanceShift: 0.45, fov: 42, heightShift: 0.72,
+      lateralShift: 1.05, lookLateral: 0.52, lookLift: 1.34
     },
     routeDistanceShift: 1.8, routeFov: 46, routeLateralShift: 0.05, routeLookLift: 1.5
   });

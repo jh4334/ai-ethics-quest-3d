@@ -33,19 +33,22 @@ async function capture(name, viewport, options = {}) {
     if (response.status() >= 400) failedResponses.push({ status: response.status(), url: response.url() });
   });
   await page.addInitScript(() => { window.__ETHICS_TEST_HOOK__ = true; });
-  await page.goto(`${baseUrl}/reboot.html?tools=hidden&sw=off&testHook=h17`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseUrl}/reboot.html?tools=hidden&sw=off&testHook=h17`, {
+    timeout: 60000,
+    waitUntil: 'domcontentloaded'
+  });
   if (options.checkpoint) {
     await page.evaluate((checkpoint) => window.__ethicsReboot.setCheckpointForTest(checkpoint), options.checkpoint);
-    await page.reload({ waitUntil: 'networkidle' });
+    await page.reload({ timeout: 60000, waitUntil: 'domcontentloaded' });
   }
   await page.waitForFunction(() => {
     const status = document.querySelector('[data-reboot-canvas]')?.dataset.environmentStatus;
     return status && status !== 'loading';
-  }, { timeout: 60000 });
+  }, undefined, { timeout: 60000 });
   await page.waitForFunction(() => {
     const status = document.querySelector('[data-reboot-canvas]')?.dataset.characters;
     return status === 'ready' || status === 'error';
-  }, { timeout: 60000 });
+  }, undefined, { timeout: 60000 });
   await page.evaluate(() => window.dispatchEvent(new Event('resize')));
   await page.waitForTimeout(3200);
   const screenshotPath = `${outputDirectory}/${name}.png`;

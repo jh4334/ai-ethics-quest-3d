@@ -41,7 +41,7 @@ test('학교 장면 카메라는 아직 만나지 않은 먼 적 대신 현재 �
   assert.equal(targets.routeCue.id, 'classroom-exit');
 });
 
-test('1장 첫 조망은 플레이어를 왼쪽 1/3에 두고 중앙 기억 동선과 열린 교실을 함께 잡는다', () => {
+test('1장 첫 조망은 플레이어를 왼쪽 중심대에 두고 중앙 기억 동선과 열린 교실을 함께 잡는다', () => {
   // Given: 전투가 시작되기 전 열린 교실과 데스크톱 레퍼런스 뷰포트.
   const viewport = { height: 900, mode: 'desktop', width: 1440 };
   const frame = { player: { position: { x: 0, y: 0, z: 1 } }, targets: [] };
@@ -69,12 +69,12 @@ test('1장 첫 조망은 플레이어를 왼쪽 1/3에 두고 중앙 기억 동�
   const playerTop = project(0, 2, 1);
   const route = project(0, 0, -4.8);
 
-  // Then: 캐릭터는 왼쪽 1/3에서 읽히고, 목표는 중앙이며, 화면 높이 24~29%를 차지한다.
+  // Then: 캐릭터는 레퍼런스의 왼쪽 중심대에서 읽히고, 목표는 중앙이며, 화면 높이 29~36%를 차지한다.
   assert.equal(camera.fov, 42);
-  assert.ok(playerBottom.x >= 420 && playerBottom.x <= 470, `player x ${playerBottom.x}`);
-  assert.ok(route.x >= 650 && route.x <= 710, `route x ${route.x}`);
-  assert.ok((playerBottom.y - playerTop.y) / viewport.height >= 0.24);
-  assert.ok((playerBottom.y - playerTop.y) / viewport.height <= 0.29);
+  assert.ok(playerBottom.x >= 510 && playerBottom.x <= 580, `player x ${playerBottom.x}`);
+  assert.ok(route.x >= 670 && route.x <= 750, `route x ${route.x}`);
+  assert.ok((playerBottom.y - playerTop.y) / viewport.height >= 0.29);
+  assert.ok((playerBottom.y - playerTop.y) / viewport.height <= 0.36);
 });
 
 test('학교 HUD는 보스와 결말 상태를 사용자 화면과 QA 텔레메트리에 함께 반영한다', () => {
