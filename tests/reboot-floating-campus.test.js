@@ -12,7 +12,7 @@ import {
   CAMPUS_MATERIAL_ROLES,
   CAMPUS_REQUIRED_ASSET_IDS
 } from '../src/reboot/content/campus/chapterOneCampus.js';
-import { ENVIRONMENT_ASSETS } from '../src/reboot/environment/catalog.js';
+import { ENVIRONMENT_ASSETS, ENVIRONMENT_SOURCES } from '../src/reboot/environment/catalog.js';
 import { createFloatingCampusEnvironment } from '../src/reboot/render/floatingCampusEnvironment.js';
 
 function createFakeAssetLoader() {
@@ -69,7 +69,10 @@ test('Given chapter one campus canon, When audited, Then six distinct districts 
 test('Given the campus asset plan, When compared with the licensed catalog, Then every runtime placement resolves to a real GLB role', () => {
   const catalogIds = new Set(ENVIRONMENT_ASSETS.map(({ id }) => id));
   const buildingIds = new Set(['campus-column', 'campus-doorway', 'campus-roof', 'campus-roof-edge', 'campus-wall', 'campus-window']);
-  const natureIds = new Set(['campus-bush', 'campus-grass', 'campus-rock', 'campus-tree', 'memory-flower']);
+  const natureIds = new Set([
+    'campus-bush', 'campus-grass', 'campus-rock', 'campus-tree', 'memory-flower',
+    'vista-bush', 'vista-fern', 'vista-grass', 'vista-rock'
+  ]);
   const districtCount = (districtId, ids) => CAMPUS_ASSET_PLACEMENTS.filter((entry) => (
     entry.districtId === districtId && ids.has(entry.assetId)
   )).length;
@@ -91,8 +94,10 @@ test('Given the first campus vista, When framed from the route camera, Then lice
   const rightWing = CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.filter(({ vistaRole }) => vistaRole === 'foreground-right');
   const allowedAssets = new Set([
     'campus-bush', 'campus-fence', 'campus-grass', 'campus-hero-rock',
-    'campus-rock', 'campus-tree', 'memory-flower'
+    'campus-rock', 'campus-tree', 'memory-flower', 'vista-bush', 'vista-fern',
+    'vista-grass', 'vista-rock'
   ]);
+  const detailedNatureAssets = new Set(['vista-bush', 'vista-fern', 'vista-grass', 'vista-rock']);
 
   assert.equal(CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.length >= 34, true);
   assert.equal(leftWing.length >= 16, true);
@@ -110,14 +115,24 @@ test('Given the first campus vista, When framed from the route camera, Then lice
     position.x >= 3.2 && position.x <= 5 && position.z >= 0 && position.z <= 1.8
   )).length >= 4, true);
   assert.equal(Math.max(...CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.map(({ position }) => position.y)) >= 0.42, true);
-  assert.equal(leftWing.filter(({ scale }) => scale >= 2.4).length >= 4, true);
-  assert.equal(rightWing.filter(({ scale }) => scale >= 2.4).length >= 4, true);
+  assert.equal(leftWing.every(({ scale }) => scale >= 0.4 && scale <= 1.5), true);
+  assert.equal(rightWing.every(({ scale }) => scale >= 0.4 && scale <= 1.5), true);
   assert.equal(CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.every(({ assetId }) => allowedAssets.has(assetId)), true);
+  assert.deepEqual(
+    [...new Set(CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS
+      .filter(({ assetId }) => detailedNatureAssets.has(assetId))
+      .map(({ assetId }) => assetId))].sort(),
+    [...detailedNatureAssets].sort()
+  );
+  assert.equal(
+    CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.filter(({ assetId }) => detailedNatureAssets.has(assetId)).length >= 28,
+    true
+  );
   assert.equal(CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.filter(({ assetId }) => assetId === 'campus-hero-rock').length, 1);
   const heroRock = CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.find(({ assetId }) => assetId === 'campus-hero-rock');
   assert.equal(heroRock.position.x >= 4.8, true);
   assert.equal(heroRock.position.z <= 1.2, true);
-  assert.equal(heroRock.scale <= 1.6, true);
+  assert.equal(heroRock.scale <= 1.05, true);
   assert.equal(CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.some(({ assetId }) => assetId === 'campus-tree'), false);
   assert.equal(CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS.every((entry) => CAMPUS_ASSET_PLACEMENTS.includes(entry)), true);
   const classroomShell = CAMPUS_ASSET_PLACEMENTS.filter(({ assetId, districtId }) => (
@@ -125,6 +140,10 @@ test('Given the first campus vista, When framed from the route camera, Then lice
       && ['campus-column', 'campus-doorway', 'campus-window'].includes(assetId)
   ));
   assert.equal(classroomShell.every(({ position, scale }) => Math.abs(position.x) >= 6.1 && scale <= 0.86), true);
+  const authoredPath = CAMPUS_ASSET_PLACEMENTS.filter(({ vistaRole }) => vistaRole === 'path-surface');
+  assert.equal(authoredPath.length >= 14, true);
+  assert.equal(authoredPath.every(({ assetId }) => assetId === 'vista-path-stone'), true);
+  assert.equal(ENVIRONMENT_SOURCES['quaternius-stylized-nature'].license, 'CC0 1.0');
 });
 
 test('Given licensed assets load successfully, When the floating campus becomes ready, Then architecture and placed GLBs share one disposable scene layer', async () => {

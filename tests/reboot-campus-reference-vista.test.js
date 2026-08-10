@@ -37,13 +37,13 @@ test('Given the reference opening vista, When its scenic layers render, Then fol
 
   assert.deepEqual(campus.getDebugState().referenceVista, {
     floatingIslands: 12,
-    foregroundLeaves: 32,
+    foregroundLeaves: 0,
     islandTrees: 28,
-    memoryHalos: CAMPUS_MEMORY_PATH.length,
+    memoryHalos: 0,
     mistBands: 3,
-    scenicDrawCalls: 7
+    scenicDrawCalls: 4
   });
-  assert.equal(scene.getObjectByName('floating-campus-reference-foreground-leaves').count, 32);
+  assert.equal(scene.getObjectByName('floating-campus-reference-foreground-leaves'), undefined);
   assert.equal(scene.getObjectByName('floating-campus-reference-island-plateaus').count, 12);
   assert.equal(scene.getObjectByName('floating-campus-reference-island-undersides').count, 12);
   assert.equal(scene.getObjectByName('floating-campus-reference-tree-canopies').count, 28);
@@ -53,21 +53,15 @@ test('Given the reference opening vista, When its scenic layers render, Then fol
 test('Given the reference vista materials, When inspected, Then only memory emits and no scenic layer uses box stand-ins', async (t) => {
   const { scene } = await createCampusFixture(t);
 
-  const leaves = scene.getObjectByName('floating-campus-reference-foreground-leaves');
   const plateaus = scene.getObjectByName('floating-campus-reference-island-plateaus');
   const mist = scene.getObjectByName('floating-campus-reference-mist-bands');
-  const halos = scene.getObjectByName('floating-campus-reference-memory-halos');
   const footprints = scene.getObjectByName('floating-campus-memory-footprints');
 
-  assert.equal(leaves.geometry.type, 'ShapeGeometry');
-  assert.equal(leaves.material.vertexColors, false);
-  assert.equal(leaves.instanceColor.count, 32);
   assert.notEqual(plateaus.geometry.type, 'BoxGeometry');
   assert.equal(plateaus.material.emissiveIntensity, 0);
   assert.equal(mist.material.transparent, true);
   assert.equal(mist.material.depthWrite, false);
-  assert.equal(halos.count, CAMPUS_MEMORY_PATH.length);
-  assert.equal(halos.material.opacity <= 0.22, true);
+  assert.equal(scene.getObjectByName('floating-campus-reference-memory-halos'), undefined);
   assert.equal(footprints.material.emissive.getHex(), 0xff9a38);
   assert.equal(footprints.material.emissiveIntensity <= 1.5, true);
 });

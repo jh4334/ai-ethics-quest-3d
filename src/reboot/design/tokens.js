@@ -17,10 +17,10 @@ export const WORLD_COLORS = Object.freeze(Object.fromEntries(
 
 export const CAMPUS_VISUAL_PROFILE = Object.freeze({
   atmosphere: Object.freeze({
-    bottom: 0x315f82,
-    fog: 0x172842,
-    horizon: 0x8d5f77,
-    top: 0x18345c
+    bottom: 0x4b6f91,
+    fog: 0x263b57,
+    horizon: 0xa36d86,
+    top: 0x213a68
   }),
   camera: Object.freeze({
     desktop: Object.freeze({

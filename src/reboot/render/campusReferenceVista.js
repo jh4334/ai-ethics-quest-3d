@@ -2,9 +2,7 @@ import * as THREE from 'three';
 
 import { CAMPUS_VISUAL_PROFILE } from '../design/tokens.js';
 import { createLayeredCampusSilhouettes } from './campusEnvironmentLayers.js';
-import {
-  createForegroundLeaves, createMemoryHalos, createMistBands
-} from './campusReferenceScenicEffects.js';
+import { createMistBands } from './campusReferenceScenicEffects.js';
 
 const ISLANDS = Object.freeze([
   Object.freeze({ band: 0, scale: 2.4, x: -24, y: -0.8, z: -30 }),
@@ -78,19 +76,9 @@ function createFloatingIslandLayers({ group, prefix, resources }) {
 function createIslandTrees({ group, prefix, resources }) {
   const palette = CAMPUS_VISUAL_PROFILE.referenceVista;
   const treeCount = TREE_COUNTS.reduce((sum, count) => sum + count, 0);
-  const trunkGeometry = resources.register(
-    new THREE.CylinderGeometry(0.07, 0.11, 0.9, 5), `${prefix}-reference-tree-trunk-geometry`
-  );
   const canopyGeometry = resources.register(
     new THREE.ConeGeometry(0.42, 1.2, 5), `${prefix}-reference-tree-canopy-geometry`
   );
-  const trunks = disableShadows(new THREE.InstancedMesh(
-    trunkGeometry,
-    resources.register(new THREE.MeshStandardMaterial({
-      color: palette.treeTrunk, emissiveIntensity: 0, roughness: 1
-    }), `${prefix}-reference-tree-trunk-material`),
-    treeCount
-  ));
   const canopies = disableShadows(new THREE.InstancedMesh(
     canopyGeometry,
     resources.register(new THREE.MeshStandardMaterial({
@@ -98,7 +86,6 @@ function createIslandTrees({ group, prefix, resources }) {
     }), `${prefix}-reference-tree-canopy-material`),
     treeCount
   ));
-  trunks.name = `${prefix}-reference-tree-trunks`;
   canopies.name = `${prefix}-reference-tree-canopies`;
   const matrix = new THREE.Matrix4();
   let treeIndex = 0;
@@ -109,12 +96,6 @@ function createIslandTrees({ group, prefix, resources }) {
       const z = island.z + ((index + islandIndex) % 2 ? -0.22 : 0.28) * island.scale;
       const baseY = island.y + island.scale * 0.25;
       matrix.compose(
-        new THREE.Vector3(x, baseY + scale * 0.44, z),
-        new THREE.Quaternion(),
-        new THREE.Vector3(scale, scale, scale)
-      );
-      trunks.setMatrixAt(treeIndex, matrix);
-      matrix.compose(
         new THREE.Vector3(x, baseY + scale * 1.2, z),
         new THREE.Quaternion(),
         new THREE.Vector3(scale, scale, scale)
@@ -124,10 +105,9 @@ function createIslandTrees({ group, prefix, resources }) {
       treeIndex += 1;
     }
   });
-  trunks.instanceMatrix.needsUpdate = true;
   canopies.instanceMatrix.needsUpdate = true;
   canopies.instanceColor.needsUpdate = true;
-  group.add(trunks, canopies);
+  group.add(canopies);
   return treeCount;
 }
 
@@ -135,11 +115,11 @@ export function createReferenceVistaLayers(options) {
   const base = createLayeredCampusSilhouettes(options);
   const referenceVista = Object.freeze({
     floatingIslands: createFloatingIslandLayers(options),
-    foregroundLeaves: createForegroundLeaves(options),
+    foregroundLeaves: 0,
     islandTrees: createIslandTrees(options),
-    memoryHalos: createMemoryHalos(options),
+    memoryHalos: 0,
     mistBands: createMistBands(options),
-    scenicDrawCalls: 7
+    scenicDrawCalls: 4
   });
   return Object.freeze({ ...base, referenceVista });
 }

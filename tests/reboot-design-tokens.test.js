@@ -52,10 +52,10 @@ test('P0 캠퍼스 시각 프로필은 어깨너머 카메라와 황혼 대기 �
     lookLift: -0.3
   });
   assert.deepEqual(CAMPUS_VISUAL_PROFILE.atmosphere, {
-    bottom: 0x315f82,
-    fog: 0x172842,
-    horizon: 0x8d5f77,
-    top: 0x18345c
+    bottom: 0x4b6f91,
+    fog: 0x263b57,
+    horizon: 0xa36d86,
+    top: 0x213a68
   });
   assert.deepEqual(CAMPUS_VISUAL_PROFILE.lighting, {
     deletionIntensity: 5.2,

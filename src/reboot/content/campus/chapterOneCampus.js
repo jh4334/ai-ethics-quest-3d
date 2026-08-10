@@ -1,3 +1,11 @@
+import {
+  CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS,
+  CAMPUS_VISTA_HORIZON_ASSET_PLACEMENTS,
+  CAMPUS_VISTA_PATH_ASSET_PLACEMENTS
+} from './chapterOneVistaPlacements.js';
+
+export { CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS } from './chapterOneVistaPlacements.js';
+
 const placement = (assetId, districtId, position, scale = 1, rotationY = 0, metadata = {}) => Object.freeze({
   assetId,
   districtId,
@@ -93,53 +101,6 @@ const classroomLife = [
   placement('campus-bench', 'open-classroom', { x: 4.65, y: 0.04, z: 2.05 }, 1.05, Math.PI)
 ]);
 
-const vistaPlacement = (assetId, side, position, scale, rotationY = 0) => placement(
-  assetId, 'open-classroom', position, scale, rotationY, { vistaRole: `foreground-${side}` }
-);
-
-export const CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS = Object.freeze([
-  vistaPlacement('campus-bush', 'left', { x: -5.85, y: 0.06, z: 8.2 }, 4.1, 0.52),
-  vistaPlacement('campus-bush', 'left', { x: -5.25, y: 0.08, z: 5.65 }, 3.45, -0.35),
-  vistaPlacement('campus-grass', 'left', { x: -6.1, y: 0.1, z: 6.8 }, 2.65, 0.75),
-  vistaPlacement('campus-grass', 'right', { x: 5.85, y: 0.08, z: 8.15 }, 4.25, -0.58),
-  vistaPlacement('campus-grass', 'right', { x: 5.3, y: 0.08, z: 5.55 }, 3.5, 0.42),
-  vistaPlacement('campus-bush', 'right', { x: 6.05, y: 0.06, z: 6.7 }, 2.7, -0.7),
-  vistaPlacement('campus-grass', 'left', { x: -4.8, y: 0.12, z: 0.35 }, 3.2, 0.2),
-  vistaPlacement('campus-rock', 'left', { x: -3.2, y: 0.02, z: 1.2 }, 1.05, 0.15),
-  vistaPlacement('campus-bush', 'left', { x: -3.6, y: 0, z: 1 }, 3, 0.4),
-  vistaPlacement('campus-grass', 'left', { x: -2.8, y: 0.02, z: 1.6 }, 2.7, 0.25),
-  vistaPlacement('campus-fence', 'left', { x: -4.6, y: 0.04, z: -0.5 }, 1, 0.08),
-  vistaPlacement('campus-rock', 'left', { x: -4.3, y: 0.02, z: -0.1 }, 0.8, 0.8),
-  vistaPlacement('campus-bush', 'left', { x: -3.1, y: 0, z: 0.2 }, 1, -0.2),
-  vistaPlacement('campus-grass', 'left', { x: -4.7, y: 0.02, z: 0.3 }, 1, 0.9),
-  vistaPlacement('memory-flower', 'left', { x: -3, y: 0.03, z: 1 }, 1.4, 0.1),
-  vistaPlacement('campus-bush', 'left', { x: -5.1, y: 0.12, z: 2 }, 3.3, -0.25),
-  vistaPlacement('campus-rock', 'left', { x: -4.8, y: 0.32, z: 1.8 }, 1.7, 0.65),
-  vistaPlacement('campus-bush', 'left', { x: -4.4, y: 0.42, z: 1.3 }, 1.7, -0.5),
-  vistaPlacement('campus-grass', 'left', { x: -5.3, y: 0.18, z: 0.8 }, 1.55, 0.8),
-  vistaPlacement('campus-rock', 'left', { x: -4.2, y: 0.24, z: -4.2 }, 1.25, -0.2),
-  vistaPlacement('campus-bush', 'left', { x: -3.7, y: 0.3, z: -5.2 }, 1.48, 0.35),
-  vistaPlacement('campus-grass', 'left', { x: -4, y: 0.16, z: -6.4 }, 1.35, -0.7),
-  vistaPlacement('memory-flower', 'left', { x: -3.2, y: 0.46, z: -8 }, 1.75, 0.3),
-  vistaPlacement('campus-hero-rock', 'right', { x: 5, y: 0.08, z: 1.1 }, 1.55, -0.45),
-  vistaPlacement('campus-rock', 'right', { x: 3.4, y: 0.02, z: 1.5 }, 1.1, 0.8),
-  vistaPlacement('campus-bush', 'right', { x: 4, y: 0, z: 1 }, 3, 0.8),
-  vistaPlacement('campus-grass', 'right', { x: 3.3, y: 0.02, z: 1.7 }, 2.8, -0.5),
-  vistaPlacement('campus-fence', 'right', { x: 4.8, y: 0.04, z: -0.4 }, 1, -0.08),
-  vistaPlacement('campus-rock', 'right', { x: 4.3, y: 0.02, z: 0 }, 0.82, -0.35),
-  vistaPlacement('campus-bush', 'right', { x: 3.2, y: 0, z: 0.3 }, 1, -0.7),
-  vistaPlacement('campus-grass', 'right', { x: 4.8, y: 0.02, z: 0.4 }, 1.02, 0.6),
-  vistaPlacement('memory-flower', 'right', { x: 3.5, y: 0.03, z: 1 }, 1.45, -0.1),
-  vistaPlacement('campus-bush', 'right', { x: 4.5, y: 0.1, z: -3.6 }, 2.6, 0.28),
-  vistaPlacement('campus-rock', 'right', { x: 4.9, y: 0.34, z: 1.8 }, 1.55, -0.55),
-  vistaPlacement('campus-bush', 'right', { x: 4.5, y: 0.44, z: 1.3 }, 1.75, 0.45),
-  vistaPlacement('campus-grass', 'right', { x: 4, y: 0.2, z: -5.2 }, 2.5, -0.82),
-  vistaPlacement('campus-rock', 'right', { x: 3.8, y: 0.26, z: -7 }, 1.28, 0.25),
-  vistaPlacement('campus-bush', 'right', { x: 3.5, y: 0.32, z: -8 }, 1.5, -0.4),
-  vistaPlacement('campus-grass', 'right', { x: 3.2, y: 0.18, z: -9.5 }, 1.38, 0.72),
-  vistaPlacement('memory-flower', 'right', { x: 2.8, y: 0.48, z: -11 }, 1.8, -0.28)
-]);
-
 const rosterFacade = [
   ...radialPlacements('campus-window', 'roster-tower', {
     centerX: -11.2, centerZ: -27, count: 4, levels: [0.15, 2.55], radius: 2.55, scale: 0.72
@@ -200,6 +161,8 @@ export const CAMPUS_ASSET_PLACEMENTS = Object.freeze([
   ...classroomFurniture,
   ...classroomLife,
   ...CAMPUS_FIRST_VISTA_ASSET_PLACEMENTS,
+  ...CAMPUS_VISTA_PATH_ASSET_PLACEMENTS,
+  ...CAMPUS_VISTA_HORIZON_ASSET_PLACEMENTS,
   ...rosterFacade,
   ...administrationFacade,
   ...libraryProps,
