@@ -2,9 +2,11 @@ import { readFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import sharp from 'sharp';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const referencePath = path.join(root, 'docs/design/concepts/gameplay-screen-v3.webp');
+const normalizedReferencePath = path.join(root, '.omo/evidence/h17-six-chapter/p0/reference-chapter1-1440x900.png');
 const actualPath = path.join(root, '.omo/evidence/h17-six-chapter/p0/chapter-1-classroom-desktop-1440x900.png');
 const outputPath = path.join(root, '.omo/evidence/h17-six-chapter/p0/reference-vs-actual-chapter1-2880x900.png');
 
@@ -13,6 +15,10 @@ const [reference, actual] = await Promise.all([
   readFile(actualPath)
 ]);
 await mkdir(path.dirname(outputPath), { recursive: true });
+await sharp(reference)
+  .resize(1440, 900, { fit: 'cover', position: 'centre' })
+  .png()
+  .toFile(normalizedReferencePath);
 
 const browser = await chromium.launch({ headless: true });
 try {
@@ -31,6 +37,7 @@ try {
     <figure><img src="data:image/png;base64,${actual.toString('base64')}"><figcaption>H-17 ACTUAL · 1440×900</figcaption></figure>
   `);
   await page.screenshot({ path: outputPath });
+  console.log(path.relative(root, normalizedReferencePath).replaceAll('\\', '/'));
   console.log(path.relative(root, outputPath).replaceAll('\\', '/'));
 } finally {
   await browser.close();
