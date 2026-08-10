@@ -8,10 +8,10 @@ import { CAMPUS_VISUAL_PROFILE, WORLD_COLORS } from '../design/tokens.js';
 import { createEnvironmentAssetLoader } from '../environment/loader.js';
 import { createCampusArchitecture } from './campusArchitecture.js';
 import { createCampusBackdrop } from './campusBackdrop.js';
+import { createReferenceVistaLayers } from './campusReferenceVista.js';
 import { createTwilightSea } from './campusTwilightSea.js';
 import {
-  createCampusEdgeDressing, createCinematicNightSky, createLayeredCampusSilhouettes,
-  createMemoryFootprintPath
+  createCampusEdgeDressing, createCinematicNightSky, createMemoryFootprintPath
 } from './campusEnvironmentLayers.js';
 import { createDisposableRegistry } from './dispose.js';
 
@@ -47,10 +47,10 @@ const ASSET_NIGHT_TREATMENTS = Object.freeze({
     color: 0x66758d, emissive: 0x18243a, intensity: 0.22, roughness: 0.76
   }),
   'campus-bush': Object.freeze({
-    color: 0x755a66, emissive: 0x1b141a, intensity: 0.1, roughness: 0.94
+    color: 0x9f7183, emissive: 0x4a2636, intensity: 0.24, roughness: 0.94
   }),
   'campus-grass': Object.freeze({
-    color: 0x88715d, emissive: 0x211810, intensity: 0.1, roughness: 0.96
+    color: 0xbb8b62, emissive: 0x4a2d1a, intensity: 0.22, roughness: 0.96
   }),
   'campus-hero-rock': Object.freeze({
     clearMetalRoughnessMaps: true,
@@ -269,7 +269,7 @@ export function createFloatingCampusEnvironment({
     accent: WORLD_COLORS.memory, centerZ: -58, group,
     palette: CAMPUS_VISUAL_PROFILE.atmosphere, prefix: 'floating-campus', resources
   });
-  const silhouettes = createLayeredCampusSilhouettes({
+  const silhouettes = createReferenceVistaLayers({
     centerZ: -58, colors: CAMPUS_VISUAL_PROFILE.silhouette, group,
     prefix: 'floating-campus', resources, spanZ: 86
   });
@@ -278,7 +278,7 @@ export function createFloatingCampusEnvironment({
     prefix: 'floating-campus', resources, spanZ: 118
   });
   const memoryPath = createMemoryFootprintPath({
-    color: WORLD_COLORS.memory, group, points: CAMPUS_MEMORY_PATH,
+    color: CAMPUS_VISUAL_PROFILE.referenceVista.memoryCore, group, points: CAMPUS_MEMORY_PATH,
     prefix: 'floating-campus', resources
   });
   const contactPatches = createAssetContactPatches(group, resources);
@@ -357,6 +357,7 @@ export function createFloatingCampusEnvironment({
       distantWindowLights: silhouettes.windowLightCount,
       memoryPathAccents: memoryPath.footprintCount,
       mountainRidges: silhouettes.ridgeCount,
+      referenceVista: silhouettes.referenceVista,
       requiredAssetIds: CAMPUS_REQUIRED_ASSET_IDS,
       skyObjects: sky.skyObjects,
       atmosphericLayers: silhouettes.layerCount,

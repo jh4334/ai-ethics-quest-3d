@@ -59,14 +59,14 @@ test('P0 캠퍼스 시각 프로필은 어깨너머 카메라와 황혼 대기 �
   });
   assert.deepEqual(CAMPUS_VISUAL_PROFILE.lighting, {
     deletionIntensity: 5.2,
-    memoryIntensity: 7.4,
-    moonIntensity: 2.9
+    memoryIntensity: 5.6,
+    moonIntensity: 2.75
   });
   assert.deepEqual(CAMPUS_VISUAL_PROFILE.materialTint, {
     brick: 0xb98470,
     concrete: 0x8d96a6,
-    path: 0xe0cbd1,
-    terrain: 0xa49baa,
+    path: 0xc8bdc7,
+    terrain: 0x777b8c,
     track: 0xe39a94,
     wood: 0xd6b68d
   });

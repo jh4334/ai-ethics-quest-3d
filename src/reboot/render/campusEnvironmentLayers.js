@@ -49,8 +49,8 @@ export function createCinematicNightSky({
         float broadWave = sin(screenX * 18.0 + sin(screenX * 5.0) * 2.2 + screenY * 12.0) * 0.5 + 0.5;
         float cloudDetail = sin(screenX * 43.0 - screenY * 9.0) * 0.5 + 0.5;
         float twilightCloud = smoothstep(0.48, 0.74, broadWave * 0.7 + cloudDetail * 0.3) * cloudBand;
-        vec3 cloudColor = mix(horizonColor, bottomColor, 0.28) * 1.18;
-        color = mix(color, cloudColor, twilightCloud * 0.22);
+        vec3 cloudColor = mix(horizonColor, vec3(0.48, 0.56, 0.7), 0.34) * 1.22;
+        color = mix(color, cloudColor, twilightCloud * 0.42);
         float horizonGlow = 1.0 - smoothstep(0.0, 0.08, abs(screenY - 0.67));
         color += vec3(0.13, 0.18, 0.28) * horizonGlow * 0.12;
         gl_FragColor = vec4(color, 1.0);
@@ -121,9 +121,9 @@ export function createMemoryFootprintPath({ color, group, points, prefix, resour
     new THREE.ShapeGeometry(footprintShape, 10), `${prefix}-memory-footprint-geometry`
   );
   const material = resources.register(new THREE.MeshStandardMaterial({
-    color: new THREE.Color(color).multiplyScalar(0.82),
+    color: new THREE.Color(color).multiplyScalar(0.38),
     emissive: color,
-    emissiveIntensity: 2.4,
+    emissiveIntensity: 1.35,
     metalness: 0.18,
     roughness: 0.28,
     side: THREE.DoubleSide
@@ -316,6 +316,7 @@ export function createLayeredCampusSilhouettes({
 }) {
   const ridgeCount = createMountainRidges({ centerZ, colors, group, prefix, resources, spanZ });
   const islandGeometry = resources.register(new THREE.ConeGeometry(4.2, 7.6, 9, 1, true), `${prefix}-island-geometry`);
+  islandGeometry.rotateZ(Math.PI);
   const towerGeometry = resources.register(new THREE.CylinderGeometry(0.62, 0.88, 4.6, 8), `${prefix}-tower-geometry`);
   const roofGeometry = resources.register(new THREE.ConeGeometry(1.05, 1.7, 5), `${prefix}-roof-geometry`);
   const windowMatrices = [];

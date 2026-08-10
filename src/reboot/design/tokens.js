@@ -66,18 +66,29 @@ export const CAMPUS_VISUAL_PROFILE = Object.freeze({
   }),
   lighting: Object.freeze({
     deletionIntensity: 5.2,
-    memoryIntensity: 7.4,
-    moonIntensity: 2.9
+    memoryIntensity: 5.6,
+    moonIntensity: 2.75
   }),
   materialTint: Object.freeze({
     brick: 0xb98470,
     concrete: 0x8d96a6,
-    path: 0xe0cbd1,
-    terrain: 0xa49baa,
+    path: 0xc8bdc7,
+    terrain: 0x777b8c,
     track: 0xe39a94,
     wood: 0xd6b68d
   }),
-  silhouette: Object.freeze([0x314768, 0x233654, 0x17253f])
+  referenceVista: Object.freeze({
+    islandTop: 0x40546c,
+    islandUnderside: 0x18263b,
+    leftLeaves: Object.freeze([0x724255, 0x8f536a, 0x5d486f, 0xa45e5a]),
+    memoryCore: 0xff9a38,
+    memoryHalo: 0xffbd64,
+    mist: 0x62758d,
+    rightLeaves: Object.freeze([0x8d6341, 0xb37b4e, 0x9c744a, 0xc28e59]),
+    treeCanopy: Object.freeze([0x2e4458, 0x23384d, 0x1a2d42]),
+    treeTrunk: 0x342937
+  }),
+  silhouette: Object.freeze([0x3a5275, 0x2b4162, 0x1c2d49])
 });
 
 export const WORLD_MATERIALS = Object.freeze({
