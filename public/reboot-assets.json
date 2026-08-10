@@ -1,6 +1,7 @@
 [
   "./assets/reboot/characters/animations/ual1-standard.glb",
   "./assets/reboot/characters/animations/ual2-standard.glb",
+  "./assets/reboot/characters/rpg/Ranger-runtime.glb",
   "./assets/reboot/characters/base/Superhero_Female_FullBody.bin",
   "./assets/reboot/characters/base/Superhero_Female_FullBody.gltf",
   "./assets/reboot/characters/base/Superhero_Male_FullBody.bin",

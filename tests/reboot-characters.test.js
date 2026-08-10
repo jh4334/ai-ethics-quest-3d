@@ -46,7 +46,8 @@ test('reboot roster gives every story role an explicit licensed or procedural pr
       assert.match(profile.outfit, /^(peasant|ranger)$/);
     }
     assert.match(profile.tint, /^#[0-9a-f]{6}$/i);
-    assert.ok(profile.scale >= 0.8 && profile.scale <= 1.31);
+    const minimumScale = id === 'dot' ? 0.6 : id === 'player' ? 0.7 : 0.8;
+    assert.ok(profile.scale >= minimumScale && profile.scale <= 1.31);
     assert.deepEqual(Object.keys(profile.animations).sort(), ['action', 'defeat', 'hit', 'idle', 'move']);
   }
   assert.throws(() => getCharacterProfile('missing-role'), /missing-role/);
@@ -179,12 +180,19 @@ test('main cast presentation stays large and texture-lit enough for the live sch
   const humans = mainCast.filter((profile) => profile.identity.kind === 'human');
 
   // When: their authored presentation bounds are inspected.
-  // Then: humans keep readable scale while the player alone carries the authored navy coat treatment.
-  assert.equal(humans.every((profile) => profile.scale === 1.3), true);
-  assert.equal(getCharacterProfile('dot').scale, 0.8);
+  // Then: humans keep readable scale while the player uses the imported ranger silhouette instead of a solid cape shell.
+  assert.equal(getCharacterProfile('player').scale, 0.84);
+  assert.equal(humans.filter(({ id }) => id !== 'player').every((profile) => profile.scale === 1.3), true);
+  assert.equal(getCharacterProfile('dot').scale, 0.62);
+  assert.equal(getCharacterProfile('player').body, 'male');
   assert.equal(getCharacterProfile('player').outfit, 'ranger');
   assert.equal(getCharacterProfile('player').outfitTint, '#45557f');
   assert.equal(getCharacterProfile('player').hairTint, '#1c2538');
+  assert.equal(getCharacterProfile('player').standaloneAsset, CHARACTER_ASSET_PATHS.rpgRanger);
+  assert.deepEqual(getCharacterProfile('player').animations, {
+    action: 'Punch', defeat: 'Death', hit: 'RecieveHit', idle: 'Idle', move: 'Run'
+  });
+  assert.equal(getCharacterProfile('player').identity.silhouette, 'hooded-navy-ranger-scarf');
   for (const profile of humans) {
     assert.deepEqual(Object.keys(profile.presentation).sort(), ['hairEmissive', 'outfitEmissive', 'skinEmissive']);
     assert.ok(profile.presentation.outfitEmissive >= 0.08);
@@ -194,7 +202,7 @@ test('main cast presentation stays large and texture-lit enough for the live sch
   }
 });
 
-test('character factory preserves face and hair maps while tinting only the player coat navy', async (t) => {
+test('character factory preserves the ranger silhouette and adds only narrow ochre scarf tails', async (t) => {
   // Given: mapped body, outfit, and hair sources with a neutral base color.
   const loadedUrls = [];
   const makeMesh = (name) => {
@@ -208,7 +216,13 @@ test('character factory preserves face and hair maps while tinting only the play
     async loadAsync(url) {
       loadedUrls.push(url);
       const scene = new THREE.Group();
-      if (url.includes('/Hair_')) {
+      if (url.includes('/rpg/Ranger-runtime.glb')) {
+        const ranger = makeMesh('Ranger_Texture');
+        ranger.name = 'Ranger';
+        const bow = makeMesh('Bow_Texture');
+        bow.name = 'Ranger_Bow';
+        scene.add(ranger, bow);
+      } else if (url.includes('/Hair_')) {
         scene.add(makeMesh('MI_Hair_1'));
       } else if (url.includes('/base/')) {
         scene.add(makeMesh('MI_Regular_Female'), makeMesh('MI_Eyes'));
@@ -217,7 +231,10 @@ test('character factory preserves face and hair maps while tinting only the play
         if (url.includes('Male_Ranger')) outfit.name = 'Male_Ranger_Head_Hood';
         scene.add(outfit);
       }
-      const animations = ['Interact', 'Death01', 'Hit_Chest', 'Idle_Loop', 'Jog_Fwd_Loop']
+      const animations = [
+        'Interact', 'Death01', 'Hit_Chest', 'Idle_Loop', 'Jog_Fwd_Loop',
+        'Punch', 'Death', 'RecieveHit', 'Idle', 'Run'
+      ]
         .map((name) => new THREE.AnimationClip(name, 1, []));
       return { animations, scene };
     }
@@ -234,27 +251,22 @@ test('character factory preserves face and hair maps while tinting only the play
     materials.push(...entries);
   });
 
-  // Then: all maps survive, while only the ranger coat receives the authored navy tint.
+  // Then: the standalone textured ranger supplies the complete body and embedded animation set.
   const importedMaterials = materials.filter((material) => material.name);
-  assert.equal(loadedUrls.some((url) => url.endsWith('/Hair_SimpleParted.gltf')), true);
-  assert.equal(importedMaterials.length >= 4, true);
+  assert.deepEqual(loadedUrls, [CHARACTER_ASSET_PATHS.rpgRanger]);
+  assert.equal(importedMaterials.length, 2);
   assert.equal(importedMaterials.every((material) => material.map?.isTexture), true);
   const materialByName = Object.fromEntries(importedMaterials.map((material) => [material.name, material]));
-  assert.equal(materialByName.MI_Ranger.color.getHex(), 0x45557f);
-  assert.equal(materialByName.MI_Hair_1.color.getHex(), 0x1c2538);
-  assert.equal(materialByName.MI_Regular_Female.color.getHex(), 0x778899);
-  assert.equal(materialByName.MI_Eyes.color.getHex(), 0x778899);
+  assert.equal(materialByName.Ranger_Texture.color.getHex(), 0x45557f);
   assert.equal(importedMaterials.every((material) => material.emissiveMap === material.map), true);
-  assert.equal(materialByName.MI_Ranger.emissive.getHex(), 0x45557f);
-  assert.equal(materialByName.MI_Hair_1.emissive.getHex(), 0x1c2538);
-  assert.equal(materialByName.MI_Regular_Female.emissive.getHex(), 0xffffff);
-  assert.equal(materialByName.MI_Eyes.emissive.getHex(), 0xffffff);
+  assert.equal(materialByName.Ranger_Texture.emissive.getHex(), 0x45557f);
+  assert.equal(character.root.getObjectByName('Ranger_Bow').visible, false);
   assert.equal(importedMaterials.every((material) => material.emissiveIntensity <= 0.22), true);
-  assert.ok(materialByName.MI_Hair_1.emissiveIntensity > materialByName.MI_Ranger.emissiveIntensity);
-  assert.ok(materialByName.MI_Regular_Female.emissiveIntensity > materialByName.MI_Ranger.emissiveIntensity);
-  assert.ok(character.root.getObjectByName('player-navy-coat'));
-  assert.ok(character.root.getObjectByName('player-gold-coat-trim'));
-  assert.ok(character.root.getObjectByName('player-ochre-scarf-tail'));
+  assert.equal(Boolean(character.root.getObjectByName('player-navy-coat')), false);
+  assert.equal(Boolean(character.root.getObjectByName('player-gold-coat-trim')), false);
+  assert.ok(character.root.getObjectByName('player-ochre-scarf-knot'));
+  assert.ok(character.root.getObjectByName('player-ochre-scarf-tail-left'));
+  assert.ok(character.root.getObjectByName('player-ochre-scarf-tail-right'));
 
   const haru = await factory.create('haru');
   assert.equal(haru.root.getObjectByName('Male_Ranger_Head_Hood').visible, false);
@@ -305,6 +317,7 @@ test('runtime character assets exist locally and are documented as CC0', () => {
   }
   const licenses = readFileSync(new URL('../ASSET_LICENSES.md', import.meta.url), 'utf8');
   const manifest = JSON.parse(readFileSync(new URL('../public/reboot-assets.json', import.meta.url), 'utf8'));
+  assert.equal(manifest.includes(CHARACTER_ASSET_PATHS.rpgRanger), true);
   for (const name of ['Hair_Buns', 'Hair_Long', 'Hair_SimpleParted']) {
     for (const extension of ['bin', 'gltf']) {
       const path = `./assets/reboot/characters/base/${name}.${extension}`;
@@ -316,6 +329,7 @@ test('runtime character assets exist locally and are documented as CC0', () => {
   assert.match(licenses, /Universal Base Characters/i);
   assert.match(licenses, /Modular Character Outfits - Fantasy/i);
   assert.match(licenses, /Universal Animation Library(?: 2)?/i);
+  assert.match(licenses, /RPG Character Pack/i);
   assert.match(licenses, /CC0 1\.0/i);
   assert.ok(projectRoot);
 });

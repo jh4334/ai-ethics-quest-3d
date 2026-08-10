@@ -12,7 +12,8 @@ export const CHARACTER_ASSET_PATHS = Object.freeze({
   hairSimpleParted: `${ASSET_ROOT}/base/Hair_SimpleParted.gltf`,
   maleBody: `${ASSET_ROOT}/base/Superhero_Male_FullBody.gltf`,
   malePeasant: `${ASSET_ROOT}/outfits/Male_Peasant.gltf`,
-  maleRanger: `${ASSET_ROOT}/outfits/Male_Ranger.gltf`
+  maleRanger: `${ASSET_ROOT}/outfits/Male_Ranger.gltf`,
+  rpgRanger: `${ASSET_ROOT}/rpg/Ranger-runtime.glb`
 });
 
 export const BODY_ASSETS = Object.freeze({
@@ -56,6 +57,13 @@ const UAL2_ENEMY = Object.freeze({
   idle: 'Idle_FoldArms_Loop',
   move: 'Zombie_Walk_Fwd_Loop'
 });
+const RPG_RANGER = Object.freeze({
+  action: 'Punch',
+  defeat: 'Death',
+  hit: 'RecieveHit',
+  idle: 'Idle',
+  move: 'Run'
+});
 
 const DEFAULT_PRESENTATION = Object.freeze({
   hairEmissive: 0.14,
@@ -67,7 +75,7 @@ function createProfile({
   accessory = 'none', animations = UAL1, body, face = 'visible', hair = null,
   hairTint = null, hiddenParts = [], id, kind = 'human', label, library = 'ual1', outfit,
   outfitTint = null, presentation = DEFAULT_PRESENTATION,
-  scale = 1, silhouette = `${body}-${outfit}`, tint
+  scale = 1, silhouette = `${body}-${outfit}`, standaloneAsset = null, tint
 }) {
   return Object.freeze({
     animations,
@@ -91,21 +99,23 @@ function createProfile({
     outfitTint,
     presentation: Object.freeze({ ...presentation }),
     scale,
+    standaloneAsset,
     tint
   });
 }
 
 export const CHARACTER_ROSTER = Object.freeze({
   player: createProfile({
-    accessory: 'record-ring', body: 'female', hair: 'simpleParted',
-    hairTint: '#1c2538', hiddenParts: ['Acc_Pauldrons', 'Head_Hood'], id: 'player', label: '기록자',
+    accessory: 'record-ring', animations: RPG_RANGER, body: 'male', hair: 'hooded',
+    hairTint: '#1c2538', hiddenParts: ['Ranger_Bow'], id: 'player', label: '기록자',
     outfit: 'ranger', outfitTint: '#45557f',
     presentation: { hairEmissive: 0.2, outfitEmissive: 0.12, skinEmissive: 0.17 },
-    scale: 1.3, silhouette: 'parted-hair-navy-coat-record-ring', tint: '#4aaee8'
+    scale: 0.84, silhouette: 'hooded-navy-ranger-scarf',
+    standaloneAsset: CHARACTER_ASSET_PATHS.rpgRanger, tint: '#4aaee8'
   }),
   dot: createProfile({
     accessory: 'scan-ring', body: null, face: 'sensor', id: 'dot', kind: 'audit-drone', label: 'DOT',
-    outfit: null, scale: 0.8, silhouette: 'orb-ring-twin-fin', tint: '#35d2dc'
+    outfit: null, scale: 0.62, silhouette: 'orb-ring-twin-fin', tint: '#35d2dc'
   }),
   haru: createProfile({
     // 기존 견갑(outfit 자체 파츠)은 유지하고, 하루 톤의 스카프를 목에 더한다.

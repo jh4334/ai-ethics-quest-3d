@@ -42,38 +42,21 @@ function addRoleAccessory(profile, root, ownedGeometries, ownedMaterials) {
       const ring = addMesh(root, new THREE.TorusGeometry(0.28, 0.045, 8, 18), createAccessoryMaterial(profile.tint), ownedGeometries, ownedMaterials);
       ring.position.set(0.36, 1.2, 0.02);
       ring.rotation.y = Math.PI / 2;
-      const coatMaterial = createAccessoryMaterial('#34466f', {
-        emissiveIntensity: 0.1, metalness: 0.03, roughness: 0.84, side: THREE.DoubleSide
-      });
-      const coat = addMesh(
-        root,
-        new THREE.CylinderGeometry(0.31, 0.49, 0.96, 14, 1, true, 0.18, Math.PI * 1.88),
-        coatMaterial,
-        ownedGeometries,
-        ownedMaterials
-      );
-      coat.name = 'player-navy-coat';
-      coat.position.set(0, 0.95, 0.02);
-      const coatTrim = addMesh(
-        root,
-        new THREE.TorusGeometry(0.45, 0.018, 6, 24),
-        createAccessoryMaterial('#d8a14a', { emissiveIntensity: 0.24, metalness: 0.18, roughness: 0.48 }),
-        ownedGeometries,
-        ownedMaterials
-      );
-      coatTrim.name = 'player-gold-coat-trim';
-      coatTrim.position.set(0, 0.49, 0.02);
-      coatTrim.rotation.x = Math.PI / 2;
       const scarfMaterial = createAccessoryMaterial('#d8a14a', {
-        emissiveIntensity: 0.18, metalness: 0.02, roughness: 0.78
+        emissiveIntensity: 0.18, metalness: 0.02, roughness: 0.78, side: THREE.DoubleSide
       });
       const scarf = addMesh(root, new THREE.TorusGeometry(0.13, 0.028, 8, 18), scarfMaterial, ownedGeometries, ownedMaterials);
+      scarf.name = 'player-ochre-scarf-knot';
       scarf.position.set(0, 1.43, 0.01);
       scarf.rotation.x = Math.PI / 2;
-      const scarfTail = addMesh(root, new THREE.PlaneGeometry(0.19, 0.72, 1, 3), scarfMaterial, ownedGeometries, ownedMaterials);
-      scarfTail.name = 'player-ochre-scarf-tail';
-      scarfTail.position.set(-0.12, 1.12, 0.19);
-      scarfTail.rotation.set(0.12, -0.08, 0.24);
+      const leftTail = addMesh(root, new THREE.PlaneGeometry(0.12, 0.66, 1, 3), scarfMaterial, ownedGeometries, ownedMaterials);
+      leftTail.name = 'player-ochre-scarf-tail-left';
+      leftTail.position.set(-0.08, 1.12, 0.18);
+      leftTail.rotation.set(0.08, -0.08, 0.17);
+      const rightTail = addMesh(root, new THREE.PlaneGeometry(0.1, 0.54, 1, 3), scarfMaterial, ownedGeometries, ownedMaterials);
+      rightTail.name = 'player-ochre-scarf-tail-right';
+      rightTail.position.set(0.07, 1.18, 0.17);
+      rightTail.rotation.set(-0.06, 0.08, -0.14);
       break;
     }
     case 'policy-tablet-line': {
@@ -297,34 +280,46 @@ export function createCharacterFactory({ loader = new GLTFLoader() } = {}) {
       return character;
     }
 
-    const needsBaseBody = profile.outfit === 'peasant' || Boolean(profile.hair);
-    const [bodySource, outfitSource, hairSource, animationSource] = await Promise.all([
-      needsBaseBody ? load(BODY_ASSETS[profile.body]) : Promise.resolve(null),
-      load(OUTFIT_ASSETS[profile.body][profile.outfit]),
-      profile.hair ? load(HAIR_ASSETS[profile.hair]) : Promise.resolve(null),
-      load(ANIMATION_ASSETS[profile.library])
-    ]);
-    if (disposed) throw new Error(`캐릭터 로딩 중 장면이 종료됨: ${id}`);
-
-    const outfit = cloneSkeleton(outfitSource.scene);
-    prepareCharacterModel({
-      hiddenParts: profile.hiddenParts, model: outfit, outfitTint: profile.outfitTint, ownedMaterials,
-      presentation: profile.presentation
-    });
-    const animatedModels = [outfit];
-    if (bodySource) {
-      const body = cloneSkeleton(bodySource.scene);
-      prepareCharacterModel({ hiddenParts: [], model: body, ownedMaterials, presentation: profile.presentation });
-      animatedModels.unshift(body);
-    }
-    if (hairSource) {
-      const hair = cloneSkeleton(hairSource.scene);
+    let animatedModels;
+    let animationSource;
+    if (profile.standaloneAsset) {
+      animationSource = await load(profile.standaloneAsset);
+      const model = cloneSkeleton(animationSource.scene);
       prepareCharacterModel({
-        hairTint: profile.hairTint, hiddenParts: [], model: hair, ownedMaterials,
+        hiddenParts: profile.hiddenParts, model, outfitTint: profile.outfitTint, ownedMaterials,
         presentation: profile.presentation
       });
-      animatedModels.push(hair);
+      animatedModels = [model];
+    } else {
+      const needsBaseBody = profile.outfit === 'peasant' || Boolean(profile.hair);
+      const [bodySource, outfitSource, hairSource, loadedAnimations] = await Promise.all([
+        needsBaseBody ? load(BODY_ASSETS[profile.body]) : Promise.resolve(null),
+        load(OUTFIT_ASSETS[profile.body][profile.outfit]),
+        profile.hair ? load(HAIR_ASSETS[profile.hair]) : Promise.resolve(null),
+        load(ANIMATION_ASSETS[profile.library])
+      ]);
+      animationSource = loadedAnimations;
+      const outfit = cloneSkeleton(outfitSource.scene);
+      prepareCharacterModel({
+        hiddenParts: profile.hiddenParts, model: outfit, outfitTint: profile.outfitTint, ownedMaterials,
+        presentation: profile.presentation
+      });
+      animatedModels = [outfit];
+      if (bodySource) {
+        const body = cloneSkeleton(bodySource.scene);
+        prepareCharacterModel({ hiddenParts: [], model: body, ownedMaterials, presentation: profile.presentation });
+        animatedModels.unshift(body);
+      }
+      if (hairSource) {
+        const hair = cloneSkeleton(hairSource.scene);
+        prepareCharacterModel({
+          hairTint: profile.hairTint, hiddenParts: [], model: hair, ownedMaterials,
+          presentation: profile.presentation
+        });
+        animatedModels.push(hair);
+      }
     }
+    if (disposed) throw new Error(`캐릭터 로딩 중 장면이 종료됨: ${id}`);
     root.add(...animatedModels);
     addRoleAccessory(profile, root, ownedGeometries, ownedMaterials);
 
