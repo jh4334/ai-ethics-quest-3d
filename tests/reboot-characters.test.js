@@ -180,19 +180,20 @@ test('main cast presentation stays large and texture-lit enough for the live sch
   const humans = mainCast.filter((profile) => profile.identity.kind === 'human');
 
   // When: their authored presentation bounds are inspected.
-  // Then: humans keep readable scale while the player uses the imported ranger silhouette instead of a solid cape shell.
-  assert.equal(getCharacterProfile('player').scale, 0.84);
+  // Then: humans keep readable scale while the player exposes hair, face, coat, and narrow scarf layers.
+  assert.equal(getCharacterProfile('player').scale, 1.18);
   assert.equal(humans.filter(({ id }) => id !== 'player').every((profile) => profile.scale === 1.3), true);
   assert.equal(getCharacterProfile('dot').scale, 0.62);
   assert.equal(getCharacterProfile('player').body, 'male');
-  assert.equal(getCharacterProfile('player').outfit, 'ranger');
+  assert.equal(getCharacterProfile('player').outfit, 'peasant');
   assert.equal(getCharacterProfile('player').outfitTint, '#45557f');
   assert.equal(getCharacterProfile('player').hairTint, '#1c2538');
-  assert.equal(getCharacterProfile('player').standaloneAsset, CHARACTER_ASSET_PATHS.rpgRanger);
+  assert.equal(getCharacterProfile('player').hair, 'simpleParted');
+  assert.equal(getCharacterProfile('player').standaloneAsset, null);
   assert.deepEqual(getCharacterProfile('player').animations, {
-    action: 'Punch', defeat: 'Death', hit: 'RecieveHit', idle: 'Idle', move: 'Run'
+    action: 'Interact', defeat: 'Death01', hit: 'Hit_Chest', idle: 'Idle_Loop', move: 'Jog_Fwd_Loop'
   });
-  assert.equal(getCharacterProfile('player').identity.silhouette, 'hooded-navy-ranger-scarf');
+  assert.equal(getCharacterProfile('player').identity.silhouette, 'dark-haired-navy-student-ranger-scarf');
   for (const profile of humans) {
     assert.deepEqual(Object.keys(profile.presentation).sort(), ['hairEmissive', 'outfitEmissive', 'skinEmissive']);
     assert.ok(profile.presentation.outfitEmissive >= 0.08);
@@ -202,7 +203,7 @@ test('main cast presentation stays large and texture-lit enough for the live sch
   }
 });
 
-test('character factory preserves the ranger silhouette and adds only narrow ochre scarf tails', async (t) => {
+test('character factory assembles the visible-haired student ranger and adds only narrow ochre scarf tails', async (t) => {
   // Given: mapped body, outfit, and hair sources with a neutral base color.
   const loadedUrls = [];
   const makeMesh = (name) => {
@@ -251,16 +252,20 @@ test('character factory preserves the ranger silhouette and adds only narrow och
     materials.push(...entries);
   });
 
-  // Then: the standalone textured ranger supplies the complete body and embedded animation set.
+  // Then: the shared body, student tunic, visible hair, and UAL clips form the student silhouette.
   const importedMaterials = materials.filter((material) => material.name);
-  assert.deepEqual(loadedUrls, [CHARACTER_ASSET_PATHS.rpgRanger]);
-  assert.equal(importedMaterials.length, 2);
+  assert.deepEqual(loadedUrls, [
+    CHARACTER_ASSET_PATHS.maleBody,
+    CHARACTER_ASSET_PATHS.malePeasant,
+    CHARACTER_ASSET_PATHS.hairSimpleParted,
+    CHARACTER_ASSET_PATHS.animationLibrary1
+  ]);
+  assert.equal(importedMaterials.length, 4);
   assert.equal(importedMaterials.every((material) => material.map?.isTexture), true);
-  const materialByName = Object.fromEntries(importedMaterials.map((material) => [material.name, material]));
-  assert.equal(materialByName.Ranger_Texture.color.getHex(), 0x45557f);
   assert.equal(importedMaterials.every((material) => material.emissiveMap === material.map), true);
-  assert.equal(materialByName.Ranger_Texture.emissive.getHex(), 0x45557f);
-  assert.equal(character.root.getObjectByName('Ranger_Bow').visible, false);
+  assert.equal(importedMaterials.find((material) => material.name === 'MI_Peasant').polygonOffset, true);
+  assert.equal(character.root.getObjectByName('character-player-outfit').scale.x, 1.01);
+  assert.equal(character.root.getObjectByName('Male_Ranger_Head_Hood'), undefined);
   assert.equal(importedMaterials.every((material) => material.emissiveIntensity <= 0.22), true);
   assert.equal(Boolean(character.root.getObjectByName('player-navy-coat')), false);
   assert.equal(Boolean(character.root.getObjectByName('player-gold-coat-trim')), false);

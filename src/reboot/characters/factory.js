@@ -22,6 +22,31 @@ function addMesh(parent, geometry, material, ownedGeometries, ownedMaterials) {
   return mesh;
 }
 
+function keepHeadFromBaseBody(model, ownedGeometries) {
+  model.traverse((object) => {
+    if (!object.isSkinnedMesh || !/superhero/i.test(object.name)) return;
+    const source = object.geometry;
+    const position = source.getAttribute('position');
+    const index = source.getIndex();
+    if (!position || !index) return;
+    const kept = [];
+    for (let offset = 0; offset < index.count; offset += 3) {
+      const a = index.getX(offset);
+      const b = index.getX(offset + 1);
+      const c = index.getX(offset + 2);
+      if (position.getY(a) >= 1.48 && position.getY(b) >= 1.48 && position.getY(c) >= 1.48) {
+        kept.push(a, b, c);
+      }
+    }
+    const geometry = source.clone();
+    geometry.setIndex(kept);
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+    object.geometry = geometry;
+    ownedGeometries.add(geometry);
+  });
+}
+
 // 3장 배경의 좌우 대비 톤(호박 vs 시안)을 추천자의 반반 패널에도 재사용한다.
 const SPLIT_PANEL_TINTS = Object.freeze({ left: '#e0a04a', right: '#35d2dc' });
 
@@ -300,6 +325,8 @@ export function createCharacterFactory({ loader = new GLTFLoader() } = {}) {
       ]);
       animationSource = loadedAnimations;
       const outfit = cloneSkeleton(outfitSource.scene);
+      outfit.name = `character-${id}-outfit`;
+      if (bodySource) outfit.scale.setScalar(1.01);
       prepareCharacterModel({
         hiddenParts: profile.hiddenParts, model: outfit, outfitTint: profile.outfitTint, ownedMaterials,
         presentation: profile.presentation
@@ -307,6 +334,7 @@ export function createCharacterFactory({ loader = new GLTFLoader() } = {}) {
       animatedModels = [outfit];
       if (bodySource) {
         const body = cloneSkeleton(bodySource.scene);
+        keepHeadFromBaseBody(body, ownedGeometries);
         prepareCharacterModel({ hiddenParts: [], model: body, ownedMaterials, presentation: profile.presentation });
         animatedModels.unshift(body);
       }

@@ -57,14 +57,6 @@ const UAL2_ENEMY = Object.freeze({
   idle: 'Idle_FoldArms_Loop',
   move: 'Zombie_Walk_Fwd_Loop'
 });
-const RPG_RANGER = Object.freeze({
-  action: 'Punch',
-  defeat: 'Death',
-  hit: 'RecieveHit',
-  idle: 'Idle',
-  move: 'Run'
-});
-
 const DEFAULT_PRESENTATION = Object.freeze({
   hairEmissive: 0.14,
   outfitEmissive: 0.08,
@@ -106,12 +98,11 @@ function createProfile({
 
 export const CHARACTER_ROSTER = Object.freeze({
   player: createProfile({
-    accessory: 'record-ring', animations: RPG_RANGER, body: 'male', hair: 'hooded',
-    hairTint: '#1c2538', hiddenParts: ['Ranger_Bow'], id: 'player', label: '기록자',
-    outfit: 'ranger', outfitTint: '#45557f',
+    accessory: 'record-ring', body: 'male', hair: 'simpleParted',
+    hairTint: '#1c2538', id: 'player', label: '기록자',
+    outfit: 'peasant', outfitTint: '#45557f',
     presentation: { hairEmissive: 0.2, outfitEmissive: 0.12, skinEmissive: 0.17 },
-    scale: 0.84, silhouette: 'hooded-navy-ranger-scarf',
-    standaloneAsset: CHARACTER_ASSET_PATHS.rpgRanger, tint: '#4aaee8'
+    scale: 1.18, silhouette: 'dark-haired-navy-student-ranger-scarf', tint: '#4f618f'
   }),
   dot: createProfile({
     accessory: 'scan-ring', body: null, face: 'sensor', id: 'dot', kind: 'audit-drone', label: 'DOT',

@@ -15,7 +15,12 @@ function classifyMaterial(object, material) {
 function applyMappedLift(object, material, hairTint, outfitTint, presentation) {
   if (!material.map?.isTexture || !material.emissive?.setHex) return;
   const role = classifyMaterial(object, material);
-  if (role === 'outfitEmissive' && outfitTint) material.color.set(outfitTint);
+  if (role === 'outfitEmissive' && outfitTint) {
+    material.color.set(outfitTint);
+    material.polygonOffset = true;
+    material.polygonOffsetFactor = -1;
+    material.polygonOffsetUnits = -1;
+  }
   if (role === 'hairEmissive' && hairTint) material.color.set(hairTint);
   material.emissiveMap = material.map;
   const tint = role === 'outfitEmissive' ? outfitTint : role === 'hairEmissive' ? hairTint : null;
