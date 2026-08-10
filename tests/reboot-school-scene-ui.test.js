@@ -69,12 +69,12 @@ test('1장 첫 조망은 플레이어를 왼쪽 중심대에 두고 중앙 기�
   const playerTop = project(0, 2, 1);
   const route = project(0, 0, -4.8);
 
-  // Then: 캐릭터는 레퍼런스의 왼쪽 중심대에서 읽히고, 목표는 중앙이며, 화면 높이 29~36%를 차지한다.
-  assert.equal(camera.fov, 39);
-  assert.ok(playerBottom.x >= 590 && playerBottom.x <= 650, `player x ${playerBottom.x}`);
-  assert.ok(route.x >= 700 && route.x <= 760, `route x ${route.x}`);
-  assert.ok((playerBottom.y - playerTop.y) / viewport.height >= 0.29);
-  assert.ok((playerBottom.y - playerTop.y) / viewport.height <= 0.36);
+  // Then: 캐릭터는 레퍼런스의 왼쪽 중심대에서 읽히고, 목표는 중앙이며, 화면 높이 34~38%를 차지한다.
+  assert.equal(camera.fov, 40);
+  assert.ok(playerBottom.x >= 520 && playerBottom.x <= 575, `player x ${playerBottom.x}`);
+  assert.ok(route.x >= 630 && route.x <= 690, `route x ${route.x}`);
+  assert.ok((playerBottom.y - playerTop.y) / viewport.height >= 0.34);
+  assert.ok((playerBottom.y - playerTop.y) / viewport.height <= 0.38);
 });
 
 test('학교 HUD는 보스와 결말 상태를 사용자 화면과 QA 텔레메트리에 함께 반영한다', () => {

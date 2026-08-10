@@ -190,14 +190,15 @@ function mesh(parent, geometry, material, name, position, rotation = null, scale
 }
 
 function createFirstVistaSurface(group, resources, materials) {
+  const causeway = causewayDeck(resources, 8.4, 27, 'campus-first-vista-causeway-deck-geometry');
+  mesh(group, causeway, materials.path, 'campus-first-vista-causeway-deck', { x: 0.72, y: 0.105, z: -2.4 });
   const rowWidths = [
-    9, 9, 8, 8, 8, 7, 7, 7, 7, 6, 6, 6, 6, 6, 5,
-    5, 5, 5, 5, 4, 4, 4, 4, 4, 3, 3, 3, 3, 2, 2
+    7, 7, 6, 6, 6, 5, 5, 5, 4, 4, 4, 4, 3, 3, 3, 3, 2, 2, 2, 1
   ];
   const paverCount = rowWidths.reduce((sum, count) => sum + count, 0);
   const stoneColors = [0x8a7d86, 0x9b7e7c, 0x72788a, 0x8d7770];
-  const paverScaleX = [0.58, 0.66, 0.62, 0.72];
-  const paverScaleZ = [0.62, 0.58, 0.68, 0.72, 0.61];
+  const paverScaleX = [0.44, 0.5, 0.47, 0.54];
+  const paverScaleZ = [0.4, 0.46, 0.5, 0.44, 0.53];
   const paverShape = new THREE.Shape();
   paverShape.moveTo(-0.72, -0.58);
   paverShape.lineTo(0.48, -0.66);
@@ -209,10 +210,10 @@ function createFirstVistaSurface(group, resources, materials) {
   const paverGeometry = resources.register(new THREE.ExtrudeGeometry(paverShape, {
     bevelEnabled: true,
     bevelSegments: 1,
-    bevelSize: 0.055,
-    bevelThickness: 0.035,
+    bevelSize: 0.035,
+    bevelThickness: 0.022,
     curveSegments: 1,
-    depth: 0.15
+    depth: 0.08
   }), 'campus-first-vista-paver-geometry');
   paverGeometry.rotateX(-Math.PI / 2);
   const pavers = new THREE.InstancedMesh(paverGeometry, materials.path, paverCount);
@@ -224,8 +225,8 @@ function createFirstVistaSurface(group, resources, materials) {
   let paverIndex = 0;
   for (const [row, columnCount] of rowWidths.entries()) {
     const t = row / (rowWidths.length - 1);
-    const rowWidth = 4.8 - t * 3;
-    const curve = Math.sin(t * Math.PI * 1.7) * 0.48;
+    const rowWidth = 7.8 - t * 6.3;
+    const curve = Math.pow(t, 1.5) * 1.9 + Math.sin(t * Math.PI * 1.6) * 0.28;
     for (let column = 0; column < columnCount; column += 1) {
       const columnOffset = columnCount === 1 ? 0 : column / (columnCount - 1) - 0.5;
       quaternion.setFromAxisAngle(
@@ -235,8 +236,8 @@ function createFirstVistaSurface(group, resources, materials) {
       matrix.compose(
         new THREE.Vector3(
           curve + columnOffset * rowWidth,
-          0.17 + (paverIndex % 4) * 0.018,
-          10.33 - row * 1.02 + (column % 2 === 0 ? -0.05 : 0.05)
+          0.135 + (paverIndex % 5) * 0.012,
+          10.8 - row * 1.36 + (column % 2 === 0 ? -0.07 : 0.07)
         ),
         quaternion,
         new THREE.Vector3(
@@ -255,11 +256,11 @@ function createFirstVistaSurface(group, resources, materials) {
   pavers.computeBoundingBox();
   pavers.computeBoundingSphere();
 
-  const cliffPositions = Array.from({ length: 30 }, (_, index) => {
-    const t = index / 29;
-    const z = 6.1 - t * 26.2;
-    const waist = Math.abs(t - 0.5) * 2;
-    const x = 3.15 + waist * 2.1 + (index % 3) * 0.12;
+  const cliffPositions = Array.from({ length: 36 }, (_, index) => {
+    const t = index / 35;
+    const z = 8.4 - t * 30.6;
+    const halfWidth = 4.9 - t * 2.85;
+    const x = halfWidth + (index % 3) * 0.16;
     return [[-x, z], [x, z]];
   }).flat();
   const cliffGeometry = resources.register(
@@ -270,14 +271,17 @@ function createFirstVistaSurface(group, resources, materials) {
   cliffRocks.castShadow = false;
   cliffRocks.receiveShadow = false;
   for (const [index, [x, z]] of cliffPositions.entries()) {
+    const isLeft = x < 0;
+    const row = Math.floor(index / 2);
+    const t = row / 35;
     quaternion.setFromEuler(new THREE.Euler(index * 0.17, index * 0.39, index * 0.13));
     matrix.compose(
-      new THREE.Vector3(x, -0.28 - (index % 4) * 0.17, z),
+      new THREE.Vector3(x, -0.35 - (index % 9) * 0.14 + (isLeft ? 0.18 : -0.12), z),
       quaternion,
       new THREE.Vector3(
-        0.94 + (index % 3) * 0.18,
-        0.9 + (index % 6) * 0.16,
-        0.96 + (index % 4) * 0.1
+        (1.05 + (index % 3) * 0.2) * (1 - t * 0.24),
+        (isLeft ? 1.65 : 1.15) + (index % 9) * 0.17 + (isLeft ? (1 - t) * 0.8 : 0),
+        (1.08 + (index % 4) * 0.13) * (1 - t * 0.18)
       )
     );
     cliffRocks.setMatrixAt(index, matrix);
@@ -347,17 +351,36 @@ function createFirstVistaSurface(group, resources, materials) {
   );
   goalBeam.renderOrder = 3;
 
-  group.add(pavers, cliffRocks, records);
+  const fencePostGeometry = resources.register(
+    new THREE.CylinderGeometry(0.1, 0.14, 1.45, 8), 'campus-first-vista-rope-post-geometry'
+  );
+  const fencePosts = new THREE.InstancedMesh(fencePostGeometry, materials.wood, 6);
+  fencePosts.name = 'campus-first-vista-rope-posts';
+  const ropePoints = [];
+  for (let index = 0; index < 6; index += 1) {
+    const z = 8.5 - index * 2.25;
+    const x = 4.55 - index * 0.18;
+    matrix.makeTranslation(x, 0.72, z);
+    fencePosts.setMatrixAt(index, matrix);
+    ropePoints.push(new THREE.Vector3(x, 1.15 - (index % 2) * 0.08, z));
+  }
+  fencePosts.instanceMatrix.needsUpdate = true;
+  const ropeGeometry = resources.register(new THREE.TubeGeometry(
+    new THREE.CatmullRomCurve3(ropePoints), 36, 0.045, 6, false
+  ), 'campus-first-vista-rope-geometry');
+  mesh(group, ropeGeometry, materials.wood, 'campus-first-vista-rope', { x: 0, y: 0, z: 0 });
+
+  group.add(pavers, cliffRocks, records, fencePosts);
   return Object.freeze({
     cliffRockCount: cliffPositions.length,
-    cliffRockHeightLevels: 6,
-    deckMaterialRole: 'terrain',
+    cliffRockHeightLevels: 9,
+    deckMaterialRole: 'path',
     floatingRecordCount: recordPlacements.length,
     gardenTerraceCount: terraces.length,
     gardenTerraceHeightLevels: 4,
     goalBeamCount: 1,
     paverCount,
-    paverHeightLevels: 4
+    paverHeightLevels: 5
   });
 }
 
@@ -381,13 +404,13 @@ function createPlatforms(group, resources, materials) {
         ? causewaySlab(resources, width, depth, 0.52, `campus-${id}-slab`)
         : roundedSlab(resources, width, depth, 0.34, radius, `campus-${id}-slab`);
     const platformMaterial = id === 'open-classroom' || isCauseway ? materials.terrain : materials.concrete;
-    mesh(group, slab, platformMaterial, `campus-platform-${id}`, { x, y: -0.34, z });
+    const platform = mesh(group, slab, platformMaterial, `campus-platform-${id}`, { x, y: -0.34, z });
     const deck = id === 'open-classroom'
       ? irregularDeck(resources, width - 0.22, depth - 0.22, `campus-${id}-deck`)
       : isCauseway
         ? causewayDeck(resources, width - 0.22, depth - 0.22, `campus-${id}-deck`)
         : roundedDeck(resources, width - 0.22, depth - 0.22, Math.max(0.4, radius - 0.12), `campus-${id}-deck`);
-    mesh(group, deck, platformMaterial, `campus-platform-deck-${id}`, { x, y: 0.025, z });
+    const deckSurface = mesh(group, deck, platformMaterial, `campus-platform-deck-${id}`, { x, y: 0.025, z });
     const route = roundedDeck(
       resources,
       Math.min(3.4, width * 0.24),
@@ -395,12 +418,18 @@ function createPlatforms(group, resources, materials) {
       Math.min(1.1, radius * 0.34),
       `campus-${id}-memory-route`
     );
-    mesh(group, route, id === 'open-classroom' || isCauseway ? materials.path : materials.wood, `campus-memory-route-${id}`, { x: 0, y: 0.12, z });
+    const memoryRoute = mesh(group, route, id === 'open-classroom' || isCauseway ? materials.path : materials.wood, `campus-memory-route-${id}`, { x: 0, y: 0.12, z });
     const edge = resources.register(new THREE.EdgesGeometry(slab, 24), `campus-${id}-edge`);
     const outline = new THREE.LineSegments(edge, edgeMaterial);
     outline.name = `campus-platform-edge-${id}`;
     outline.position.set(x, -0.335, z);
     group.add(outline);
+    if (id === 'open-classroom') {
+      platform.visible = false;
+      deckSurface.visible = false;
+      memoryRoute.visible = false;
+      outline.visible = false;
+    }
     const underside = resources.register(new THREE.ConeGeometry(Math.min(width, depth) * 0.47, 5.5, 10, 1, true), `campus-${id}-underside`);
     mesh(group, underside, id === 'open-classroom' ? materials.terrain : materials.brick, `campus-floating-foundation-${id}`, { x, y: -3.05, z }, { x: Math.PI, y: 0, z: 0 }, { x: 1, y: 1, z: depth / width });
   }

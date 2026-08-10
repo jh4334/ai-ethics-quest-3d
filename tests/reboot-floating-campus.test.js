@@ -176,15 +176,15 @@ test('Given licensed assets load successfully, When the floating campus becomes 
     /waveGlint/
   );
   assert.deepEqual(campus.getDebugState().architecture.firstVistaSurface, {
-    cliffRockCount: 60,
-    cliffRockHeightLevels: 6,
-    deckMaterialRole: 'terrain',
+    cliffRockCount: 72,
+    cliffRockHeightLevels: 9,
+    deckMaterialRole: 'path',
     floatingRecordCount: 11,
     gardenTerraceCount: 4,
     gardenTerraceHeightLevels: 4,
     goalBeamCount: 1,
-    paverCount: 161,
-    paverHeightLevels: 4
+    paverCount: 82,
+    paverHeightLevels: 5
   });
   assert.equal(scene.getObjectByName('campus-platform-deck-open-classroom').material.name, 'structural-concrete');
   assert.equal(scene.getObjectByName('campus-platform-open-classroom').material.name, 'structural-concrete');

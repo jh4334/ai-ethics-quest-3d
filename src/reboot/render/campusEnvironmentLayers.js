@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 
 const LAYERS = Object.freeze([
-  Object.freeze({ distance: 18, height: 4.6, name: 'foreground', opacity: 0.84, scale: 0.94 }),
-  Object.freeze({ distance: 29, height: 6.4, name: 'midground', opacity: 0.58, scale: 1.18 }),
-  Object.freeze({ distance: 43, height: 8.8, name: 'background', opacity: 0.34, scale: 1.56 })
+  Object.freeze({ distance: 24, height: 4.6, name: 'foreground', opacity: 0.72, scale: 0.94 }),
+  Object.freeze({ distance: 38, height: 6.4, name: 'midground', opacity: 0.48, scale: 1.18 }),
+  Object.freeze({ distance: 55, height: 8.8, name: 'background', opacity: 0.28, scale: 1.56 })
 ]);
 
 function disableShadows(object) {
@@ -315,8 +315,9 @@ export function createLayeredCampusSilhouettes({
   centerZ, colors, group, prefix, resources, spanZ
 }) {
   const ridgeCount = createMountainRidges({ centerZ, colors, group, prefix, resources, spanZ });
-  const islandGeometry = resources.register(new THREE.ConeGeometry(4.2, 7.6, 9, 1, true), `${prefix}-island-geometry`);
-  islandGeometry.rotateZ(Math.PI);
+  const islandGeometry = resources.register(
+    new THREE.CylinderGeometry(4.2, 0.7, 7.6, 9, 3, false), `${prefix}-island-geometry`
+  );
   const towerGeometry = resources.register(new THREE.CylinderGeometry(0.62, 0.88, 4.6, 8), `${prefix}-tower-geometry`);
   const roofGeometry = resources.register(new THREE.ConeGeometry(1.05, 1.7, 5), `${prefix}-roof-geometry`);
   const windowMatrices = [];

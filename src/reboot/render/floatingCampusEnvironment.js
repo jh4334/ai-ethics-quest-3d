@@ -76,7 +76,11 @@ const ASSET_NIGHT_TREATMENTS = Object.freeze({
   'record-laptop': Object.freeze({
     color: 0x43546a, emissive: 0x12243a, intensity: 0.22, roughness: 0.62
   }),
-  'memory-flower': Object.freeze({ emissive: 0x6a4a18, intensity: 0.34, roughness: 0.88 })
+  'memory-flower': Object.freeze({ emissive: 0x6a4a18, intensity: 0.34, roughness: 0.88 }),
+  'vista-path-stone': Object.freeze({
+    clearColorMap: true, clearMetalRoughnessMaps: true,
+    color: 0x8f7e8b, emissive: 0x2b1d29, intensity: 0.18, metalness: 0, roughness: 0.96
+  })
 });
 
 const CONTACT_ASSET_IDS = new Set([
@@ -238,6 +242,7 @@ function applyAssetPbrMaterials(assetRoot, materials) {
     for (const material of objectMaterials) {
       if (!material?.isMeshStandardMaterial) continue;
       if (Number.isFinite(treatment.color)) material.color.setHex(treatment.color);
+      if (treatment.clearColorMap) material.map = null;
       material.emissive.setHex(treatment.emissive);
       material.emissiveIntensity = treatment.intensity;
       if (Number.isFinite(treatment.metalness)) material.metalness = treatment.metalness;

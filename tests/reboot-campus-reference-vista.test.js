@@ -36,29 +36,31 @@ test('Given the reference opening vista, When its scenic layers render, Then fol
   const { campus, scene } = await createCampusFixture(t);
 
   assert.deepEqual(campus.getDebugState().referenceVista, {
-    floatingIslands: 12,
-    foregroundLeaves: 0,
-    islandTrees: 28,
+    floatingIslands: 18,
+    foregroundLeaves: 56,
+    islandTrees: 42,
     memoryHalos: 0,
     mistBands: 3,
     scenicDrawCalls: 4
   });
-  assert.equal(scene.getObjectByName('floating-campus-reference-foreground-leaves'), undefined);
-  assert.equal(scene.getObjectByName('floating-campus-reference-island-plateaus').count, 12);
-  assert.equal(scene.getObjectByName('floating-campus-reference-island-undersides').count, 12);
-  assert.equal(scene.getObjectByName('floating-campus-reference-tree-canopies').count, 28);
+  assert.equal(scene.getObjectByName('floating-campus-reference-foreground-leaves').count, 56);
+  assert.equal(scene.getObjectByName('floating-campus-reference-island-clusters').count, 18);
+  assert.equal(scene.getObjectByName('floating-campus-reference-island-plateaus'), undefined);
+  assert.equal(scene.getObjectByName('floating-campus-reference-island-undersides'), undefined);
+  assert.equal(scene.getObjectByName('floating-campus-reference-tree-canopies').count, 42);
   assert.equal(scene.getObjectByName('floating-campus-reference-mist-bands').count, 3);
 });
 
 test('Given the reference vista materials, When inspected, Then only memory emits and no scenic layer uses box stand-ins', async (t) => {
   const { scene } = await createCampusFixture(t);
 
-  const plateaus = scene.getObjectByName('floating-campus-reference-island-plateaus');
+  const islands = scene.getObjectByName('floating-campus-reference-island-clusters');
   const mist = scene.getObjectByName('floating-campus-reference-mist-bands');
   const footprints = scene.getObjectByName('floating-campus-memory-footprints');
 
-  assert.notEqual(plateaus.geometry.type, 'BoxGeometry');
-  assert.equal(plateaus.material.emissiveIntensity, 0);
+  assert.notEqual(islands.geometry.type, 'BoxGeometry');
+  assert.equal(islands.material.emissiveIntensity, 0);
+  assert.equal(islands.material.vertexColors, true);
   assert.equal(mist.material.transparent, true);
   assert.equal(mist.material.depthWrite, false);
   assert.equal(scene.getObjectByName('floating-campus-reference-memory-halos'), undefined);

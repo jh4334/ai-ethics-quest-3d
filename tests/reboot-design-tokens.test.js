@@ -30,8 +30,8 @@ test('P0 캠퍼스 시각 프로필은 어깨너머 카메라와 황혼 대기 �
   assert.deepEqual(CAMPUS_VISUAL_PROFILE.camera.desktop, {
     distance: 7.2, fov: 42, height: 2.55, lateral: 2.35,
     firstVista: {
-      distanceShift: 0.2, fov: 39, heightShift: 0,
-      lateralShift: -0.65, lookLateral: 0.12, lookLift: -0.3
+      distanceShift: 0.35, fov: 40, heightShift: 0.7,
+      lateralShift: -0.75, lookLateral: 0.85, lookLift: 0.82
     },
     routeDistanceShift: 1.8, routeFov: 46, routeLateralShift: 0.05, routeLookLift: 1.5
   });
@@ -52,10 +52,10 @@ test('P0 캠퍼스 시각 프로필은 어깨너머 카메라와 황혼 대기 �
     lookLift: -0.3
   });
   assert.deepEqual(CAMPUS_VISUAL_PROFILE.atmosphere, {
-    bottom: 0x4b6f91,
-    fog: 0x263b57,
-    horizon: 0xa36d86,
-    top: 0x213a68
+    bottom: 0x557a9c,
+    fog: 0x3d5572,
+    horizon: 0xb98aa8,
+    top: 0x324a75
   });
   assert.deepEqual(CAMPUS_VISUAL_PROFILE.lighting, {
     deletionIntensity: 5.2,
@@ -64,9 +64,9 @@ test('P0 캠퍼스 시각 프로필은 어깨너머 카메라와 황혼 대기 �
   });
   assert.deepEqual(CAMPUS_VISUAL_PROFILE.materialTint, {
     brick: 0xb98470,
-    concrete: 0x8d96a6,
-    path: 0xc8bdc7,
-    terrain: 0x777b8c,
+    concrete: 0x7b8799,
+    path: 0xaa94a1,
+    terrain: 0x596276,
     track: 0xe39a94,
     wood: 0xd6b68d
   });
