@@ -20,6 +20,13 @@ const SOURCE_DEFINITIONS = {
     archiveSha256: 'FA7974A0D342BFE63C38664BA9F8EC1A4AAB8EA25F099BDC56870E33588C4D9D',
     license: 'CC0 1.0'
   },
+  'quaternius-stylized-nature': {
+    name: 'Quaternius Stylized Nature MegaKit',
+    pageUrl: 'https://quaternius.com/packs/stylizednaturemegakit.html',
+    downloadUrl: 'https://quaternius.itch.io/stylized-nature-megakit',
+    archiveSha256: '298F6732B872E4CF7B30E6E7ABF9641C7F6DC6B326DF37AC089533ED7E3D58C9',
+    license: 'CC0 1.0'
+  },
   'polyhaven-rock07': {
     name: 'Poly Haven Rock 07',
     pageUrl: 'https://polyhaven.com/a/rock_07',
@@ -103,7 +110,12 @@ export const ENVIRONMENT_ASSETS = Object.freeze([
   defineAsset('campus-fence', 'nature', 'fence_simple.glb', { width: 2, height: 1.2, depth: 0.2, color: 0x6f5842 }),
   defineAsset('campus-grass', 'nature', 'grass_large.glb', { width: 1.4, height: 0.9, depth: 1.4, color: 0x3d6f54 }),
   defineAsset('memory-flower', 'nature', 'flower_yellowA.glb', { width: 0.5, height: 0.7, depth: 0.5, color: 0xf0c878 }),
-  defineAsset('campus-bridge', 'nature', 'bridge_woodNarrow.glb', { width: 2.5, height: 0.6, depth: 5, color: 0x76593e })
+  defineAsset('campus-bridge', 'nature', 'bridge_woodNarrow.glb', { width: 2.5, height: 0.6, depth: 5, color: 0x76593e }),
+  defineAsset('vista-bush', 'quaternius-stylized-nature', 'vista-bush.glb', { width: 2, height: 1.6, depth: 2, color: 0x8f536a }),
+  defineAsset('vista-fern', 'quaternius-stylized-nature', 'vista-fern.glb', { width: 9, height: 2.7, depth: 8.5, color: 0xb37b4e }),
+  defineAsset('vista-grass', 'quaternius-stylized-nature', 'vista-grass.glb', { width: 1.7, height: 1.7, depth: 1.7, color: 0x724255 }),
+  defineAsset('vista-rock', 'quaternius-stylized-nature', 'vista-rock.glb', { width: 3.3, height: 2.3, depth: 3, color: 0x5f5968 }),
+  defineAsset('vista-path-stone', 'quaternius-stylized-nature', 'vista-path-stone.glb', { width: 2.2, height: 0.15, depth: 2.2, color: 0x756a78 })
 ]);
 
 function defineMaterial(id, source, folder, filePrefix, placeholderColor) {

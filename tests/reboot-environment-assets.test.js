@@ -127,6 +127,15 @@ test('Given the environment catalog, When release assets are audited, Then files
     const data = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
     const parsed = await gltfLoader.parseAsync(data, '');
     assert.equal(parsed.scene.isObject3D, true, asset.path);
+    if (['vista-bush', 'vista-path-stone', 'vista-rock'].includes(asset.id)) {
+      let triangleCount = 0;
+      parsed.scene.traverse((object) => {
+        if (!object.isMesh) return;
+        triangleCount += (object.geometry.index?.count ?? object.geometry.attributes.position.count) / 3;
+      });
+      const triangleBudget = { 'vista-bush': 12, 'vista-path-stone': 24, 'vista-rock': 260 }[asset.id];
+      assert.ok(triangleCount <= triangleBudget, `${asset.id}: ${triangleCount}`);
+    }
   }
 });
 
