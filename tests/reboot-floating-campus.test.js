@@ -98,10 +98,10 @@ test('Given the first campus vista, When framed from the route camera, Then lice
   assert.equal(leftWing.length >= 16, true);
   assert.equal(rightWing.length >= 16, true);
   assert.equal(leftWing.every(({ position }) => (
-    position.x >= -5.3 && position.x <= -2.8 && position.z >= -1.6 && position.z <= 2.1
+    position.x >= -5.3 && position.x <= -2.8 && position.z >= -11.5 && position.z <= 2.1
   )), true);
   assert.equal(rightWing.every(({ position }) => (
-    position.x >= 3.2 && position.x <= 5.6 && position.z >= -1.6 && position.z <= 2.1
+    position.x >= 2.8 && position.x <= 5.6 && position.z >= -11.5 && position.z <= 2.1
   )), true);
   assert.equal(leftWing.filter(({ position }) => (
     position.x >= -4.4 && position.x <= -2.8 && position.z >= 0 && position.z <= 1.7
@@ -144,20 +144,24 @@ test('Given licensed assets load successfully, When the floating campus becomes 
     scene.getObjectByName('floating-campus-cinematic-night-sky').material.fragmentShader,
     /twilightCloud/
   );
+  assert.match(
+    scene.getObjectByName('floating-campus-twilight-sea').material.fragmentShader,
+    /waveGlint/
+  );
   assert.deepEqual(campus.getDebugState().architecture.firstVistaSurface, {
-    cliffRockCount: 44,
+    cliffRockCount: 60,
     cliffRockHeightLevels: 6,
     deckMaterialRole: 'terrain',
     floatingRecordCount: 11,
     gardenTerraceCount: 4,
     gardenTerraceHeightLevels: 4,
     goalBeamCount: 1,
-    paverCount: 43,
+    paverCount: 69,
     paverHeightLevels: 4
   });
-  assert.equal(scene.getObjectByName('campus-platform-deck-open-classroom').material.name, 'campus-terrain-material');
-  assert.equal(scene.getObjectByName('campus-platform-open-classroom').material.name, 'campus-terrain-material');
-  assert.equal(scene.getObjectByName('campus-memory-route-open-classroom').material.name, 'campus-path-stone-material');
+  assert.equal(scene.getObjectByName('campus-platform-deck-open-classroom').material.name, 'structural-concrete');
+  assert.equal(scene.getObjectByName('campus-platform-open-classroom').material.name, 'structural-concrete');
+  assert.equal(scene.getObjectByName('campus-memory-route-open-classroom').material.name, 'structural-concrete');
   assert.equal(scene.getObjectByName('campus-first-vista-floating-records').count, 11);
   assert.equal(scene.getObjectByName('campus-first-vista-floating-records').material.name, 'campus-floating-record-material');
   assert.equal(scene.getObjectByName('campus-first-vista-goal-beam').material.name, 'campus-goal-beam-material');
@@ -178,18 +182,18 @@ test('Given licensed assets load successfully, When the floating campus becomes 
   assert.equal(terraceGeometry.boundingBox.max.y - terraceGeometry.boundingBox.min.y >= 0.7, true);
   assert.equal(scene.getObjectByName('athletics-track').material.name, 'road-asphalt');
   assert.equal(scene.getObjectByName('campus-first-vista-stone-pavers').isInstancedMesh, true);
-  assert.equal(scene.getObjectByName('campus-first-vista-stone-pavers').material.name, 'campus-path-stone-material');
+  assert.equal(scene.getObjectByName('campus-first-vista-stone-pavers').material.name, 'structural-concrete');
   assert.equal(scene.getObjectByName('campus-first-vista-cliff-rocks').isInstancedMesh, true);
-  assert.equal(scene.getObjectByName('campus-first-vista-garden-terrace-0').material.name, 'campus-terrain-material');
+  assert.equal(scene.getObjectByName('campus-first-vista-garden-terrace-0').material.name, 'structural-concrete');
   const treeBatch = scene.getObjectByName('campus-asset-campus-tree-batch-0');
-  assert.equal(treeBatch.material.color.getHex(), 0x70445f);
-  assert.equal(treeBatch.material.emissive.getHex(), 0x5b2d4d);
-  assert.equal(treeBatch.material.emissiveIntensity, 0.68);
+  assert.equal(treeBatch.material.color.getHex(), 0x925a75);
+  assert.equal(treeBatch.material.emissive.getHex(), 0x6a344d);
+  assert.equal(treeBatch.material.emissiveIntensity, 0.86);
   assert.equal(treeBatch.material.roughness, 0.94);
   const heroRockBatch = scene.getObjectByName('campus-asset-campus-hero-rock-batch-0');
-  assert.equal(heroRockBatch.material.color.getHex(), 0x4a4e5b);
-  assert.equal(heroRockBatch.material.emissive.getHex(), 0x101927);
-  assert.equal(heroRockBatch.material.emissiveIntensity, 0.08);
+  assert.equal(heroRockBatch.material.color.getHex(), 0x747080);
+  assert.equal(heroRockBatch.material.emissive.getHex(), 0x28233b);
+  assert.equal(heroRockBatch.material.emissiveIntensity, 0.34);
   assert.equal(heroRockBatch.material.metalness, 0);
 
   campus.dispose();

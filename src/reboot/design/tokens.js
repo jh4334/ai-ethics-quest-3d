@@ -27,12 +27,12 @@ export const CAMPUS_VISUAL_PROFILE = Object.freeze({
       distance: 7.2,
       fov: 42,
       firstVista: Object.freeze({
-        distanceShift: 0.45,
-        fov: 42,
-        heightShift: 0.72,
-        lateralShift: 1.05,
-        lookLateral: 0.52,
-        lookLift: 1.34
+        distanceShift: 0.2,
+        fov: 39,
+        heightShift: 0,
+        lateralShift: -0.65,
+        lookLateral: 0.12,
+        lookLift: -0.3
       }),
       height: 2.55,
       lateral: 2.35,
@@ -41,16 +41,31 @@ export const CAMPUS_VISUAL_PROFILE = Object.freeze({
       routeLateralShift: 0.05,
       routeLookLift: 1.5
     }),
-    touch: Object.freeze({ distance: 9.8, fov: 52, height: 5.7, lateral: 2.35 })
+    touch: Object.freeze({
+      distance: 9.8,
+      fov: 52,
+      firstVista: Object.freeze({
+        distanceShift: -0.55,
+        fov: 50,
+        heightShift: 1.35,
+        lateralShift: -0.15,
+        lookLateral: 0,
+        lookLift: -0.55
+      }),
+      height: 5.7,
+      lateral: 2.35
+    })
   }),
   lighting: Object.freeze({
     deletionIntensity: 5.2,
-    memoryIntensity: 8.8,
-    moonIntensity: 2.35
+    memoryIntensity: 7.4,
+    moonIntensity: 2.9
   }),
   materialTint: Object.freeze({
     brick: 0xb98470,
     concrete: 0x8d96a6,
+    path: 0xe0cbd1,
+    terrain: 0xa49baa,
     track: 0xe39a94,
     wood: 0xd6b68d
   }),

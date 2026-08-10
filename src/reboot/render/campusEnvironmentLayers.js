@@ -110,16 +110,23 @@ export function createCinematicNightSky({
 
 export function createMemoryFootprintPath({ color, group, points, prefix, resources }) {
   const footprintShape = new THREE.Shape();
-  footprintShape.absellipse(0, 0, 0.14, 0.34, 0, Math.PI * 2, false, 0);
+  footprintShape.moveTo(-0.1, -0.44);
+  footprintShape.quadraticCurveTo(-0.2, -0.32, -0.17, -0.12);
+  footprintShape.quadraticCurveTo(-0.2, 0.16, -0.07, 0.42);
+  footprintShape.quadraticCurveTo(0.08, 0.53, 0.21, 0.36);
+  footprintShape.quadraticCurveTo(0.25, 0.12, 0.16, -0.17);
+  footprintShape.quadraticCurveTo(0.11, -0.43, -0.1, -0.44);
+  footprintShape.closePath();
   const geometry = resources.register(
     new THREE.ShapeGeometry(footprintShape, 10), `${prefix}-memory-footprint-geometry`
   );
   const material = resources.register(new THREE.MeshStandardMaterial({
-    color: new THREE.Color(color).multiplyScalar(0.68),
+    color: new THREE.Color(color).multiplyScalar(0.82),
     emissive: color,
-    emissiveIntensity: 1.75,
+    emissiveIntensity: 2.4,
     metalness: 0.18,
-    roughness: 0.28
+    roughness: 0.28,
+    side: THREE.DoubleSide
   }), `${prefix}-memory-footprint-material`);
   const footprints = disableShadows(new THREE.InstancedMesh(geometry, material, points.length));
   footprints.name = `${prefix}-memory-footprints`;
@@ -132,7 +139,7 @@ export function createMemoryFootprintPath({ color, group, points, prefix, resour
     matrix.compose(
       new THREE.Vector3(point.x, point.y, point.z),
       quaternion,
-      new THREE.Vector3(index % 2 === 0 ? 0.86 : 1, 1, 1)
+      new THREE.Vector3(index % 2 === 0 ? -0.86 : 1, 1, 1)
     );
     footprints.setMatrixAt(index, matrix);
   }

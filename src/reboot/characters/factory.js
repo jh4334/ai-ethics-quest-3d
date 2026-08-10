@@ -42,6 +42,38 @@ function addRoleAccessory(profile, root, ownedGeometries, ownedMaterials) {
       const ring = addMesh(root, new THREE.TorusGeometry(0.28, 0.045, 8, 18), createAccessoryMaterial(profile.tint), ownedGeometries, ownedMaterials);
       ring.position.set(0.36, 1.2, 0.02);
       ring.rotation.y = Math.PI / 2;
+      const coatMaterial = createAccessoryMaterial('#34466f', {
+        emissiveIntensity: 0.1, metalness: 0.03, roughness: 0.84, side: THREE.DoubleSide
+      });
+      const coat = addMesh(
+        root,
+        new THREE.CylinderGeometry(0.31, 0.49, 0.96, 14, 1, true, 0.18, Math.PI * 1.88),
+        coatMaterial,
+        ownedGeometries,
+        ownedMaterials
+      );
+      coat.name = 'player-navy-coat';
+      coat.position.set(0, 0.95, 0.02);
+      const coatTrim = addMesh(
+        root,
+        new THREE.TorusGeometry(0.45, 0.018, 6, 24),
+        createAccessoryMaterial('#d8a14a', { emissiveIntensity: 0.24, metalness: 0.18, roughness: 0.48 }),
+        ownedGeometries,
+        ownedMaterials
+      );
+      coatTrim.name = 'player-gold-coat-trim';
+      coatTrim.position.set(0, 0.49, 0.02);
+      coatTrim.rotation.x = Math.PI / 2;
+      const scarfMaterial = createAccessoryMaterial('#d8a14a', {
+        emissiveIntensity: 0.18, metalness: 0.02, roughness: 0.78
+      });
+      const scarf = addMesh(root, new THREE.TorusGeometry(0.13, 0.028, 8, 18), scarfMaterial, ownedGeometries, ownedMaterials);
+      scarf.position.set(0, 1.43, 0.01);
+      scarf.rotation.x = Math.PI / 2;
+      const scarfTail = addMesh(root, new THREE.PlaneGeometry(0.19, 0.72, 1, 3), scarfMaterial, ownedGeometries, ownedMaterials);
+      scarfTail.name = 'player-ochre-scarf-tail';
+      scarfTail.position.set(-0.12, 1.12, 0.19);
+      scarfTail.rotation.set(0.12, -0.08, 0.24);
       break;
     }
     case 'policy-tablet-line': {
@@ -276,7 +308,7 @@ export function createCharacterFactory({ loader = new GLTFLoader() } = {}) {
 
     const outfit = cloneSkeleton(outfitSource.scene);
     prepareCharacterModel({
-      hiddenParts: profile.hiddenParts, model: outfit, ownedMaterials,
+      hiddenParts: profile.hiddenParts, model: outfit, outfitTint: profile.outfitTint, ownedMaterials,
       presentation: profile.presentation
     });
     const animatedModels = [outfit];
@@ -287,7 +319,10 @@ export function createCharacterFactory({ loader = new GLTFLoader() } = {}) {
     }
     if (hairSource) {
       const hair = cloneSkeleton(hairSource.scene);
-      prepareCharacterModel({ hiddenParts: [], model: hair, ownedMaterials, presentation: profile.presentation });
+      prepareCharacterModel({
+        hairTint: profile.hairTint, hiddenParts: [], model: hair, ownedMaterials,
+        presentation: profile.presentation
+      });
       animatedModels.push(hair);
     }
     root.add(...animatedModels);

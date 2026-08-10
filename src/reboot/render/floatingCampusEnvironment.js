@@ -8,6 +8,7 @@ import { CAMPUS_VISUAL_PROFILE, WORLD_COLORS } from '../design/tokens.js';
 import { createEnvironmentAssetLoader } from '../environment/loader.js';
 import { createCampusArchitecture } from './campusArchitecture.js';
 import { createCampusBackdrop } from './campusBackdrop.js';
+import { createTwilightSea } from './campusTwilightSea.js';
 import {
   createCampusEdgeDressing, createCinematicNightSky, createLayeredCampusSilhouettes,
   createMemoryFootprintPath
@@ -17,6 +18,8 @@ import { createDisposableRegistry } from './dispose.js';
 const PBR_MATERIAL_BINDINGS = Object.freeze({
   brick: 'masonry-brick',
   concrete: 'structural-concrete',
+  path: 'structural-concrete',
+  terrain: 'structural-concrete',
   track: 'road-asphalt',
   wood: 'interior-wood'
 });
@@ -44,25 +47,25 @@ const ASSET_NIGHT_TREATMENTS = Object.freeze({
     color: 0x66758d, emissive: 0x18243a, intensity: 0.22, roughness: 0.76
   }),
   'campus-bush': Object.freeze({
-    color: 0x7e5961, emissive: 0x4b293d, intensity: 0.48, roughness: 0.94
+    color: 0xa66f74, emissive: 0x6b3c44, intensity: 0.78, roughness: 0.94
   }),
   'campus-grass': Object.freeze({
-    color: 0x8a756c, emissive: 0x49322f, intensity: 0.44, roughness: 0.96
+    color: 0xb58c72, emissive: 0x6a4934, intensity: 0.72, roughness: 0.96
   }),
   'campus-hero-rock': Object.freeze({
     clearMetalRoughnessMaps: true,
-    color: 0x4a4e5b,
-    emissive: 0x101927,
-    intensity: 0.08,
+    color: 0x747080,
+    emissive: 0x28233b,
+    intensity: 0.34,
     metalness: 0,
     normalScale: 0.42,
     roughness: 0.96
   }),
   'campus-rock': Object.freeze({
-    color: 0x595766, emissive: 0x171827, intensity: 0.2, roughness: 0.98
+    color: 0x736b7c, emissive: 0x28223a, intensity: 0.36, roughness: 0.98
   }),
   'campus-tree': Object.freeze({
-    color: 0x70445f, emissive: 0x5b2d4d, intensity: 0.68, roughness: 0.94
+    color: 0x925a75, emissive: 0x6a344d, intensity: 0.86, roughness: 0.94
   }),
   'classroom-chair': Object.freeze({
     color: 0x74534f, emissive: 0x24151a, intensity: 0.15, roughness: 0.9
@@ -157,7 +160,7 @@ function createAssetContactPatches(group, resources) {
   const material = resources.register(new THREE.MeshBasicMaterial({
     color: 0x030713,
     depthWrite: false,
-    opacity: 0.25,
+    opacity: 0.14,
     polygonOffset: true,
     polygonOffsetFactor: -1,
     transparent: true
@@ -204,14 +207,23 @@ function applyPbrMaterial(architecture, role, material) {
   for (const texture of [material.map, material.normalMap, material.roughnessMap]) {
     if (texture) texture.repeat.set(role === 'wood' ? 3 : 5, role === 'wood' ? 3 : 5);
   }
-  if (role === 'track' || role === 'wood') {
-    material.emissive.set(role === 'track' ? 0x280a08 : 0x4a2814);
-    material.emissiveIntensity = role === 'track' ? 0.42 : 0.52;
+  if (['path', 'terrain', 'track', 'wood'].includes(role)) {
+    const emissive = {
+      path: 0x7a4c58,
+      terrain: 0x40384b,
+      track: 0x280a08,
+      wood: 0x4a2814
+    }[role];
+    const intensity = { path: 0.65, terrain: 0.4, track: 0.42, wood: 0.52 }[role];
+    material.emissive.set(emissive);
+    material.emissiveIntensity = intensity;
+    if ((role === 'path' || role === 'terrain') && material.map) material.emissiveMap = material.map;
   }
   material.color.setHex(CAMPUS_VISUAL_PROFILE.materialTint[role]);
   if (material.normalScale) material.normalScale.setScalar(0.82);
+  const sourceMaterialName = role === 'path' ? 'campus-path-stone-material' : `campus-${role}-material`;
   architecture.group.traverse((object) => {
-    if (object.isMesh && object.material?.name === `campus-${role}-material`) object.material = material;
+    if (object.isMesh && object.material?.name === sourceMaterialName) object.material = material;
   });
 }
 
@@ -252,6 +264,7 @@ export function createFloatingCampusEnvironment({
   group.name = 'h17-floating-campus';
   group.add(architecture.group);
   const backdrop = createCampusBackdrop({ group });
+  createTwilightSea({ centerZ: -58, group, resources });
   const sky = createCinematicNightSky({
     accent: WORLD_COLORS.memory, centerZ: -58, group,
     palette: CAMPUS_VISUAL_PROFILE.atmosphere, prefix: 'floating-campus', resources

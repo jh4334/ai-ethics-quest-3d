@@ -34,9 +34,11 @@
     .hud { position: fixed; inset: max(16px, env(safe-area-inset-top)) 16px auto; display: flex; justify-content: space-between; align-items: start; gap: 16px; pointer-events: none; }
     .title { margin: 0; color: var(--h17-memory); font-size: clamp(1rem, 3vw, 1.5rem); letter-spacing: .08em; text-shadow: 0 2px 12px #000; }
     .status { margin: .35rem 0 0; color: #d9e4ff; font-size: .9rem; }
-    .chapter-strip { position: fixed; top: max(16px, env(safe-area-inset-top)); left: 50%; z-index: 2; display: flex; gap: 5px; translate: -50% 0; margin: 0; padding: 6px 8px; border: 1px solid #7b91bf55; border-radius: 999px; background: #050918c7; list-style: none; pointer-events: none; }
-    .chapter-strip li { display: grid; min-width: 46px; grid-template-columns: 18px 1fr; align-items: center; gap: 4px; color: #9eabc5; font-size: .64rem; white-space: nowrap; }
-    .chapter-strip b { display: grid; width: 18px; height: 18px; place-items: center; border: 1px solid currentColor; border-radius: 50%; font-size: .66rem; }
+    .chapter-strip { position: fixed; top: max(16px, env(safe-area-inset-top)); left: 50%; z-index: 2; display: flex; gap: 9px; translate: -50% 0; margin: 0; padding: 6px 10px; border: 1px solid #f4c06d3f; border-radius: 999px; background: #050918a8; list-style: none; pointer-events: none; }
+    .chapter-strip li { position: relative; display: grid; min-width: 42px; grid-template-columns: 1fr; place-items: center; color: #9eabc5; font-size: .64rem; white-space: nowrap; }
+    .chapter-strip li:not(:last-child)::after { content: ''; position: absolute; left: 36px; width: 24px; height: 1px; background: #f4c06d66; }
+    .chapter-strip b { display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid currentColor; border-radius: 50%; font-size: .8rem; }
+    .chapter-strip span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
     .chapter-strip [data-state="current"] { color: #fff3d6; font-weight: 800; }
     .chapter-strip [data-state="current"] b { color: #15100a; background: var(--h17-memory); box-shadow: 0 0 12px #f4c06d88; }
     .chapter-strip [data-state="complete"] { color: #7ce5cf; }
@@ -50,7 +52,7 @@
     .gauge-label { position: relative; color: #fff; font-style: normal; font-weight: 700; letter-spacing: .04em; text-shadow: 0 1px 3px #000c; }
     /* 시그널 부족(signal-blocked) 깜빡임 — 클래스는 이벤트 프레임에만 붙고, 꺼질 때 transition으로만 잦아든다. */
     .gauge-blocked { box-shadow: 0 0 0 2px #ff6b6bcc, 0 0 14px #ff6b6b99; transition: none; }
-    .objective { position: fixed; top: max(112px, calc(env(safe-area-inset-top) + 96px)); left: 50%; translate: -50% 0; max-width: min(72vw, 620px); margin: 0; padding: 6px 10px; border-radius: 6px; color: #fff3d6; background: #050918b8; font-size: clamp(.82rem, 2vw, 1rem); line-height: 1.35; text-align: center; text-shadow: 0 2px 8px #000; }
+    .objective { position: fixed; top: max(116px, calc(env(safe-area-inset-top) + 100px)); left: 16px; translate: 0 0; max-width: min(38vw, 520px); margin: 0; padding: 7px 10px; border-block: 1px solid #f4c06d55; color: #fff3d6; background: linear-gradient(90deg, #050918d6, #05091822); font-size: clamp(.82rem, 2vw, 1rem); line-height: 1.35; text-align: left; text-shadow: 0 2px 8px #000; }
     .actions { display: flex; gap: 8px; pointer-events: auto; }
     button { min-width: 48px; min-height: 44px; padding: 8px 12px; border: 1px solid #7b91bf; border-radius: 8px; color: #fff; background: #101a36dd; font: inherit; }
     button:focus-visible { outline: 3px solid var(--h17-memory); outline-offset: 2px; }
@@ -170,8 +172,10 @@
     [data-touch-mode="true"] .hud { display: block; right: auto; width: calc(var(--fixture-edge) - 32px); }
     [data-touch-mode="true"] .title { font-size: 1rem; }
     [data-touch-mode="true"] .status { font-size: .72rem; margin-top: .2rem; }
-    [data-touch-mode="true"] .chapter-strip { top: calc(var(--hud-top) + 112px); width: min(320px, calc(100vw - 116px)); justify-content: center; padding: 5px 7px; }
+    [data-touch-mode="true"] .chapter-strip { top: calc(var(--hud-top) + 112px); width: min(320px, calc(100vw - 116px)); justify-content: center; gap: 5px; padding: 5px 7px; }
     [data-touch-mode="true"] .chapter-strip li { min-width: 28px; grid-template-columns: 1fr; }
+    [data-touch-mode="true"] .chapter-strip li:not(:last-child)::after { left: 24px; width: 12px; }
+    [data-touch-mode="true"] .chapter-strip b { width: 20px; height: 20px; font-size: .68rem; }
     [data-touch-mode="true"] .chapter-strip span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
     [data-touch-mode="true"] .actions { position: absolute; top: 0; right: 0; gap: 6px; }
     [data-touch-mode="true"] .actions button { min-width: 0; padding: 8px 10px; font-size: .8rem; white-space: nowrap; }
@@ -179,7 +183,7 @@
     [data-touch-mode="true"] .combat-hud .gauge { flex: 1 1 40%; min-width: 118px; }
     [data-touch-mode="true"] .combat-hud > span:not(.gauge) { flex: 0 0 auto; font-size: .68rem; padding: 3px 6px; white-space: nowrap; }
     /* 목표 문구는 HUD 아래 상단 밴드에 고정 — 화면 중앙·보조 버튼 열을 침범하지 않는다. */
-    [data-touch-mode="true"] .objective { top: calc(var(--hud-top) + 150px); max-width: min(calc(100vw - 136px), 620px); }
+    [data-touch-mode="true"] .objective { top: calc(var(--hud-top) + 150px); left: 50%; translate: -50% 0; max-width: min(calc(100vw - 136px), 620px); text-align: center; }
     [data-touch-mode="true"] .feedback-prompts { right: auto; left: calc(var(--fixture-edge) - min(60vw, 340px) - 18px); bottom: calc(var(--safe-bottom) + 256px); max-width: min(60vw, 340px); }
     [data-touch-mode="true"] .radio { bottom: calc(var(--safe-bottom) + 170px); width: min(calc(100vw - 40px), 600px); }
     /* 세로 결정 대기 중에는 자막·피드백 칩을 한 단 올려 맥락 버튼 띠를 비워 둔다(가로에서는 띠가 겹치지 않음). */

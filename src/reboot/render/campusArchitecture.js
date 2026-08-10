@@ -132,6 +132,51 @@ function irregularTerraceSlab(resources, width, depth, height, id, mirrored = fa
   return geometry;
 }
 
+function causewayShape(width, depth) {
+  const halfWidth = width / 2;
+  const halfDepth = depth / 2;
+  const outline = [
+    [-0.92, 1], [0.9, 1], [0.72, 0.78], [0.5, 0.56],
+    [0.62, 0.3], [0.46, 0.04], [0.56, -0.22], [0.4, -0.5],
+    [0.5, -0.78], [0.38, -1], [-0.42, -1], [-0.36, -0.76],
+    [-0.52, -0.5], [-0.4, -0.2], [-0.56, 0.05], [-0.45, 0.34],
+    [-0.62, 0.58], [-0.74, 0.8]
+  ];
+  const shape = new THREE.Shape();
+  outline.forEach(([x, z], index) => {
+    const point = [x * halfWidth, -z * halfDepth];
+    if (index === 0) shape.moveTo(...point);
+    else shape.lineTo(...point);
+  });
+  shape.closePath();
+  return shape;
+}
+
+function causewaySlab(resources, width, depth, height, id) {
+  const geometry = resources.register(new THREE.ExtrudeGeometry(causewayShape(width, depth), {
+    bevelEnabled: true,
+    bevelSegments: 2,
+    bevelSize: 0.11,
+    bevelThickness: 0.08,
+    curveSegments: 1,
+    depth: height
+  }), id);
+  geometry.rotateX(-Math.PI / 2);
+  return geometry;
+}
+
+function causewayDeck(resources, width, depth, id) {
+  const geometry = resources.register(new THREE.ShapeGeometry(causewayShape(width, depth), 1), id);
+  const position = geometry.getAttribute('position');
+  const uv = geometry.getAttribute('uv');
+  for (let index = 0; index < uv.count; index += 1) {
+    uv.setXY(index, position.getX(index) / width + 0.5, position.getY(index) / depth + 0.5);
+  }
+  uv.needsUpdate = true;
+  geometry.rotateX(-Math.PI / 2);
+  return geometry;
+}
+
 function mesh(parent, geometry, material, name, position, rotation = null, scale = null) {
   const object = new THREE.Mesh(geometry, material);
   object.name = name;
@@ -145,9 +190,9 @@ function mesh(parent, geometry, material, name, position, rotation = null, scale
 }
 
 function createFirstVistaSurface(group, resources, materials) {
-  const rowWidths = [5, 5, 5, 4, 4, 4, 3, 3, 3, 3, 2, 2];
+  const rowWidths = [6, 6, 6, 5, 5, 5, 4, 4, 4, 4, 3, 3, 3, 3, 2, 2, 2, 2];
   const paverCount = rowWidths.reduce((sum, count) => sum + count, 0);
-  const stoneColors = [0x7e7889, 0x96848a, 0x6e7487, 0x9b7f76];
+  const stoneColors = [0xb8a6b0, 0xc4a1a0, 0x9da3b5, 0xc29b8c];
   const paverScaleX = [0.62, 0.76, 0.68, 0.84];
   const paverScaleZ = [0.76, 0.64, 0.72, 0.86, 0.68];
   const paverGeometry = resources.register(
@@ -162,8 +207,8 @@ function createFirstVistaSurface(group, resources, materials) {
   let paverIndex = 0;
   for (const [row, columnCount] of rowWidths.entries()) {
     const t = row / (rowWidths.length - 1);
-    const rowWidth = 4.7 - t * 2.45;
-    const curve = Math.sin(t * Math.PI * 1.7) * 0.34;
+    const rowWidth = 5.2 - t * 3.25;
+    const curve = Math.sin(t * Math.PI * 1.7) * 0.48;
     for (let column = 0; column < columnCount; column += 1) {
       const columnOffset = columnCount === 1 ? 0 : column / (columnCount - 1) - 0.5;
       quaternion.setFromAxisAngle(
@@ -174,7 +219,7 @@ function createFirstVistaSurface(group, resources, materials) {
         new THREE.Vector3(
           curve + columnOffset * rowWidth,
           0.2 + (paverIndex % 4) * 0.02,
-          5.45 - row * 1.18 + (column % 2 === 0 ? -0.08 : 0.08)
+          5.45 - row * 1.32 + (column % 2 === 0 ? -0.08 : 0.08)
         ),
         quaternion,
         new THREE.Vector3(
@@ -193,11 +238,11 @@ function createFirstVistaSurface(group, resources, materials) {
   pavers.computeBoundingBox();
   pavers.computeBoundingSphere();
 
-  const cliffPositions = Array.from({ length: 22 }, (_, index) => {
-    const t = index / 21;
-    const z = 5.9 - t * 12.1;
+  const cliffPositions = Array.from({ length: 30 }, (_, index) => {
+    const t = index / 29;
+    const z = 6.1 - t * 26.2;
     const waist = Math.abs(t - 0.5) * 2;
-    const x = 3.2 + waist * 2.15 + (index % 3) * 0.12;
+    const x = 3.15 + waist * 2.1 + (index % 3) * 0.12;
     return [[-x, z], [x, z]];
   }).flat();
   const cliffGeometry = resources.register(
@@ -229,8 +274,8 @@ function createFirstVistaSurface(group, resources, materials) {
   const terraces = [
     [-4.72, -0.52, 3.92, 3.45, 4.8, 0.78, false],
     [4.8, -0.58, 3.8, 3.35, 4.65, 0.84, true],
-    [-4.82, -0.66, 0.15, 3.2, 3.25, 0.92, true],
-    [4.9, -0.74, 0.08, 3.1, 3.15, 1.02, false]
+    [-4.82, -0.66, -5.35, 3.2, 3.25, 0.92, true],
+    [4.9, -0.74, -6.7, 3.1, 3.15, 1.02, false]
   ];
   terraces.forEach(([x, y, z, width, depth, height, mirrored], index) => {
     const terrace = irregularTerraceSlab(
@@ -255,12 +300,12 @@ function createFirstVistaSurface(group, resources, materials) {
     new THREE.ShapeGeometry(recordShape, 3), 'campus-first-vista-record-geometry'
   );
   const recordPlacements = [
-    [-3.4, 2.8, -4.2, -0.3, 0.2], [-2.2, 3.9, -5.2, 0.25, -0.45],
-    [-1.1, 3.1, -4.5, -0.18, 0.4], [0.1, 4.5, -6.4, 0.12, -0.2],
-    [1.2, 3.4, -5, -0.3, 0.5], [2.4, 4, -6.8, 0.34, 0.2],
-    [3.5, 2.9, -4.2, -0.15, -0.35], [-2.9, 4.7, -7.2, 0.28, 0.5],
-    [-0.8, 5.2, -8, -0.2, -0.4], [1.7, 4.9, -7.8, 0.2, 0.35],
-    [3.1, 4.4, -8.6, -0.25, -0.15]
+    [-4.3, 3.2, -5.2, -0.3, 0.2], [-2.9, 4.2, -7.1, 0.25, -0.45],
+    [-1.4, 3.35, -6.3, -0.18, 0.4], [0.2, 4.9, -9.2, 0.12, -0.2],
+    [1.7, 3.75, -7.2, -0.3, 0.5], [3.2, 4.45, -10.1, 0.34, 0.2],
+    [4.6, 3.15, -5.5, -0.15, -0.35], [-3.7, 5.1, -11.1, 0.28, 0.5],
+    [-1.2, 5.6, -13.1, -0.2, -0.4], [2.1, 5.25, -12.2, 0.2, 0.35],
+    [4.2, 4.75, -14.3, -0.25, -0.15]
   ];
   const records = new THREE.InstancedMesh(recordGeometry, materials.record, recordPlacements.length);
   records.name = 'campus-first-vista-floating-records';
@@ -268,7 +313,7 @@ function createFirstVistaSurface(group, resources, materials) {
     quaternion.setFromEuler(new THREE.Euler(pitch, yaw, (index % 3 - 1) * 0.24));
     matrix.compose(
       new THREE.Vector3(x, y, z), quaternion,
-      new THREE.Vector3(0.76 + (index % 4) * 0.09, 0.76 + (index % 3) * 0.08, 1)
+      new THREE.Vector3(0.62 + (index % 4) * 0.08, 0.62 + (index % 3) * 0.07, 1)
     );
     records.setMatrixAt(index, matrix);
   }
@@ -281,7 +326,7 @@ function createFirstVistaSurface(group, resources, materials) {
     resources.register(new THREE.CylinderGeometry(0.16, 0.46, 15, 14, 1, true), 'campus-first-vista-goal-beam-geometry'),
     materials.goalBeam,
     'campus-first-vista-goal-beam',
-    { x: 0, y: 7.5, z: -11.2 }
+    { x: 2.15, y: 7.5, z: -19.4 }
   );
   goalBeam.renderOrder = 3;
 
@@ -312,14 +357,20 @@ function createPlatforms(group, resources, materials) {
     color: WORLD_COLORS.moon, opacity: 0.58, transparent: true
   }), 'campus-edge-material');
   for (const [id, width, depth, x, z, radius] of platforms) {
+    const isCauseway = id === 'roster-tower';
     const slab = id === 'open-classroom'
       ? irregularClassroomSlab(resources, width, depth, 0.46, `campus-${id}-slab`)
-      : roundedSlab(resources, width, depth, 0.34, radius, `campus-${id}-slab`);
-    mesh(group, slab, id === 'open-classroom' ? materials.terrain : materials.concrete, `campus-platform-${id}`, { x, y: -0.34, z });
+      : isCauseway
+        ? causewaySlab(resources, width, depth, 0.52, `campus-${id}-slab`)
+        : roundedSlab(resources, width, depth, 0.34, radius, `campus-${id}-slab`);
+    const platformMaterial = id === 'open-classroom' || isCauseway ? materials.terrain : materials.concrete;
+    mesh(group, slab, platformMaterial, `campus-platform-${id}`, { x, y: -0.34, z });
     const deck = id === 'open-classroom'
       ? irregularDeck(resources, width - 0.22, depth - 0.22, `campus-${id}-deck`)
-      : roundedDeck(resources, width - 0.22, depth - 0.22, Math.max(0.4, radius - 0.12), `campus-${id}-deck`);
-    mesh(group, deck, id === 'open-classroom' ? materials.terrain : materials.concrete, `campus-platform-deck-${id}`, { x, y: 0.025, z });
+      : isCauseway
+        ? causewayDeck(resources, width - 0.22, depth - 0.22, `campus-${id}-deck`)
+        : roundedDeck(resources, width - 0.22, depth - 0.22, Math.max(0.4, radius - 0.12), `campus-${id}-deck`);
+    mesh(group, deck, platformMaterial, `campus-platform-deck-${id}`, { x, y: 0.025, z });
     const route = roundedDeck(
       resources,
       Math.min(3.4, width * 0.24),
@@ -327,7 +378,7 @@ function createPlatforms(group, resources, materials) {
       Math.min(1.1, radius * 0.34),
       `campus-${id}-memory-route`
     );
-    mesh(group, route, id === 'open-classroom' ? materials.path : materials.wood, `campus-memory-route-${id}`, { x: 0, y: 0.12, z });
+    mesh(group, route, id === 'open-classroom' || isCauseway ? materials.path : materials.wood, `campus-memory-route-${id}`, { x: 0, y: 0.12, z });
     const edge = resources.register(new THREE.EdgesGeometry(slab, 24), `campus-${id}-edge`);
     const outline = new THREE.LineSegments(edge, edgeMaterial);
     outline.name = `campus-platform-edge-${id}`;
@@ -340,13 +391,14 @@ function createPlatforms(group, resources, materials) {
 }
 
 function createRosterTower(group, resources, materials) {
-  const x = -4.6;
-  const body = resources.register(new THREE.CylinderGeometry(3.1, 4.1, 9.5, 12, 1, true), 'roster-spire-body');
-  mesh(group, body, materials.glass, 'central-roster-spire', { x, y: 4.7, z: -18 });
-  const core = resources.register(new THREE.CylinderGeometry(0.72, 1.1, 10.8, 10), 'roster-spire-core');
-  mesh(group, core, materials.metal, 'roster-spire-core', { x, y: 5.1, z: -18 });
-  const ring = resources.register(new THREE.TorusGeometry(3.55, 0.12, 8, 36), 'roster-spire-ring');
-  for (const y of [1.2, 4.5, 7.8]) mesh(group, ring, materials.wood, `roster-record-ring-${y}`, { x, y, z: -18 }, { x: Math.PI / 2, y: 0, z: 0 });
+  const x = -11.2;
+  const z = -27;
+  const body = resources.register(new THREE.CylinderGeometry(1.75, 2.35, 7.4, 12, 1, true), 'roster-spire-body');
+  mesh(group, body, materials.glass, 'central-roster-spire', { x, y: 3.7, z });
+  const core = resources.register(new THREE.CylinderGeometry(0.48, 0.72, 8.5, 10), 'roster-spire-core');
+  mesh(group, core, materials.metal, 'roster-spire-core', { x, y: 4.1, z });
+  const ring = resources.register(new THREE.TorusGeometry(2.15, 0.1, 8, 32), 'roster-spire-ring');
+  for (const y of [1.1, 3.65, 6.2]) mesh(group, ring, materials.wood, `roster-record-ring-${y}`, { x, y, z }, { x: Math.PI / 2, y: 0, z: 0 });
 }
 
 function createAthleticsField(group, resources, materials) {
@@ -422,20 +474,20 @@ export function createCampusArchitecture() {
     return [role, material];
   }));
   materials.terrain = resources.register(new THREE.MeshStandardMaterial({
-    color: 0x363747, emissive: 0x111526, emissiveIntensity: 0.24,
+    color: 0x4b4659, emissive: 0x211c31, emissiveIntensity: 0.44,
     metalness: 0.02, roughness: 0.98
   }), 'campus-terrain-material');
   materials.path = resources.register(new THREE.MeshStandardMaterial({
-    color: 0xb4acb8, emissive: 0x34242d, emissiveIntensity: 0.32,
+    color: 0xa58f9f, emissive: 0x49313e, emissiveIntensity: 0.4,
     metalness: 0.03, roughness: 0.94
   }), 'campus-path-stone-material');
   materials.record = resources.register(new THREE.MeshStandardMaterial({
-    color: 0xe9dfcb, emissive: 0x7d5a2c, emissiveIntensity: 0.22,
+    color: 0xf4e8d0, emissive: 0x866039, emissiveIntensity: 0.28,
     metalness: 0, roughness: 0.86, side: THREE.DoubleSide
   }), 'campus-floating-record-material');
   materials.goalBeam = resources.register(new THREE.MeshBasicMaterial({
     blending: THREE.AdditiveBlending, color: WORLD_COLORS.memory, depthWrite: false,
-    opacity: 0.42, side: THREE.DoubleSide, transparent: true
+    opacity: 0.34, side: THREE.DoubleSide, transparent: true
   }), 'campus-goal-beam-material');
   materials.terrain.name = 'campus-terrain-material';
   materials.path.name = 'campus-path-stone-material';

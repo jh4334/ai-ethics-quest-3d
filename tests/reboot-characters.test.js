@@ -179,9 +179,12 @@ test('main cast presentation stays large and texture-lit enough for the live sch
   const humans = mainCast.filter((profile) => profile.identity.kind === 'human');
 
   // When: their authored presentation bounds are inspected.
-  // Then: humans gain modest visual scale and neutral mapped-material lift without a tint wash.
+  // Then: humans keep readable scale while the player alone carries the authored navy coat treatment.
   assert.equal(humans.every((profile) => profile.scale === 1.3), true);
-  assert.equal(getCharacterProfile('dot').scale >= 1.05, true);
+  assert.equal(getCharacterProfile('dot').scale, 0.8);
+  assert.equal(getCharacterProfile('player').outfit, 'ranger');
+  assert.equal(getCharacterProfile('player').outfitTint, '#45557f');
+  assert.equal(getCharacterProfile('player').hairTint, '#1c2538');
   for (const profile of humans) {
     assert.deepEqual(Object.keys(profile.presentation).sort(), ['hairEmissive', 'outfitEmissive', 'skinEmissive']);
     assert.ok(profile.presentation.outfitEmissive >= 0.08);
@@ -191,8 +194,8 @@ test('main cast presentation stays large and texture-lit enough for the live sch
   }
 });
 
-test('character factory preserves mapped material color while loading the player face and hair', async (t) => {
-  // Given: mapped body, outfit, and hair sources with an unmodified neutral base color.
+test('character factory preserves face and hair maps while tinting only the player coat navy', async (t) => {
+  // Given: mapped body, outfit, and hair sources with a neutral base color.
   const loadedUrls = [];
   const makeMesh = (name) => {
     const texture = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
@@ -231,18 +234,27 @@ test('character factory preserves mapped material color while loading the player
     materials.push(...entries);
   });
 
-  // Then: face, outfit, and hair maps survive without a global role-color wash.
+  // Then: all maps survive, while only the ranger coat receives the authored navy tint.
   const importedMaterials = materials.filter((material) => material.name);
   assert.equal(loadedUrls.some((url) => url.endsWith('/Hair_SimpleParted.gltf')), true);
   assert.equal(importedMaterials.length >= 4, true);
   assert.equal(importedMaterials.every((material) => material.map?.isTexture), true);
-  assert.equal(importedMaterials.every((material) => material.color.getHex() === 0x778899), true);
-  assert.equal(importedMaterials.every((material) => material.emissiveMap === material.map), true);
-  assert.equal(importedMaterials.every((material) => material.emissive.getHex() === 0xffffff), true);
-  assert.equal(importedMaterials.every((material) => material.emissiveIntensity <= 0.22), true);
   const materialByName = Object.fromEntries(importedMaterials.map((material) => [material.name, material]));
-  assert.ok(materialByName.MI_Hair_1.emissiveIntensity > materialByName.MI_Peasant.emissiveIntensity);
-  assert.ok(materialByName.MI_Regular_Female.emissiveIntensity > materialByName.MI_Peasant.emissiveIntensity);
+  assert.equal(materialByName.MI_Ranger.color.getHex(), 0x45557f);
+  assert.equal(materialByName.MI_Hair_1.color.getHex(), 0x1c2538);
+  assert.equal(materialByName.MI_Regular_Female.color.getHex(), 0x778899);
+  assert.equal(materialByName.MI_Eyes.color.getHex(), 0x778899);
+  assert.equal(importedMaterials.every((material) => material.emissiveMap === material.map), true);
+  assert.equal(materialByName.MI_Ranger.emissive.getHex(), 0x45557f);
+  assert.equal(materialByName.MI_Hair_1.emissive.getHex(), 0x1c2538);
+  assert.equal(materialByName.MI_Regular_Female.emissive.getHex(), 0xffffff);
+  assert.equal(materialByName.MI_Eyes.emissive.getHex(), 0xffffff);
+  assert.equal(importedMaterials.every((material) => material.emissiveIntensity <= 0.22), true);
+  assert.ok(materialByName.MI_Hair_1.emissiveIntensity > materialByName.MI_Ranger.emissiveIntensity);
+  assert.ok(materialByName.MI_Regular_Female.emissiveIntensity > materialByName.MI_Ranger.emissiveIntensity);
+  assert.ok(character.root.getObjectByName('player-navy-coat'));
+  assert.ok(character.root.getObjectByName('player-gold-coat-trim'));
+  assert.ok(character.root.getObjectByName('player-ochre-scarf-tail'));
 
   const haru = await factory.create('haru');
   assert.equal(haru.root.getObjectByName('Male_Ranger_Head_Hood').visible, false);

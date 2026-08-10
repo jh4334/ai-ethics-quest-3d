@@ -59,8 +59,8 @@ test('저장 체크포인트는 레벨에 저작된 세그먼트 스폰으로 �
   assert.deepEqual(chapterOneSpawnForCheckpoint('chapter-1:boss'), { x: 0, y: -95 });
   assert.deepEqual(chapterOneSpawnForCheckpoint('chapter-1:signature-revealed'), { x: 0, y: -95 });
   // 미지 체크포인트(예: QA 전용 문자열)는 교실 스폰으로 안전하게 돌아간다.
-  assert.deepEqual(chapterOneSpawnForCheckpoint('chapter-1:offline-boss'), { x: 0, y: 1 });
-  assert.deepEqual(chapterOneSpawnForCheckpoint('chapter-1:start'), { x: 0, y: 1 });
+  assert.deepEqual(chapterOneSpawnForCheckpoint('chapter-1:offline-boss'), { x: 0, y: 4.4 });
+  assert.deepEqual(chapterOneSpawnForCheckpoint('chapter-1:start'), { x: 0, y: 4.4 });
   // 보스 격파 직후 복원 대상 체크포인트 목록은 저장 스키마 문자열을 그대로 쓴다.
   assert.deepEqual(
     [...CHAPTER_ONE_POST_BOSS_CHECKPOINTS],

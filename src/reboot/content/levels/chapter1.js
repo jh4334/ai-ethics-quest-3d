@@ -93,7 +93,7 @@ export const chapterOneLevel = {
       { id: 'encounter-gym-boss', kind: 'boss', segmentId: 'gym-boss-arena' }
     ],
     checkpoint: [
-      { id: 'checkpoint-classroom', segmentId: 'classroom-cold-open', spawn: { x: 0, y: 0, z: 1 } },
+      { id: 'checkpoint-classroom', segmentId: 'classroom-cold-open', spawn: { x: 0, y: 0, z: 4.4 } },
       { id: 'checkpoint-corridor', segmentId: 'collapsing-corridor', spawn: { x: 0, y: 0, z: -9 } },
       { id: 'checkpoint-first-arena', segmentId: 'first-arena', spawn: { x: 0, y: 0, z: -33 } },
       { id: 'checkpoint-memory', segmentId: 'memory-backup-decision', spawn: { x: 0, y: 0, z: -51 } },

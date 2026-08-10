@@ -2,58 +2,6 @@ import * as THREE from 'three';
 
 import { CAMPUS_DISTRICTS } from '../content/campus/chapterOneCampus.js';
 
-function createStars(group) {
-  const count = 180;
-  const positions = new Float32Array(count * 3);
-  for (let index = 0; index < count; index += 1) {
-    const angle = index * 2.399963;
-    const radius = 52 + (index % 19) * 2.8;
-    positions[index * 3] = Math.sin(angle) * radius;
-    positions[index * 3 + 1] = 10 + ((index * 11) % 33);
-    positions[index * 3 + 2] = -58 + Math.cos(angle) * radius;
-  }
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  const material = new THREE.PointsMaterial({
-    color: 0xc9dcff,
-    opacity: 0.72,
-    size: 0.22,
-    sizeAttenuation: true,
-    transparent: true,
-    depthWrite: false,
-    fog: false
-  });
-  const stars = new THREE.Points(geometry, material);
-  stars.name = 'campus-night-stars';
-  group.add(stars);
-  return { geometry, material };
-}
-
-function createDistantIslands(group) {
-  const geometry = new THREE.ConeGeometry(9, 11, 8, 1, true);
-  const material = new THREE.MeshStandardMaterial({
-    color: 0x24395b,
-    emissive: 0x0c1730,
-    emissiveIntensity: 0.55,
-    roughness: 0.96
-  });
-  const islands = [
-    { x: -50, y: -7, z: -40, scale: 0.9 },
-    { x: 53, y: -8, z: -70, scale: 1.05 },
-    { x: -57, y: -10, z: -112, scale: 1.2 },
-    { x: 52, y: -9, z: -138, scale: 1.05 }
-  ];
-  for (const [index, entry] of islands.entries()) {
-    const island = new THREE.Mesh(geometry, material);
-    island.name = `campus-distant-island-${index}`;
-    island.position.set(entry.x, entry.y, entry.z);
-    island.rotation.x = Math.PI;
-    island.scale.setScalar(entry.scale);
-    group.add(island);
-  }
-  return { geometry, material };
-}
-
 function createSignTexture(documentRef, text) {
   const canvas = documentRef.createElement('canvas');
   canvas.width = 512;
@@ -83,8 +31,8 @@ function createDistrictSigns(group, documentRef) {
     const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: true });
     const sign = new THREE.Sprite(material);
     sign.name = `campus-sign-${district.id}`;
-    sign.position.set(district.center.x + (index % 2 ? 2.2 : -2.2), 3.75, district.center.z - 1.6);
-    sign.scale.set(2.05, 0.52, 1);
+    sign.position.set(district.center.x + (index % 2 ? 2.4 : -2.4), 3.45, district.center.z - 1.8);
+    sign.scale.set(1.52, 0.38, 1);
     sign.userData.campusDistrictId = district.id;
     group.add(sign);
     return { material, texture };
@@ -92,15 +40,9 @@ function createDistrictSigns(group, documentRef) {
 }
 
 export function createCampusBackdrop({ documentRef = globalThis.document, group }) {
-  const stars = createStars(group);
-  const islands = createDistantIslands(group);
   const signs = createDistrictSigns(group, documentRef);
   return Object.freeze({
     dispose() {
-      stars.geometry.dispose();
-      stars.material.dispose();
-      islands.geometry.dispose();
-      islands.material.dispose();
       for (const { material, texture } of signs) {
         texture.dispose();
         material.dispose();

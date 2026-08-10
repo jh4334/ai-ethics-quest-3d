@@ -39,7 +39,7 @@ export function createSchoolNightScene({
   const resources = createDisposableRegistry();
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(CAMPUS_VISUAL_PROFILE.atmosphere.top);
-  scene.fog = new THREE.Fog(CAMPUS_VISUAL_PROFILE.atmosphere.fog, 48, 150);
+  scene.fog = new THREE.Fog(CAMPUS_VISUAL_PROFILE.atmosphere.fog, 26, 112);
 
   const camera = new THREE.PerspectiveCamera(44, 1, 0.1, 180);
   const route = resources.register(createSchoolRoute({ level: chapterOneLevel, lightLimit: 0, scene }), 'school-route');
