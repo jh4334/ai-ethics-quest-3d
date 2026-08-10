@@ -5,6 +5,7 @@ const baseUrl = process.env.H17_BASE_URL ?? 'http://127.0.0.1:4174';
 const outputDirectory = '.omo/evidence/h17-six-chapter/p0';
 const rendererProfile = process.env.H17_CAPTURE_RENDERER === 'hardware' ? 'hardware' : 'swiftshader';
 const headless = process.env.H17_CAPTURE_HEADFUL !== 'true';
+const captureOnly = new Set((process.env.H17_CAPTURE_ONLY ?? '').split(',').filter(Boolean));
 await mkdir(outputDirectory, { recursive: true });
 
 const browser = await chromium.launch({
@@ -16,6 +17,7 @@ const browser = await chromium.launch({
 const captures = [];
 
 async function capture(name, viewport, options = {}) {
+  if (captureOnly.size > 0 && !captureOnly.has(name)) return;
   const context = await browser.newContext({
     deviceScaleFactor: 1,
     hasTouch: options.hasTouch === true,

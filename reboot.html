@@ -243,6 +243,40 @@
       .shell-chapter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .product-shell-card, .teacher-report-card { padding: 20px; }
     }
+    .hud { inset: var(--hud-top) var(--edge-right) auto 18px; }
+    .hud > div:first-child { width: 370px; padding: 15px 18px 17px; border: 1px solid #f4c06d99; border-radius: 12px; background: linear-gradient(135deg, #071022ed, #071022b8); box-shadow: 0 16px 42px #0007, inset 0 0 28px #18284a55; }
+    .title { font-size: 1.28rem; letter-spacing: .1em; }
+    .status { margin-top: .4rem; color: #d8dfed; }
+    .objective { top: calc(var(--hud-top) + 86px); left: 18px; width: 370px; max-width: 370px; padding: 12px 18px; border: 1px solid #f4c06d70; border-radius: 0 0 12px 12px; background: linear-gradient(90deg, #071022f2, #071022c4); }
+    .objective::before { content: '◆'; margin-right: 10px; color: var(--h17-memory); }
+    .combat-hud { position: fixed; left: 24px; bottom: 24px; display: grid; width: 292px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin: 0; padding: 13px; border: 1px solid #f4c06d80; border-radius: 13px; background: linear-gradient(145deg, #071022eb, #050918c7); box-shadow: 0 16px 42px #0008; }
+    .combat-hud > span { min-height: 31px; display: grid; align-items: center; border-color: #9eabc54d; background: #111a31b8; }
+    .combat-hud .gauge { min-width: 0; }
+    .combat-hud [data-enemy-status] { grid-column: 1 / -1; }
+    .actions { gap: 10px; }
+    .actions button { width: 54px; min-width: 54px; padding: 0; border-color: #f4c06d80; border-radius: 11px; color: #fff0cb; background: #071022d9; font-size: 1.18rem; }
+    .chapter-strip { top: calc(var(--hud-top) + 4px); gap: 13px; padding: 8px 16px; border-color: #f4c06d70; background: #071022d4; box-shadow: 0 12px 32px #0007; }
+    .chapter-strip li { min-width: 48px; }
+    .chapter-strip li:not(:last-child)::after { left: 40px; width: 34px; background: #f4c06d8a; }
+    .chapter-strip b { width: 34px; height: 34px; font-size: .9rem; }
+    .hint { bottom: 24px; display: flex; min-height: 54px; align-items: center; gap: 14px; padding: 8px 20px; border: 1px solid #f4c06d85; border-radius: 12px; color: #fff0d4; background: #071022e8; font-size: 1rem; box-shadow: 0 14px 40px #0008; }
+    .hint kbd { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid var(--h17-memory); border-radius: 6px; color: var(--h17-memory); background: #0c1428; font: 700 .95rem/1 system-ui, sans-serif; }
+    .radio { bottom: 92px; border: 1px solid #5de0c17a; border-left-width: 3px; border-radius: 8px; box-shadow: 0 14px 36px #0008; }
+    [data-touch-mode="true"] .hud { inset: var(--hud-top) auto auto 12px; width: calc(var(--fixture-edge) - 24px); }
+    [data-touch-mode="true"] .hud > div:first-child { width: 194px; padding: 9px 11px; border-radius: 9px; }
+    [data-touch-mode="true"] .title { font-size: .9rem; }
+    [data-touch-mode="true"] .status { margin-top: .16rem; font-size: .64rem; }
+    [data-touch-mode="true"] .combat-hud { top: calc(var(--hud-top) + 64px); bottom: auto; left: 12px; width: 194px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; padding: 7px; border-radius: 8px; }
+    [data-touch-mode="true"] .combat-hud > span { min-height: 27px; font-size: .64rem; padding: 3px 5px; }
+    [data-touch-mode="true"] .combat-hud > span:not(.gauge) { display: none; }
+    [data-touch-mode="true"] .actions { position: fixed; top: var(--hud-top); right: var(--edge-right); }
+    [data-touch-mode="true"] .actions button { width: 46px; min-width: 46px; min-height: 46px; padding: 0; font-size: 1rem; }
+    [data-touch-mode="true"] .chapter-strip { top: calc(var(--hud-top) + 111px); width: min(286px, calc(var(--fixture-edge) - 86px)); gap: 4px; padding: 5px 7px; }
+    [data-touch-mode="true"] .chapter-strip li { min-width: 28px; }
+    [data-touch-mode="true"] .chapter-strip li:not(:last-child)::after { left: 24px; width: 12px; }
+    [data-touch-mode="true"] .chapter-strip b { width: 22px; height: 22px; }
+    [data-touch-mode="true"] .objective { top: calc(var(--hud-top) + 148px); left: 12px; width: calc(var(--fixture-edge) - 24px); max-width: none; translate: 0 0; padding: 8px 10px; border-radius: 8px; font-size: .76rem; text-align: left; }
+    [data-touch-mode="true"] .radio { bottom: calc(var(--safe-bottom) + 170px); }
     @media print {
       body { overflow: visible; background: #fff; color: #000; }
       [data-reboot-root] > * { display: none !important; }
@@ -317,8 +351,8 @@
         </div>
       </div>
       <div class="actions">
-        <button type="button" data-pause>일시정지</button>
-        <button type="button" data-restart>다시 시작</button>
+        <button type="button" data-pause aria-label="일시정지" title="일시정지">Ⅱ</button>
+        <button type="button" data-restart aria-label="다시 시작" title="다시 시작">↻</button>
       </div>
     </section>
     <ol class="chapter-strip" data-chapter-progress aria-label="1장부터 6장까지 캠페인 진행">
@@ -363,7 +397,7 @@
         <button type="button" data-touch-action="pause">정지</button>
       </div>
     </section>
-    <p class="hint">WASD·방향키 이동 · Space 대시 · J 공격 · K 반사 · E 추적 · F 확보 · Q 소거</p>
+    <p class="hint"><kbd>E</kbd><span>살펴보기 / TRACE</span></p>
     <section class="test-storage" data-test-storage hidden aria-label="저장 QA 도구">
       <button type="button" data-test-seed-v3>v3 심기</button>
       <button type="button" data-test-checkpoint>체크포인트</button>
