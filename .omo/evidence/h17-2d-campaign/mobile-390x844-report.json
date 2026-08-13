@@ -13,11 +13,11 @@
       "evidence": 2,
       "decision": "민감정보를 가리고 맥락을 보존한다",
       "scroll": {
-        "playerX": 1223,
-        "cameraX": 583,
+        "playerX": 1245,
+        "cameraX": 605,
         "playerScreenX": 640
       },
-      "elapsedMs": 7383
+      "elapsedMs": 7163
     },
     {
       "chapter": 2,
@@ -28,7 +28,7 @@
         "cameraX": 440,
         "playerScreenX": 640
       },
-      "elapsedMs": 7806
+      "elapsedMs": 7486
     },
     {
       "chapter": 3,
@@ -39,7 +39,7 @@
         "cameraX": 440,
         "playerScreenX": 640
       },
-      "elapsedMs": 7695
+      "elapsedMs": 7650
     },
     {
       "chapter": 4,
@@ -50,7 +50,7 @@
         "cameraX": 440,
         "playerScreenX": 640
       },
-      "elapsedMs": 7517
+      "elapsedMs": 7600
     },
     {
       "chapter": 5,
@@ -61,18 +61,18 @@
         "cameraX": 440,
         "playerScreenX": 640
       },
-      "elapsedMs": 8054
+      "elapsedMs": 8201
     },
     {
       "chapter": 6,
       "evidence": 2,
       "decision": "개인정보를 가린 뒤 공개 심리를 연다",
       "scroll": {
-        "playerX": 1080,
-        "cameraX": 440,
+        "playerX": 1074,
+        "cameraX": 434,
         "playerScreenX": 640
       },
-      "elapsedMs": 8364
+      "elapsedMs": 8578
     }
   ],
   "saveBeforeReload": {

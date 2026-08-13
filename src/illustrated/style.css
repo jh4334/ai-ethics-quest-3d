@@ -775,6 +775,10 @@ a:focus-visible {
     grid-area: chapter;
   }
 
+  .chapter-mark strong {
+    font-size: clamp(0.78rem, 3vw, 1rem);
+  }
+
   .mission-copy {
     grid-area: mission;
   }
