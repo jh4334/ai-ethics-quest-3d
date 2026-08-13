@@ -2,10 +2,11 @@
 
 ## 운영 진입점
 
-- 정식 주소: `/index.html` 또는 저장소 Pages 루트. 쿼리와 해시를 보존해 `/reboot.html`로 이동한다.
-- 직접 주소: `/reboot.html`
-- 이전 6장 캠페인: `/legacy.html` — 이번 안정화 주기 동안만 보존한다.
-- 저장 키: `h17.null.save.v4`; 이전 저장의 바이트 단위 백업은 `h17.legacy.v3.backup`이다.
+- 정식 주소: `/index.html` 또는 저장소 Pages 루트. 리디렉션 없이 6장 2D 횡스크롤을 직접 실행한다.
+- 같은 2D 직접 주소: `/illustrated.html`
+- 보존된 3D 주소: `/reboot.html`, `/legacy.html`
+- 2D 저장 키: `ethics-quest-illustrated-action-v3`; 기존 2D v2 저장은 장 진행도로 이관한다.
+- 3D 저장 키 `h17.null.save.v4`와 백업 `h17.legacy.v3.backup`은 삭제하지 않는다.
 
 ## 배포 게이트
 
@@ -34,4 +35,4 @@ gh workflow run pages.yml --ref main -f deploy_ref=pre-reboot-fa1ac50
 gh workflow run pages.yml --ref main
 ```
 
-롤백 중에도 v4와 레거시 백업 키는 그대로 둔다. 저장소 키 삭제나 강제 리셋은 롤백 절차에 포함하지 않는다. `/legacy.html`은 새 배포에서도 이전 런타임을 즉시 확인하는 보조 경로다.
+롤백 중에도 2D v3, 3D v4와 레거시 백업 키는 그대로 둔다. 저장소 키 삭제나 강제 리셋은 롤백 절차에 포함하지 않는다. `/reboot.html`과 `/legacy.html`은 새 배포에서도 이전 런타임을 확인하는 보조 경로다.

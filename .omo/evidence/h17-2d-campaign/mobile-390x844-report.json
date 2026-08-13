@@ -1,0 +1,267 @@
+{
+  "profile": {
+    "id": "mobile-390x844",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "touch": true
+  },
+  "chapters": [
+    {
+      "chapter": 1,
+      "evidence": 2,
+      "decision": "민감정보를 가리고 맥락을 보존한다",
+      "elapsedMs": 3904
+    },
+    {
+      "chapter": 2,
+      "evidence": 2,
+      "decision": "생성 표시를 붙이고 확산을 멈춘다",
+      "elapsedMs": 4272
+    },
+    {
+      "chapter": 3,
+      "evidence": 2,
+      "decision": "피해를 알리고 회복 지원을 연결한다",
+      "elapsedMs": 4267
+    },
+    {
+      "chapter": 4,
+      "evidence": 2,
+      "decision": "출처와 날짜를 나란히 보여 준다",
+      "elapsedMs": 4271
+    },
+    {
+      "chapter": 5,
+      "evidence": 2,
+      "decision": "중요 결정마다 사람 재검토를 둔다",
+      "elapsedMs": 4605
+    },
+    {
+      "chapter": 6,
+      "evidence": 2,
+      "decision": "개인정보를 가린 뒤 공개 심리를 연다",
+      "elapsedMs": 4937
+    }
+  ],
+  "saveBeforeReload": {
+    "version": 3,
+    "chapterIndex": 5,
+    "unlockedChapter": 5,
+    "checkpointX": 1500,
+    "evidenceIds": [
+      "chapter-1:request",
+      "chapter-1:error-table",
+      "chapter-2:credit",
+      "chapter-2:origin",
+      "chapter-3:context",
+      "chapter-3:spread",
+      "chapter-4:source-a",
+      "chapter-4:counter-source",
+      "chapter-5:model-role",
+      "chapter-5:human-signature",
+      "chapter-6:redacted-package",
+      "chapter-6:appeal-right"
+    ],
+    "decisions": {
+      "chapter-1": "protect-context",
+      "chapter-2": "label-and-freeze",
+      "chapter-3": "notify-and-repair",
+      "chapter-4": "paired-sources",
+      "chapter-5": "human-review",
+      "chapter-6": "public-hearing"
+    },
+    "completed": true
+  },
+  "reportBeforeReload": {
+    "version": 3,
+    "title": "H-17 조사 기록",
+    "summary": "사라진 학생 하루(H-17)의 기록을 따라 6개 장의 결정 경로를 확인했다.",
+    "ending": {
+      "id": "public-hearing",
+      "title": "하루의 이름이 명단으로 돌아왔다",
+      "summary": "민감정보를 가린 증거로 공개 심리가 열렸다. 루멘의 계산과 사람의 승인이 함께 검토됐고, 설명·재검토·이의제기 절차가 돌아왔다.",
+      "cost": "학교는 느려져도 중요한 결정을 사람이 다시 확인해야 한다."
+    },
+    "evidenceIds": [
+      "chapter-1:request",
+      "chapter-1:error-table",
+      "chapter-2:credit",
+      "chapter-2:origin",
+      "chapter-3:context",
+      "chapter-3:spread",
+      "chapter-4:source-a",
+      "chapter-4:counter-source",
+      "chapter-5:model-role",
+      "chapter-5:human-signature",
+      "chapter-6:redacted-package",
+      "chapter-6:appeal-right"
+    ],
+    "totalRespawns": 0,
+    "chapters": [
+      {
+        "id": "chapter-1",
+        "title": "명단에서 사라진 아이",
+        "topic": "개인정보·편향",
+        "decision": "민감정보를 가리고 맥락을 보존한다",
+        "consequence": "삭제 요청과 오판 근거가 분리 보관됐다.",
+        "cost": "확인은 느려지지만 하루의 사생활을 지킨다."
+      },
+      {
+        "id": "chapter-2",
+        "title": "거짓 영상의 주인",
+        "topic": "저작권·딥페이크",
+        "decision": "생성 표시를 붙이고 확산을 멈춘다",
+        "consequence": "최초 파일과 생성 표시가 한 묶음으로 보존됐다.",
+        "cost": "복사본은 남아 조사 시간이 들지만 변조 경로를 검증할 수 있다."
+      },
+      {
+        "id": "chapter-3",
+        "title": "웃음이 만든 폭풍",
+        "topic": "디지털 발자국",
+        "decision": "피해를 알리고 회복 지원을 연결한다",
+        "consequence": "삭제, 확산 중단, 피해 통지가 순서대로 기록됐다.",
+        "cost": "문제를 공개적으로 인정해야 하지만 하루가 혼자 감당하지 않는다."
+      },
+      {
+        "id": "chapter-4",
+        "title": "두 개의 진실",
+        "topic": "출처·필터버블",
+        "decision": "출처와 날짜를 나란히 보여 준다",
+        "consequence": "추천 밖의 자료가 원본 시간선에 연결됐다.",
+        "cost": "단순한 한 줄 결론은 포기하지만 검증 경로가 생긴다."
+      },
+      {
+        "id": "chapter-5",
+        "title": "아무도 결정하지 않는 밤",
+        "topic": "자동 결정·인간 검토",
+        "decision": "중요 결정마다 사람 재검토를 둔다",
+        "consequence": "AI 추천 뒤에 이름 있는 검토 단계가 추가됐다.",
+        "cost": "처리는 느려지지만 당사자의 설명을 듣고 책임자가 남는다."
+      },
+      {
+        "id": "chapter-6",
+        "title": "마지막 증언",
+        "topic": "설명·이의제기",
+        "decision": "개인정보를 가린 뒤 공개 심리를 연다",
+        "consequence": "하루의 이름과 인간 재검토, 결정 이유 통지, 이의제기권이 돌아왔다.",
+        "cost": "학교는 잘못을 공개하고 다시 검토해야 하지만 모두가 결정 이유를 물을 수 있다."
+      }
+    ]
+  },
+  "layout": {
+    "width": 390,
+    "scrollWidth": 390,
+    "touchVisible": true,
+    "buttons": [
+      {
+        "text": "1",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "text": "2",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "text": "3",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "text": "4",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "text": "5",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "text": "6",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "text": "새 게임",
+        "width": 0,
+        "height": 0
+      },
+      {
+        "text": "이어하기",
+        "width": 0,
+        "height": 0
+      },
+      {
+        "text": "계속",
+        "width": 0,
+        "height": 0
+      },
+      {
+        "text": "다음 장으로",
+        "width": 0,
+        "height": 0
+      },
+      {
+        "text": "조사 기록 인쇄",
+        "width": 141,
+        "height": 48
+      },
+      {
+        "text": "처음부터 다시 하기",
+        "width": 169,
+        "height": 48
+      },
+      {
+        "text": "조작",
+        "width": 58,
+        "height": 44
+      },
+      {
+        "text": "왼쪽",
+        "width": 52,
+        "height": 58
+      },
+      {
+        "text": "오른쪽",
+        "width": 52,
+        "height": 58
+      },
+      {
+        "text": "점프",
+        "width": 52,
+        "height": 58
+      },
+      {
+        "text": "SIGNAL",
+        "width": 57,
+        "height": 58
+      },
+      {
+        "text": "TRACE",
+        "width": 53,
+        "height": 58
+      },
+      {
+        "text": "닫기",
+        "width": 0,
+        "height": 0
+      },
+      {
+        "text": "기본 버튼",
+        "width": 0,
+        "height": 0
+      },
+      {
+        "text": "잠긴 버튼",
+        "width": 0,
+        "height": 0
+      }
+    ]
+  },
+  "errors": [],
+  "failedResponses": []
+}
