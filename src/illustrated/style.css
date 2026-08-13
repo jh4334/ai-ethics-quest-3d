@@ -499,6 +499,8 @@ a:focus-visible {
   font-size: clamp(1.5rem, 3vw, 2.5rem);
   font-weight: 850;
   line-height: 1.15;
+  text-wrap: balance;
+  word-break: keep-all;
 }
 
 .choice-options {
@@ -551,6 +553,7 @@ a:focus-visible {
   font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.6;
+  word-break: keep-all;
 }
 
 .result-cost,
@@ -571,6 +574,10 @@ a:focus-visible {
   padding: 0;
   overflow: auto;
   list-style: none;
+}
+
+.ending-panel .report-list {
+  max-height: none;
 }
 
 .report-list li {
@@ -910,6 +917,7 @@ a:focus-visible {
 @media (max-width: 520px) and (orientation: portrait) {
   .game-hud {
     min-height: 112px;
+    grid-template-columns: minmax(160px, 0.65fr) minmax(0, 1fr) auto;
   }
 
   .chapter-mark strong {
@@ -1006,7 +1014,7 @@ a:focus-visible {
 
   .ending-panel .report-list strong,
   .ending-panel .report-list span {
-    font-size: 0.58rem;
+    font-size: 0.75rem;
     line-height: 1.25;
   }
 

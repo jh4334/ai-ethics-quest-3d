@@ -167,6 +167,13 @@ async function runProfile(profile) {
     width: innerWidth,
     scrollWidth: document.documentElement.scrollWidth,
     touchVisible: getComputedStyle(document.querySelector('[data-touch-controls]')).display !== 'none',
+    endingRowsVisible: [...document.querySelectorAll('[data-report-list] li')].every((row) => {
+      const rowBox = row.getBoundingClientRect();
+      const panelBox = document.querySelector('[data-ending-panel]').getBoundingClientRect();
+      return rowBox.top >= panelBox.top && rowBox.bottom <= panelBox.bottom && rowBox.bottom <= innerHeight;
+    }),
+    chapterTitle: document.querySelector('[data-chapter-time]').textContent,
+    chapterTitleClipped: document.querySelector('[data-chapter-time]').scrollWidth > document.querySelector('[data-chapter-time]').clientWidth,
     buttons: [...document.querySelectorAll('button')].filter((button) => !button.hidden && getComputedStyle(button).display !== 'none').map((button) => {
       const box = button.getBoundingClientRect();
       return { text: button.textContent.trim(), width: Math.round(box.width), height: Math.round(box.height) };
@@ -178,6 +185,9 @@ async function runProfile(profile) {
   assert.equal(reportBeforeReload.chapters.length, 6);
   assert.equal(reportBeforeReload.chapters.every(({ decision }) => decision !== '아직 결정하지 않음'), true);
   assert.equal(layout.scrollWidth <= layout.width, true);
+  assert.equal(layout.endingRowsVisible, true);
+  assert.equal(layout.chapterTitle, 'WHITEOUT/H-17');
+  assert.equal(layout.chapterTitleClipped, false);
   if (profile.touch) {
     assert.equal(layout.touchVisible, true);
     assert.equal(layout.buttons.filter(({ width, height }) => width > 0 && height > 0).every(({ width, height }) => width >= 44 && height >= 44), true);
