@@ -24,6 +24,29 @@ const OLD_SAVE_KEY = 'ethics-quest-illustrated-action-v2';
 const LOGICAL_WIDTH = 1280;
 const LOGICAL_HEIGHT = 720;
 const FIXED_STEP = 1 / 60;
+const rootStyles = getComputedStyle(document.documentElement);
+const designColor = (name) => rootStyles.getPropertyValue(name).trim();
+const canvasPalette = Object.freeze({
+  surfaceNight: designColor('--surface-night'),
+  textPrimary: designColor('--text-primary'),
+  textSecondary: designColor('--text-secondary'),
+  amberBright: designColor('--amber-bright'),
+  cyan: designColor('--cyan'),
+  danger: designColor('--danger'),
+  veilSoft: designColor('--canvas-veil-soft'),
+  veilMedium: designColor('--canvas-veil-medium'),
+  veilDeep: designColor('--canvas-veil-deep'),
+  glowFade: designColor('--canvas-glow-fade'),
+  evidenceGlow: designColor('--canvas-evidence-glow'),
+  lockedGlow: designColor('--canvas-locked-glow'),
+  labelStroke: designColor('--canvas-label-stroke'),
+  healthSurface: designColor('--canvas-health-surface'),
+  enemyGlow: designColor('--canvas-enemy-glow'),
+  bossGlow: designColor('--canvas-boss-glow'),
+  bossSurface: designColor('--canvas-boss-surface'),
+  projectileGlow: designColor('--canvas-projectile-glow'),
+  playerGlow: designColor('--canvas-player-glow')
+});
 const game = document.querySelector('[data-illustrated-game]');
 const canvas = game.querySelector('[data-action-canvas]');
 const context = canvas.getContext('2d', { alpha: false });
@@ -140,7 +163,7 @@ function drawEvidenceCell(chapterIndex, x, y, width, height, alpha = 1) {
 
 function drawBackground() {
   const image = images.background;
-  context.fillStyle = '#071127';
+  context.fillStyle = canvasPalette.surfaceNight;
   context.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
   if (!image.complete || image.naturalWidth === 0) return;
   const cameraRange = state.world.width - LOGICAL_WIDTH;
@@ -155,9 +178,9 @@ function drawBackground() {
   context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
 
   const veil = context.createLinearGradient(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
-  veil.addColorStop(0, 'rgba(5, 9, 24, 0.05)');
-  veil.addColorStop(0.7, 'rgba(5, 9, 24, 0.12)');
-  veil.addColorStop(1, 'rgba(5, 9, 24, 0.3)');
+  veil.addColorStop(0, canvasPalette.veilSoft);
+  veil.addColorStop(0.7, canvasPalette.veilMedium);
+  veil.addColorStop(1, canvasPalette.veilDeep);
   context.fillStyle = veil;
   context.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
 }
@@ -166,7 +189,7 @@ function drawGlow(x, y, radius, color, strength = 0.62) {
   const gradient = context.createRadialGradient(x, y, 0, x, y, radius);
   gradient.addColorStop(0, color);
   gradient.addColorStop(0.3, color);
-  gradient.addColorStop(1, 'rgba(255, 184, 78, 0)');
+  gradient.addColorStop(1, canvasPalette.glowFade);
   context.save();
   context.globalAlpha = strength;
   context.fillStyle = gradient;
@@ -184,13 +207,13 @@ function drawEvidence() {
     const guardian = state.enemies.find(({ id }) => id === evidence.enemyId);
     const available = guardian?.defeated;
     const bob = Math.sin(state.time * 2.4 + evidence.x * 0.01) * 7;
-    drawGlow(x, 474 + bob, available ? 92 : 58, available ? 'rgba(255, 186, 72, 0.95)' : 'rgba(95, 196, 201, 0.7)');
+    drawGlow(x, 474 + bob, available ? 92 : 58, available ? canvasPalette.evidenceGlow : canvasPalette.lockedGlow);
     drawEvidenceCell(state.chapterIndex, x - 62, 402 + bob, 124, 124, available ? 1 : 0.62);
     context.save();
     context.font = '800 18px Pretendard, system-ui, sans-serif';
     context.textAlign = 'center';
-    context.fillStyle = available ? '#ffe4a4' : '#b9c9ed';
-    context.strokeStyle = 'rgba(5, 12, 30, 0.94)';
+    context.fillStyle = available ? canvasPalette.amberBright : canvasPalette.textSecondary;
+    context.strokeStyle = canvasPalette.labelStroke;
     context.lineWidth = 5;
     context.strokeText(evidence.label, x, 408 + bob);
     context.fillText(evidence.label, x, 408 + bob);
@@ -200,9 +223,9 @@ function drawEvidence() {
 
 function drawEnemyHealth(enemy, x) {
   context.save();
-  context.fillStyle = 'rgba(5, 9, 24, 0.82)';
+  context.fillStyle = canvasPalette.healthSurface;
   context.fillRect(x - 43, 430, 86, 9);
-  context.fillStyle = '#e26f78';
+  context.fillStyle = canvasPalette.danger;
   context.fillRect(x - 40, 433, 80 * (enemy.hp / enemy.maxHp), 3);
   context.restore();
 }
@@ -212,7 +235,7 @@ function drawEnemies() {
     if (enemy.defeated) continue;
     const x = enemy.x - state.cameraX;
     if (x < -150 || x > LOGICAL_WIDTH + 150) continue;
-    drawGlow(x, 513, 58, 'rgba(128, 164, 226, 0.72)', 0.28);
+    drawGlow(x, 513, 58, canvasPalette.enemyGlow, 0.28);
     drawAtlasCell(1, 1, x - 64, 438, 128, 128, state.player.x < enemy.x ? -1 : 1, enemy.hitFlash > 0 ? 0.55 : 1);
     drawEnemyHealth(enemy, x);
   }
@@ -222,16 +245,16 @@ function drawBoss() {
   if (!state.boss.active) return;
   const x = state.boss.x - state.cameraX;
   if (x < -280 || x > LOGICAL_WIDTH + 280) return;
-  drawGlow(x, 438, state.boss.staggered ? 170 : 120, 'rgba(255, 166, 55, 0.88)', state.boss.staggered ? 0.7 : 0.28);
+  drawGlow(x, 438, state.boss.staggered ? 170 : 120, canvasPalette.bossGlow, state.boss.staggered ? 0.7 : 0.28);
   drawAtlasCell(state.boss.staggered ? 3 : 2, 1, x - 125, 296, 250, 250, -1, state.boss.hitFlash > 0 ? 0.55 : 1);
   context.save();
-  context.fillStyle = 'rgba(5, 9, 24, 0.86)';
+  context.fillStyle = canvasPalette.bossSurface;
   context.fillRect(x - 104, 272, 208, 16);
-  context.fillStyle = state.boss.staggered ? '#6fe0d1' : '#e26f78';
+  context.fillStyle = state.boss.staggered ? canvasPalette.cyan : canvasPalette.danger;
   context.fillRect(x - 100, 277, 200 * (state.boss.hp / state.boss.maxHp), 6);
   context.font = '800 16px Pretendard, system-ui, sans-serif';
   context.textAlign = 'center';
-  context.fillStyle = '#f7ead1';
+  context.fillStyle = canvasPalette.textPrimary;
   context.fillText(state.boss.label, x, 260);
   context.restore();
 }
@@ -239,7 +262,7 @@ function drawBoss() {
 function drawProjectiles() {
   for (const projectile of state.projectiles) {
     const x = projectile.x - state.cameraX;
-    drawGlow(x, projectile.y, 48, 'rgba(226, 111, 120, 0.86)', 0.36);
+    drawGlow(x, projectile.y, 48, canvasPalette.projectileGlow, 0.36);
     drawAtlasCell(1, 1, x - 34, projectile.y - 34, 68, 68, -1, 0.8);
   }
 }
@@ -251,7 +274,7 @@ function drawPlayer() {
   let column = moving ? 1 : 0;
   if (!player.onGround) column = 2;
   if (player.attackTimer > 0) column = 3;
-  drawGlow(x, player.y - 15, 92, 'rgba(241, 170, 65, 0.9)', 0.2);
+  drawGlow(x, player.y - 15, 92, canvasPalette.playerGlow, 0.2);
   const flicker = player.invulnerable > 0 && Math.floor(state.time * 16) % 2 === 0;
   drawAtlasCell(column, 0, x - 82, player.y - 166, 164, 164, player.facing, flicker ? 0.42 : 1);
   const dotBob = Math.sin(state.time * 3.2) * 5;

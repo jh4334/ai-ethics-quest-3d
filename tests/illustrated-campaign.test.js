@@ -16,6 +16,16 @@ test('기본 문서는 리디렉션 없이 2D 캔버스 게임을 직접 연다'
   assert.doesNotMatch(html, /location\.replace|reboot\.html/);
 });
 
+test('캔버스와 DOM은 같은 디자인 토큰 색상을 사용한다', () => {
+  const entry = readFileSync(new URL('../src/illustrated/entry.js', import.meta.url), 'utf8');
+  const styles = readFileSync(new URL('../src/illustrated/style.css', import.meta.url), 'utf8');
+  assert.doesNotMatch(entry, /#[0-9a-f]{3,8}|rgba?\(/i);
+  for (const token of ['--surface-night', '--text-primary', '--amber-bright', '--cyan', '--danger', '--canvas-player-glow']) {
+    assert.match(styles, new RegExp(`${token}:`));
+    assert.match(entry, new RegExp(`designColor\\('${token}'\\)`));
+  }
+});
+
 test('최초 정본의 여섯 장이 주제와 책임 경로를 순서대로 보존한다', () => {
   assert.deepEqual(
     CAMPAIGN_CHAPTERS.map(({ id, title, topic }) => [id, title, topic]),

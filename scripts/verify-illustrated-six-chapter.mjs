@@ -207,6 +207,14 @@ async function makeComparison() {
     .composite([{ input: reference, left: 0, top: 0 }, { input: implementation, left: 1440, top: 0 }])
     .png()
     .toFile(path.join(evidenceDir, 'reference-vs-desktop-chapter-1.png'));
+
+  const directPixels = await sharp(path.join(evidenceDir, 'desktop-1440x900-chapter-1.png')).ensureAlpha().raw().toBuffer();
+  const comparisonPixels = await sharp(path.join(evidenceDir, 'reference-vs-desktop-chapter-1.png'))
+    .extract({ left: 1440, top: 0, width: 1440, height: 900 })
+    .ensureAlpha()
+    .raw()
+    .toBuffer();
+  assert.equal(comparisonPixels.equals(directPixels), true, 'reference comparison must contain the exact direct chapter-one capture');
 }
 
 try {
