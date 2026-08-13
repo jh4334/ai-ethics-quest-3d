@@ -58,6 +58,6 @@
 
 ## Evidence Index
 
-- 실행 원장: `C:/Users/종환/AppData/Local/Temp/h17-ultrawork-dKzstH.md`
+- 실행 원장: 로컬 임시 작업 기록(저장소 외부)
 - 초기 기존 화면: `.omo/evidence/h17-loop-*`
 - 신규 증빙: `.omo/evidence/h17-six-chapter/`의 P0 5화면, 전 장 12화면, 키보드·터치 풀런, 성능 보고서
