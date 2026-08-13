@@ -27,6 +27,7 @@ test('로컬과 CI는 같은 Playwright Chromium 설치 및 중첩 테스트 명
   assert.match(workflow, /npx playwright install --with-deps chromium/);
   assert.match(workflow, /npm run e2e/);
   assert.match(workflow, /npm run qa:2d/);
+  assert.match(workflow, /npm run preview:test[\s\S]*npm run qa:2d/);
 });
 
 test('서비스 워커는 2D 기본 문서만 사전 캐시하고 3D 보관 경로는 필요할 때 제공한다', () => {
