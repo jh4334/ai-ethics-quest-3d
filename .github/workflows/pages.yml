@@ -50,6 +50,10 @@ jobs:
       - name: 수직 슬라이스 증거 게이트
         if: inputs.deploy_ref == ''
         run: npm run slice:gate
+      - name: 2D 6장 데스크톱·모바일 완주 테스트
+        if: inputs.deploy_ref == ''
+        timeout-minutes: 10
+        run: npm run qa:2d
       - name: 캠페인 브라우저 테스트
         if: inputs.deploy_ref == ''
         timeout-minutes: 30
