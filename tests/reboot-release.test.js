@@ -9,24 +9,28 @@ test('canonical 2D root, preserved 3D routes, and service worker form one releas
   const legacy = read('legacy.html');
   const sw = read('public/sw.js');
   const manifest = JSON.parse(read('public/reboot-assets.json'));
-  assert.match(index, /location\.replace\(illustratedUrl\.href\)/);
+  assert.match(index, /data-action-canvas/);
+  assert.match(index, /src="\/src\/illustrated\/entry\.js"/);
+  assert.doesNotMatch(index, /location\.replace|reboot\.html/);
   assert.match(legacy, /src="\/src\/main\.js"/);
-  assert.match(sw, /\.\/index\.html', '\.\/illustrated\.html', '\.\/reboot\.html', '\.\/legacy\.html/);
+  assert.match(sw, /ENTRY_DOCUMENTS = \['\.\/index\.html', '\.\/illustrated\.html'\]/);
+  assert.match(sw, /ARCHIVE_DOCUMENTS = \['\.\/reboot\.html', '\.\/legacy\.html'\]/);
   assert.match(sw, /LAZY_ASSET_PREFIXES/);
   assert.ok(manifest.some((path) => path.includes('/environment/building/')));
   assert.ok(manifest.some((path) => path.includes('/environment/materials/')));
 });
 
-test('release docs record the exact non-destructive rollback and current five chapters', () => {
+test('release docs record the exact non-destructive rollback and current six-chapter 2D campaign', () => {
   const release = read('docs/reboot/release.md');
   const readme = read('README.md');
   assert.match(release, /pre-reboot-fa1ac50/);
   assert.match(release, /fa1ac503d7d21dce0ff7c43b1268fd1207f24f4c/);
   assert.match(release, /gh workflow run pages\.yml --ref main -f deploy_ref=pre-reboot-fa1ac50/);
+  assert.match(release, /ethics-quest-illustrated-action-v3/);
   assert.match(release, /h17\.null\.save\.v4/);
   assert.match(release, /h17\.legacy\.v3\.backup/);
   assert.doesNotMatch(release, /git reset --hard|localStorage\.clear\(\)/);
-  for (const title of ['00:17 — 출석번호 없음', '웃는 얼굴의 폭동', '두 개의 학교', '3초 승인실', '마지막 방송']) {
+  for (const title of ['명단에서 사라진 아이', '거짓 영상의 주인', '웃음이 만든 폭풍', '두 개의 진실', '아무도 결정하지 않는 밤', '마지막 증언']) {
     assert.match(readme, new RegExp(title));
   }
 });

@@ -28,12 +28,13 @@ test('로컬과 CI는 같은 Playwright Chromium 설치 및 중첩 테스트 명
   assert.match(workflow, /npm run e2e/);
 });
 
-test('서비스 워커는 reboot 문서와 양쪽 빌드 자산을 오프라인 캐시에 포함한다', () => {
+test('서비스 워커는 2D 기본 문서만 사전 캐시하고 3D 보관 경로는 필요할 때 제공한다', () => {
   const sw = readFileSync(new URL('public/sw.js', rootUrl), 'utf8');
   const reboot = readFileSync(new URL('reboot.html', rootUrl), 'utf8');
   const manifest = JSON.parse(readFileSync(new URL('public/reboot-assets.json', rootUrl), 'utf8'));
-  assert.match(sw, /\.\/reboot\.html/);
-  assert.match(sw, /\['\.\/index\.html', '\.\/illustrated\.html', '\.\/reboot\.html', '\.\/legacy\.html'\]/);
+  assert.match(sw, /ENTRY_DOCUMENTS = \['\.\/index\.html', '\.\/illustrated\.html'\]/);
+  assert.match(sw, /ARCHIVE_DOCUMENTS = \['\.\/reboot\.html', '\.\/legacy\.html'\]/);
+  assert.doesNotMatch(sw, /const CORE = \[[^\n]*reboot\.html/);
   assert.equal(manifest.some((asset) => asset.endsWith('ual2-standard.glb')), true);
   assert.equal(manifest.some((asset) => asset.endsWith('Male_Ranger.gltf')), true);
   assert.match(reboot, /navigator\.serviceWorker\.register\('\.\/sw\.js'\)/);

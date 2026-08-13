@@ -4,7 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 
 const serviceWorkerSource = readFileSync(new URL('../public/sw.js', import.meta.url), 'utf8');
-const characterAsset = './assets/reboot/characters/base/player.gltf';
+const illustratedAsset = './assets/h17-side-scroll-background.js';
 const environmentAsset = './assets/reboot/environment/building/wall.glb';
 
 function createServiceWorkerHarness({ cacheKeys = [], cachedAssetUrls = [], deferCachePut = false } = {}) {
@@ -50,7 +50,7 @@ function createServiceWorkerHarness({ cacheKeys = [], cachedAssetUrls = [], defe
       return {
         ok: true,
         clone() { return this; },
-        async text() { return '<script src="./assets/reboot-shell.js"></script>'; }
+        async text() { return '<script src="./assets/h17-side-scroll-background.js"></script>'; }
       };
     },
     self: {
@@ -89,21 +89,21 @@ function createServiceWorkerHarness({ cacheKeys = [], cachedAssetUrls = [], defe
   };
 }
 
-test('Given core, character, and environment assets, When the worker installs, Then environment files stay out of blocking precache', async () => {
-  // Given: one install with a mixed release manifest.
+test('Given the canonical 2D entries, When the worker installs, Then only the 2D shell blocks first use', async () => {
+  // Given: one install of the direct 2D release.
   const harness = createServiceWorkerHarness();
 
   // When: the real install listener completes.
   await harness.dispatch('install');
 
-  // Then: shell and character files are installed, while chapter environment remains lazy.
-  assert.ok(harness.addedAssets.includes('./assets/reboot-shell.js'));
-  assert.ok(harness.addedAssets.includes(characterAsset));
+  // Then: the illustrated shell is installed without pulling the 3D archive manifest.
+  assert.ok(harness.addedAssets.includes(illustratedAsset));
+  assert.equal(harness.networkRequests.includes('./reboot-assets.json'), false);
   assert.equal(harness.addedAssets.includes(environmentAsset), false);
-  assert.ok(harness.openedCaches.every((key) => key === 'ethics-quest-h17-v13'));
+  assert.ok(harness.openedCaches.every((key) => key === 'ethics-quest-h17-v14-2d'));
 });
 
-test('Given app and unrelated cache generations, When v13 activates, Then only older H-17 caches are removed', async () => {
+test('Given app and unrelated cache generations, When the 2D cache activates, Then old H-17 shells are removed', async () => {
   // Given: two old app caches, the current cache, and another product cache.
   const harness = createServiceWorkerHarness({
     cacheKeys: [
@@ -116,10 +116,10 @@ test('Given app and unrelated cache generations, When v13 activates, Then only o
   await harness.dispatch('activate');
 
   // Then: migration is scoped to this app's older generations.
-  assert.deepEqual(harness.deletedCaches.sort(), ['ethics-quest-h17-v11', 'ethics-quest-h17-v12']);
+  assert.deepEqual(harness.deletedCaches.sort(), ['ethics-quest-h17-v11', 'ethics-quest-h17-v12', 'ethics-quest-h17-v13']);
 });
 
-test('Given a lazily cached environment file, When current cache tiers prune stale assets, Then the manifest-owned file survives', async () => {
+test('Given archived 3D cache entries, When the 2D cache activates, Then obsolete archive files are pruned', async () => {
   // Given: one lazy environment response and one removed bundle entry in the current cache.
   const environmentUrl = 'https://school.example/ai-ethics/assets/reboot/environment/building/wall.glb';
   const staleUrl = 'https://school.example/ai-ethics/assets/removed.js';
@@ -128,9 +128,8 @@ test('Given a lazily cached environment file, When current cache tiers prune sta
   // When: activate reconciles current-cache entries against the complete manifest.
   await harness.dispatch('activate');
 
-  // Then: only the stale entry is removed.
-  assert.deepEqual(new Set(harness.deletedEntries), new Set([staleUrl]));
-  assert.equal(harness.deletedEntries.includes(environmentUrl), false);
+  // Then: neither file belongs to the canonical 2D entry set.
+  assert.deepEqual(new Set(harness.deletedEntries), new Set([environmentUrl, staleUrl]));
 });
 
 test('Given a chapter environment cache miss, When the scene requests it, Then the response is fetched and stored in the environment tier', async () => {
@@ -175,5 +174,5 @@ test('Given a non-environment app asset misses, When the worker fetches it, Then
 
   assert.equal(response.ok, true);
   assert.deepEqual(harness.cachedRequests, [url]);
-  assert.ok(harness.openedCaches.includes('ethics-quest-h17-v13'));
+  assert.ok(harness.openedCaches.includes('ethics-quest-h17-v14-2d'));
 });

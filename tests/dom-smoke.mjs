@@ -9,7 +9,9 @@ const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 const rebootEntry = readFileSync(new URL('../src/reboot/entry.js', import.meta.url), 'utf8');
 
 assert.match(html, /사라진 학생 H-17/);
-assert.match(html, /location\.replace\(illustratedUrl\.href\)/);
+assert.match(html, /src="\/src\/illustrated\/entry\.js"/);
+assert.match(html, /<canvas[^>]+data-action-canvas/);
+assert.doesNotMatch(html, /location\.replace|src="\/src\/(?:main|reboot\/entry)\.js"/);
 assert.match(illustrated, /src\/illustrated\/entry\.js/);
 assert.match(illustrated, /<canvas[^>]+data-action-canvas/);
 assert.match(illustrated, /data-game-hud/);
