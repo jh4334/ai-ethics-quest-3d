@@ -13,22 +13,22 @@
       "evidence": 2,
       "decision": "민감정보를 가리고 맥락을 보존한다",
       "scroll": {
-        "playerX": 1217,
-        "cameraX": 857,
+        "playerX": 1201,
+        "cameraX": 841,
         "playerScreenX": 360
       },
-      "elapsedMs": 7416
+      "elapsedMs": 7281
     },
     {
       "chapter": 2,
       "evidence": 2,
       "decision": "생성 표시를 붙이고 확산을 멈춘다",
       "scroll": {
-        "playerX": 1074,
-        "cameraX": 714,
+        "playerX": 1080,
+        "cameraX": 720,
         "playerScreenX": 360
       },
-      "elapsedMs": 7715
+      "elapsedMs": 7618
     },
     {
       "chapter": 3,
@@ -39,7 +39,7 @@
         "cameraX": 720,
         "playerScreenX": 360
       },
-      "elapsedMs": 7699
+      "elapsedMs": 7609
     },
     {
       "chapter": 4,
@@ -50,29 +50,29 @@
         "cameraX": 720,
         "playerScreenX": 360
       },
-      "elapsedMs": 7768
+      "elapsedMs": 7587
     },
     {
       "chapter": 5,
       "evidence": 2,
       "decision": "중요 결정마다 사람 재검토를 둔다",
       "scroll": {
-        "playerX": 1080,
-        "cameraX": 720,
+        "playerX": 1074,
+        "cameraX": 714,
         "playerScreenX": 360
       },
-      "elapsedMs": 8070
+      "elapsedMs": 8115
     },
     {
       "chapter": 6,
       "evidence": 2,
       "decision": "개인정보를 가린 뒤 공개 심리를 연다",
       "scroll": {
-        "playerX": 1074,
-        "cameraX": 714,
+        "playerX": 1080,
+        "cameraX": 720,
         "playerScreenX": 360
       },
-      "elapsedMs": 8365
+      "elapsedMs": 8303
     }
   ],
   "saveBeforeReload": {
