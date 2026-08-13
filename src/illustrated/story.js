@@ -1,3 +1,23 @@
+export const ACTION_PROLOGUE = Object.freeze([
+  Object.freeze({
+    speaker: '나',
+    line: '일주일 전, 프로젝트 짝꿍 하루가 사라졌다. 학교도 채팅방도 그런 학생은 없었다고 말한다.'
+  }),
+  Object.freeze({
+    speaker: '도트',
+    line: '나는 도트. 하루가 남긴 감사 드론이야. 안내 시스템은 하루를 위험 인물 H-17로 분류한 뒤 기록까지 지우고 있어.'
+  }),
+  Object.freeze({
+    speaker: '도트',
+    line: '황금 발자국 끝의 네 증거를 되찾아 줘. 하루가 없었다는 정답부터 함께 의심하자.'
+  })
+]);
+
+export const ACTION_ENDING = Object.freeze({
+  speaker: '하루·복구 신호',
+  line: 'WHITEOUT이 멈췄어. 내 개인정보는 가리고, 원본의 맥락과 출처를 보존한 뒤 내 동의를 먼저 확인해 줘.'
+});
+
 export const STORY_BEATS = Object.freeze([
   Object.freeze({
     speaker: '도트',
@@ -39,3 +59,11 @@ export function resolveChoice(choice) {
     outcome: 'shared'
   });
 }
+
+export {
+  ACTION_EVIDENCE,
+  createActionGameState,
+  serializeActionGame,
+  stepActionGame
+} from './actionGame.js';
+export { createInputState, mapControlAction, setInputAction } from './actionInput.js';
