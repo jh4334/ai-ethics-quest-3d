@@ -151,7 +151,7 @@ test('운영 루트는 저장된 2장을 열고 전투 결정 뒤 3장으로 계
     }
   }, serializeSave(chapterTwo));
 
-  await page.goto('/?sw=off', { waitUntil: 'domcontentloaded' });
+  await page.goto('/reboot.html?sw=off', { waitUntil: 'domcontentloaded' });
   await expect(page).toHaveURL(/reboot\.html\?sw=off$/);
   const canvas = page.locator('[data-reboot-canvas]');
   await expect(canvas).toHaveAttribute('data-campaign-chapter', '2');
@@ -190,7 +190,7 @@ for (const [chapter, verbKeys] of [[3, ['KeyE', 'KeyE', 'KeyJ']], [4, ['KeyK', '
       localStorage.setItem(key, bytes);
     }, { bytes: serializeSave(state), key: V5_SAVE_KEY });
 
-    await page.goto('/?sw=off', { waitUntil: 'domcontentloaded' });
+    await page.goto('/reboot.html?sw=off', { waitUntil: 'domcontentloaded' });
     const canvas = page.locator('[data-reboot-canvas]');
     await expect(canvas).toHaveAttribute('data-campaign-chapter', String(chapter));
     await expect(canvas).toHaveAttribute('data-characters', 'ready', { timeout: 60_000 });
