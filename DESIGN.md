@@ -1,83 +1,127 @@
-# 사라진 학생 H-17 — 2D 횡스크롤 액션 디자인 계약
+# H-17 2D 캠페인 디자인 시스템
 
-## 디벨롭 과제
+## 0. Research Log
 
-`docs/design/concepts/gameplay-screen-v3.webp`의 남색 밤 캠퍼스, 호박빛 발자국, 부유 기록, 남색 외투 주인공을 실제 플레이 화면의 시각 기준으로 삼아 5–8분 안에 완주할 수 있는 2D 횡스크롤 액션 버티컬 슬라이스를 만든다. 플레이어는 사라진 친구 하루가 남긴 개인정보·편향·저작권·딥페이크 증거를 되찾고, 기록을 지우려는 WHITEOUT을 멈춘 뒤 하루의 동의를 먼저 구하는 결말에 도달한다.
+- Embedded refs: `docs/design/concepts/gameplay-screen-v3.webp`와 `art-direction-v3.webp`를 비교해 후자를 공간·재질 기준, 전자를 HUD·캐릭터 크기·행동 프롬프트 기준으로 선택했다.
+- Existing assets: `h17-side-scroll-background-v1.png`와 `h17-action-sprites-v1.png`가 선택 원화를 직접 반영한 프로젝트 생성 자산임을 확인했다.
+- Browser: 인앱 브라우저가 연결되지 않아 저장소의 Chromium 검증 스크립트와 실제 캡처를 사용한다.
+- Image generation: 이미 선택 원화에서 생성된 전용 배경·스프라이트가 있어 새 화풍을 만들지 않고 재사용한다.
 
-완료 조건은 정적 원화를 보여 주는 것이 아니라 이동, 점프, 공격, TRACE, 네 증거 조사, 보스전, 결말이 한 번의 플레이로 실제 동작하는 것이다. 기존 `/reboot.html`과 `/legacy.html`은 롤백 경로로 보존한다.
+## 1. Atmosphere & Identity
 
-## 기준 화면과 자산
+깊은 남색 달빛 속에서 호박빛 발자국만이 길과 진실을 드러내는 ‘밤의 기록 항로’다. 서늘한 부유 섬과 따뜻한 증거 불빛의 대비가 정체성이며, 한 장이 끝날 때마다 중앙 진행선의 봉인이 켜지는 순간을 기억점으로 삼는다. 화면은 웹 페이지가 아니라 한 장의 영화적인 횡스크롤 게임 화면처럼 보여야 한다.
 
-- 환경의 유일한 구도·색감 기준은 `docs/design/concepts/gameplay-screen-v3.webp`다.
-- 캐릭터와 적의 형태 기준은 `docs/design/concepts/h17-player-turnaround-v4.png`와 `docs/design/concepts/art-direction-v3.webp`다.
-- 기준 원화는 타이틀 카드와 원거리 패럴랙스에 사용하되, UI나 캐릭터가 박힌 이미지를 게임 전체 배경처럼 늘여서 플레이를 속이지 않는다.
-- 새 배경·스프라이트가 필요하면 위 원화를 참조해 직접 생성하고, 파생 자산임을 `ASSET_LICENSES.md`에 기록한다.
-- 화면은 WebGL 없이 Canvas 2D로 그린다. 논리 해상도는 1280×720이며 CSS로 데스크톱과 모바일에 맞춘다.
+## 2. Color
 
-## 플레이 루프
+| Role | Token | Value | Usage |
+|---|---|---|---|
+| Surface/deep | `--surface-deep` | `#050918` | 페이지 바깥, 최심부 |
+| Surface/night | `--surface-night` | `#071127` | 게임 셸, 모바일 조작부 |
+| Surface/panel | `--surface-panel` | `rgba(8, 16, 38, 0.92)` | 이야기·선택 패널 |
+| Surface/raised | `--surface-raised` | `#102344` | 버튼과 보조 패널 |
+| Text/primary | `--text-primary` | `#f7ead1` | 제목, 핵심 지시 |
+| Text/secondary | `--text-secondary` | `#b9c9ed` | 설명, 비활성 진행 |
+| Border/default | `--line` | `rgba(222, 190, 124, 0.42)` | HUD 외곽, 구획선 |
+| Accent/amber | `--amber` | `#f2b657` | 현재 목표·행동·증거 |
+| Accent/amber-bright | `--amber-bright` | `#ffe4a4` | 완료·강조 텍스트 |
+| Accent/cyan | `--cyan` | `#6fe0d1` | TRACE·검증 상태 |
+| Status/danger | `--danger` | `#e26f78` | 피해·WHITEOUT 공격 |
+| Status/success | `--success` | `#8ed49f` | 복구 완료 |
 
-1. 프롤로그에서 도트가 하루의 감사 드론이며 네 개의 증거를 찾아야 한다고 말한다.
-2. `A/D` 또는 방향키로 이동하고 `Space`로 점프하며 황금 발자국을 따라간다.
-3. 기록 말소 드론을 `J` 공격으로 무력화한다.
-4. 호박색 증거에 접근해 `E` TRACE로 조사한다.
-5. 개인정보 → 편향 → 저작권 → 딥페이크 순서로 증거를 회수한다.
-6. WHITEOUT 보스의 삭제 파동을 피하고 공격해 그로기 상태를 만든 뒤 TRACE한다.
-7. 원본을 무단 공개하지 않고 하루에게 먼저 확인하는 `기록 보호` 결말에 도달한다.
+규칙:
+- 호박색은 목표, 현재 장, 공격 성공처럼 사용자가 바로 행동할 지점에만 쓴다.
+- 청록색은 출처 확인과 TRACE에만 쓴다.
+- 상태는 색과 함께 아이콘 문양, 텍스트, 채움 모양을 반드시 제공한다.
 
-공격과 TRACE는 별도 버튼으로 유지하되 조합키, 카메라 회전, 복잡한 스킬 트리는 넣지 않는다. 플레이어가 쓰러지면 최근 증거 지점에서 즉시 재시작하며 회수한 증거는 잃지 않는다.
+## 3. Typography
 
-## 월드와 카메라
+| Level | Size | Weight | Line Height | Tracking | Usage |
+|---|---|---|---|---|---|
+| Display | `clamp(2rem, 5vw, 4.5rem)` | 900 | 1.05 | -0.03em | 타이틀 |
+| H1 | `clamp(1.5rem, 3vw, 2.5rem)` | 850 | 1.15 | -0.02em | 장 제목, 결말 |
+| H2 | `1.25rem` | 800 | 1.3 | -0.01em | 선택 제목 |
+| H3 | `1rem` | 800 | 1.4 | 0 | HUD 임무 |
+| Body/lg | `1rem` | 600 | 1.6 | 0 | 이야기 대사 |
+| Body | `0.875rem` | 600 | 1.5 | 0 | 설명 |
+| Caption | `0.75rem` | 750 | 1.4 | 0.04em | 장 번호·상태 |
 
-- 월드는 하나의 연속된 밤 캠퍼스 길이며 네 구역과 최종 보스 구역으로 나뉜다.
-- 카메라는 주인공을 화면 왼쪽 35–45% 지점에 두고 수평 이동만 추적한다.
-- 각 구역은 원화의 부유 섬, 기록탑, 다리, 종이 기록, 황금 빛기둥을 다른 실루엣으로 사용한다.
-- 이동 가능한 바닥은 밝은 모서리와 황금 발자국으로 배경과 구분한다.
-- 조사 가능 거리는 지면의 호박색 링, `E TRACE` 프롬프트, 소리 없는 펄스로 함께 표시한다.
+- Primary: `Pretendard`, `SUIT`, `Noto Sans KR`, system-ui, sans-serif.
+- Mono: ui-monospace, `SFMono-Regular`, Consolas, monospace.
+- 본문은 어떤 화면에서도 12px 아래로 내리지 않는다.
 
-## 전투와 공정성
+## 4. Spacing & Layout
 
-- 플레이어는 체력 3, 짧은 공격 범위, 피격 후 0.9초 무적 시간을 가진다.
-- 일반 적은 접근 전에 충분한 예고 동작을 보이고 1–2회 공격으로 쓰러진다.
-- WHITEOUT은 삭제 파동을 발사하고, 공격 5회 후 그로기되어 TRACE할 수 있다.
-- 난수는 사용하지 않는다. 적 위치, 공격 주기, 증거 순서, 보스 패턴은 고정되어 교실에서 같은 결과를 재현한다.
-- 윤리 판단은 선악 점수로 환산하지 않는다. 회수한 증거와 결말 대사로 행동의 맥락과 비용을 보여 준다.
+- Base unit: 4px.
+- Tokens: `--space-1` 4px, `--space-2` 8px, `--space-3` 12px, `--space-4` 16px, `--space-5` 20px, `--space-6` 24px, `--space-8` 32px, `--space-10` 40px.
+- Desktop shell: 최대 1600px, 16:9 캔버스, HUD는 화면 위를 가리지 않는 76px 이내 띠.
+- Mobile shell: 390×844 기준 세로 배치. HUD → 16:9 뷰포트 → 2행 조작부. 가로 스크롤 금지.
+- 데스크톱은 좌측 임무, 중앙 1–6장 진행, 우측 체력의 세 구역이다. 모바일은 임무와 진행을 두 줄로 재배치한다.
 
-## 이야기 정본
+## 5. Components
 
-- 플레이어는 기억 일부를 잃은 학생 H-17이며 사라진 친구 하루를 찾는다.
-- 도트는 하루가 남긴 감사 드론이자 길잡이다.
-- 네 증거는 기존 `src/story.js`의 개인정보, 편향, 저작권, 딥페이크 순서를 따른다.
-- WHITEOUT은 맥락을 지우고 기록을 단순화하려는 말소 시스템이다.
-- 마지막에는 진실 공개 여부보다 하루의 동의, 개인정보 가림, 원본 맥락 보존을 우선한다.
-- 실패를 비난하지 않는다. 전투 실패는 즉시 재시작하고 잘못된 조사 시도에는 도트가 짧게 이유를 설명한다.
+### Chapter Rail
+- Structure: 현재 장 제목 + 1–6 번호 버튼 + 완료 문양.
+- States: locked, available, current, complete, focus.
+- Accessibility: 현재 장은 `aria-current=step`, 잠긴 장은 `disabled`와 ‘잠김’ 텍스트를 함께 사용한다.
+- Motion: 장 전환 시 현재 원만 240ms opacity/transform 강조. reduced motion에서는 즉시 전환.
 
-## HUD와 조작
+### Story Panel
+- Structure: 화자, 한 문단 대사, 한 개의 계속 버튼.
+- Variants: intro, evidence, result.
+- Accessibility: `aria-live=polite`, Enter/E/탭 클릭 모두 같은 진행 경계.
+- Motion: 240ms fade-through, 입력을 막는 긴 타이핑 효과 없음.
 
-- 상단: `1장 00:17`, 임무, 네 증거 진행도, 체력.
-- 중앙 하단: 현재 구역과 가까운 상호작용 프롬프트.
-- 데스크톱: `A/D`·방향키 이동, `Space` 점프, `J` 공격, `E` TRACE.
-- 모바일: 왼쪽 `◀`·`▶`, 오른쪽 `점프`·`공격`·`TRACE` 버튼. 모든 버튼은 최소 52px이다.
-- 키보드와 터치 입력은 같은 입력 상태 모델을 사용한다.
-- 색상만으로 상태를 구분하지 않고 아이콘, 텍스트, 형태를 함께 쓴다.
+### Choice Panel
+- Structure: 질문, 서로 다른 비용을 설명하는 두 버튼.
+- States: default, hover, active, focus, selected, disabled.
+- Accessibility: 선택지는 색 외에 제목·비용 문장으로 구별, 최소 44px.
+- Motion: 선택 시 120ms 눌림, 결과 패널은 320ms fade-through.
 
-## 저장과 접근성
+### Action Prompt
+- Structure: 현재 입력 키/버튼 + 지금 할 일 한 문장.
+- States: move, attack, trace, continue.
+- Accessibility: 키보드와 터치 문구를 입력 환경에 맞춰 교체한다.
 
-- 저장 키는 새 버전 `ethics-quest-illustrated-action-v2`를 사용해 기존 정적 이야기 저장과 충돌하지 않는다.
-- 저장 항목은 마지막 체크포인트, 회수한 증거 ID, 결말 완료 여부뿐이다. 위치·입력·개인정보는 저장하지 않는다.
-- `prefers-reduced-motion`에서는 화면 흔들림과 장식 펄스를 제거한다.
-- 포커스는 호박색 3px 윤곽선으로 표시하며 도움말은 키보드만으로 닫을 수 있다.
-- Canvas 내용을 대체하는 실시간 상태 문구와 조작 설명을 DOM에 제공한다.
+### Touch Controls
+- Structure: 왼쪽 이동 2개, 오른쪽 점프·SIGNAL·TRACE 3개.
+- States: default, pressed, focus, disabled.
+- Accessibility: 각각 56px 이상, 포인터 취소 시 입력을 반드시 해제한다.
 
-## 성능과 검증
+### Primitive Showcase
+- `?showcase=1`에서 Chapter Rail, Story Panel, Choice Panel, Action Prompt, Touch Controls의 주요 상태를 한 화면에서 확인한다.
 
-- 이미지 디코딩 뒤에도 첫 조작 가능 시점을 막는 로딩 화면을 길게 유지하지 않는다.
-- Canvas 내부 렌더링은 기기 픽셀 비율 1.75 이하로 제한한다.
-- 타이머와 물리는 고정틱으로 처리하고 `Math.random`을 사용하지 않는다.
-- 데스크톱에서는 실제 키 입력으로 프롤로그부터 보호 결말까지 완주한다.
-- 모바일 390×844에서는 실제 터치 입력으로 첫 증거를 회수하고 가로 오버플로와 44px 미만 버튼이 없어야 한다.
-- 자동 테스트, 빌드, smoke 외에 최신 Chromium 화면을 캡처해 기준 원화와 나란히 확인한다.
+## 6. Motion & Interaction
 
-## 범위 밖
+| Type | Duration | Easing | Usage |
+|---|---|---|---|
+| Micro | 120ms | ease-out | 버튼 눌림, 피해 깜박임 |
+| Standard | 240ms | ease-in-out | 패널 교체, 장 진행 강조 |
+| Emphasis | 420ms | cubic-bezier(0.16, 1, 0.3, 1) | 장 시작·결과 전환 |
 
-- 3D 맵·캐릭터 재작업, 멀티플레이, 장비·상점, 무한 웨이브는 이번 버티컬 슬라이스에 포함하지 않는다.
-- 여섯 장 전체 분량을 억지로 복제하지 않는다. 한 장을 완주 가능한 품질 기준으로 만든 뒤 후속 장을 확장한다.
+- 게임 물리는 60Hz 고정틱으로 계산한다.
+- 사용자가 기억할 조작은 이동, 점프, SIGNAL, TRACE 네 가지뿐이다.
+- 모든 CSS 모션은 transform, opacity, filter만 사용한다.
+- `prefers-reduced-motion: reduce`에서는 장식 모션을 제거하고 상태 변화는 즉시 표시한다.
+
+## 7. Depth & Surface
+
+Strategy: mixed.
+
+- 게임 세계 깊이는 실제 생성 배경의 원경, 캔버스 안개, 전경 비네트로 만든다.
+- HUD는 1px 반투명 금색 선과 짙은 청색 반투명 면을 한 겹만 사용한다.
+- 이야기·선택 패널은 `0 20px 50px rgba(0, 0, 0, 0.36)` 한 단계만 쓴다.
+- 중첩 카드와 과도한 유리 효과를 금지한다.
+
+## 8. Accessibility Constraints & Accepted Debt
+
+### Constraints
+
+- WCAG 2.2 AA 목표: 본문 4.5:1, 큰 글자와 비텍스트 경계 3:1 이상.
+- 모든 주요 버튼 44px 이상, 키보드 포커스 가시화, 터치로 전체 완주 가능.
+- Canvas의 현재 상태는 DOM HUD, 라이브 영역, 이야기·선택 패널에 같은 의미로 노출한다.
+- 색만으로 체력·장 완료·선택 결과를 구분하지 않는다.
+- 개인정보 입력 없이 저장·결과 보고서를 로컬에서만 만든다.
+
+### Accepted Debt
+
+없음. 새로운 접근성 부채는 사용자 승인 전에는 남기지 않는다.
