@@ -18,12 +18,16 @@ function normalizeChapterIndex(value) {
   return clamp(Number.isInteger(value) ? value : 0, 0, CAMPAIGN_CHAPTERS.length - 1);
 }
 
+function normalizeCheckpoint(value) {
+  return clamp(Number.isFinite(value) ? value : 150, 100, CAMPAIGN_WORLD.width - 100);
+}
+
 function migrateSave(saved) {
   if (saved?.version === SAVE_VERSION) {
     return {
       chapterIndex: normalizeChapterIndex(saved.chapterIndex),
       unlockedChapter: normalizeChapterIndex(saved.unlockedChapter),
-      checkpointX: Number.isFinite(saved.checkpointX) ? saved.checkpointX : 150,
+      checkpointX: normalizeCheckpoint(saved.checkpointX),
       evidenceIds: Array.isArray(saved.evidenceIds) ? [...new Set(saved.evidenceIds)] : [],
       decisions: saved.decisions && typeof saved.decisions === 'object' ? { ...saved.decisions } : {},
       completed: saved.completed === true
@@ -31,15 +35,30 @@ function migrateSave(saved) {
   }
 
   if (saved?.version === 2) {
-    const recovered = Array.isArray(saved.evidenceIds) ? saved.evidenceIds.length : 0;
+    const legacyIds = Array.isArray(saved.evidenceIds) ? [...new Set(saved.evidenceIds)] : [];
+    const recovered = legacyIds.length;
     const chapterIndex = saved.completed === true ? 5 : clamp(recovered, 0, 5);
+    const evidenceIds = [];
+    for (const topic of legacyIds) {
+      const chapter = CAMPAIGN_CHAPTERS[Math.min(evidenceIds.length, CAMPAIGN_CHAPTERS.length - 1)];
+      const evidence = chapter.evidence[0];
+      if (evidence) evidenceIds.push(evidenceKey(chapter.id, evidence.id));
+      if (topic === 'deepfake' && chapter.evidence[1]) evidenceIds.push(evidenceKey(chapter.id, chapter.evidence[1].id));
+    }
+    const decisions = {};
+    for (let index = 0; index < chapterIndex; index += 1) {
+      decisions[CAMPAIGN_CHAPTERS[index].id] = CAMPAIGN_CHAPTERS[index].choice.options[0].id;
+    }
+    if (saved.completed === true) {
+      for (const chapter of CAMPAIGN_CHAPTERS) decisions[chapter.id] = chapter.choice.options[0].id;
+    }
     return {
       chapterIndex,
       unlockedChapter: chapterIndex,
-      checkpointX: 150,
-      evidenceIds: [],
-      decisions: {},
-      completed: false
+      checkpointX: normalizeCheckpoint(saved.checkpointX),
+      evidenceIds,
+      decisions,
+      completed: saved.completed === true
     };
   }
 
@@ -399,17 +418,30 @@ export function serializeActionGame(state) {
 
 export function getCampaignEnding(state) {
   const publicHearing = state.decisions['chapter-6'] === 'public-hearing';
+  const restorativeChoices = [
+    'protect-context',
+    'remove-and-notify',
+    'notify-and-repair',
+    'paired-sources',
+    'human-review'
+  ];
+  const restorativeCount = restorativeChoices.filter((choice) => Object.values(state.decisions).includes(choice)).length;
+  const processResult = restorativeCount >= 4
+    ? '피해 회복 지원과 출처 대조, 사람 재검토가 함께 시행됐다.'
+    : restorativeCount >= 2
+      ? '일부 회복 절차는 열렸지만 원본 접근과 공개 시점의 제한이 남았다.'
+      : '원본은 보존됐지만 피해 통지와 사람 재검토는 다음 감사의 과제로 남았다.';
   return publicHearing
     ? {
         id: 'public-hearing',
         title: '하루의 이름이 명단으로 돌아왔다',
-        summary: '민감정보를 가린 증거로 공개 심리가 열렸다. 루멘의 계산과 사람의 승인이 함께 검토됐고, 설명·재검토·이의제기 절차가 돌아왔다.',
+        summary: `민감정보를 가린 증거로 공개 심리가 열렸다. 루멘의 계산과 사람의 승인이 함께 검토됐다. ${processResult}`,
         cost: '학교는 느려져도 중요한 결정을 사람이 다시 확인해야 한다.'
       }
     : {
         id: 'sealed-audit',
         title: '증거는 하루의 시간을 기다린다',
-        summary: 'WHITEOUT은 멈췄고 증거는 훼손 없이 봉인됐다. 하루가 공개 시점을 결정하지만 공동체의 설명과 사과는 뒤로 미뤄졌다.',
+        summary: `WHITEOUT은 멈췄고 증거는 훼손 없이 봉인됐다. ${processResult}`,
         cost: '추가 피해는 막았지만 같은 결정 구조를 공개적으로 고치는 일은 남았다.'
       };
 }

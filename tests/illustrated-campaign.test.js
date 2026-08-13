@@ -39,14 +39,59 @@ test('새 저장은 여섯 장 진행·선택·증거를 남기고 옛 v2 저장
   });
   assert.equal(migrated.chapterIndex, 3);
   assert.equal(migrated.unlockedChapter, 3);
+  assert.equal(migrated.checkpointX, 2920 - 100);
+  assert.equal(migrated.collectedEvidence.length, 3);
 
   migrated.decisions['chapter-1'] = 'protect-context';
   migrated.collectedEvidence.push('chapter-4:source');
   const saved = serializeActionGame(migrated);
   assert.equal(saved.version, 3);
   assert.equal(saved.chapterIndex, 3);
-  assert.deepEqual(saved.decisions, { 'chapter-1': 'protect-context' });
+  assert.equal(saved.decisions['chapter-1'], 'protect-context');
+  assert.equal(Object.keys(saved.decisions).length, 3);
   assert.ok(saved.evidenceIds.includes('chapter-4:source'));
+
+  const completed = createActionGameState({
+    version: 2,
+    checkpointX: 5570,
+    evidenceIds: ['privacy', 'bias', 'copyright', 'deepfake'],
+    completed: true
+  });
+  assert.equal(completed.phase, 'campaign-complete');
+  assert.equal(completed.completed, true);
+  assert.equal(Object.keys(completed.decisions).length, 6);
+});
+
+test('1~5장 선택 누적이 같은 6장 선택 안에서도 서로 다른 결과를 만든다', () => {
+  const restorative = createActionGameState({
+    version: 3,
+    chapterIndex: 5,
+    unlockedChapter: 5,
+    decisions: {
+      'chapter-1': 'protect-context',
+      'chapter-2': 'remove-and-notify',
+      'chapter-3': 'notify-and-repair',
+      'chapter-4': 'paired-sources',
+      'chapter-5': 'human-review',
+      'chapter-6': 'public-hearing'
+    },
+    completed: true
+  });
+  const preservation = createActionGameState({
+    version: 3,
+    chapterIndex: 5,
+    unlockedChapter: 5,
+    decisions: {
+      'chapter-1': 'open-raw',
+      'chapter-2': 'label-and-freeze',
+      'chapter-3': 'quiet-freeze',
+      'chapter-4': 'open-recommendation-path',
+      'chapter-5': 'appeal-first',
+      'chapter-6': 'public-hearing'
+    },
+    completed: true
+  });
+  assert.notEqual(getCampaignReport(restorative).ending.summary, getCampaignReport(preservation).ending.summary);
 });
 
 test('조사 보고서는 선악 점수 없이 장별 근거·선택·비용을 설명한다', () => {
