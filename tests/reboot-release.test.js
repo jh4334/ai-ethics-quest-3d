@@ -4,14 +4,14 @@ import test from 'node:test';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('canonical root, legacy route, and service worker form one release boundary', () => {
+test('canonical 2D root, preserved 3D routes, and service worker form one release boundary', () => {
   const index = read('index.html');
   const legacy = read('legacy.html');
   const sw = read('public/sw.js');
   const manifest = JSON.parse(read('public/reboot-assets.json'));
-  assert.match(index, /location\.replace\(rebootUrl\.href\)/);
+  assert.match(index, /location\.replace\(illustratedUrl\.href\)/);
   assert.match(legacy, /src="\/src\/main\.js"/);
-  assert.match(sw, /\.\/index\.html', '\.\/reboot\.html', '\.\/legacy\.html/);
+  assert.match(sw, /\.\/index\.html', '\.\/illustrated\.html', '\.\/reboot\.html', '\.\/legacy\.html/);
   assert.match(sw, /LAZY_ASSET_PREFIXES/);
   assert.ok(manifest.some((path) => path.includes('/environment/building/')));
   assert.ok(manifest.some((path) => path.includes('/environment/materials/')));

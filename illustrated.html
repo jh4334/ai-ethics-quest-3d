@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="레퍼런스 원화 속에서 사라진 친구 하루의 흔적을 찾는 2D 이야기 게임" />
+  <meta name="theme-color" content="#081329" />
+  <title>사라진 학생 H-17 — 2D 이야기</title>
+</head>
+<body>
+  <main class="illustrated-game" data-illustrated-game aria-label="사라진 학생 H-17 2D 이야기 게임">
+    <section class="scene" data-scene aria-describedby="scene-instructions">
+      <img class="scene-art" data-scene-art alt="밤바다 위 부유 섬과 황금 발자국, 기록 조각을 바라보는 학생" />
+      <button class="scene-hotspot" type="button" data-scene-action aria-label="남겨진 발자국 살펴보기">
+        <span class="sr-only">남겨진 발자국 살펴보기</span>
+      </button>
+      <p class="scene-instructions sr-only" id="scene-instructions">화면의 발자국을 누르거나 E 키를 누르면 이야기가 진행됩니다.</p>
+      <aside class="story-card" data-story-card hidden aria-live="polite">
+        <p class="story-speaker" data-story-speaker></p>
+        <p class="story-line" data-story-line></p>
+      </aside>
+      <section class="choice-card" data-choice-card hidden aria-label="기록을 어떻게 다룰지 선택">
+        <h2>이 기록을 어떻게 할까?</h2>
+        <button type="button" data-choice="protect">하루에게 먼저 확인한다</button>
+        <button type="button" data-choice="share">친구들에게 바로 퍼뜨린다</button>
+      </section>
+      <button class="mobile-action" type="button" data-mobile-action>행동</button>
+      <button class="help-hotspot" type="button" data-game-help aria-expanded="false">
+        <span class="sr-only">도움</span>
+      </button>
+      <dialog class="help-dialog" data-help-dialog>
+        <h2>조작은 아주 간단해요</h2>
+        <p>발자국을 누르거나 <kbd>E</kbd>를 누르면 됩니다.</p>
+        <p>중요한 순간에는 두 선택 중 하나만 고르면 됩니다.</p>
+        <a href="./reboot.html">이전 3D 버전 열기</a>
+        <button type="button" data-help-close>확인</button>
+      </dialog>
+    </section>
+  </main>
+  <script type="module" src="/src/illustrated/entry.js"></script>
+</body>
+</html>

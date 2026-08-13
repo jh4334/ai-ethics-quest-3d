@@ -2,9 +2,9 @@
 // 전략: 페이지 이동(navigate)은 네트워크 우선(새 배포 즉시 반영) + 실패 시 캐시 폴백,
 // 해시 파일명 에셋(/assets/)은 캐시 우선(불변 파일이라 재다운로드 불필요).
 const CACHE_PREFIX = 'ethics-quest-h17-';
-const CACHE = `${CACHE_PREFIX}v12`;
+const CACHE = `${CACHE_PREFIX}v13`;
 const LAZY_CACHE = `${CACHE_PREFIX}environment`;
-const ENTRY_DOCUMENTS = ['./index.html', './reboot.html', './legacy.html'];
+const ENTRY_DOCUMENTS = ['./index.html', './illustrated.html', './reboot.html', './legacy.html'];
 const ASSET_MANIFEST = './reboot-assets.json';
 const LAZY_ASSET_PREFIXES = ['./assets/reboot/environment/'];
 const CORE = ['./', ...ENTRY_DOCUMENTS, ASSET_MANIFEST, './manifest.webmanifest', './icon.svg', './trilogy.html'];

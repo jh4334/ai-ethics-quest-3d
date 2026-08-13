@@ -100,14 +100,14 @@ test('Given core, character, and environment assets, When the worker installs, T
   assert.ok(harness.addedAssets.includes('./assets/reboot-shell.js'));
   assert.ok(harness.addedAssets.includes(characterAsset));
   assert.equal(harness.addedAssets.includes(environmentAsset), false);
-  assert.ok(harness.openedCaches.every((key) => key === 'ethics-quest-h17-v12'));
+  assert.ok(harness.openedCaches.every((key) => key === 'ethics-quest-h17-v13'));
 });
 
-test('Given app and unrelated cache generations, When v12 activates, Then only older H-17 caches are removed', async () => {
+test('Given app and unrelated cache generations, When v13 activates, Then only older H-17 caches are removed', async () => {
   // Given: two old app caches, the current cache, and another product cache.
   const harness = createServiceWorkerHarness({
     cacheKeys: [
-      'ethics-quest-h17-v10', 'ethics-quest-h17-v11', 'ethics-quest-h17-v12',
+      'ethics-quest-h17-v11', 'ethics-quest-h17-v12', 'ethics-quest-h17-v13',
       'ethics-quest-h17-environment', 'school-portal-v4'
     ]
   });
@@ -116,7 +116,7 @@ test('Given app and unrelated cache generations, When v12 activates, Then only o
   await harness.dispatch('activate');
 
   // Then: migration is scoped to this app's older generations.
-  assert.deepEqual(harness.deletedCaches.sort(), ['ethics-quest-h17-v10', 'ethics-quest-h17-v11']);
+  assert.deepEqual(harness.deletedCaches.sort(), ['ethics-quest-h17-v11', 'ethics-quest-h17-v12']);
 });
 
 test('Given a lazily cached environment file, When current cache tiers prune stale assets, Then the manifest-owned file survives', async () => {
@@ -175,5 +175,5 @@ test('Given a non-environment app asset misses, When the worker fetches it, Then
 
   assert.equal(response.ok, true);
   assert.deepEqual(harness.cachedRequests, [url]);
-  assert.ok(harness.openedCaches.includes('ethics-quest-h17-v12'));
+  assert.ok(harness.openedCaches.includes('ethics-quest-h17-v13'));
 });
