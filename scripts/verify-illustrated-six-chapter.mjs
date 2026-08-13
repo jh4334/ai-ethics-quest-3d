@@ -90,7 +90,7 @@ async function completeChapter(page, profile, chapterNumber, pointerSeed) {
     decision: await page.locator('[data-result-title]').textContent(),
     elapsedMs: Date.now() - start
   };
-  if (chapterNumber === 6) await page.screenshot({ path: path.join(evidenceDir, `${profile.id}-chapter-6-result.png`), fullPage: true });
+  if (chapterNumber === 6) await page.screenshot({ path: path.join(evidenceDir, `${profile.id}-chapter-6-result.png`) });
   await page.locator('[data-next-chapter]').click();
   return result;
 }
@@ -125,7 +125,7 @@ async function runProfile(profile) {
   assert.equal(new URL(page.url()).pathname, '/');
   assert.equal(await page.locator('canvas').count(), 1);
   assert.equal(await page.locator('script[src*="reboot"], script[src="/src/main.js"]').count(), 0);
-  await page.screenshot({ path: path.join(evidenceDir, `${profile.id}-title.png`), fullPage: true });
+  await page.screenshot({ path: path.join(evidenceDir, `${profile.id}-title.png`) });
   await page.locator('[data-new-game]').click();
   await page.locator('[data-story-next]').click();
   await page.locator('[data-story-next]').click();
@@ -144,7 +144,7 @@ async function runProfile(profile) {
   const xAfter = Number(await page.locator('[data-illustrated-game]').getAttribute('data-player-x'));
   assert.ok(xAfter > xBefore + 60);
   await action(page, profile, 'jump', 11);
-  await page.screenshot({ path: path.join(evidenceDir, `${profile.id}-chapter-1.png`), fullPage: true });
+  await page.screenshot({ path: path.join(evidenceDir, `${profile.id}-chapter-1.png`) });
 
   const chapters = [];
   for (let chapterNumber = 1; chapterNumber <= 6; chapterNumber += 1) {
@@ -156,7 +156,7 @@ async function runProfile(profile) {
   }
 
   await page.waitForFunction(() => document.querySelector('[data-illustrated-game]').dataset.gamePhase === 'complete');
-  await page.screenshot({ path: path.join(evidenceDir, `${profile.id}-ending.png`), fullPage: true });
+  await page.screenshot({ path: path.join(evidenceDir, `${profile.id}-ending.png`) });
   const saveBeforeReload = await page.evaluate(() => window.__illustratedAction.getSave());
   const reportBeforeReload = await page.evaluate(() => window.__illustratedAction.getReport());
   await page.reload({ waitUntil: 'networkidle' });

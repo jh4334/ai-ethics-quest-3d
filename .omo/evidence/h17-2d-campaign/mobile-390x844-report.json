@@ -12,37 +12,37 @@
       "chapter": 1,
       "evidence": 2,
       "decision": "민감정보를 가리고 맥락을 보존한다",
-      "elapsedMs": 3904
+      "elapsedMs": 4025
     },
     {
       "chapter": 2,
       "evidence": 2,
       "decision": "생성 표시를 붙이고 확산을 멈춘다",
-      "elapsedMs": 4272
+      "elapsedMs": 4412
     },
     {
       "chapter": 3,
       "evidence": 2,
       "decision": "피해를 알리고 회복 지원을 연결한다",
-      "elapsedMs": 4267
+      "elapsedMs": 4353
     },
     {
       "chapter": 4,
       "evidence": 2,
       "decision": "출처와 날짜를 나란히 보여 준다",
-      "elapsedMs": 4271
+      "elapsedMs": 4375
     },
     {
       "chapter": 5,
       "evidence": 2,
       "decision": "중요 결정마다 사람 재검토를 둔다",
-      "elapsedMs": 4605
+      "elapsedMs": 4786
     },
     {
       "chapter": 6,
       "evidence": 2,
       "decision": "개인정보를 가린 뒤 공개 심리를 연다",
-      "elapsedMs": 4937
+      "elapsedMs": 5101
     }
   ],
   "saveBeforeReload": {
@@ -81,7 +81,7 @@
     "ending": {
       "id": "public-hearing",
       "title": "하루의 이름이 명단으로 돌아왔다",
-      "summary": "민감정보를 가린 증거로 공개 심리가 열렸다. 루멘의 계산과 사람의 승인이 함께 검토됐고, 설명·재검토·이의제기 절차가 돌아왔다.",
+      "summary": "민감정보를 가린 증거로 공개 심리가 열렸다. 루멘의 계산과 사람의 승인이 함께 검토됐다. 피해 회복 지원과 출처 대조, 사람 재검토가 함께 시행됐다.",
       "cost": "학교는 느려져도 중요한 결정을 사람이 다시 확인해야 한다."
     },
     "evidenceIds": [
@@ -207,13 +207,13 @@
       },
       {
         "text": "조사 기록 인쇄",
-        "width": 141,
-        "height": 48
+        "width": 92,
+        "height": 44
       },
       {
         "text": "처음부터 다시 하기",
-        "width": 169,
-        "height": 48
+        "width": 111,
+        "height": 44
       },
       {
         "text": "조작",
