@@ -1,15 +1,19 @@
 import {
   CHARACTER_IDS,
+  CHAPTER_COUNT,
   EVIDENCE_ACTIONS,
   EVIDENCE_IDS,
+  GATE_OUTCOMES,
   PATCH_IDS,
   deepFreeze,
+  isValidGateId,
   normalizeRebootState
 } from './model.js';
 
 const characterIdSet = new Set(CHARACTER_IDS);
 const evidenceIdSet = new Set(EVIDENCE_IDS);
 const evidenceActionSet = new Set(EVIDENCE_ACTIONS);
+const gateOutcomeSet = new Set(GATE_OUTCOMES);
 const patchIdSet = new Set(PATCH_IDS);
 
 export function recordEvidenceOutcome(state, { action, chapter, evidenceId }) {
@@ -17,8 +21,8 @@ export function recordEvidenceOutcome(state, { action, chapter, evidenceId }) {
   if (!evidenceIdSet.has(evidenceId) || !evidenceActionSet.has(action)) {
     throw new RangeError('등록되지 않은 증거 결과입니다.');
   }
-  if (!Number.isInteger(chapter) || chapter < 1 || chapter > 5) {
-    throw new RangeError('장 번호는 1부터 5까지여야 합니다.');
+  if (!Number.isInteger(chapter) || chapter < 1 || chapter > CHAPTER_COUNT) {
+    throw new RangeError(`장 번호는 1부터 ${CHAPTER_COUNT}까지여야 합니다.`);
   }
   if (current.evidence.some((record) => record.evidenceId === evidenceId)) {
     return Object.isFrozen(state) ? state : current;
@@ -57,8 +61,8 @@ export function updateCharacterTrust(state, characterId, delta) {
 
 export function setChapterCheckpoint(state, chapter, checkpoint) {
   const current = normalizeRebootState(state);
-  if (!Number.isInteger(chapter) || chapter < 1 || chapter > 5) {
-    throw new RangeError('장 번호는 1부터 5까지여야 합니다.');
+  if (!Number.isInteger(chapter) || chapter < 1 || chapter > CHAPTER_COUNT) {
+    throw new RangeError(`장 번호는 1부터 ${CHAPTER_COUNT}까지여야 합니다.`);
   }
   if (typeof checkpoint !== 'string' || !new RegExp(`^chapter-${chapter}:[a-z0-9-]+$`).test(checkpoint)) {
     throw new RangeError('체크포인트 형식이 올바르지 않습니다.');
@@ -70,6 +74,18 @@ export function setChapterCheckpoint(state, chapter, checkpoint) {
       current: chapter,
       checkpoint
     }
+  });
+}
+
+export function recordGateAttempt(state, { chapter, gateId, outcome }) {
+  const current = normalizeRebootState(state);
+  if (!Number.isInteger(chapter) || chapter < 1 || chapter > CHAPTER_COUNT
+    || !isValidGateId(gateId) || !gateOutcomeSet.has(outcome)) {
+    throw new RangeError('등록된 장의 유효한 관문 시도 결과가 필요합니다.');
+  }
+  return deepFreeze({
+    ...current,
+    gateAttempts: [...current.gateAttempts, { chapter, gateId, outcome }]
   });
 }
 

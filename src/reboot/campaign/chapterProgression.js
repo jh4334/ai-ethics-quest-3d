@@ -18,10 +18,17 @@ const CHAPTER_RESULTS = deepFreeze({
   },
   4: {
     evidenceId: 'support-record',
-    nextCheckpoint: 'chapter-5:broadcast-room',
+    nextCheckpoint: 'chapter-5:start',
     trustCharacter: 'yoonseo',
     secure: { trust: 5, summaryKo: '긴급 지원 기록을 분리 보존하고 승인 경로를 중단했다.' },
     purge: { trust: -4, summaryKo: '3초 승인 경로를 즉시 닫았지만 지원 기록도 함께 닫혔다.' }
+  },
+  5: {
+    evidenceId: 'verified-package',
+    nextCheckpoint: 'chapter-6:broadcast-room',
+    trustCharacter: 'haru',
+    secure: { trust: 6, summaryKo: '동의와 가림 표식을 검증해 방송 패키지를 보존했다.' },
+    purge: { trust: -2, summaryKo: '노출 위험을 줄였지만 검증된 증언 일부도 패키지에서 제외했다.' }
   }
 });
 

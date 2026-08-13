@@ -1,0 +1,22 @@
+{
+  "baseUrl": "http://127.0.0.1:8899/",
+  "chapterReports": [
+    {
+      "checkpoint": "chapter-6:resolved-sealed",
+      "drawCalls": 83,
+      "p95FrameMs": 100,
+      "triangles": 86157,
+      "chapter": 6,
+      "elapsedSeconds": 41.9,
+      "inputMode": "keyboard",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-6-keyboard-result.png"
+    }
+  ],
+  "consoleErrors": [],
+  "failedResponses": [],
+  "endingChapter": 6,
+  "finalCheckpoint": "chapter-6:resolved-sealed",
+  "inputMode": "keyboard",
+  "startingChapter": 6,
+  "touch": null
+}

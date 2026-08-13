@@ -47,6 +47,6 @@ export function createFinaleFixture(id) {
   for (const [characterId, delta] of Object.entries(fixture.trust)) {
     campaign = updateCharacterTrust(campaign, characterId, delta);
   }
-  campaign = setChapterCheckpoint(campaign, 5, 'chapter-5:broadcast-room');
+  campaign = setChapterCheckpoint(campaign, 6, 'chapter-6:broadcast-room');
   return deepFreeze({ campaign, decision: fixture.decision, id });
 }

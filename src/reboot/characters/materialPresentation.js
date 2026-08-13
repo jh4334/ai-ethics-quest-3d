@@ -12,15 +12,26 @@ function classifyMaterial(object, material) {
   return 'outfitEmissive';
 }
 
-function applyMappedLift(object, material, presentation) {
+function applyMappedLift(object, material, hairTint, outfitTint, presentation) {
   if (!material.map?.isTexture || !material.emissive?.setHex) return;
+  const role = classifyMaterial(object, material);
+  if (role === 'outfitEmissive' && outfitTint) {
+    material.color.set(outfitTint);
+    material.polygonOffset = true;
+    material.polygonOffsetFactor = -1;
+    material.polygonOffsetUnits = -1;
+  }
+  if (role === 'hairEmissive' && hairTint) material.color.set(hairTint);
   material.emissiveMap = material.map;
-  material.emissive.setHex(0xffffff);
-  material.emissiveIntensity = presentation[classifyMaterial(object, material)];
+  const tint = role === 'outfitEmissive' ? outfitTint : role === 'hairEmissive' ? hairTint : null;
+  material.emissive.set(tint ?? 0xffffff);
+  material.emissiveIntensity = presentation[role];
   material.needsUpdate = true;
 }
 
-export function prepareCharacterModel({ hiddenParts, model, ownedMaterials, presentation }) {
+export function prepareCharacterModel({
+  hairTint = null, hiddenParts, model, outfitTint = null, ownedMaterials, presentation
+}) {
   model.traverse((object) => {
     if (hiddenParts.some((part) => object.name.includes(part))) object.visible = false;
     if (!object.isMesh) return;
@@ -29,7 +40,7 @@ export function prepareCharacterModel({ hiddenParts, model, ownedMaterials, pres
     const materials = [];
     forEachMaterial(object, (source) => {
       const material = source.clone();
-      applyMappedLift(object, material, presentation);
+      applyMappedLift(object, material, hairTint, outfitTint, presentation);
       ownedMaterials.add(material);
       materials.push(material);
     });

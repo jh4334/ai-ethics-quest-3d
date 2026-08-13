@@ -1,0 +1,102 @@
+import { mkdir, writeFile } from 'node:fs/promises';
+import { chromium } from '@playwright/test';
+
+const baseUrl = process.env.H17_BASE_URL ?? 'http://127.0.0.1:4174';
+const outputDirectory = '.omo/evidence/h17-six-chapter/p0';
+const rendererProfile = process.env.H17_CAPTURE_RENDERER === 'hardware' ? 'hardware' : 'swiftshader';
+const headless = process.env.H17_CAPTURE_HEADFUL !== 'true';
+const captureOnly = new Set((process.env.H17_CAPTURE_ONLY ?? '').split(',').filter(Boolean));
+await mkdir(outputDirectory, { recursive: true });
+
+const browser = await chromium.launch({
+  headless,
+  args: rendererProfile === 'hardware'
+    ? ['--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding']
+    : ['--enable-unsafe-swiftshader', '--use-angle=swiftshader']
+});
+const captures = [];
+
+async function capture(name, viewport, options = {}) {
+  if (captureOnly.size > 0 && !captureOnly.has(name)) return;
+  const context = await browser.newContext({
+    deviceScaleFactor: 1,
+    hasTouch: options.hasTouch === true,
+    isMobile: options.hasTouch === true,
+    viewport
+  });
+  const page = await context.newPage();
+  const consoleErrors = [];
+  const failedResponses = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text());
+  });
+  page.on('pageerror', (error) => consoleErrors.push(error.message));
+  page.on('response', (response) => {
+    if (response.status() >= 400) failedResponses.push({ status: response.status(), url: response.url() });
+  });
+  await page.addInitScript(() => { window.__ETHICS_TEST_HOOK__ = true; });
+  await page.goto(`${baseUrl}/reboot.html?tools=hidden&sw=off&testHook=h17`, {
+    timeout: 60000,
+    waitUntil: 'domcontentloaded'
+  });
+  if (options.checkpoint) {
+    await page.evaluate((checkpoint) => window.__ethicsReboot.setCheckpointForTest(checkpoint), options.checkpoint);
+    await page.reload({ timeout: 60000, waitUntil: 'domcontentloaded' });
+  }
+  await page.waitForFunction(() => {
+    const status = document.querySelector('[data-reboot-canvas]')?.dataset.environmentStatus;
+    return status && status !== 'loading';
+  }, undefined, { timeout: 60000 });
+  await page.waitForFunction(() => {
+    const status = document.querySelector('[data-reboot-canvas]')?.dataset.characters;
+    return status === 'ready' || status === 'error';
+  }, undefined, { timeout: 60000 });
+  await page.evaluate(() => window.dispatchEvent(new Event('resize')));
+  await page.waitForTimeout(3200);
+  const screenshotPath = `${outputDirectory}/${name}.png`;
+  await page.screenshot({ path: screenshotPath, timeout: 120_000 });
+  const surface = await page.evaluate(() => ({
+    canvas: { ...document.querySelector('[data-reboot-canvas]').dataset },
+    chapterStrip: [...document.querySelectorAll('[data-chapter-progress] [data-chapter]')].map((item) => ({
+      chapter: item.dataset.chapter,
+      state: item.dataset.state
+    })),
+    debug: window.__ethicsReboot.getSceneDebugState(),
+    renderer: (() => {
+      const canvas = document.querySelector('[data-reboot-canvas]');
+      const gl = canvas?.getContext('webgl2');
+      const info = gl?.getExtension('WEBGL_debug_renderer_info');
+      return {
+        renderer: info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl?.getParameter(gl.RENDERER),
+        vendor: info ? gl.getParameter(info.UNMASKED_VENDOR_WEBGL) : gl?.getParameter(gl.VENDOR)
+      };
+    })(),
+    save: window.__ethicsReboot.getSaveState()
+  }));
+  captures.push({ consoleErrors, failedResponses, name, screenshotPath, surface, viewport });
+  await context.close();
+}
+
+try {
+  await capture('chapter-1-classroom-desktop-1440x900', { width: 1440, height: 900 });
+  await capture('chapter-1-classroom-tablet-768x1024', { width: 768, height: 1024 });
+  await capture('chapter-1-classroom-mobile-390x844', { width: 390, height: 844 }, { hasTouch: true });
+  await capture('chapter-1-desktop-1440x900', { width: 1440, height: 900 }, {
+    checkpoint: 'chapter-1:first-arena'
+  });
+  await capture('chapter-1-mobile-390x844', { width: 390, height: 844 }, {
+    checkpoint: 'chapter-1:first-arena', hasTouch: true
+  });
+} finally {
+  await browser.close();
+}
+
+await writeFile(`${outputDirectory}/capture-report.json`, `${JSON.stringify({
+  baseUrl, captures, headless, rendererProfile
+}, null, 2)}\n`, 'utf8');
+
+const failures = captures.flatMap(({ consoleErrors, failedResponses, name }) => [
+  ...consoleErrors.map((message) => `${name}: console: ${message}`),
+  ...failedResponses.map(({ status, url }) => `${name}: HTTP ${status}: ${url}`)
+]);
+if (failures.length > 0) throw new Error(failures.join('\n'));

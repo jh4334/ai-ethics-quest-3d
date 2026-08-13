@@ -37,6 +37,9 @@ async function pressForHp(page, key, hp) {
 test('운영 URL은 QA fixture를 무시하고 명시적 훅만 모든 보스 단계를 연다', async ({ page }) => {
   const errors = captureErrors(page);
   await page.goto('/reboot.html?sw=off&fixture=qa-boss-phase-3', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('[data-product-shell]')).toBeVisible();
+  await expect(page.locator('[data-reboot-canvas]')).not.toHaveAttribute('data-boss-phase', 'approval-core');
+  await page.locator('[data-shell-new]').click();
   await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-route-segment', 'classroom-cold-open');
   await expect(page.locator('[data-reboot-canvas]')).not.toHaveAttribute('data-boss-phase', 'approval-core');
 
@@ -67,7 +70,7 @@ test('결과·손상 저장·저품질 fixture가 사용자 의미와 예산을 
   });
 
   const corruptPage = await context.newPage();
-  await corruptPage.addInitScript(() => localStorage.setItem('h17.null.save.v4', '{bad'));
+  await corruptPage.addInitScript(() => localStorage.setItem('h17.null.save.v5', '{bad'));
   await corruptPage.goto(`/reboot.html?${TEST_QUERY}&fixture=qa-corrupt-save`, { waitUntil: 'domcontentloaded' });
   await expect(corruptPage.locator('[data-recovery-notice]')).toBeVisible();
   await corruptPage.close();
@@ -84,42 +87,49 @@ test('결과·손상 저장·저품질 fixture가 사용자 의미와 예산을 
   expect(errors).toEqual([]);
 });
 
-test('온라인 체크포인트는 오프라인 재실행 뒤 보스 승리까지 이어진다', async ({ page }) => {
+test('온라인 체크포인트는 HTTP 캐시 없는 오프라인 재실행 뒤 보스 승리까지 이어진다', async ({ context, page }) => {
   const errors = captureErrors(page);
   const failedRequests = [];
   page.on('requestfailed', (request) => failedRequests.push(`${request.url()}: ${request.failure()?.errorText}`));
   await page.goto(`/reboot.html?${OFFLINE_QUERY}&fixture=boss-secure`, { waitUntil: 'domcontentloaded' });
   await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-characters', 'ready', { timeout: 20_000 });
   await page.evaluate(() => navigator.serviceWorker.ready);
-  if (!await page.evaluate(() => Boolean(navigator.serviceWorker.controller))) {
-    await page.reload({ waitUntil: 'domcontentloaded' });
-    await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-characters', 'ready', { timeout: 20_000 });
-  }
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
-  const cachedUrls = await page.evaluate(async () => {
-    const names = await caches.keys();
-    const requests = await Promise.all(names.map(async (name) => (await caches.open(name)).keys()));
-    return requests.flat().map((request) => request.url);
-  });
-  expect(cachedUrls.some((url) => /assets\/reboot-[^/]+\.js$/.test(url))).toBe(true);
-  expect(cachedUrls.some((url) => /assets\/three-[^/]+\.js$/.test(url))).toBe(true);
+  // 환경 에셋은 설치를 막지 않는 장별 지연 캐시다. 제어권을 얻은 온라인 장면을 한 번
+  // 실제로 열어 런타임 캐시를 채운 뒤, 같은 장의 오프라인 재접속을 검증한다.
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-characters', 'ready', { timeout: 20_000 });
+  await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-environment-status', 'ready', { timeout: 20_000 });
   await page.evaluate(() => window.__ethicsReboot.setCheckpointForTest('chapter-1:offline-boss'));
 
   const offlineResponse = await page.evaluate(() => fetch('/__qa__/offline', { method: 'POST' }).then((response) => response.status));
   expect(offlineResponse).toBe(204);
-  failedRequests.length = 0;
-  await page.reload({ waitUntil: 'domcontentloaded' });
-  await expect.poll(() => page.evaluate(() => Boolean(window.__ethicsReboot))).toBe(true);
-  await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-characters', 'ready', { timeout: 20_000 });
-  await expect.poll(() => page.evaluate(() => window.__ethicsReboot.getSaveState().chapterProgress.checkpoint))
-    .toBe('chapter-1:offline-boss');
+  const cdpSession = await context.newCDPSession(page);
+  await cdpSession.send('Network.enable');
+  await cdpSession.send('Network.setCacheDisabled', { cacheDisabled: true });
+  await cdpSession.send('Network.clearBrowserCache');
 
-  for (const [key, hp] of [['k', 210], ['k', 180], ['e', 150], ['e', 120], ['j', 80], ['j', 40], ['j', 0]]) {
-    await pressForHp(page, key, hp);
+  try {
+    failedRequests.length = 0;
+    await context.setOffline(true);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await expect.poll(() => page.evaluate(() => Boolean(window.__ethicsReboot))).toBe(true);
+    await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-characters', 'ready', { timeout: 20_000 });
+    await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-environment-status', 'ready', { timeout: 20_000 });
+    await expect.poll(() => page.evaluate(() => window.__ethicsReboot.getSaveState().chapterProgress.checkpoint))
+      .toBe('chapter-1:offline-boss');
+
+    for (const [key, hp] of [['k', 210], ['k', 180], ['e', 150], ['e', 120], ['j', 80], ['j', 40], ['j', 0]]) {
+      await pressForHp(page, key, hp);
+    }
+    await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-boss-status', 'victory');
+    expect(errors).toEqual([]);
+    expect(failedRequests).toEqual([]);
+  } finally {
+    await context.setOffline(false);
+    await cdpSession.send('Network.setCacheDisabled', { cacheDisabled: false });
+    await cdpSession.detach();
   }
-  await expect(page.locator('[data-reboot-canvas]')).toHaveAttribute('data-boss-status', 'victory');
-  expect(errors).toEqual([]);
-  expect(failedRequests).toEqual([]);
   const video = page.video();
   await page.close();
   await copyFile(await video.path(), '.omo/evidence/task-11-offline.webm');

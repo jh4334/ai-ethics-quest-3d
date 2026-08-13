@@ -102,6 +102,7 @@ export function createEncounterGameRuntime({
   blockers = [], deviceClass = 'desktop', encounterDefinition = MIXED_ARENA,
   encounterOrigin = { x: 0, z: -39 }, onScreen = true,
   extraTargets = [{ hp: 100, id: 'memory-backup', position: { x: 0, y: -54 } }],
+  startFacing = { x: 1, y: 0 },
   startPosition = { x: 0, y: 0 },
   // 통행 가능 경계 — {minX, maxX, minZ, maxZ} 사각형 목록(레벨 저작 데이터).
   // 플레이어는 시뮬 틱마다, 적은 reposition 이동마다 이 합집합 안으로 클램프된다.
@@ -114,6 +115,10 @@ export function createEncounterGameRuntime({
     const encounter = createEncounter(authoredEncounter, { deviceClass });
     const combat = createCombatState({ targets: combatTargets(encounter, extraTargets), walkable: activeWalkable });
     combat.player.position = { x: startPosition.x, y: startPosition.y };
+    const facingLength = Math.hypot(startFacing.x, startFacing.y);
+    if (Number.isFinite(facingLength) && facingLength > 0) {
+      combat.player.facing = { x: startFacing.x / facingLength, y: startFacing.y / facingLength };
+    }
     return { accumulator: 0, combat, encounter, pendingIncoming: [] };
   };
   let runtime = createInitial();

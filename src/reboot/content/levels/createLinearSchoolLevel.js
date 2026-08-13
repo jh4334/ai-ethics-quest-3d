@@ -18,10 +18,14 @@ export function createLinearSchoolLevel({ bossExitId, id, segments }) {
   const authored = segments.map((segment, index) => {
     const range = RANGES[index];
     const centerZ = (range.minZ + range.maxZ) / 2;
+    const centerX = segment.anchorX ?? 0;
     return {
       ...segment,
-      anchor: { x: 0, y: 0, z: centerZ },
-      bounds: { maxX: segment.width, maxZ: range.maxZ, minX: -segment.width, minZ: range.minZ },
+      anchor: { x: centerX, y: 0, z: centerZ },
+      bounds: {
+        maxX: centerX + segment.width, maxZ: range.maxZ,
+        minX: centerX - segment.width, minZ: range.minZ
+      },
       checkpointId: `checkpoint-${segment.id}`,
       collisionId: `collision-${segment.id}`,
       navigationId: `nav-${segment.id}`
@@ -37,9 +41,14 @@ export function createLinearSchoolLevel({ bossExitId, id, segments }) {
       checkpointId: segment.checkpointId,
       collisionId: segment.collisionId,
       exits: [{ kind: index === authored.length - 1 ? 'chapter-exit' : 'segment', to: authored[index + 1]?.id ?? bossExitId }],
+      geometryId: segment.geometryId,
       id: segment.id,
+      interactionId: segment.interactionId,
       label: segment.label,
-      navigationId: segment.navigationId
+      navigationId: segment.navigationId,
+      pathId: segment.pathId ?? null,
+      phaseBeats: [...(segment.phaseBeats ?? [])],
+      sideEffectId: segment.sideEffectId ?? null
     })),
     layers: {
       checkpoint: authored.map((segment) => ({ id: segment.checkpointId, segmentId: segment.id, spawn: { ...segment.anchor } })),
@@ -50,7 +59,12 @@ export function createLinearSchoolLevel({ bossExitId, id, segments }) {
         segmentId: segment.id, visualId: `visual-${segment.id}`
       })),
       navigation: authored.map((segment) => ({ bounds: segment.bounds, id: segment.navigationId, segmentId: segment.id })),
-      visual: authored.map((segment) => ({ id: `visual-${segment.id}`, kind: segment.kind, segmentId: segment.id }))
+      visual: authored.map((segment) => ({
+        geometryId: segment.geometryId,
+        id: `visual-${segment.id}`,
+        kind: segment.kind,
+        segmentId: segment.id
+      }))
     }
   };
   return deepFreeze(result);

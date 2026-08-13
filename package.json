@@ -4,11 +4,15 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "assets:build-hero-rock": "node scripts/build-polyhaven-hero-rock.mjs",
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "test": "node tests/run-node-tests.mjs",
+    "test:h17": "node tests/run-node-tests.mjs --suite=h17",
+    "test:legacy": "node tests/run-node-tests.mjs --suite=legacy",
     "smoke": "node tests/dom-smoke.mjs",
     "browser:install": "playwright install chromium",
+    "assets:trim-animations": "node scripts/trim-reboot-animations.mjs",
     "preview:test": "node tests/reboot-e2e/previewServer.mjs",
     "e2e": "playwright test --config=playwright.config.js",
     "e2e:legacy": "node tests/e2e-playthrough.mjs",
@@ -18,7 +22,11 @@
     "three": "0.185.0"
   },
   "devDependencies": {
+    "@gltf-transform/core": "4.4.2",
+    "@gltf-transform/functions": "4.4.2",
     "@playwright/test": "1.62.0",
+    "meshoptimizer": "1.2.0",
+    "sharp": "0.35.3",
     "vite": "8.1.0"
   },
   "engines": {

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="사라진 친구 하루의 네 증거를 되찾는 H-17 2D 횡스크롤 액션 게임" />
+  <meta name="theme-color" content="#071127" />
+  <title>사라진 학생 H-17 — 2D 액션</title>
+</head>
+<body>
+  <main class="illustrated-game" data-illustrated-game data-game-phase="prologue" data-evidence-count="0" aria-label="사라진 학생 H-17 2D 횡스크롤 액션 게임">
+    <section class="game-shell" aria-describedby="game-instructions">
+      <header class="game-hud" data-game-hud>
+        <div class="chapter-mark" aria-label="현재 1장">
+          <span class="chapter-kicker">1장</span>
+          <strong>00:17</strong>
+        </div>
+        <div class="mission-copy">
+          <span>현재 임무</span>
+          <strong data-mission>하루의 감사 증거 4개를 복구하라</strong>
+          <p data-zone>출석 기록길</p>
+        </div>
+        <ol class="evidence-track" aria-label="증거 복구 진행도">
+          <li data-evidence-id="privacy"><span>01</span>개인정보</li>
+          <li data-evidence-id="bias"><span>02</span>편향</li>
+          <li data-evidence-id="copyright"><span>03</span>저작권</li>
+          <li data-evidence-id="deepfake"><span>04</span>딥페이크</li>
+        </ol>
+        <div class="health" data-health aria-label="체력 3">
+          <span aria-hidden="true">3 / 3</span>
+          <small>기록 안정도</small>
+        </div>
+      </header>
+
+      <section class="action-viewport" data-action-viewport>
+        <canvas class="action-canvas" data-action-canvas width="1280" height="720" role="img" aria-label="황금 발자국을 따라 부유 캠퍼스를 달리는 H-17"></canvas>
+        <p class="canvas-fallback">Canvas 2D를 지원하는 브라우저가 필요합니다.</p>
+
+        <div class="objective-prompt" data-objective-prompt aria-live="polite">
+          <kbd>D</kbd><span>황금 발자국을 따라 오른쪽으로 이동</span>
+        </div>
+
+        <aside class="story-panel" data-story-panel aria-live="polite">
+          <p class="story-speaker" data-story-speaker>도트</p>
+          <p class="story-line" data-story-line></p>
+          <button class="story-next" type="button" data-story-next>다음</button>
+        </aside>
+
+        <section class="ending-panel" data-ending-panel hidden aria-live="polite">
+          <p class="ending-kicker">기록 복구 완료</p>
+          <h1>하루는 ‘없던 학생’이 아니었다.</h1>
+          <p data-ending-line></p>
+          <dl class="ending-evidence">
+            <div><dt>보호</dt><dd>개인정보를 가린 검증본</dd></div>
+            <div><dt>보존</dt><dd>원본 맥락과 출처</dd></div>
+            <div><dt>대기</dt><dd>하루의 공개 동의</dd></div>
+          </dl>
+          <button type="button" data-restart>처음부터 다시 하기</button>
+        </section>
+
+        <button class="help-button" type="button" data-game-help aria-expanded="false">도움</button>
+      </section>
+
+      <nav class="touch-controls" data-touch-controls aria-label="모바일 게임 조작">
+        <div class="touch-move">
+          <button type="button" data-control="left">왼쪽</button>
+          <button type="button" data-control="right">오른쪽</button>
+        </div>
+        <div class="touch-actions">
+          <button type="button" data-control="jump">점프</button>
+          <button type="button" data-control="attack">공격</button>
+          <button class="trace-control" type="button" data-control="trace">TRACE</button>
+        </div>
+      </nav>
+
+      <p class="game-instructions sr-only" id="game-instructions">
+        A와 D 또는 방향키로 이동하고 Space로 점프합니다. J로 공격하고 E로 증거를 TRACE 합니다.
+      </p>
+      <p class="sr-only" data-live-status aria-live="polite"></p>
+    </section>
+
+    <dialog class="help-dialog" data-help-dialog>
+      <div class="help-heading">
+        <span>H-17 현장 매뉴얼</span>
+        <button type="button" data-help-close>닫기</button>
+      </div>
+      <h2>네 가지만 기억하면 돼요</h2>
+      <ul>
+        <li><kbd>A</kbd><kbd>D</kbd> 또는 방향키: 이동</li>
+        <li><kbd>Space</kbd>: 점프</li>
+        <li><kbd>J</kbd>: SIGNAL BLADE 공격</li>
+        <li><kbd>E</kbd>: 가까운 증거 TRACE</li>
+      </ul>
+      <p>쓰러져도 회수한 증거는 사라지지 않고 마지막 기록 지점에서 다시 시작합니다.</p>
+      <a href="./reboot.html">이전 3D 버전 열기</a>
+    </dialog>
+  </main>
+  <script type="module" src="/src/illustrated/entry.js"></script>
+</body>
+</html>

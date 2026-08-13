@@ -5,7 +5,8 @@ const SCENES = Object.freeze({
   2: 'campaign-chapter-2',
   3: 'campaign-chapter-3',
   4: 'campaign-chapter-4',
-  5: 'final-broadcast'
+  5: 'campaign-chapter-5',
+  6: 'final-broadcast'
 });
 
 export function resolveCampaignSceneId(seed) {

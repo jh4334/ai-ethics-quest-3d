@@ -4,9 +4,24 @@ export const chapterThreeLevel = createLinearSchoolLevel({
   bossExitId: 'chapter-three-complete',
   id: 'chapter-three-dual-school',
   segments: [
-    { color: '#f3b36c', id: 'comfort-entrance', kind: 'layer-gate', label: '편한 현실 입구', width: 5 },
-    { color: '#d74732', id: 'split-courtyard', kind: 'dual-arena', label: '갈라진 교정', width: 10 },
-    { color: '#5de0c1', id: 'verified-archive', kind: 'decision', label: '검증 현실 기록실', width: 6 },
-    { color: '#6aa9ff', id: 'recommendation-core', kind: 'boss-arena', label: '추천 코어', width: 12 }
+    {
+      color: '#6aa9ff', geometryId: 'split-foyer', id: 'dual-school-foyer',
+      interactionId: 'choose-first-school', kind: 'layer-gate', label: '갈라진 학교 입구', width: 8
+    },
+    {
+      anchorX: -4, color: '#f3b36c', geometryId: 'warm-incomplete', id: 'warm-incomplete-school',
+      interactionId: 'inspect-incomplete-answer', kind: 'arena', label: '따뜻한 미완성 학교',
+      pathId: 'warm-incomplete-path', phaseBeats: ['exploration', 'encounter'], width: 8
+    },
+    {
+      anchorX: 4, color: '#5de0c1', geometryId: 'cold-verified', id: 'cold-verified-school',
+      interactionId: 'verify-answer-records', kind: 'decision', label: '차가운 검증 학교',
+      pathId: 'cold-verifiable-path', phaseBeats: ['clue', 'mid-challenge'], width: 8
+    },
+    {
+      color: '#d74732', geometryId: 'deletion-archive', id: 'dot-deletion-archive',
+      interactionId: 'reveal-dot-deletion', kind: 'boss-arena', label: 'DOT 삭제 기록고',
+      phaseBeats: ['consequence', 'boss-escape'], width: 12
+    }
   ]
 });

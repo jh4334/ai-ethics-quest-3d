@@ -6,7 +6,8 @@ import {
   LEGACY_BACKUP_KEY,
   LEGACY_V3_KEY,
   V4_SAVE_KEY,
-  V4_TEMP_KEY,
+  V5_SAVE_KEY,
+  V5_TEMP_KEY,
   createSaveRepository
 } from '../src/reboot/save/repository.js';
 
@@ -43,7 +44,21 @@ function legacyBytes(overrides = {}) {
   }, null, 2);
 }
 
-test('empty storage boots and persists a fresh v4 campaign', () => {
+function v4Campaign(overrides = {}) {
+  return {
+    schemaVersion: 4,
+    integrity: { secured: 0, lost: 0 },
+    exposure: { contained: 0, disclosed: 0 },
+    trust: { dot: 0, haru: 0, lumen: 0, yoonseo: 0 },
+    chapterProgress: { completed: [1], current: 2, checkpoint: 'chapter-2:corridor' },
+    patchChoice: null,
+    evidence: [],
+    settings: { motion: 'full', quality: 'auto', sound: true },
+    ...overrides
+  };
+}
+
+test('empty storage boots and persists a fresh v5 campaign', () => {
   // Given: empty browser storage.
   const storage = new MemoryStorage();
   const repository = createSaveRepository(storage);
@@ -51,40 +66,39 @@ test('empty storage boots and persists a fresh v4 campaign', () => {
   // When: the reboot campaign starts.
   const boot = repository.boot();
 
-  // Then: a safe v4 state is available and stored.
+  // Then: a safe v5 state is available and stored without creating v4 bytes.
   assert.deepEqual(boot.state, createInitialRebootState());
   assert.equal(boot.recoveryNotice, null);
-  assert.equal(JSON.parse(storage.getItem(V4_SAVE_KEY)).schemaVersion, 4);
+  assert.equal(JSON.parse(storage.getItem(V5_SAVE_KEY)).schemaVersion, 5);
+  assert.equal(storage.getItem(V4_SAVE_KEY), null);
 });
 
-test('valid v4 storage continues unchanged across relaunch', () => {
-  // Given: a valid campaign at the second checkpoint.
-  const saved = {
-    ...createInitialRebootState(),
-    chapterProgress: { completed: [1], current: 2, checkpoint: 'chapter-2:corridor' }
-  };
-  const bytes = JSON.stringify(saved);
+test('valid v4 storage migrates once while its original bytes remain unchanged', () => {
+  // Given: a valid v4 campaign at the second checkpoint.
+  const bytes = JSON.stringify(v4Campaign());
   const storage = new MemoryStorage([[V4_SAVE_KEY, bytes]]);
 
   // When: two repository instances boot from the same storage.
   const first = createSaveRepository(storage).boot();
+  const writesAfterMigration = storage.writes.length;
   const second = createSaveRepository(storage).boot();
 
-  // Then: both continue from the stored checkpoint without rewriting it.
+  // Then: progress migrates once, v4 stays byte-identical, and v5 relaunch is idempotent.
   assert.equal(first.state.chapterProgress.checkpoint, 'chapter-2:corridor');
   assert.deepEqual(second.state, first.state);
   assert.equal(storage.getItem(V4_SAVE_KEY), bytes);
-  assert.deepEqual(storage.writes, []);
+  assert.equal(JSON.parse(storage.getItem(V5_SAVE_KEY)).schemaVersion, 5);
+  assert.equal(storage.writes.length, writesAfterMigration);
 });
 
 test('malformed JSON and schema recover to a new game with one notice', () => {
-  // Given: a truncated save, followed by a structurally invalid v4 save.
-  const storage = new MemoryStorage([[V4_SAVE_KEY, '{"schemaVersion":4']]);
+  // Given: a truncated save, followed by a structurally invalid v5 save.
+  const storage = new MemoryStorage([[V5_SAVE_KEY, '{"schemaVersion":5']]);
   const repository = createSaveRepository(storage);
 
   // When: each damaged value is booted.
   const truncated = repository.boot();
-  storage.setItem(V4_SAVE_KEY, JSON.stringify({ schemaVersion: 4, evidence: [{ id: 'unknown-record' }] }));
+  storage.setItem(V5_SAVE_KEY, JSON.stringify({ schemaVersion: 5, evidence: [{ id: 'unknown-record' }] }));
   const invalidSchema = repository.boot();
 
   // Then: both use a safe new campaign and expose a non-blocking recovery notice.
@@ -94,11 +108,11 @@ test('malformed JSON and schema recover to a new game with one notice', () => {
   assert.match(invalidSchema.recoveryNotice, /손상/);
 });
 
-test('future-version storage is not interpreted as v4 progress', () => {
+test('future-version storage is not interpreted as v5 progress', () => {
   // Given: a valid-looking save from an unsupported future schema.
   const storage = new MemoryStorage([[
-    V4_SAVE_KEY,
-    JSON.stringify({ ...createInitialRebootState(), schemaVersion: 9 })
+    V5_SAVE_KEY,
+    JSON.stringify({ ...createInitialRebootState(), schemaVersion: 6 })
   ]]);
 
   // When: the repository boots it.
@@ -128,16 +142,16 @@ test('existing v3 bytes are backed up once and only settings migrate', () => {
   assert.equal(storage.writes.length, writesAfterFirstBoot);
 });
 
-test('legacy backup survives v4 reset and corruption byte for byte', () => {
-  // Given: a migrated v3 save and active v4 repository.
+test('legacy backup survives v5 reset and corruption byte for byte', () => {
+  // Given: a migrated v3 save and active v5 repository.
   const original = legacyBytes();
   const storage = new MemoryStorage([[LEGACY_V3_KEY, original]]);
   const repository = createSaveRepository(storage);
   repository.boot();
 
-  // When: v4 is reset, then corrupted and recovered.
+  // When: v5 is reset, then corrupted and recovered.
   repository.reset();
-  storage.setItem(V4_SAVE_KEY, 'not-json');
+  storage.setItem(V5_SAVE_KEY, 'not-json');
   const recovered = repository.boot();
 
   // Then: recovery starts safely without touching the original backup bytes.
@@ -156,13 +170,13 @@ test('migration accepts only sound motion and quality settings', () => {
   });
   const storage = new MemoryStorage([[LEGACY_V3_KEY, original]]);
 
-  // When: migration boots v4.
+  // When: migration boots v5.
   const { state } = createSaveRepository(storage).boot();
 
   // Then: only the three approved settings cross the boundary.
   assert.deepEqual(state.settings, { sound: true, motion: 'reduced', quality: 'medium' });
   assert.deepEqual(Object.keys(state).sort(), Object.keys(createInitialRebootState()).sort());
-  assert.doesNotMatch(storage.getItem(V4_SAVE_KEY), /nickname|legacy-answer|legacy-patch/);
+  assert.doesNotMatch(storage.getItem(V5_SAVE_KEY), /nickname|legacy-answer|legacy-patch/);
 });
 
 test('writes validate a temporary value and are atomic and idempotent', () => {
@@ -179,8 +193,8 @@ test('writes validate a temporary value and are atomic and idempotent', () => {
   repository.write(nextState);
 
   // Then: the committed value is valid, the temp is removed, and the repeated write is a no-op.
-  assert.equal(JSON.parse(storage.getItem(V4_SAVE_KEY)).chapterProgress.checkpoint, 'chapter-1:arena');
-  assert.equal(storage.getItem(V4_TEMP_KEY), null);
+  assert.equal(JSON.parse(storage.getItem(V5_SAVE_KEY)).chapterProgress.checkpoint, 'chapter-1:arena');
+  assert.equal(storage.getItem(V5_TEMP_KEY), null);
   assert.equal(storage.writes.length, writesAfterCommit);
 });
 
@@ -193,16 +207,16 @@ test('storage interruption degrades to session memory without throwing or corrup
     ...oldState,
     chapterProgress: { completed: [], current: 1, checkpoint: 'chapter-1:arena' }
   };
-  const oldBytes = storage.getItem(V4_SAVE_KEY);
-  storage.failOnKey = V4_SAVE_KEY;
+  const oldBytes = storage.getItem(V5_SAVE_KEY);
+  storage.failOnKey = V5_SAVE_KEY;
 
   // When: replacement is interrupted — the session must survive, not crash (사파리 사생활 모드·쿼터 초과).
   assert.doesNotThrow(() => repository.write(nextState));
 
   // Then: the real committed bytes are untouched (no corruption), the temp holds the newer value
   // for next-boot recovery, and in-session reads see the newer state via the memory shadow.
-  assert.equal(storage.values.get(V4_SAVE_KEY), oldBytes);
-  assert.equal(JSON.parse(storage.getItem(V4_TEMP_KEY)).chapterProgress.checkpoint, 'chapter-1:arena');
+  assert.equal(storage.values.get(V5_SAVE_KEY), oldBytes);
+  assert.equal(JSON.parse(storage.getItem(V5_TEMP_KEY)).chapterProgress.checkpoint, 'chapter-1:arena');
   assert.equal(repository.isStorageDegraded(), true);
 
   // And: further writes keep working in memory without touching the broken storage again.
@@ -240,8 +254,8 @@ test('corrupted temporary data cannot replace a committed save', () => {
   };
   const committedBytes = JSON.stringify(committed);
   const storage = new MemoryStorage([
-    [V4_SAVE_KEY, committedBytes],
-    [V4_TEMP_KEY, '{"schemaVersion":4']
+    [V5_SAVE_KEY, committedBytes],
+    [V5_TEMP_KEY, '{"schemaVersion":5']
   ]);
 
   // When: a new repository boots after the interruption.
@@ -249,8 +263,8 @@ test('corrupted temporary data cannot replace a committed save', () => {
 
   // Then: the committed checkpoint wins and the unusable temp value is removed.
   assert.equal(boot.state.chapterProgress.checkpoint, 'chapter-1:arena');
-  assert.equal(storage.getItem(V4_SAVE_KEY), committedBytes);
-  assert.equal(storage.getItem(V4_TEMP_KEY), null);
+  assert.equal(storage.getItem(V5_SAVE_KEY), committedBytes);
+  assert.equal(storage.getItem(V5_TEMP_KEY), null);
 });
 
 test('an existing legacy backup is never overwritten by later migration attempts', () => {

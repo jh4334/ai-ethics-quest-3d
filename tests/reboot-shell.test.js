@@ -221,7 +221,7 @@ test('input router exposes combat verbs to keyboard and touch adapters', () => {
   input.detach();
 });
 
-test('Vite builds isolated legacy and reboot entries with one Three chunk rule', () => {
+test('Vite builds isolated 2D, legacy, and reboot entries with one Three chunk rule', () => {
   // Given: the authored HTML entries, Vite config, and reboot entry source.
   const canonicalHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   const legacyHtml = readFileSync(new URL('../legacy.html', import.meta.url), 'utf8');
@@ -231,11 +231,11 @@ test('Vite builds isolated legacy and reboot entries with one Three chunk rule',
   const runtimeSettings = readFileSync(new URL('../src/reboot/settings/runtime.js', import.meta.url), 'utf8');
 
   // When: their static entry contracts are inspected.
-  // Then: reboot is canonical, legacy remains available, and both share the pinned Three chunk.
-  assert.match(canonicalHtml, /reboot\.html/);
+  // Then: illustrated 2D is canonical, both 3D versions remain available, and they share the pinned Three chunk.
+  assert.match(canonicalHtml, /illustrated\.html/);
   assert.match(legacyHtml, /src="\/src\/main\.js"/);
   assert.match(rebootHtml, /src="\/src\/reboot\/entry\.js"/);
-  assert.match(vite, /input:\s*\{[\s\S]*legacy:[\s\S]*main:[\s\S]*reboot:/);
+  assert.match(vite, /input:\s*\{[\s\S]*illustrated:[\s\S]*legacy:[\s\S]*main:[\s\S]*reboot:/);
   assert.match(vite, /node_modules\/three[\s\S]*return 'three'/);
   assert.doesNotMatch(rebootEntry, /(?:\.\.\/)+main\.js|\/src\/main\.js/);
   // 저장소는 안전 획득을 거친다 — localStorage 접근 자체가 throw하는 환경에서도 부팅(강등 폴백).

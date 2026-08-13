@@ -18,8 +18,13 @@ export function getEncounterCameraTargets(frame, routeCue, encounter) {
       Math.hypot(first.position.x - frame.player.position.x, first.position.z - frame.player.position.z)
       - Math.hypot(second.position.x - frame.player.position.x, second.position.z - frame.player.position.z)
     ))[0];
-  const threatId = committed?.id ?? nearest?.id;
-  const threat = frame.targets.find((target) => target.id === threatId) ?? frame.player;
+  const playerPosition = frame.player.position;
+  const nearestDistance = nearest
+    ? Math.hypot(nearest.position.x - playerPosition.x, nearest.position.z - playerPosition.z)
+    : Infinity;
+  const threatId = committed?.id ?? (nearestDistance <= 12 ? nearest?.id : null);
+  const threat = frame.targets.find((target) => target.id === threatId)
+    ?? { id: 'player', position: frame.player.position };
   const memoryTarget = frame.targets.find((target) => target.id === 'memory-backup');
   const traceTarget = Math.abs(frame.player.position.z + 54) < 10 && memoryTarget
     ? memoryTarget
@@ -108,16 +113,48 @@ export function updateSchoolCamera({
   const combatFocus = (currentSegment.id === 'first-arena'
     && encounter.enemies.some((enemy) => ['windup', 'active'].includes(enemy.phase))) || inBoss;
   const mode = inBoss ? 'boss' : combatFocus ? 'arena' : 'route';
+  const portraitArena = viewport.mode === 'touch' && viewport.height > viewport.width;
+  const profile = viewport.mode === 'touch'
+    ? CAMPUS_VISUAL_PROFILE.camera.touch
+    : CAMPUS_VISUAL_PROFILE.camera.desktop;
+  const touchFirstVista = viewport.mode === 'touch' && viewport.width >= 700
+    ? profile.tabletFirstVista
+    : profile.firstVista;
+  const firstVista = mode === 'route' && currentSegment.id === 'classroom-cold-open'
+    ? touchFirstVista
+    : null;
   const heightShift = mode === 'boss' ? 2 : 0;
   const distanceShift = mode === 'boss' ? 5 : 0;
-  camera.position.set(next.position.x, next.position.y - heightShift, next.position.z - distanceShift);
-  camera.fov = mode === 'arena' ? 50 : mode === 'boss' ? 36 : next.fov;
+  const routeDistanceShift = mode === 'route'
+    ? firstVista?.distanceShift ?? profile.routeDistanceShift ?? 0
+    : 0;
+  const routeHeightShift = mode === 'route' ? firstVista?.heightShift ?? 0 : 0;
+  const routeLateralShift = mode === 'route'
+    ? firstVista?.lateralShift ?? profile.routeLateralShift ?? 0
+    : 0;
+  const routeLookLateral = mode === 'route' ? firstVista?.lookLateral ?? 0 : 0;
+  const routeLookLift = mode === 'route'
+    ? firstVista?.lookLift ?? profile.routeLookLift ?? 0
+    : 0;
+  camera.position.set(
+    next.position.x + routeLateralShift,
+    next.position.y - heightShift - routeHeightShift,
+    next.position.z - distanceShift + routeDistanceShift
+  );
+  camera.fov = mode === 'arena'
+    ? portraitArena ? 66 : 50
+    : mode === 'boss' ? 36 : firstVista?.fov ?? profile.routeFov ?? next.fov;
   camera.updateProjectionMatrix();
-  camera.lookAt(next.lookAt.x, next.lookAt.y, next.lookAt.z);
+  camera.lookAt(
+    next.lookAt.x + routeLookLateral,
+    next.lookAt.y + routeLookLift,
+    next.lookAt.z
+  );
   return Object.freeze({
     cameraState: next,
     combatSafeArea: inspectCombatSafeArea(camera, targets, viewport, mode),
     targets
   });
 }
+import { CAMPUS_VISUAL_PROFILE } from '../design/tokens.js';
 import { updateCameraController } from '../camera/controller.js';

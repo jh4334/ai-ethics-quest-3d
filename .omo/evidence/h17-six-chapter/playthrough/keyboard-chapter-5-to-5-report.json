@@ -1,0 +1,22 @@
+{
+  "baseUrl": "http://127.0.0.1:8899/",
+  "chapterReports": [
+    {
+      "checkpoint": "chapter-6:broadcast-room",
+      "drawCalls": 75,
+      "p95FrameMs": 100,
+      "triangles": 133299,
+      "chapter": 5,
+      "elapsedSeconds": 70.1,
+      "inputMode": "keyboard",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-5-keyboard-result.png"
+    }
+  ],
+  "consoleErrors": [],
+  "failedResponses": [],
+  "endingChapter": 5,
+  "finalCheckpoint": "chapter-6:broadcast-room",
+  "inputMode": "keyboard",
+  "startingChapter": 5,
+  "touch": null
+}

@@ -4,14 +4,17 @@ import test from 'node:test';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('canonical root, legacy route, and service worker form one release boundary', () => {
+test('canonical 2D root, preserved 3D routes, and service worker form one release boundary', () => {
   const index = read('index.html');
   const legacy = read('legacy.html');
   const sw = read('public/sw.js');
-  assert.match(index, /location\.replace\(rebootUrl\.href\)/);
+  const manifest = JSON.parse(read('public/reboot-assets.json'));
+  assert.match(index, /location\.replace\(illustratedUrl\.href\)/);
   assert.match(legacy, /src="\/src\/main\.js"/);
-  assert.match(sw, /ethics-quest-h17-v10/);
-  assert.match(sw, /\.\/index\.html', '\.\/reboot\.html', '\.\/legacy\.html/);
+  assert.match(sw, /\.\/index\.html', '\.\/illustrated\.html', '\.\/reboot\.html', '\.\/legacy\.html/);
+  assert.match(sw, /LAZY_ASSET_PREFIXES/);
+  assert.ok(manifest.some((path) => path.includes('/environment/building/')));
+  assert.ok(manifest.some((path) => path.includes('/environment/materials/')));
 });
 
 test('release docs record the exact non-destructive rollback and current five chapters', () => {
@@ -38,6 +41,18 @@ test('Pages CI gates unit, build, smoke, slice, browser, visual, and offline cov
   assert.match(read('tests/reboot-e2e/reboot.spec.js'), /오프라인 재실행/);
   assert.match(read('playwright.config.js'), /reducedMotion: 'reduce'/);
   assert.match(read('tests/reboot-e2e/campaign.spec.js'), /운영 루트는 저장된 2장/);
+});
+
+test('Pages CI bounds each browser suite instead of hiding a multi-hour aggregate hang', () => {
+  const workflow = read('.github/workflows/pages.yml');
+  assert.match(workflow, /build:\s+timeout-minutes: 120/);
+  for (const spec of ['campaign', 'h17-polish', 'reboot', 'slice']) {
+    assert.match(
+      workflow,
+      new RegExp(`npm run e2e -- tests/reboot-e2e/${spec}\\.spec\\.js --max-failures=1`)
+    );
+  }
+  assert.doesNotMatch(workflow, /^\s*run:\s*npm run e2e\s*$/m);
 });
 
 test('every imported runtime character family has provenance', () => {

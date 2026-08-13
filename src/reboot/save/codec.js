@@ -21,6 +21,6 @@ export function parseStoredSave(raw) {
 }
 
 export function serializeSave(state) {
-  if (!isValidRebootState(state)) throw new TypeError('유효한 v4 저장 상태가 필요합니다.');
+  if (!isValidRebootState(state)) throw new TypeError(`유효한 v${SAVE_SCHEMA_VERSION} 저장 상태가 필요합니다.`);
   return JSON.stringify(normalizeRebootState(state));
 }

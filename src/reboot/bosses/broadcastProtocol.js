@@ -45,9 +45,7 @@ function result(state, events) {
   return Object.freeze({ events: deepFreeze(events), state: freezeState(state) });
 }
 
-export function createBroadcastProtocolState(seed) {
-  const campaign = normalizeRebootState(seed);
-  const prepared = supportProtected(campaign);
+function createProtocolState(prepared) {
   return freezeState({
     activeWindowTicks: prepared ? 720 : 600,
     definition: BROADCAST_PROTOCOL,
@@ -63,6 +61,10 @@ export function createBroadcastProtocolState(seed) {
     tick: 0,
     version: 1
   });
+}
+
+export function createBroadcastProtocolState(seed) {
+  return createProtocolState(supportProtected(normalizeRebootState(seed)));
 }
 
 function accepts(phase, action) {
@@ -88,16 +90,7 @@ export function stepBroadcastProtocol(state, context = {}) {
     return result({ ...state, status: 'defeated', tick: state.tick + 1 }, [{ type: 'protocol-attempt-lost' }]);
   }
   if (state.status === 'defeated') {
-    return result(createBroadcastProtocolState({
-      schemaVersion: 4,
-      integrity: { secured: state.prepared ? 1 : 0, lost: 0 },
-      exposure: { contained: 0, disclosed: 0 },
-      trust: { dot: 0, haru: 0, lumen: 0, yoonseo: 0 },
-      chapterProgress: { completed: [], current: 1, checkpoint: 'chapter-1:start' },
-      patchChoice: null,
-      evidence: state.prepared ? [{ action: 'secure', chapter: 4, evidenceId: 'support-record' }] : [],
-      settings: { motion: 'full', quality: 'auto', sound: true }
-    }), [{ type: 'protocol-retry-ready' }]);
+    return result(createProtocolState(state.prepared), [{ type: 'protocol-retry-ready' }]);
   }
 
   const phase = state.definition.phases[state.phaseIndex];

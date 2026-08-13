@@ -6,12 +6,12 @@ export function createScenePerformanceProbe({ feedback, renderer, scene, windowR
   scene.traverse((object) => { if (object.isLight) lights += 1; });
   return Object.freeze({
     record(delta) {
-      const feedbackState = feedback.getDebugState();
+      const feedbackState = feedback?.getDebugState?.();
       metrics.record(delta, {
         calls: renderer.info.render.calls,
         heapBytes: windowRef.performance?.memory?.usedJSHeapSize ?? 0,
         lights,
-        particles: feedbackState.pool.active * 2,
+        particles: (feedbackState?.pool?.active ?? 0) * 2,
         triangles: renderer.info.render.triangles
       });
     },

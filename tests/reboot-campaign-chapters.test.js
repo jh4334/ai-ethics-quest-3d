@@ -47,14 +47,14 @@ test('Given chapter-one endings, When campaign seeds are compared, Then SECURE a
   assert.notEqual(secure.trust.haru, purge.trust.haru);
 });
 
-test('Given chapter 2 and 3 content, When validated, Then each ships a distinct loop, boss, PATCH, echoes, reversal, and pace', () => {
+test('Given chapter 2 and 3 content, When validated, Then each ships a distinct loop, boss, PATCH, echoes, reversal, and honest timing state', () => {
   // Given: 1장 동결 스키마를 따르는 두 장의 데이터.
   const definitions = CHAPTERS_2_3;
 
   // When: 공용 콘텐츠 경계가 데이터를 검사한다.
   const result = validateChapterDefinitions(definitions);
 
-  // Then: 장별 핵심 루프와 보상·반전·시간 예산이 빠짐없이 서로 다르다.
+  // Then: 장별 핵심 루프와 보상·반전이 서로 다르고, 실측 전에는 분량 숫자를 만들지 않는다.
   assert.deepEqual(definitions.map((chapter) => chapter.id), [
     'chapter-2-smiling-riot', 'chapter-3-dual-school'
   ]);
@@ -65,8 +65,9 @@ test('Given chapter 2 and 3 content, When validated, Then each ships a distinct 
     assert.equal(chapter.consequenceEchoes.length, 2);
     assert.ok(chapter.boss.phases.length >= 3);
     assert.ok(chapter.reversal.foreshadowIds.length >= 2);
-    assert.ok(chapter.timeline.desktopMinutes >= 25 && chapter.timeline.desktopMinutes <= 35);
-    assert.ok(chapter.timeline.touchMinutes >= 25 && chapter.timeline.touchMinutes <= 35);
+    assert.equal(chapter.timeline.status, 'unmeasured');
+    assert.equal('desktopMinutes' in chapter.timeline, false);
+    assert.equal('touchMinutes' in chapter.timeline, false);
   }
 });
 

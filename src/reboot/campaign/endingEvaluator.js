@@ -52,7 +52,7 @@ function evidenceAction(state, evidenceId) {
 }
 
 function resolvedId(state) {
-  const match = /^chapter-5:resolved-(redacted|raw|sealed)$/.exec(state.chapterProgress.checkpoint);
+  const match = /^chapter-6:resolved-(redacted|raw|sealed)$/.exec(state.chapterProgress.checkpoint);
   return match ? { redacted: 'redacted-broadcast', raw: 'raw-disclosure', sealed: 'sealed-incident' }[match[1]] : null;
 }
 
@@ -87,12 +87,12 @@ export function finalizeCampaign(seed, { decision } = {}) {
   if (existingId) return Object.freeze({ outcome: outcomeFor(state, existingId), state });
   const id = evaluateEnding(state, decision);
   const action = id === 'raw-disclosure' ? 'expose' : 'secure';
-  let finalState = recordEvidenceOutcome(state, { action, chapter: 5, evidenceId: 'broadcast-queue' });
+  let finalState = recordEvidenceOutcome(state, { action, chapter: 6, evidenceId: 'broadcast-queue' });
   const checkpoint = {
-    'redacted-broadcast': 'chapter-5:resolved-redacted',
-    'raw-disclosure': 'chapter-5:resolved-raw',
-    'sealed-incident': 'chapter-5:resolved-sealed'
+    'redacted-broadcast': 'chapter-6:resolved-redacted',
+    'raw-disclosure': 'chapter-6:resolved-raw',
+    'sealed-incident': 'chapter-6:resolved-sealed'
   }[id];
-  finalState = setChapterCheckpoint(finalState, 5, checkpoint);
+  finalState = setChapterCheckpoint(finalState, 6, checkpoint);
   return Object.freeze({ outcome: outcomeFor(finalState, id), state: finalState });
 }

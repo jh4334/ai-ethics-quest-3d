@@ -58,10 +58,16 @@ function syncBoss(ui, bossState) {
 
 function syncOutcome(ui, outcome) {
   if (!outcome) return;
-  ui.result.hidden = false;
-  if (ui.resultAction) ui.resultAction.textContent = outcome.actionKo;
-  if (ui.resultConsequence) ui.resultConsequence.textContent = outcome.routeConsequenceKo;
-  if (ui.resultReversal) ui.resultReversal.textContent = outcome.reversalKo;
+  if (ui.result.hidden) ui.result.hidden = false;
+  if (ui.resultAction && ui.resultAction.textContent !== outcome.actionKo) {
+    ui.resultAction.textContent = outcome.actionKo;
+  }
+  if (ui.resultConsequence && ui.resultConsequence.textContent !== outcome.routeConsequenceKo) {
+    ui.resultConsequence.textContent = outcome.routeConsequenceKo;
+  }
+  if (ui.resultReversal && ui.resultReversal.textContent !== outcome.reversalKo) {
+    ui.resultReversal.textContent = outcome.reversalKo;
+  }
 }
 
 export function createSchoolSceneHud({ canvas, ui = {} }) {

@@ -51,7 +51,9 @@ export function createTouchControls({ input, root }) {
       if (stick) {
         listen(stick, 'pointerdown', (event) => {
           pointerId = event.pointerId;
-          stick.setPointerCapture?.(event.pointerId);
+          try {
+            stick.setPointerCapture?.(event.pointerId);
+          } catch {}
           moveStick(event);
         });
         listen(stick, 'pointermove', moveStick);

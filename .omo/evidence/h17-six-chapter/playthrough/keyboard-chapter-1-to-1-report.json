@@ -1,0 +1,22 @@
+{
+  "baseUrl": "http://127.0.0.1:8899/",
+  "chapterReports": [
+    {
+      "checkpoint": "chapter-2:start",
+      "drawCalls": 76,
+      "p95FrameMs": 100,
+      "triangles": 70623,
+      "chapter": 1,
+      "elapsedSeconds": 99.5,
+      "inputMode": "keyboard",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-1-keyboard-result.png"
+    }
+  ],
+  "consoleErrors": [],
+  "failedResponses": [],
+  "endingChapter": 1,
+  "finalCheckpoint": "chapter-2:start",
+  "inputMode": "keyboard",
+  "startingChapter": 1,
+  "touch": null
+}

@@ -1,4 +1,5 @@
 import { createAppLifecycle } from './app/lifecycle.js';
+import { createWebglBootController } from './app/bootController.js';
 import { resolveCampaignSceneId } from './app/campaignSceneRouting.js';
 import { resolveBootScene } from './app/fixtures.js';
 import { createBossFixture } from './bosses/fixtures.js';
@@ -11,22 +12,34 @@ import { createRebootSession } from './app/session.js';
 import { createSceneRegistry } from './app/sceneRegistry.js';
 import { createTouchControls } from './input/touchControls.js';
 import { createVisibilityPause } from './input/visibilityPause.js';
+import { createTeacherReportView } from './report/teacherReportView.js';
+import { applyDesignTokens } from './design/tokens.js';
 import { applyViewportFixture, configureRuntime, withRuntimeSettings } from './settings/runtime.js';
 import { createRenderer } from './render/renderer.js';
 import { createDualSchoolPreviewScene } from './render/dualSchoolPreviewScene.js';
 import { createFinalBroadcastPreviewScene } from './render/finalBroadcastPreviewScene.js';
 import { createCampaignChapterScene } from './render/campaignChapterScene.js';
 import { createSchoolNightScene } from './render/schoolNightScene.js';
+import { createTestimonyArchiveScene } from './render/testimonyArchiveScene.js';
+import { createProductShell } from './shell/productShell.js';
 import {
-  LEGACY_BACKUP_KEY, LEGACY_V3_KEY, V4_SAVE_KEY, V4_TEMP_KEY
+  LEGACY_BACKUP_KEY, LEGACY_V3_KEY, V4_SAVE_KEY, V4_TEMP_KEY, V5_SAVE_KEY, V5_TEMP_KEY
 } from './save/repository.js';
 import { safeLocalStorage } from './save/resilientStorage.js';
 
 const root = document.querySelector('[data-reboot-root]');
 const canvas = root?.querySelector('[data-reboot-canvas]');
 if (!root || !canvas) throw new Error('H-17 reboot root and canvas are required');
+applyDesignTokens(root);
 
 const session = createRebootSession({ storage: safeLocalStorage(window) });
+for (const item of root.querySelectorAll('[data-chapter-progress] [data-chapter]')) {
+  const chapter = Number(item.dataset.chapter);
+  const progress = session.getState().chapterProgress;
+  const state = progress.completed.includes(chapter) ? 'complete' : chapter === progress.current ? 'current' : 'locked';
+  item.dataset.state = state;
+  if (state === 'current') item.setAttribute('aria-current', 'step');
+}
 const searchParams = new URLSearchParams(window.location.search);
 const testHook = window.__ETHICS_TEST_HOOK__ === true
   || window.sessionStorage.getItem('h17.testHook') === 'true'
@@ -41,7 +54,17 @@ const syncTouchMode = () => {
 };
 syncTouchMode();
 touchLayoutQuery.addEventListener?.('change', syncTouchMode);
-const renderer = createRenderer(canvas, { quality: runtimeSettings.quality, windowRef: window });
+const status = root.querySelector('[data-reboot-status]');
+const boot = createWebglBootController({
+  canvas,
+  failure: root.querySelector('[data-webgl-failure]'),
+  reload: () => window.location.reload(),
+  root,
+  status
+});
+const renderer = boot.createRenderer(() => createRenderer(canvas, { quality: runtimeSettings.quality, windowRef: window }));
+
+if (renderer) {
 const input = createInputRouter({ target: window });
 const touchControls = createTouchControls({ input, root });
 const sceneUi = Object.freeze({
@@ -73,7 +96,10 @@ const bossUiBridge = Object.freeze({
 for (const button of patchPanel.querySelectorAll('[data-patch-id]')) {
   button.addEventListener('click', () => choosePatch?.(button.dataset.patchId));
 }
-sceneUi.continueButton.addEventListener('click', () => window.location.reload());
+sceneUi.continueButton.addEventListener('click', () => {
+  app.transition(resolveCampaignSceneId(session.getState()));
+  syncStatus();
+});
 const createScene = (
   startPosition = { x: 0, y: 0 }, encounterOptions = {}, storyOptions = null,
   bossOptions = { enabled: true }
@@ -111,6 +137,10 @@ const sceneRegistry = createSceneRegistry([
     campaign: session.getState(), canvas, chapter, input,
     persist: (campaign) => session.update(() => campaign), renderer, ui: sceneUi
   })]),
+  ['campaign-chapter-5', () => createTestimonyArchiveScene({
+    campaign: session.getState(), canvas, input,
+    persist: (campaign) => session.update(() => campaign), renderer, ui: sceneUi
+  })],
   ['final-broadcast', () => createFinalBroadcastPreviewScene({
     campaign: session.getState(), canvas, input,
     persist: (campaign) => session.update(() => campaign), renderer, ui: sceneUi
@@ -137,7 +167,6 @@ const sceneId = resolveBootScene({
   search: window.location.search,
   testHook
 });
-const status = root.querySelector('[data-reboot-status]');
 const recoveryNotice = root.querySelector('[data-recovery-notice]');
 
 if (session.getRecoveryNotice()) {
@@ -159,6 +188,10 @@ const visibilityPause = createVisibilityPause({
   documentRef: document,
   pause: () => app.pause(),
   sync: syncStatus
+});
+boot.onContextLost(() => {
+  app.pause();
+  root.dataset.status = app.getState().status;
 });
 
 // R 오조작 방지(S6a) — 한 번 더 눌러야 실제로 다시 시작한다(진행 소실 방지).
@@ -192,19 +225,40 @@ input.subscribe(({ action, active }) => {
 });
 root.querySelector('[data-pause]')?.addEventListener('click', togglePause);
 root.querySelector('[data-restart]')?.addEventListener('click', requestRestart);
+const productShell = createProductShell({
+  onStart: (nextSceneId) => {
+    if (app.getState().status === 'idle') app.start(nextSceneId);
+    else app.transition(nextSceneId);
+    syncStatus();
+  },
+  root,
+  session,
+  windowRef: window
+});
+const teacherReport = createTeacherReportView({
+  getState: () => session.getState(),
+  root,
+  windowRef: window
+});
+root.querySelector('[data-teacher-report-open]')?.addEventListener('click', () => teacherReport.open());
 window.addEventListener('pagehide', () => {
   visibilityPause.detach();
   touchControls.detach();
   input.detach();
   app.destroy();
+  boot.dispose();
   renderer.dispose();
 }, { once: true });
 
 input.attach();
 touchControls.attach();
 visibilityPause.attach();
-app.start(sceneId);
-syncStatus();
+if (testHook) {
+  app.start(sceneId);
+  syncStatus();
+} else {
+  productShell.open();
+}
 
 if (testHook) {
   const testPanel = root.querySelector('[data-test-storage]');
@@ -250,7 +304,7 @@ if (testHook) {
   });
   window.__ethicsReboot = Object.freeze({
     clearStorageForTest: () => {
-      for (const key of [LEGACY_BACKUP_KEY, LEGACY_V3_KEY, V4_SAVE_KEY, V4_TEMP_KEY]) {
+      for (const key of [LEGACY_BACKUP_KEY, LEGACY_V3_KEY, V4_SAVE_KEY, V4_TEMP_KEY, V5_SAVE_KEY, V5_TEMP_KEY]) {
         window.localStorage.removeItem(key);
       }
     },
@@ -264,10 +318,13 @@ if (testHook) {
     pause: () => { app.pause(); syncStatus(); },
     restart: () => { app.restart(); syncStatus(); },
     resume: () => { app.resume(); syncStatus(); },
+    transition: (nextSceneId) => { app.transition(nextSceneId); syncStatus(); },
     seedLegacyForTest: (raw) => {
       window.localStorage.removeItem(LEGACY_BACKUP_KEY);
       window.localStorage.removeItem(V4_SAVE_KEY);
       window.localStorage.removeItem(V4_TEMP_KEY);
+      window.localStorage.removeItem(V5_SAVE_KEY);
+      window.localStorage.removeItem(V5_TEMP_KEY);
       window.localStorage.setItem(LEGACY_V3_KEY, raw);
     },
     setViewportForTest: (name) => {
@@ -282,4 +339,5 @@ if (testHook) {
     sceneId
   });
   syncTestOutput();
+}
 }

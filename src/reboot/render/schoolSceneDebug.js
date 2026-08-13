@@ -2,7 +2,7 @@ import { getFramingReport } from '../camera/controller.js';
 import { getSceneViewport } from './schoolSceneCamera.js';
 
 export function createSchoolSceneDebugSnapshot({
-  activeTargets, bossGame, cameraState, canvas, cast, combatSafeArea, currentSegment,
+  activeTargets, bossGame, cameraState, campus, canvas, cast, combatSafeArea, currentSegment,
   enemyCast, feedback, game, lastEnemyEvents, lastEvents, lastFrame, performanceProbe,
   route, story
 }) {
@@ -23,6 +23,7 @@ export function createSchoolSceneDebugSnapshot({
       tick: lastFrame.tick
     }),
     enemies: enemyCast.getDebugState(),
+    environment: campus.getDebugState(),
     feedback: feedback.getDebugState(),
     performance: performanceProbe.report(),
     enemyEventTypes: Object.freeze(lastEnemyEvents.map((event) => event.type)),

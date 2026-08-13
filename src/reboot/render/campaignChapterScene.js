@@ -3,19 +3,24 @@ import * as THREE from 'three';
 import { createEncounterGameRuntime } from '../app/encounterGameRuntime.js';
 import { completeCampaignChapter } from '../campaign/chapterProgression.js';
 import {
-  ROOM_ENCOUNTER_ORIGIN, ROOM_ENTRY_GRACE_TICKS, ROOM_START_POSITION, advanceRoomWave,
-  createRoomWaveProgress, getRoomWaveEncounter, isRoomWaveCleared
+  ROOM_ENTRY_GRACE_TICKS, advanceRoomWave,
+  createRoomWaveProgress, getRoomWaveEncounter, isSpatialWaveReady
 } from '../campaign/roomWaves.js';
 import { createCharacterFactory } from '../characters/factory.js';
+import { WORLD_COLORS } from '../design/tokens.js';
 import { walkableRectsFromLevel } from '../level/walkableBounds.js';
 import { PLAYER_RULES } from '../content/actions.js';
+import { createScenePerformanceProbe } from '../perf/sceneProbe.js';
 import { CHAPTERS_2_5 } from '../content/chapters/catalog.js';
 import { chapterTwoLevel } from '../content/levels/chapter2.js';
 import { chapterThreeLevel } from '../content/levels/chapter3.js';
 import { chapterFourLevel } from '../content/levels/chapter4.js';
 import { createBladeTrail } from './bladeTrail.js';
+import { createCampaignChapterEnvironment } from './campaignChapterEnvironment.js';
+import { campaignCameraFrame } from './campaignSceneCamera.js';
 import { createDisposableRegistry } from './dispose.js';
 import { createCampaignLandmarks } from './campaignLandmarks.js';
+import { createCampaignSpatialLandmarks } from './campaignSpatialLandmarks.js';
 import { createEnemyCast } from './enemyCast.js';
 import { createEnemyHpBars } from './enemyHpBars.js';
 import { createSceneRadio } from './sceneRadio.js';
@@ -25,13 +30,13 @@ import { getSceneViewport } from './schoolSceneCamera.js';
 // 장별 동사 순서(HUD 기대 동사)와 동행 캐스트 — 적은 이제 연출용 캐스트가 아니라
 // roomWaves의 실전투 웨이브로 스폰된다(동사 단계 = 웨이브).
 const CONFIGS = Object.freeze({
-  2: Object.freeze({ actions: ['reflect', 'trace', 'attack'], cast: ['player'], level: chapterTwoLevel }),
-  3: Object.freeze({ actions: ['trace', 'trace', 'attack'], cast: ['player', 'dot'], level: chapterThreeLevel }),
-  4: Object.freeze({ actions: ['reflect', 'trace', 'attack'], cast: ['player', 'yoonseo'], level: chapterFourLevel })
+  2: Object.freeze({ cast: ['player'], level: chapterTwoLevel }),
+  3: Object.freeze({ cast: ['player', 'dot'], level: chapterThreeLevel }),
+  4: Object.freeze({ cast: ['player', 'yoonseo'], level: chapterFourLevel })
 });
 // 캐스트 앵커 — [0]은 플레이어(전투 시뮬이 위치를 지배), [1]은 동행 NPC(전장 밖 관측 위치).
 const POSITIONS = Object.freeze([[0, 0, -17], [-3.1, 0, -15.2]]);
-const COLORS = Object.freeze([0x5de0c1, 0x6aa9ff, 0xd74732]);
+const COLORS = Object.freeze([WORLD_COLORS.signal, WORLD_COLORS.moon, WORLD_COLORS.danger]);
 const LANDMARK_TYPES = Object.freeze({ 2: 'share-chain', 3: 'dual-school', 4: 'approval-room' });
 // 쓰러짐 복귀 — 1장과 동일한 결정적 리스폰(150틱 = 2.5초). 현재 웨이브만 리셋되고
 // 이미 전멸시킨 웨이브는 유지된다(무처벌 — 진행은 잃지 않는다).
@@ -81,11 +86,24 @@ export function createCampaignChapterScene({
   if (!config || !content) throw new RangeError('운영 캠페인 장면은 2장부터 4장까지 지원합니다.');
   const resources = createDisposableRegistry();
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x050918);
-  scene.fog = new THREE.Fog(0x050918, 28, 68);
+  scene.background = new THREE.Color(WORLD_COLORS.panel);
+  scene.fog = new THREE.Fog(WORLD_COLORS.panel, 36, 92);
   const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
   const route = resources.register(createSchoolRoute({ level: config.level, lightLimit: 0, scene }), 'campaign-route');
+  route.group.traverse((object) => {
+    if (object.userData.routeRole !== 'occluder') return;
+    object.material.color.setHex(0x233754);
+    object.material.emissive.setHex(0x07101e);
+    object.material.emissiveIntensity = 0.18;
+  });
   const landmarks = resources.register(createCampaignLandmarks({ scene, type: LANDMARK_TYPES[chapter] }), 'campaign-landmarks');
+  landmarks.root.visible = false;
+  const spatialLandmarks = resources.register(
+    createCampaignSpatialLandmarks({ level: config.level, scene }), 'campaign-spatial-landmarks'
+  );
+  const environment = resources.register(
+    createCampaignChapterEnvironment({ chapter, level: config.level, scene }), 'campaign-production-environment'
+  );
   const factory = resources.register(createCharacterFactory(), 'campaign-cast');
   // 적 머리 위 HP 링 — 웨이브가 바뀌어도 인스턴스 하나로 스폰 ID별 바를 관리한다.
   const enemyHpBars = resources.register(createEnemyHpBars({ scene }), 'campaign-enemy-hp-bars');
@@ -95,15 +113,17 @@ export function createCampaignChapterScene({
     color: COLORS[0], opacity: 0.82, side: THREE.DoubleSide, transparent: true
   }), 'campaign-ring-material');
   const ring = new THREE.Mesh(ringGeometry, ringMaterial);
-  ring.position.set(ROOM_ENCOUNTER_ORIGIN.x, 0.05, ROOM_ENCOUNTER_ORIGIN.z);
+  const firstWave = getRoomWaveEncounter(chapter, 0);
+  ring.position.set(firstWave.spatial.encounterOrigin.x, 0.05, firstWave.spatial.encounterOrigin.z);
   ring.rotation.x = -Math.PI / 2;
   scene.add(ring);
   // 방 조명 예산 2개 유지 — 신규 라이트·그림자·렌더타깃 0.
-  scene.add(new THREE.HemisphereLight(0xbfd3ff, 0x29162b, 3));
-  const fill = new THREE.PointLight(0xffd39a, 3.2, 32, 1.8);
+  scene.add(new THREE.HemisphereLight(WORLD_COLORS.moon, 0x29162b, 3));
+  const fill = new THREE.PointLight(WORLD_COLORS.memory, 3.2, 32, 1.8);
   fill.position.set(0, 6, -17);
   fill.castShadow = false;
   scene.add(fill);
+  const performanceProbe = createScenePerformanceProbe({ renderer, scene, windowRef });
 
   const castRoot = new THREE.Group();
   scene.add(castRoot);
@@ -112,7 +132,14 @@ export function createCampaignChapterScene({
   const script = content.sceneScript ?? { briefing: [], reversalScript: [], stepCues: [] };
   const characters = new Map();
   const errors = [];
+  environment.ready.then(() => {
+    if (entered) syncPresentation();
+  }).catch((error) => {
+    if (entered) errors.push(`environment: ${error.message}`);
+  });
   let waveProgress = createRoomWaveProgress(chapter);
+  let interactionSatisfied = false;
+  const resolvedInteractions = [];
   let awaitingDecision = false;
   let completed = null;
   let entered = false;
@@ -140,17 +167,22 @@ export function createCampaignChapterScene({
   const deviceClass = getSceneViewport(canvas).mode;
   // 통행 경계 — 장 레벨의 collision 레이어에서 유도(방 원점 주변 세그먼트 포함 전 구간).
   const walkable = walkableRectsFromLevel(config.level);
-  function createWaveRuntime(startPosition) {
+  function currentWaveDefinition() {
+    return getRoomWaveEncounter(chapter, Math.min(waveProgress.waveIndex, waveProgress.total - 1));
+  }
+  function createWaveRuntime(startPosition = currentWaveDefinition().spatial.startPosition) {
+    const definition = currentWaveDefinition();
     return createEncounterGameRuntime({
       deviceClass,
-      encounterDefinition: getRoomWaveEncounter(chapter, waveProgress.waveIndex),
-      encounterOrigin: ROOM_ENCOUNTER_ORIGIN,
+      encounterDefinition: definition,
+      encounterOrigin: definition.spatial.encounterOrigin,
       extraTargets: [],
+      startFacing: { x: 0, y: -1 },
       startPosition,
       walkable
     });
   }
-  let game = createWaveRuntime(ROOM_START_POSITION);
+  let game = createWaveRuntime();
 
   // 현재 웨이브의 적 표현 캐스트를 만들고 로드한다. 전멸한 웨이브의 캐스트는 쓰러진
   // 기록(defeat 포즈)으로 남겨 두고 씬 dispose에서 함께 정리한다(팩토리·GLTF 캐시 공유).
@@ -177,6 +209,16 @@ export function createCampaignChapterScene({
     return waveCasts.at(-1) ?? null;
   }
 
+  function resolveInteraction(action) {
+    const spatial = currentWaveDefinition().spatial;
+    if (!String(action).startsWith(spatial.requiredAction)) return false;
+    interactionSatisfied = true;
+    if (!resolvedInteractions.includes(spatial.interactionId)) {
+      resolvedInteractions.push(spatial.interactionId);
+    }
+    return true;
+  }
+
   // TRACE는 가장 가까운 살아 있는 적을 겨눈다(방에는 별도 조사 대상이 없다).
   function nearestLivingEnemyId() {
     const { combat, encounter } = game.getState();
@@ -200,25 +242,45 @@ export function createCampaignChapterScene({
     const viewport = getSceneViewport(canvas);
     // 세로 화면은 시야가 좁아 플레이어가 최하단(자막·버튼 뒤)에 깔린다 — 화각을 넓혀 보정한다.
     portraitView = viewport.mode === 'touch' && viewport.height > viewport.width;
-    camera.fov = portraitView ? 58 : 45;
+    camera.fov = campaignCameraFrame(chapter, { x: 0, y: 0 }, portraitView).fov;
     camera.aspect = viewport.width / viewport.height;
     camera.updateProjectionMatrix();
     renderer.setSize(viewport.width, viewport.height, false);
+    performanceProbe.reset();
+  }
+
+  function syncPerformance() {
+    const performance = performanceProbe.report();
+    canvas.dataset.p95FrameMs = String(performance.p95FrameMs);
+    canvas.dataset.drawCalls = String(performance.render.calls);
+    canvas.dataset.triangles = String(performance.render.triangles);
+    canvas.dataset.lightCount = String(performance.render.lights);
   }
 
   function syncPresentation() {
     const { combat, encounter } = game.getState();
+    const spatial = currentWaveDefinition().spatial;
     const alive = encounter.enemies.filter((enemy) => enemy.phase !== 'defeat').length;
-    const expected = config.actions[waveProgress.waveIndex] ?? null;
+    const expected = awaitingDecision ? null : spatial.requiredAction;
     ring.visible = !awaitingDecision && completed === null;
     ringMaterial.color.setHex(COLORS[Math.min(waveProgress.waveIndex, COLORS.length - 1)]);
+    ring.position.set(spatial.encounterOrigin.x, 0.05, spatial.encounterOrigin.z);
     canvas.dataset.campaignChapter = String(chapter);
     // step = 클리어한 웨이브 수(동사 단계 = 웨이브이므로 waveIndex와 같다).
     canvas.dataset.campaignStep = String(waveProgress.waveIndex);
     canvas.dataset.campaignExpectedAction = expected ?? 'decision';
     canvas.dataset.campaignCompleted = String(completed !== null);
     canvas.dataset.campaignWave = String(waveProgress.waveIndex);
+    canvas.dataset.campaignZone = spatial.segmentId;
+    canvas.dataset.campaignGeometry = spatial.geometryId;
+    canvas.dataset.campaignInteraction = spatial.interactionId;
+    canvas.dataset.campaignInteractionStatus = interactionSatisfied ? 'resolved' : 'pending';
+    canvas.dataset.campaignResolvedInteractions = resolvedInteractions.join(',');
+    canvas.dataset.campaignPhaseBeats = spatial.phaseBeats.join(',');
     canvas.dataset.campaignEnemiesAlive = String(awaitingDecision || completed ? 0 : alive);
+    const environmentState = environment.getDebugState();
+    canvas.dataset.environmentStatus = environmentState.status;
+    canvas.dataset.environmentFailures = environmentState.failedAssetIds.join(',');
     canvas.dataset.playerSignal = String(combat.player.signal);
     canvas.dataset.characters = errors.length > 0
       ? 'error'
@@ -248,6 +310,7 @@ export function createCampaignChapterScene({
       : awaitingDecision
         ? 'F 기록 보존 · Q 빠른 중단'
         : [
+          spatial.labelKo,
           `${Math.min(waveProgress.waveIndex + 1, waveProgress.total)}/${waveProgress.total} 웨이브`,
           [livingEnemyLabel(encounter.enemies), VERB_GUIDES_KO[expected] ?? expected?.toUpperCase()]
             .filter(Boolean).join(', ')
@@ -292,6 +355,7 @@ export function createCampaignChapterScene({
       awaitingDecision = true;
       return;
     }
+    interactionSatisfied = false;
     // 다음 웨이브 — 플레이어는 지금 자리 그대로, 새 적만 저작 상수 위치에 스폰된다.
     game = createWaveRuntime({ x: playerPosition.x, y: playerPosition.y });
     spawnWaveCast();
@@ -316,13 +380,9 @@ export function createCampaignChapterScene({
   // 세로(터치)에서는 조준점을 플레이어 쪽으로 당기고 카메라를 올려 플레이어가 화면 중심대
   // (세로 40~55%)에 오게 한다 — 하단 자막·터치 버튼 띠에 캐릭터가 가려지지 않는다.
   function updateCamera(playerPosition) {
-    if (portraitView) {
-      camera.position.set(playerPosition.x * 0.45, 7.4, playerPosition.y + 11);
-      camera.lookAt(playerPosition.x * 0.7, 0.7, playerPosition.y - 1.8);
-      return;
-    }
-    camera.position.set(playerPosition.x * 0.45, 6.2, playerPosition.y + 8.4);
-    camera.lookAt(playerPosition.x * 0.7, 0.7, playerPosition.y - 5.6);
+    const frame = campaignCameraFrame(chapter, playerPosition, portraitView);
+    camera.position.set(frame.position.x, frame.position.y, frame.position.z);
+    camera.lookAt(frame.lookAt.x, frame.lookAt.y, frame.lookAt.z);
   }
 
   // 세로 구도 검증용 — 플레이어 발밑·머리의 화면 세로 위치(0=상단, 1=하단)를 계산한다.
@@ -381,7 +441,9 @@ export function createCampaignChapterScene({
           position: Object.freeze({ x: enemy.position.x, z: enemy.position.z })
         }))),
         errors: Object.freeze([...errors]),
+        environment: environment.getDebugState(),
         landmarks: landmarks.getDebugState(),
+        performance: performanceProbe.report(),
         player: Object.freeze({
           hp: combat.player.hp,
           position: Object.freeze({ ...combat.player.position }),
@@ -389,6 +451,12 @@ export function createCampaignChapterScene({
           status: combat.player.status
         }),
         route: route.getDebugState(),
+        spatial: Object.freeze({
+          ...currentWaveDefinition().spatial,
+          interactionResolved: interactionSatisfied,
+          landmarks: spatialLandmarks.getDebugState()
+        }),
+        resolvedInteractions: Object.freeze([...resolvedInteractions]),
         wave: Object.freeze({
           finished: waveProgress.finished,
           index: waveProgress.waveIndex,
@@ -411,6 +479,7 @@ export function createCampaignChapterScene({
         lastCombatEvents = result.combatEvents;
         // 타격감(GF1): 검격 궤적 + 명중·격파·피격 히트스톱 — 1장과 동일 규칙.
         for (const event of result.combatEvents) {
+          if (event.type === 'action-started') resolveInteraction(event.action);
           if (event.type === 'action-started' && String(event.action).startsWith('attack')) {
             const player = result.state.combat.player;
             bladeTrail.trigger(
@@ -428,7 +497,7 @@ export function createCampaignChapterScene({
         }
         currentWaveCast()?.present(result.state.encounter, result.enemyEvents);
         enemyHpBars.sync(result.state.encounter);
-        if (isRoomWaveCleared(result.state.encounter.enemies)) {
+        if (isSpatialWaveReady(result.state.encounter.enemies, interactionSatisfied)) {
           advanceClearedWave(result.state.combat.player.position);
         } else if (result.state.combat.player.status === 'defeated') {
           // 쓰러짐 복귀 — 시뮬 고정 틱으로 재며, 체크포인트(방 시작 위치)에서 현재 웨이브만 다시 연다.
@@ -436,7 +505,7 @@ export function createCampaignChapterScene({
           // 진입 그레이스 90틱 동안 적 지각이 잠겨 리스폰 지점 캠핑이 성립하지 않는다.
           if (respawnAtTick === null) respawnAtTick = result.state.combat.tick + RESPAWN_DELAY_TICKS;
           if (result.state.combat.tick >= respawnAtTick) {
-            game = createWaveRuntime(ROOM_START_POSITION);
+            game = createWaveRuntime();
             respawnAtTick = null;
             respawnBlinking = true; // 그레이스 동안 무적 표시(깜빡임) 시작
             result = game.update(0, { horizontal: 0, vertical: 0 }, {});
@@ -450,6 +519,7 @@ export function createCampaignChapterScene({
       }
       // 플레이어 캐릭터는 전투 시뮬의 위치·행동을 그대로 따른다(1장 cast.setPlayerState와 동일 계약).
       playerAnchor.position.set(playerState.position.x, 0, playerState.position.y);
+      fill.position.set(playerState.position.x, 6, playerState.position.y);
       playerAnchor.rotation.y = Math.atan2(playerState.facing.x, playerState.facing.y);
       // 리스폰 무적 표시 — 그레이스가 남은 동안만 캐릭터를 결정적 틱 주기로 깜빡인다(추가 자원 0).
       const encounterTick = game.getState().encounter.tick;
@@ -473,6 +543,8 @@ export function createCampaignChapterScene({
       enemyHpBars.face(camera);
       syncPresentation();
       renderer.render(scene, camera);
+      performanceProbe.record(delta);
+      syncPerformance();
     }
   });
 }

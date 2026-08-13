@@ -1,3 +1,7 @@
+import { chapterTwoLevel } from '../content/levels/chapter2.js';
+import { chapterThreeLevel } from '../content/levels/chapter3.js';
+import { chapterFourLevel } from '../content/levels/chapter4.js';
+
 // 2~4장 방 전투 웨이브 — 순수 로직(THREE 무의존, node 테스트 대상).
 // 동사 단계 = 웨이브: 웨이브 i의 적을 전멸시키면 다음 웨이브가 저작 상수 위치에 스폰되고,
 // 마지막 웨이브 전멸 시 결정 단계(F/Q)로 진입한다. 스폰·전진 전부 결정적 상수만 쓴다.
@@ -22,8 +26,34 @@ function spawn(definitionId, id, x, z) {
 
 // 방 전투 공통 규칙 — zoneMode 'room'은 리시 존 동결을 끄고 방 walkable 전체를 교전 구역으로 삼는다
 // (경계 밖 한 걸음에서 적이 굳는 무저항 처치 악용 방지). entryGraceTicks는 위 그레이스 상수.
-function roomWave(wave) {
-  return { ...wave, entryGraceTicks: ROOM_ENTRY_GRACE_TICKS, zoneMode: 'room' };
+const LEVELS = Object.freeze({ 2: chapterTwoLevel, 3: chapterThreeLevel, 4: chapterFourLevel });
+const REQUIRED_ACTIONS = Object.freeze({
+  2: Object.freeze(['reflect', 'trace', 'attack']),
+  3: Object.freeze(['trace', 'trace', 'attack']),
+  4: Object.freeze(['reflect', 'trace', 'attack'])
+});
+
+function roomWave(chapter, waveIndex, wave) {
+  const level = LEVELS[chapter];
+  const checkpoint = level.segments[waveIndex];
+  const zone = level.segments[waveIndex + 1];
+  return {
+    ...wave,
+    entryGraceTicks: ROOM_ENTRY_GRACE_TICKS,
+    spatial: {
+      encounterOrigin: { x: zone.anchor.x, z: zone.anchor.z },
+      geometryId: zone.geometryId,
+      interactionId: zone.interactionId,
+      labelKo: zone.label,
+      phaseBeats: [...zone.phaseBeats],
+      requiredAction: REQUIRED_ACTIONS[chapter][waveIndex],
+      segmentId: zone.id,
+      sideEffectId: zone.sideEffectId,
+      startPosition: { x: checkpoint.anchor.x, y: checkpoint.anchor.z }
+    },
+    spawns: wave.spawns.map((entry) => ({ ...entry, zoneId: zone.id })),
+    zoneMode: 'room'
+  };
 }
 
 // 장별 웨이브 구성 — 스폰 위치는 방 원점 기준 상대 좌표(저작 상수).
@@ -32,17 +62,17 @@ function roomWave(wave) {
 // 2장: 복제자 3웨이브(1·1·2), 3장: 추천자 중심(1·1·2), 4장: 승인관 중심(1·혼성·2).
 const ROOM_WAVE_TABLE = deepFreeze({
   2: [
-    roomWave({
+    roomWave(2, 0, {
       id: 'ch2-wave1-first-copy',
       objective: '첫 복사본과 마주 서서 공유 명령을 되짚기',
       spawns: [spawn('copycat', 'ch2-w1-copycat-a', 0, -5)]
     }),
-    roomWave({
+    roomWave(2, 1, {
       id: 'ch2-wave2-return-path',
       objective: '되돌아온 복사본에서 최초 업로드 시각 추적',
       spawns: [spawn('copycat', 'ch2-w2-copycat-a', -2.4, -4.6)]
     }),
-    roomWave({
+    roomWave(2, 2, {
       id: 'ch2-wave3-chain-cut',
       objective: '남은 복사본 두 기를 끊고 사슬 종료',
       spawns: [
@@ -52,17 +82,17 @@ const ROOM_WAVE_TABLE = deepFreeze({
     })
   ],
   3: [
-    roomWave({
+    roomWave(3, 0, {
       id: 'ch3-wave1-comfort-layer',
       objective: '편한 현실의 추천자를 멈추고 정리 로그 읽기',
       spawns: [spawn('recommender', 'ch3-w1-recommender-a', 0, -5.4)]
     }),
-    roomWave({
+    roomWave(3, 1, {
       id: 'ch3-wave2-verified-layer',
       objective: '검증 현실의 추천자에게서 실행 명령 번호 추적',
       spawns: [spawn('recommender', 'ch3-w2-recommender-a', 2.4, -5)]
     }),
-    roomWave({
+    roomWave(3, 2, {
       id: 'ch3-wave3-layer-merge',
       objective: '두 현실을 가르는 추천자 둘을 겹쳐 깨기',
       spawns: [
@@ -72,12 +102,12 @@ const ROOM_WAVE_TABLE = deepFreeze({
     })
   ],
   4: [
-    roomWave({
+    roomWave(4, 0, {
       id: 'ch4-wave1-approval-gate',
       objective: '첫 승인관의 명령을 반사해 승인 창 되돌리기',
       spawns: [spawn('approval', 'ch4-w1-approval-a', 0, -5)]
     }),
-    roomWave({
+    roomWave(4, 1, {
       id: 'ch4-wave2-pipeline-mix',
       objective: '승인 큐에 끼어든 복사본과 승인관에게서 기록 추적',
       spawns: [
@@ -85,7 +115,7 @@ const ROOM_WAVE_TABLE = deepFreeze({
         spawn('copycat', 'ch4-w2-copycat-a', 2.4, -4.6)
       ]
     }),
-    roomWave({
+    roomWave(4, 2, {
       id: 'ch4-wave3-policy-core',
       objective: '마지막 승인관 둘을 멈추고 승인 경로 중단',
       spawns: [
@@ -126,6 +156,10 @@ export function isRoomWaveCleared(enemies) {
   return Array.isArray(enemies)
     && enemies.length > 0
     && enemies.every((enemy) => enemy.phase === 'defeat');
+}
+
+export function isSpatialWaveReady(enemies, interactionSatisfied) {
+  return isRoomWaveCleared(enemies) && interactionSatisfied === true;
 }
 
 // 웨이브 전멸 → 다음 웨이브 인덱스 또는 결정 단계(finished). 이미 끝난 진행은 전진할 수 없다.

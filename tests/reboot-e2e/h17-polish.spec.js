@@ -95,8 +95,13 @@ test('@loop1-desktop shows four distinct live-camera character identities', asyn
   expect(identities.map(({ id }) => id)).toEqual(['player', 'dot', 'haru', 'yoonseo']);
   expect(new Set(identities.map(({ silhouette }) => silhouette)).size).toBe(4);
   expect(identities.find(({ id }) => id === 'dot').kind).toBe('audit-drone');
+  expect(Object.fromEntries(identities.map(({ id, visualScale }) => [id, visualScale]))).toEqual({
+    player: 1.18,
+    dot: 0.62,
+    haru: 1.3,
+    yoonseo: 1.3
+  });
   const humans = identities.filter(({ kind }) => kind === 'human');
-  expect(humans.every(({ visualScale }) => visualScale === 1.3)).toBe(true);
   expect(humans.every(({ presentation }) => (
     presentation.hairEmissive >= presentation.skinEmissive
     && presentation.skinEmissive > presentation.outfitEmissive
@@ -130,8 +135,12 @@ test('@loop1-mobile preserves cast and controls at the combat-camera edge', asyn
     && bounds.top >= debug.camera.combatSafeArea.safeRect.top
     && bounds.bottom <= debug.camera.combatSafeArea.safeRect.bottom
   ))).toBe(true);
-  expect(debug.characters.identities.filter(({ kind }) => kind === 'human')
-    .every(({ visualScale }) => visualScale === 1.3)).toBe(true);
+  expect(Object.fromEntries(debug.characters.identities.map(({ id, visualScale }) => [id, visualScale]))).toEqual({
+    player: 1.18,
+    dot: 0.62,
+    haru: 1.3,
+    yoonseo: 1.3
+  });
   await expect(arenaCanvas).toHaveAttribute('data-dpr', '1');
   expect(Number(await arenaCanvas.getAttribute('data-light-count'))).toBeLessThanOrEqual(4);
   await expect(page.locator('[data-touch-action="attack"]')).toBeVisible();

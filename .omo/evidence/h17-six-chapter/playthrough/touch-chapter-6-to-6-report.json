@@ -1,0 +1,71 @@
+{
+  "baseUrl": "http://127.0.0.1:8899/",
+  "chapterReports": [
+    {
+      "checkpoint": "chapter-6:resolved-sealed",
+      "drawCalls": 60,
+      "p95FrameMs": 100,
+      "triangles": 61039,
+      "chapter": 6,
+      "elapsedSeconds": 27.2,
+      "inputMode": "touch",
+      "screenshotPath": ".omo/evidence/h17-six-chapter/playthrough/chapter-6-touch-result.png"
+    }
+  ],
+  "consoleErrors": [],
+  "failedResponses": [],
+  "endingChapter": 6,
+  "finalCheckpoint": "chapter-6:resolved-sealed",
+  "inputMode": "touch",
+  "startingChapter": 6,
+  "touch": {
+    "buttons": [
+      {
+        "action": "secure",
+        "height": 52,
+        "width": 96
+      },
+      {
+        "action": "purge",
+        "height": 52,
+        "width": 96
+      },
+      {
+        "action": "attack",
+        "height": 72,
+        "width": 72
+      },
+      {
+        "action": "dash",
+        "height": 56,
+        "width": 56
+      },
+      {
+        "action": "reflect",
+        "height": 56,
+        "width": 56
+      },
+      {
+        "action": "trace",
+        "height": 56,
+        "width": 56
+      },
+      {
+        "action": "camera-reset",
+        "height": 44,
+        "width": 48
+      },
+      {
+        "action": "pause",
+        "height": 44,
+        "width": 48
+      }
+    ],
+    "debug": {
+      "attached": true,
+      "buttonCount": 8,
+      "hasStick": true,
+      "pointerActive": false
+    }
+  }
+}

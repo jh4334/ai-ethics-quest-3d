@@ -1,0 +1,150 @@
+{
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "phase": "complete",
+  "evidenceCount": 4,
+  "state": {
+    "version": 2,
+    "phase": "complete",
+    "outcome": "protected",
+    "time": 0,
+    "world": {
+      "width": 6200,
+      "groundY": 560,
+      "gravity": 1900,
+      "moveSpeed": 310,
+      "jumpSpeed": 720
+    },
+    "player": {
+      "x": 4330,
+      "y": 560,
+      "vx": 0,
+      "vy": 0,
+      "hp": 3,
+      "maxHp": 3,
+      "facing": 1,
+      "onGround": true,
+      "attackCooldown": 0,
+      "attackTimer": 0,
+      "invulnerable": 0
+    },
+    "evidence": [
+      {
+        "id": "privacy",
+        "label": "개인정보",
+        "x": 1080,
+        "enemyId": "eraser-privacy",
+        "checkpointX": 930,
+        "message": "하루의 사적인 대화가 동의 없이 수집됐어. 내용보다 먼저 당사자의 허락을 확인해야 해.",
+        "collected": true
+      },
+      {
+        "id": "bias",
+        "label": "편향",
+        "x": 2220,
+        "enemyId": "eraser-bias",
+        "checkpointX": 2050,
+        "message": "한쪽 기록만 학습한 판정표야. 누락된 사람과 반대 사례를 함께 살펴봐야 해.",
+        "collected": true
+      },
+      {
+        "id": "copyright",
+        "label": "저작권",
+        "x": 3360,
+        "enemyId": "eraser-copyright",
+        "checkpointX": 3190,
+        "message": "출처가 지워진 창작물이 섞여 있어. 만든 사람과 사용 허락을 기록에 다시 연결하자.",
+        "collected": true
+      },
+      {
+        "id": "deepfake",
+        "label": "딥페이크",
+        "x": 4500,
+        "enemyId": "eraser-deepfake",
+        "checkpointX": 4330,
+        "message": "하루의 얼굴을 합성한 영상이야. 자극적인 장면보다 원본과 생성 흔적을 먼저 검증해야 해.",
+        "collected": true
+      }
+    ],
+    "collectedEvidence": [
+      "privacy",
+      "bias",
+      "copyright",
+      "deepfake"
+    ],
+    "enemies": [
+      {
+        "id": "eraser-privacy",
+        "x": 870,
+        "hp": 0,
+        "defeated": true,
+        "attackCooldown": 0,
+        "hitFlash": 0
+      },
+      {
+        "id": "eraser-bias",
+        "x": 2010,
+        "hp": 0,
+        "defeated": true,
+        "attackCooldown": 0,
+        "hitFlash": 0
+      },
+      {
+        "id": "eraser-copyright",
+        "x": 3150,
+        "hp": 0,
+        "defeated": true,
+        "attackCooldown": 0,
+        "hitFlash": 0
+      },
+      {
+        "id": "eraser-deepfake",
+        "x": 4290,
+        "hp": 0,
+        "defeated": true,
+        "attackCooldown": 0,
+        "hitFlash": 0
+      }
+    ],
+    "boss": {
+      "id": "whiteout",
+      "x": 5570,
+      "hp": 0,
+      "maxHp": 5,
+      "active": false,
+      "staggered": true,
+      "attackCooldown": 1.2,
+      "hitFlash": 0
+    },
+    "projectiles": [],
+    "checkpointX": 4330,
+    "message": "하루의 기록은 가려서 보호했고, 원본은 하루의 확인을 기다리고 있어.",
+    "messageKind": "complete",
+    "currentZone": "출석 기록길",
+    "previousInput": {
+      "left": false,
+      "right": false,
+      "jump": false,
+      "attack": false,
+      "trace": false
+    },
+    "cameraX": 0,
+    "respawns": 0,
+    "lastEvent": "start"
+  },
+  "save": {
+    "version": 2,
+    "checkpointX": 4330,
+    "evidenceIds": [
+      "privacy",
+      "bias",
+      "copyright",
+      "deepfake"
+    ],
+    "completed": true
+  },
+  "errors": [],
+  "failedResponses": []
+}

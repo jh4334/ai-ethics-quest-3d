@@ -9,7 +9,7 @@ let offline = false;
 
 const TYPES = Object.freeze({
   '.bin': 'application/octet-stream', '.glb': 'model/gltf-binary', '.gltf': 'model/gltf+json',
-  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8', '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml',
   '.webmanifest': 'application/manifest+json', '.webp': 'image/webp'
 });

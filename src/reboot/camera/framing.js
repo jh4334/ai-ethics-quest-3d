@@ -1,3 +1,5 @@
+import { CAMPUS_VISUAL_PROFILE } from '../design/tokens.js';
+
 const REQUIRED_TARGET_KEYS = ['player', 'threat', 'traceTarget', 'routeCue'];
 
 function clamp(value, minimum, maximum) {
@@ -28,6 +30,7 @@ export function solveCameraFrame(targets, viewport, modifiers = {}) {
   const minZ = Math.min(...points.map((point) => point.z));
   const maxZ = Math.max(...points.map((point) => point.z));
   const touch = viewport.mode === 'touch';
+  const profile = touch ? CAMPUS_VISUAL_PROFILE.camera.touch : CAMPUS_VISUAL_PROFILE.camera.desktop;
   // 세로 화면에서는 조준점이 전방(작은 z)으로 쏠리면 플레이어가 최하단 자막·버튼 뒤에 깔린다 —
   // 전방 당김 한계를 좁혀 플레이어를 화면 중심대(세로 40~55%)에 유지한다(가로·데스크톱은 기존 값).
   const portrait = touch && viewport.height > viewport.width;
@@ -43,13 +46,13 @@ export function solveCameraFrame(targets, viewport, modifiers = {}) {
     z: clamp(centerZ - chase * 0.7, player.z - forwardLimit, player.z + lookLimit)
   };
   const spread = Math.max((maxX - minX) * 1.25, (maxZ - minZ) * 0.78);
-  const distance = clamp((touch ? 14.7 : 11.4) + spread * 0.85 - chase * 1.4 + boss * 6.5, 12, touch ? 28 : 24);
-  const height = clamp((touch ? 9.2 : 8) + spread * 0.1 - chase * 0.5 + boss * 2.9, 7.5, 14);
+  const distance = clamp(profile.distance + spread * 0.56 - chase * 1.2 + boss * 4.8, profile.distance, touch ? 16.2 : 15.5);
+  const height = clamp(profile.height + spread * 0.045 - chase * 0.35 + boss * 2.2, touch ? 4.2 : 2.45, touch ? 8.4 : 6.2);
 
   return {
-    fov: touch ? 52 : 44,
+    fov: profile.fov,
     lookAt,
-    position: { x: lookAt.x, y: lookAt.y + height, z: lookAt.z + distance }
+    position: { x: lookAt.x + profile.lateral, y: lookAt.y + height, z: lookAt.z + distance }
   };
 }
 

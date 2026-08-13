@@ -1,0 +1,64 @@
+{
+  "buttons": [
+    {
+      "text": "새 게임",
+      "width": 332,
+      "height": 52
+    },
+    {
+      "text": "이어서 하기",
+      "width": 332,
+      "height": 52
+    },
+    {
+      "text": "장 선택",
+      "width": 332,
+      "height": 52
+    },
+    {
+      "text": "설정",
+      "width": 332,
+      "height": 52
+    },
+    {
+      "text": "조작 도움말",
+      "width": 332,
+      "height": 52
+    },
+    {
+      "text": "교사용 조사 보고서",
+      "width": 332,
+      "height": 52
+    }
+  ],
+  "mobileButtons": [
+    {
+      "text": "새 게임",
+      "width": 308,
+      "height": 52
+    },
+    {
+      "text": "장 선택",
+      "width": 308,
+      "height": 52
+    },
+    {
+      "text": "설정",
+      "width": 308,
+      "height": 52
+    },
+    {
+      "text": "조작 도움말",
+      "width": 308,
+      "height": 52
+    },
+    {
+      "text": "교사용 조사 보고서",
+      "width": 308,
+      "height": 52
+    }
+  ],
+  "reportHasPersonalInputs": false,
+  "reportText": "닫기\n인쇄\n교사용 조사 보고서\n\n현재 6장 · 첫 시도 통과 0회 · 재시도 통과 0회\n\n결정 기록\n1장: secure · haru-memory-backup\n1장: secure · player-approval-record\n2장: secure · original-upload-trace\n3장: secure · dot-deletion-log\n4장: secure · support-record\n6장: secure · broadcast-queue\n확보한 증거\n1장: haru-memory-backup\n1장: player-approval-record\n2장: original-upload-trace\n3장: dot-deletion-log\n4장: support-record\n6장: broadcast-queue\n관문 시도\n관문 시도가 없습니다.\n결과 요약\n기록 보존 6건 / 손실 0건\n노출 통제 6건 / 공개 0건",
+  "webglText": "그래픽을 시작하지 못했습니다. 기기가 WebGL을 지원하는지 확인한 뒤 새로고침해 주세요.\n\n새로고침"
+}
