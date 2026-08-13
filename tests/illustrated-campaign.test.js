@@ -67,4 +67,3 @@ test('조사 보고서는 선악 점수 없이 장별 근거·선택·비용을 
   assert.match(report.summary, /하루|H-17/);
   assert.ok(report.chapters.every(({ consequence }) => typeof consequence === 'string'));
 });
-

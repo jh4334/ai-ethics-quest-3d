@@ -21,4 +21,3 @@ for (let index = 0; index < data.length; index += 4) {
 await sharp(data, { raw: info }).png({ compressionLevel: 9 }).toFile(output);
 await rm(source);
 await rename(output, source);
-

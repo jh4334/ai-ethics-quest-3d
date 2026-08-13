@@ -203,4 +203,3 @@ export const ORIGINAL_TOPIC_ORDER = Object.freeze([
   Object.freeze({ id: 'copyright', label: '저작권' }),
   Object.freeze({ id: 'deepfake', label: '딥페이크' })
 ]);
-
