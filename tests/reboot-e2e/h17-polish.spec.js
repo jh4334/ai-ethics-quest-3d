@@ -96,7 +96,7 @@ test('@loop1-desktop shows four distinct live-camera character identities', asyn
   expect(new Set(identities.map(({ silhouette }) => silhouette)).size).toBe(4);
   expect(identities.find(({ id }) => id === 'dot').kind).toBe('audit-drone');
   expect(Object.fromEntries(identities.map(({ id, visualScale }) => [id, visualScale]))).toEqual({
-    player: 0.84,
+    player: 1.18,
     dot: 0.62,
     haru: 1.3,
     yoonseo: 1.3
@@ -136,7 +136,7 @@ test('@loop1-mobile preserves cast and controls at the combat-camera edge', asyn
     && bounds.bottom <= debug.camera.combatSafeArea.safeRect.bottom
   ))).toBe(true);
   expect(Object.fromEntries(debug.characters.identities.map(({ id, visualScale }) => [id, visualScale]))).toEqual({
-    player: 0.84,
+    player: 1.18,
     dot: 0.62,
     haru: 1.3,
     yoonseo: 1.3
