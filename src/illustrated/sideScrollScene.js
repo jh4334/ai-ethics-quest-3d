@@ -29,6 +29,12 @@ function drawImageCell(context, image, cell, frame) {
   context.restore();
 }
 
+function pingPong(value, range) {
+  if (range <= 0) return 0;
+  const cycle = value % (range * 2);
+  return cycle <= range ? cycle : range * 2 - cycle;
+}
+
 export function createSideScrollRenderer({ context, images, palette, width = 1280, height = 720 }) {
   function drawGlow(x, y, radius, color, strength = 0.62) {
     const gradient = context.createRadialGradient(x, y, 0, x, y, radius);
@@ -51,18 +57,16 @@ export function createSideScrollRenderer({ context, images, palette, width = 128
     if (image.complete && image.naturalWidth > 0) {
       context.imageSmoothingEnabled = true;
       context.imageSmoothingQuality = 'high';
-      for (let panel = -1; panel <= 1; panel += 1) {
-        const panelX = layout.farBackgroundX + panel * width;
-        const sourceWidth = image.naturalWidth / 2;
-        const sourceX = ((state.chapterIndex + panel + 6) % 2) * sourceWidth;
-        context.drawImage(image, sourceX, 0, sourceWidth, image.naturalHeight, panelX, 0, width, height);
-      }
+      const farSourceWidth = image.naturalWidth * 0.82;
+      const farRange = image.naturalWidth - farSourceWidth;
+      const farSourceX = pingPong(Math.abs(layout.farBackgroundX) + state.chapterIndex * 61, farRange);
+      context.drawImage(image, farSourceX, 0, farSourceWidth, image.naturalHeight, 0, 0, width, height);
       context.save();
       context.globalAlpha = 0.22;
-      for (let panel = -1; panel <= 1; panel += 1) {
-        const panelX = layout.midBackgroundX + panel * width;
-        context.drawImage(image, 0, image.naturalHeight * 0.42, image.naturalWidth, image.naturalHeight * 0.58, panelX, 270, width, 300);
-      }
+      const midSourceWidth = image.naturalWidth * 0.7;
+      const midRange = image.naturalWidth - midSourceWidth;
+      const midSourceX = pingPong(Math.abs(layout.midBackgroundX) + state.chapterIndex * 113, midRange);
+      context.drawImage(image, midSourceX, image.naturalHeight * 0.42, midSourceWidth, image.naturalHeight * 0.58, 0, 270, width, 300);
       context.restore();
     }
     const veil = context.createLinearGradient(0, 0, width, height);
