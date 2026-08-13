@@ -42,6 +42,18 @@ async function action(page, profile, name, pointerId) {
   else await press(page, keys[name]);
 }
 
+async function moveRight(page, profile, duration, pointerId) {
+  if (profile.touch) {
+    await page.dispatchEvent('[data-control="right"]', 'pointerdown', { pointerId, pointerType: 'touch', bubbles: true, buttons: 1 });
+    await page.waitForTimeout(duration);
+    await page.dispatchEvent('[data-control="right"]', 'pointerup', { pointerId, pointerType: 'touch', bubbles: true, buttons: 0 });
+    return;
+  }
+  await page.keyboard.down('KeyD');
+  await page.waitForTimeout(duration);
+  await page.keyboard.up('KeyD');
+}
+
 async function teleport(page, selector, offset = -64) {
   await page.evaluate(({ selector, offset }) => {
     const state = window.__illustratedAction.getState();
@@ -58,6 +70,20 @@ async function teleport(page, selector, offset = -64) {
 async function completeChapter(page, profile, chapterNumber, pointerSeed) {
   const start = Date.now();
   await page.waitForFunction(() => document.querySelector('[data-illustrated-game]').dataset.gamePhase === 'playing');
+  await moveRight(page, profile, 2800, pointerSeed);
+  const scroll = await page.evaluate(() => {
+    const game = document.querySelector('[data-illustrated-game]');
+    return {
+      playerX: Number(game.dataset.playerX),
+      cameraX: Number(game.dataset.cameraX),
+      playerScreenX: Number(game.dataset.playerScreenX)
+    };
+  });
+  const trackingX = profile.touch ? 640 : 360;
+  assert.ok(scroll.playerX > 1000, `chapter ${chapterNumber} did not traverse the world: ${scroll.playerX}`);
+  assert.ok(scroll.cameraX > (profile.touch ? 350 : 650), `chapter ${chapterNumber} camera did not follow: ${scroll.cameraX}`);
+  assert.ok(scroll.playerScreenX >= trackingX - 20 && scroll.playerScreenX <= trackingX + 20, `chapter ${chapterNumber} player left tracking lane: ${scroll.playerScreenX}`);
+  await page.screenshot({ path: path.join(evidenceDir, `${profile.id}-chapter-${chapterNumber}-scroll.png`) });
   for (let index = 0; index < 2; index += 1) {
     await teleport(page, { collection: 'enemies', index });
     await action(page, profile, 'attack', pointerSeed + index * 5);
@@ -88,6 +114,7 @@ async function completeChapter(page, profile, chapterNumber, pointerSeed) {
     chapter: chapterNumber,
     evidence: Number(await page.locator('[data-illustrated-game]').getAttribute('data-evidence-count')),
     decision: await page.locator('[data-result-title]').textContent(),
+    scroll,
     elapsedMs: Date.now() - start
   };
   if (chapterNumber === 6) await page.screenshot({ path: path.join(evidenceDir, `${profile.id}-chapter-6-result.png`) });
@@ -202,13 +229,13 @@ async function runProfile(profile) {
 
 async function makeComparison() {
   const reference = await sharp(referencePath).resize(1440, 900, { fit: 'cover' }).png().toBuffer();
-  const implementation = await sharp(path.join(evidenceDir, 'desktop-1440x900-chapter-1.png')).resize(1440, 900, { fit: 'cover' }).png().toBuffer();
+  const implementation = await sharp(path.join(evidenceDir, 'desktop-1440x900-chapter-1-scroll.png')).resize(1440, 900, { fit: 'cover' }).png().toBuffer();
   await sharp({ create: { width: 2880, height: 900, channels: 4, background: '#050918' } })
     .composite([{ input: reference, left: 0, top: 0 }, { input: implementation, left: 1440, top: 0 }])
     .png()
     .toFile(path.join(evidenceDir, 'reference-vs-desktop-chapter-1.png'));
 
-  const directPixels = await sharp(path.join(evidenceDir, 'desktop-1440x900-chapter-1.png')).ensureAlpha().raw().toBuffer();
+  const directPixels = await sharp(path.join(evidenceDir, 'desktop-1440x900-chapter-1-scroll.png')).ensureAlpha().raw().toBuffer();
   const comparisonPixels = await sharp(path.join(evidenceDir, 'reference-vs-desktop-chapter-1.png'))
     .extract({ left: 1440, top: 0, width: 1440, height: 900 })
     .ensureAlpha()

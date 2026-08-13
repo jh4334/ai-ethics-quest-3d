@@ -1,7 +1,9 @@
 import backgroundUrl from '../../public/assets/illustrated/h17-side-scroll-background-v1.png?url';
 import spriteAtlasUrl from '../../public/assets/illustrated/h17-action-sprites-v1.png?url';
 import evidenceAtlasUrl from '../../public/assets/illustrated/h17-evidence-relics-v1.png?url';
+import groundTextureUrl from '../../public/assets/reboot/environment/materials/h17-stone/H17Stone_1K-JPG_Color.jpg?url';
 import './style.css';
+import { createSideScrollRenderer } from './sideScrollScene.js';
 
 import {
   CAMPAIGN_CHAPTERS,
@@ -91,8 +93,10 @@ const primitiveShowcase = game.querySelector('[data-primitive-showcase]');
 const images = {
   background: loadImage(backgroundUrl),
   sprites: loadImage(spriteAtlasUrl),
-  evidence: loadImage(evidenceAtlasUrl)
+  evidence: loadImage(evidenceAtlasUrl),
+  ground: loadImage(groundTextureUrl)
 };
+const renderScene = createSideScrollRenderer({ context, images, palette: canvasPalette, width: LOGICAL_WIDTH, height: LOGICAL_HEIGHT });
 const input = createInputState();
 const savedPayload = readSave();
 let state = createActionGameState(savedPayload);
@@ -130,164 +134,6 @@ function writeSave() {
 
 function currentChapter() {
   return CAMPAIGN_CHAPTERS[state.chapterIndex];
-}
-
-function drawAtlasCell(column, row, x, y, width, height, facing = 1, alpha = 1) {
-  const atlas = images.sprites;
-  if (!atlas.complete || atlas.naturalWidth === 0) return;
-  const sourceWidth = atlas.naturalWidth / 4;
-  const sourceHeight = atlas.naturalHeight / 2;
-  context.save();
-  context.globalAlpha = alpha;
-  if (facing < 0) {
-    context.translate(x + width, 0);
-    context.scale(-1, 1);
-    x = 0;
-  }
-  context.drawImage(atlas, column * sourceWidth, row * sourceHeight, sourceWidth, sourceHeight, x, y, width, height);
-  context.restore();
-}
-
-function drawEvidenceCell(chapterIndex, x, y, width, height, alpha = 1) {
-  const atlas = images.evidence;
-  if (!atlas.complete || atlas.naturalWidth === 0) return;
-  const column = chapterIndex % 3;
-  const row = Math.floor(chapterIndex / 3);
-  const sourceWidth = atlas.naturalWidth / 3;
-  const sourceHeight = atlas.naturalHeight / 2;
-  context.save();
-  context.globalAlpha = alpha;
-  context.drawImage(atlas, column * sourceWidth, row * sourceHeight, sourceWidth, sourceHeight, x, y, width, height);
-  context.restore();
-}
-
-function drawBackground() {
-  const image = images.background;
-  context.fillStyle = canvasPalette.surfaceNight;
-  context.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
-  if (!image.complete || image.naturalWidth === 0) return;
-  const cameraRange = state.world.width - LOGICAL_WIDTH;
-  const localProgress = cameraRange > 0 ? state.cameraX / cameraRange : 0;
-  const sourceHeight = image.naturalHeight * 0.8;
-  const sourceWidth = sourceHeight * (LOGICAL_WIDTH / LOGICAL_HEIGHT);
-  const chapterProgress = (state.chapterIndex + localProgress * 0.78) / (CAMPAIGN_CHAPTERS.length - 0.22);
-  const sourceX = (image.naturalWidth - sourceWidth) * chapterProgress;
-  const sourceY = image.naturalHeight - sourceHeight;
-  context.imageSmoothingEnabled = true;
-  context.imageSmoothingQuality = 'high';
-  context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
-
-  const veil = context.createLinearGradient(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
-  veil.addColorStop(0, canvasPalette.veilSoft);
-  veil.addColorStop(0.7, canvasPalette.veilMedium);
-  veil.addColorStop(1, canvasPalette.veilDeep);
-  context.fillStyle = veil;
-  context.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
-}
-
-function drawGlow(x, y, radius, color, strength = 0.62) {
-  const gradient = context.createRadialGradient(x, y, 0, x, y, radius);
-  gradient.addColorStop(0, color);
-  gradient.addColorStop(0.3, color);
-  gradient.addColorStop(1, canvasPalette.glowFade);
-  context.save();
-  context.globalAlpha = strength;
-  context.fillStyle = gradient;
-  context.beginPath();
-  context.arc(x, y, radius, 0, Math.PI * 2);
-  context.fill();
-  context.restore();
-}
-
-function drawEvidence() {
-  for (const evidence of state.evidence) {
-    if (evidence.collected) continue;
-    const x = evidence.x - state.cameraX;
-    if (x < -140 || x > LOGICAL_WIDTH + 140) continue;
-    const guardian = state.enemies.find(({ id }) => id === evidence.enemyId);
-    const available = guardian?.defeated;
-    const bob = Math.sin(state.time * 2.4 + evidence.x * 0.01) * 7;
-    drawGlow(x, 474 + bob, available ? 92 : 58, available ? canvasPalette.evidenceGlow : canvasPalette.lockedGlow);
-    drawEvidenceCell(state.chapterIndex, x - 62, 402 + bob, 124, 124, available ? 1 : 0.62);
-    context.save();
-    context.font = '800 18px Pretendard, system-ui, sans-serif';
-    context.textAlign = 'center';
-    context.fillStyle = available ? canvasPalette.amberBright : canvasPalette.textSecondary;
-    context.strokeStyle = canvasPalette.labelStroke;
-    context.lineWidth = 5;
-    context.strokeText(evidence.label, x, 408 + bob);
-    context.fillText(evidence.label, x, 408 + bob);
-    context.restore();
-  }
-}
-
-function drawEnemyHealth(enemy, x) {
-  context.save();
-  context.fillStyle = canvasPalette.healthSurface;
-  context.fillRect(x - 43, 430, 86, 9);
-  context.fillStyle = canvasPalette.danger;
-  context.fillRect(x - 40, 433, 80 * (enemy.hp / enemy.maxHp), 3);
-  context.restore();
-}
-
-function drawEnemies() {
-  for (const enemy of state.enemies) {
-    if (enemy.defeated) continue;
-    const x = enemy.x - state.cameraX;
-    if (x < -150 || x > LOGICAL_WIDTH + 150) continue;
-    drawGlow(x, 513, 58, canvasPalette.enemyGlow, 0.28);
-    drawAtlasCell(1, 1, x - 64, 438, 128, 128, state.player.x < enemy.x ? -1 : 1, enemy.hitFlash > 0 ? 0.55 : 1);
-    drawEnemyHealth(enemy, x);
-  }
-}
-
-function drawBoss() {
-  if (!state.boss.active) return;
-  const x = state.boss.x - state.cameraX;
-  if (x < -280 || x > LOGICAL_WIDTH + 280) return;
-  drawGlow(x, 438, state.boss.staggered ? 170 : 120, canvasPalette.bossGlow, state.boss.staggered ? 0.7 : 0.28);
-  drawAtlasCell(state.boss.staggered ? 3 : 2, 1, x - 125, 296, 250, 250, -1, state.boss.hitFlash > 0 ? 0.55 : 1);
-  context.save();
-  context.fillStyle = canvasPalette.bossSurface;
-  context.fillRect(x - 104, 272, 208, 16);
-  context.fillStyle = state.boss.staggered ? canvasPalette.cyan : canvasPalette.danger;
-  context.fillRect(x - 100, 277, 200 * (state.boss.hp / state.boss.maxHp), 6);
-  context.font = '800 16px Pretendard, system-ui, sans-serif';
-  context.textAlign = 'center';
-  context.fillStyle = canvasPalette.textPrimary;
-  context.fillText(state.boss.label, x, 260);
-  context.restore();
-}
-
-function drawProjectiles() {
-  for (const projectile of state.projectiles) {
-    const x = projectile.x - state.cameraX;
-    drawGlow(x, projectile.y, 48, canvasPalette.projectileGlow, 0.36);
-    drawAtlasCell(1, 1, x - 34, projectile.y - 34, 68, 68, -1, 0.8);
-  }
-}
-
-function drawPlayer() {
-  const player = state.player;
-  const x = player.x - state.cameraX;
-  const moving = Math.abs(player.vx) > 1;
-  let column = moving ? 1 : 0;
-  if (!player.onGround) column = 2;
-  if (player.attackTimer > 0) column = 3;
-  drawGlow(x, player.y - 15, 92, canvasPalette.playerGlow, 0.2);
-  const flicker = player.invulnerable > 0 && Math.floor(state.time * 16) % 2 === 0;
-  drawAtlasCell(column, 0, x - 82, player.y - 166, 164, 164, player.facing, flicker ? 0.42 : 1);
-  const dotBob = Math.sin(state.time * 3.2) * 5;
-  drawAtlasCell(0, 1, x - player.facing * 74 - 30, player.y - 138 + dotBob, 60, 60, 1, 0.96);
-}
-
-function render() {
-  drawBackground();
-  drawEvidence();
-  drawEnemies();
-  drawBoss();
-  drawProjectiles();
-  drawPlayer();
 }
 
 function getPrompt() {
@@ -328,6 +174,8 @@ function syncUi(forceAnnouncement = false) {
   game.dataset.chapter = String(chapter.number);
   game.dataset.evidenceCount = String(state.evidence.filter(({ collected }) => collected).length);
   game.dataset.playerX = String(Math.round(state.player.x));
+  game.dataset.cameraX = String(Math.round(state.cameraX));
+  game.dataset.playerScreenX = String(Math.round(state.player.x - state.cameraX));
   game.dataset.bossHp = String(state.boss.hp);
   game.dataset.lastEvent = state.lastEvent;
   chapterNumber.textContent = `${chapter.number}장`;
@@ -583,12 +431,12 @@ function frame(timestamp) {
     accumulator += frameDelta;
     let steps = 0;
     while (accumulator >= FIXED_STEP && steps < 6) {
-      stepActionGame(state, input, FIXED_STEP);
+      stepActionGame(state, input, FIXED_STEP, touchPrompts ? 640 : 360);
       accumulator -= FIXED_STEP;
       steps += 1;
     }
   }
-  render();
+  renderScene(state);
   syncUi();
   requestAnimationFrame(frame);
 }
@@ -599,7 +447,7 @@ if (new URLSearchParams(location.search).has('showcase')) {
 }
 showTitle();
 syncUi(true);
-Promise.all([images.background.decode(), images.sprites.decode(), images.evidence.decode()]).catch(() => {}).finally(() => render());
+Promise.all(Object.values(images).map((image) => image.decode())).catch(() => {}).finally(() => renderScene(state));
 requestAnimationFrame(frame);
 
 if (new URLSearchParams(location.search).has('testHook')) {

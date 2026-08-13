@@ -318,7 +318,7 @@ function updateProjectiles(state, delta) {
   state.projectiles = state.projectiles.filter(({ active }) => active);
 }
 
-export function stepActionGame(state, input, deltaSeconds) {
+export function stepActionGame(state, input, deltaSeconds, cameraTargetX = 360) {
   if (!state || !input || state.phase !== 'playing') return state;
   const delta = clamp(Number.isFinite(deltaSeconds) ? deltaSeconds : 1 / 60, 0, 1 / 30);
   const player = state.player;
@@ -357,7 +357,7 @@ export function stepActionGame(state, input, deltaSeconds) {
   updateEnemies(state, delta);
   updateBoss(state, delta);
   updateProjectiles(state, delta);
-  state.cameraX = clamp(state.player.x - 430, 0, state.world.width - 1280);
+  state.cameraX = clamp(state.player.x - cameraTargetX, 0, state.world.width - 1280);
   state.previousInput = { ...input };
   return state;
 }
