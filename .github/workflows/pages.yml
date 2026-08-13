@@ -50,6 +50,24 @@ jobs:
       - name: 수직 슬라이스 증거 게이트
         if: inputs.deploy_ref == ''
         run: npm run slice:gate
+      - name: 2D 6장 데스크톱·모바일 완주 테스트
+        if: inputs.deploy_ref == ''
+        timeout-minutes: 10
+        run: |
+          node tests/reboot-e2e/previewServer.mjs > /tmp/h17-preview.log 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid"' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:8899/ > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:8899/ > /dev/null
+          npm run qa:2d
+          kill "$preview_pid"
+          wait "$preview_pid" || true
+          trap - EXIT
       - name: 캠페인 브라우저 테스트
         if: inputs.deploy_ref == ''
         timeout-minutes: 30

@@ -7,9 +7,11 @@ function getRuntime() {
   const names = [
     'ACTION_EVIDENCE',
     'createActionGameState',
+    'advanceChapter',
     'createInputState',
     'mapControlAction',
     'setInputAction',
+    'resolveChapterChoice',
     'stepActionGame',
     'serializeActionGame'
   ];
@@ -96,7 +98,7 @@ test('공격이 닿는 거리에서는 접촉 피해 없이 드론을 상대할 
   assert.equal(enemy.hp, 1);
 });
 
-test('네 증거와 WHITEOUT을 통과하면 하루 기록을 보호한다', () => {
+test('각 장의 두 증거와 보스를 통과하면 선택을 기록하고 다음 장을 연다', () => {
   const runtime = getRuntime();
   const state = runtime.createActionGameState();
   const input = runtime.createInputState();
@@ -112,7 +114,7 @@ test('네 증거와 WHITEOUT을 통과하면 하루 기록을 보호한다', () 
     tap(runtime, state, input, 'trace', 2);
   }
 
-  assert.equal(state.collectedEvidence.length, 4);
+  assert.equal(state.collectedEvidence.length, 2);
   assert.equal(state.boss.active, true);
 
   state.player.x = state.boss.x - 58;
@@ -121,9 +123,13 @@ test('네 증거와 WHITEOUT을 통과하면 하루 기록을 보호한다', () 
   assert.equal(state.boss.staggered, true);
 
   tap(runtime, state, input, 'trace', 2);
-  assert.equal(state.phase, 'complete');
-  assert.equal(state.outcome, 'protected');
-  assert.match(state.message, /하루/);
+  assert.equal(state.phase, 'choice');
+  runtime.resolveChapterChoice(state, 'protect-context');
+  assert.equal(state.phase, 'chapter-result');
+  assert.equal(state.decisions['chapter-1'], 'protect-context');
+  runtime.advanceChapter(state);
+  assert.equal(state.chapterIndex, 1);
+  assert.equal(state.phase, 'playing');
 });
 
 test('같은 입력 시퀀스는 완전히 같은 결과를 만든다', () => {
@@ -146,30 +152,35 @@ test('같은 입력 시퀀스는 완전히 같은 결과를 만든다', () => {
   assert.deepEqual(first, second);
 });
 
-test('저장은 체크포인트·증거·완료 상태만 남기고 런타임 전투 정보는 버린다', () => {
+test('저장은 6장 체크포인트·증거·선택만 남기고 런타임 전투 정보는 버린다', () => {
   const runtime = getRuntime();
   const state = runtime.createActionGameState();
   state.checkpointX = 930;
-  state.collectedEvidence.push('privacy');
+  state.collectedEvidence.push('chapter-1:request');
   state.evidence[0].collected = true;
+  state.decisions['chapter-1'] = 'protect-context';
   state.player.x = 1111;
   state.player.hp = 1;
   state.boss.hp = 2;
   state.respawns = 4;
 
   const saved = runtime.serializeActionGame(state);
-  assert.deepEqual(Object.keys(saved).sort(), ['checkpointX', 'completed', 'evidenceIds', 'version']);
+  assert.deepEqual(Object.keys(saved).sort(), ['chapterIndex', 'checkpointX', 'completed', 'decisions', 'evidenceIds', 'unlockedChapter', 'version']);
   assert.deepEqual(saved, {
-    version: 2,
+    version: 3,
+    chapterIndex: 0,
+    unlockedChapter: 0,
     checkpointX: 930,
-    evidenceIds: ['privacy'],
+    evidenceIds: ['chapter-1:request'],
+    decisions: { 'chapter-1': 'protect-context' },
     completed: false
   });
 
   const reloaded = runtime.createActionGameState(saved);
   assert.equal(reloaded.player.x, 930);
-  assert.equal(reloaded.player.hp, 3);
-  assert.equal(reloaded.boss.hp, 5);
-  assert.deepEqual(reloaded.collectedEvidence, ['privacy']);
+  assert.equal(reloaded.player.hp, 4);
+  assert.equal(reloaded.boss.hp, 0);
+  assert.deepEqual(reloaded.collectedEvidence, ['chapter-1:request']);
+  assert.equal(reloaded.decisions['chapter-1'], 'protect-context');
   assert.equal(reloaded.respawns, 0);
 });

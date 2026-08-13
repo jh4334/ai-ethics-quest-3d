@@ -2,12 +2,12 @@
 // 전략: 페이지 이동(navigate)은 네트워크 우선(새 배포 즉시 반영) + 실패 시 캐시 폴백,
 // 해시 파일명 에셋(/assets/)은 캐시 우선(불변 파일이라 재다운로드 불필요).
 const CACHE_PREFIX = 'ethics-quest-h17-';
-const CACHE = `${CACHE_PREFIX}v13`;
+const CACHE = `${CACHE_PREFIX}v14-2d`;
 const LAZY_CACHE = `${CACHE_PREFIX}environment`;
-const ENTRY_DOCUMENTS = ['./index.html', './illustrated.html', './reboot.html', './legacy.html'];
-const ASSET_MANIFEST = './reboot-assets.json';
+const ENTRY_DOCUMENTS = ['./index.html', './illustrated.html'];
+const ARCHIVE_DOCUMENTS = ['./reboot.html', './legacy.html'];
 const LAZY_ASSET_PREFIXES = ['./assets/reboot/environment/'];
-const CORE = ['./', ...ENTRY_DOCUMENTS, ASSET_MANIFEST, './manifest.webmanifest', './icon.svg', './trilogy.html'];
+const CORE = ['./', ...ENTRY_DOCUMENTS, './manifest.webmanifest', './icon.svg'];
 
 async function readEntryAssets({ includeLazy = false } = {}) {
   const assets = new Set();
@@ -17,10 +17,6 @@ async function readEntryAssets({ includeLazy = false } = {}) {
     for (const match of html.matchAll(/(?:src|href)="(\.?\/?assets\/[^"]+)"/g)) {
       assets.add(match[1].startsWith('.') ? match[1] : `./${match[1].replace(/^\//, '')}`);
     }
-  }
-  const manifest = await fetch(ASSET_MANIFEST, { cache: 'no-cache' }).then((response) => response.json());
-  for (const asset of manifest) {
-    if (includeLazy || !LAZY_ASSET_PREFIXES.some((prefix) => asset.startsWith(prefix))) assets.add(asset);
   }
   return [...assets];
 }
@@ -98,9 +94,8 @@ self.addEventListener('fetch', (event) => {
       } catch {
         const exact = await caches.match(request, { ignoreSearch: true });
         if (exact) return exact;
-        const fallback = requestUrl.pathname.endsWith('/legacy.html')
-          ? './legacy.html'
-          : requestUrl.pathname.endsWith('/reboot.html') ? './reboot.html' : './index.html';
+        const archive = ARCHIVE_DOCUMENTS.find((entry) => requestUrl.pathname.endsWith(entry.slice(1)));
+        const fallback = archive ?? (requestUrl.pathname.endsWith('/illustrated.html') ? './illustrated.html' : './index.html');
         return caches.match(fallback);
       }
     })());

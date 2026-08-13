@@ -1,7 +1,7 @@
 {
   "name": "사라진 학생 H-17 — 2D 이야기",
   "short_name": "사라진 학생 H-17",
-  "description": "사라진 친구 하루의 기록을 따라가는 간단한 2D 선택 이야기",
+  "description": "사라진 친구 하루의 기록과 AI 결정 경로를 추적하는 6장 2D 횡스크롤 액션",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

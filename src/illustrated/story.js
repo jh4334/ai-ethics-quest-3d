@@ -15,7 +15,7 @@ export const ACTION_PROLOGUE = Object.freeze([
 
 export const ACTION_ENDING = Object.freeze({
   speaker: '하루·복구 신호',
-  line: 'WHITEOUT이 멈췄어. 내 개인정보는 가리고, 원본의 맥락과 출처를 보존한 뒤 내 동의를 먼저 확인해 줘.'
+  line: 'WHITEOUT이 멈췄어. 내 개인정보와 공개 동의는 지키고, AI가 계산한 것과 사람이 승인한 일을 함께 설명해 줘.'
 });
 
 export const STORY_BEATS = Object.freeze([
@@ -62,8 +62,15 @@ export function resolveChoice(choice) {
 
 export {
   ACTION_EVIDENCE,
+  CAMPAIGN_CHAPTERS,
+  advanceChapter,
   createActionGameState,
+  getCampaignEnding,
+  getCampaignReport,
+  resolveChapterChoice,
+  restartCampaign,
+  selectChapter,
   serializeActionGame,
   stepActionGame
-} from './actionGame.js';
+} from './campaignGame.js';
 export { createInputState, mapControlAction, setInputAction } from './actionInput.js';

@@ -231,8 +231,9 @@ test('Vite builds isolated 2D, legacy, and reboot entries with one Three chunk r
   const runtimeSettings = readFileSync(new URL('../src/reboot/settings/runtime.js', import.meta.url), 'utf8');
 
   // When: their static entry contracts are inspected.
-  // Then: illustrated 2D is canonical, both 3D versions remain available, and they share the pinned Three chunk.
-  assert.match(canonicalHtml, /illustrated\.html/);
+  // Then: the root itself boots illustrated 2D, both 3D versions remain available, and they share the pinned Three chunk.
+  assert.match(canonicalHtml, /src="\/src\/illustrated\/entry\.js"/);
+  assert.doesNotMatch(canonicalHtml, /location\.replace|src="\/src\/(?:main|reboot\/entry)\.js"/);
   assert.match(legacyHtml, /src="\/src\/main\.js"/);
   assert.match(rebootHtml, /src="\/src\/reboot\/entry\.js"/);
   assert.match(vite, /input:\s*\{[\s\S]*illustrated:[\s\S]*legacy:[\s\S]*main:[\s\S]*reboot:/);
