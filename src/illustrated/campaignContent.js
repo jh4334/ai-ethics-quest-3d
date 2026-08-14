@@ -1,5 +1,5 @@
 export const CAMPAIGN_WORLD = Object.freeze({
-  width: 2920,
+  width: 4800,
   groundY: 560,
   gravity: 1900,
   moveSpeed: 330,
@@ -34,14 +34,14 @@ export const CAMPAIGN_CHAPTERS = Object.freeze([
       { speaker: '도트', line: '하루의 삭제 요청이 위험 신호 H-17로 뒤집혔어. 허락과 판정 근거부터 되찾자.' }
     ],
     evidence: [
-      { id: 'request', label: '삭제 요청 원본', x: 850, enemyId: 'c1-eraser-a', checkpointX: 700, message: '하루는 사적인 기록을 지워 달라고 요청했다. 요청 자체가 위험 근거가 되어선 안 된다.' },
-      { id: 'error-table', label: '집단별 오류표', x: 1620, enemyId: 'c1-eraser-b', checkpointX: 1470, message: '평균 아래에 가려진 집단별 오판이 드러났다. 누구에게 틀렸는지 함께 봐야 한다.' }
+      { id: 'request', label: '삭제 요청 원본', x: 1180, enemyId: 'c1-eraser-a', checkpointX: 920, message: '하루는 사적인 기록을 지워 달라고 요청했다. 요청 자체가 위험 근거가 되어선 안 된다.' },
+      { id: 'error-table', label: '집단별 오류표', x: 2700, enemyId: 'c1-eraser-b', checkpointX: 2400, message: '평균 아래에 가려진 집단별 오판이 드러났다. 누구에게 틀렸는지 함께 봐야 한다.' }
     ],
     enemies: [
-      { id: 'c1-eraser-a', x: 690, kind: 'eraser' },
-      { id: 'c1-eraser-b', x: 1460, kind: 'eraser' }
+      { id: 'c1-eraser-a', x: 1020, kind: 'eraser' },
+      { id: 'c1-eraser-b', x: 2540, kind: 'eraser' }
     ],
-    boss: { id: 'consent-lock', label: '동의 잠금', x: 2450, hp: 4, cadence: 1.65 },
+    boss: { id: 'consent-lock', label: '동의 잠금', x: 4300, hp: 4, cadence: 1.65 },
     choice: {
       prompt: '하루가 존재했다는 증거를 어떻게 보관할까?',
       options: [
@@ -63,14 +63,14 @@ export const CAMPAIGN_CHAPTERS = Object.freeze([
       { speaker: '나', line: '누가 만들었고 언제 수정했는지 되찾으면, 영상보다 늦게 만들어진 신고서의 모순을 밝힐 수 있어.' }
     ],
     evidence: [
-      { id: 'credit', label: '제작 이력', x: 820, enemyId: 'c2-copy-a', checkpointX: 680, message: '학생 원작, AI 보조, 최종 편집자의 역할이 다시 연결됐다.' },
-      { id: 'origin', label: '최초 파일', x: 1630, enemyId: 'c2-copy-b', checkpointX: 1480, message: '영상은 신고 뒤 생성됐다. 자극적인 복사본보다 생성 시각과 원본 위치가 먼저다.' }
+      { id: 'credit', label: '제작 이력', x: 1180, enemyId: 'c2-copy-a', checkpointX: 920, message: '학생 원작, AI 보조, 최종 편집자의 역할이 다시 연결됐다.' },
+      { id: 'origin', label: '최초 파일', x: 2700, enemyId: 'c2-copy-b', checkpointX: 2400, message: '영상은 신고 뒤 생성됐다. 자극적인 복사본보다 생성 시각과 원본 위치가 먼저다.' }
     ],
     enemies: [
-      { id: 'c2-copy-a', x: 660, kind: 'copycat' },
-      { id: 'c2-copy-b', x: 1470, kind: 'copycat' }
+      { id: 'c2-copy-a', x: 1020, kind: 'copycat' },
+      { id: 'c2-copy-b', x: 2540, kind: 'copycat' }
     ],
-    boss: { id: 'forged-owner', label: '가짜 원본', x: 2450, hp: 5, cadence: 1.5 },
+    boss: { id: 'forged-owner', label: '가짜 원본', x: 4300, hp: 5, cadence: 1.5 },
     choice: {
       prompt: '조작 영상을 멈춘 뒤 무엇을 남길까?',
       options: [
@@ -92,14 +92,14 @@ export const CAMPAIGN_CHAPTERS = Object.freeze([
       { speaker: '도트', line: '복사본만 지우면 다시 번져. 최초 게시물, 추천 증폭, 피해 통지를 순서대로 확인하자.' }
     ],
     evidence: [
-      { id: 'context', label: '잘린 앞뒤 맥락', x: 860, enemyId: 'c3-wave-a', checkpointX: 710, message: '짧은 실수 앞에는 기기 고장이, 뒤에는 바로잡은 발표가 있었다.' },
-      { id: 'spread', label: '확산 경로', x: 1640, enemyId: 'c3-wave-b', checkpointX: 1490, message: '반응과 재공유가 추천을 밀어 올려 피해 도달 범위를 키웠다.' }
+      { id: 'context', label: '잘린 앞뒤 맥락', x: 1180, enemyId: 'c3-wave-a', checkpointX: 920, message: '짧은 실수 앞에는 기기 고장이, 뒤에는 바로잡은 발표가 있었다.' },
+      { id: 'spread', label: '확산 경로', x: 2700, enemyId: 'c3-wave-b', checkpointX: 2400, message: '반응과 재공유가 추천을 밀어 올려 피해 도달 범위를 키웠다.' }
     ],
     enemies: [
-      { id: 'c3-wave-a', x: 700, kind: 'echo' },
-      { id: 'c3-wave-b', x: 1480, kind: 'echo' }
+      { id: 'c3-wave-a', x: 1020, kind: 'echo' },
+      { id: 'c3-wave-b', x: 2540, kind: 'echo' }
     ],
-    boss: { id: 'laugh-storm', label: '확산 폭풍', x: 2450, hp: 5, cadence: 1.35 },
+    boss: { id: 'laugh-storm', label: '확산 폭풍', x: 4300, hp: 5, cadence: 1.35 },
     choice: {
       prompt: '확산을 끊은 뒤 회복을 어떻게 시작할까?',
       options: [
@@ -121,14 +121,14 @@ export const CAMPAIGN_CHAPTERS = Object.freeze([
       { speaker: '도트', line: '추천은 진실을 판결하지 않아. 오래 볼 화면을 고를 뿐이야. 경로 밖으로 나가 출처를 맞춰 보자.' }
     ],
     evidence: [
-      { id: 'source-a', label: '최초 출처', x: 830, enemyId: 'c4-bubble-a', checkpointX: 690, message: '따뜻한 학교의 기록은 날짜가 잘렸고, 최초 게시자는 다른 설명을 남겼다.' },
-      { id: 'counter-source', label: '반대 증거', x: 1640, enemyId: 'c4-bubble-b', checkpointX: 1490, message: '차가운 학교의 기록도 일부만 맞았다. 두 출처를 함께 봐야 시간순서가 완성된다.' }
+      { id: 'source-a', label: '최초 출처', x: 1180, enemyId: 'c4-bubble-a', checkpointX: 920, message: '따뜻한 학교의 기록은 날짜가 잘렸고, 최초 게시자는 다른 설명을 남겼다.' },
+      { id: 'counter-source', label: '반대 증거', x: 2700, enemyId: 'c4-bubble-b', checkpointX: 2400, message: '차가운 학교의 기록도 일부만 맞았다. 두 출처를 함께 봐야 시간순서가 완성된다.' }
     ],
     enemies: [
-      { id: 'c4-bubble-a', x: 680, kind: 'bubble' },
-      { id: 'c4-bubble-b', x: 1480, kind: 'bubble' }
+      { id: 'c4-bubble-a', x: 1020, kind: 'bubble' },
+      { id: 'c4-bubble-b', x: 2540, kind: 'bubble' }
     ],
-    boss: { id: 'recommendation-wall', label: '추천 장벽', x: 2450, hp: 5, cadence: 1.25 },
+    boss: { id: 'recommendation-wall', label: '추천 장벽', x: 4300, hp: 5, cadence: 1.25 },
     choice: {
       prompt: '서로 다른 두 기록을 어떻게 보여 줄까?',
       options: [
@@ -150,14 +150,14 @@ export const CAMPAIGN_CHAPTERS = Object.freeze([
       { speaker: '나', line: 'AI가 점수를 냈지만 승인 버튼은 사람이 눌렀다. 누가 무엇을 확인했는지 역추적하자.' }
     ],
     evidence: [
-      { id: 'model-role', label: 'AI 추천 기록', x: 850, enemyId: 'c5-clock-a', checkpointX: 700, message: '루멘은 제한된 자료로 위험을 추천했지만 결정 이유와 불확실성을 표시하지 못했다.' },
-      { id: 'human-signature', label: '사람의 승인 서명', x: 1650, enemyId: 'c5-clock-b', checkpointX: 1500, message: '운영위원이 검토 완료를 눌렀다. 자동화가 사람의 설명 책임을 없애진 않는다.' }
+      { id: 'model-role', label: 'AI 추천 기록', x: 1180, enemyId: 'c5-clock-a', checkpointX: 920, message: '루멘은 제한된 자료로 위험을 추천했지만 결정 이유와 불확실성을 표시하지 못했다.' },
+      { id: 'human-signature', label: '사람의 승인 서명', x: 2700, enemyId: 'c5-clock-b', checkpointX: 2400, message: '운영위원이 검토 완료를 눌렀다. 자동화가 사람의 설명 책임을 없애진 않는다.' }
     ],
     enemies: [
-      { id: 'c5-clock-a', x: 690, kind: 'clock' },
-      { id: 'c5-clock-b', x: 1490, kind: 'clock' }
+      { id: 'c5-clock-a', x: 1020, kind: 'clock' },
+      { id: 'c5-clock-b', x: 2540, kind: 'clock' }
     ],
-    boss: { id: 'three-second-gate', label: '3초 승인 시계', x: 2450, hp: 6, cadence: 1.15 },
+    boss: { id: 'three-second-gate', label: '3초 승인 시계', x: 4300, hp: 6, cadence: 1.15 },
     choice: {
       prompt: '멈춘 승인 시스템을 어떻게 다시 열까?',
       options: [
@@ -179,14 +179,14 @@ export const CAMPAIGN_CHAPTERS = Object.freeze([
       { speaker: '도트', line: '루멘은 계산했고 사람이 서명했어. 이제 증거를 지키면서도 결정 경로를 검증 가능하게 열자.' }
     ],
     evidence: [
-      { id: 'redacted-package', label: '가림 처리 증거 묶음', x: 850, enemyId: 'c6-white-a', checkpointX: 700, message: '관련 없는 개인정보는 가리고 삭제 요청, 오류표, 제작 이력, 승인 서명만 연결했다.' },
-      { id: 'appeal-right', label: '이의제기 절차', x: 1650, enemyId: 'c6-white-b', checkpointX: 1500, message: '결정 이유를 듣고 사람이 다시 검토하는 절차가 최종 증언에 포함됐다.' }
+      { id: 'redacted-package', label: '가림 처리 증거 묶음', x: 1180, enemyId: 'c6-white-a', checkpointX: 920, message: '관련 없는 개인정보는 가리고 삭제 요청, 오류표, 제작 이력, 승인 서명만 연결했다.' },
+      { id: 'appeal-right', label: '이의제기 절차', x: 2700, enemyId: 'c6-white-b', checkpointX: 2400, message: '결정 이유를 듣고 사람이 다시 검토하는 절차가 최종 증언에 포함됐다.' }
     ],
     enemies: [
-      { id: 'c6-white-a', x: 690, kind: 'whiteout' },
-      { id: 'c6-white-b', x: 1490, kind: 'whiteout' }
+      { id: 'c6-white-a', x: 1020, kind: 'whiteout' },
+      { id: 'c6-white-b', x: 2540, kind: 'whiteout' }
     ],
-    boss: { id: 'whiteout', label: 'WHITEOUT', x: 2450, hp: 7, cadence: 1.0 },
+    boss: { id: 'whiteout', label: 'WHITEOUT', x: 4300, hp: 7, cadence: 1.0 },
     choice: {
       prompt: '복구한 증거와 하루의 증언을 어떻게 남길까?',
       options: [

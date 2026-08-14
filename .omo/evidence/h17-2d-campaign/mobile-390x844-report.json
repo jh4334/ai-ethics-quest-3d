@@ -12,44 +12,74 @@
       "chapter": 1,
       "evidence": 2,
       "decision": "민감정보를 가리고 맥락을 보존한다",
-      "elapsedMs": 4456
+      "scroll": {
+        "playerX": 1217,
+        "cameraX": 577,
+        "playerScreenX": 640
+      },
+      "elapsedMs": 7171
     },
     {
       "chapter": 2,
       "evidence": 2,
       "decision": "생성 표시를 붙이고 확산을 멈춘다",
-      "elapsedMs": 4552
+      "scroll": {
+        "playerX": 1074,
+        "cameraX": 434,
+        "playerScreenX": 640
+      },
+      "elapsedMs": 7647
     },
     {
       "chapter": 3,
       "evidence": 2,
       "decision": "피해를 알리고 회복 지원을 연결한다",
-      "elapsedMs": 4446
+      "scroll": {
+        "playerX": 1080,
+        "cameraX": 440,
+        "playerScreenX": 640
+      },
+      "elapsedMs": 7734
     },
     {
       "chapter": 4,
       "evidence": 2,
       "decision": "출처와 날짜를 나란히 보여 준다",
-      "elapsedMs": 4416
+      "scroll": {
+        "playerX": 1074,
+        "cameraX": 434,
+        "playerScreenX": 640
+      },
+      "elapsedMs": 7614
     },
     {
       "chapter": 5,
       "evidence": 2,
       "decision": "중요 결정마다 사람 재검토를 둔다",
-      "elapsedMs": 4751
+      "scroll": {
+        "playerX": 1080,
+        "cameraX": 440,
+        "playerScreenX": 640
+      },
+      "elapsedMs": 8016
     },
     {
       "chapter": 6,
       "evidence": 2,
       "decision": "개인정보를 가린 뒤 공개 심리를 연다",
-      "elapsedMs": 5249
+      "scroll": {
+        "playerX": 1080,
+        "cameraX": 440,
+        "playerScreenX": 640
+      },
+      "elapsedMs": 8348
     }
   ],
   "saveBeforeReload": {
     "version": 3,
     "chapterIndex": 5,
     "unlockedChapter": 5,
-    "checkpointX": 1500,
+    "checkpointX": 2400,
     "evidenceIds": [
       "chapter-1:request",
       "chapter-1:error-table",

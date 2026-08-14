@@ -74,3 +74,4 @@ export {
   stepActionGame
 } from './campaignGame.js';
 export { createInputState, mapControlAction, setInputAction } from './actionInput.js';
+export { createSideScrollSceneLayout } from './sideScrollLayout.js';

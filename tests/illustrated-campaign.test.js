@@ -49,7 +49,7 @@ test('새 저장은 여섯 장 진행·선택·증거를 남기고 옛 v2 저장
   });
   assert.equal(migrated.chapterIndex, 3);
   assert.equal(migrated.unlockedChapter, 3);
-  assert.equal(migrated.checkpointX, 2920 - 100);
+  assert.equal(migrated.checkpointX, 3190);
   assert.equal(migrated.collectedEvidence.length, 3);
 
   migrated.decisions['chapter-1'] = 'protect-context';

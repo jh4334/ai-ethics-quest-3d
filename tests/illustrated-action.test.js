@@ -83,6 +83,29 @@ test('이동·점프·공격은 고정틱에서 실제 플레이 상태를 바�
   assert.ok(enemy.hp < hpBefore);
 });
 
+test('긴 월드에서 카메라가 플레이어를 따라가고 지면은 화면 반대 방향으로 흐른다', () => {
+  const runtime = getRuntime();
+  assert.equal(typeof runtime.createSideScrollSceneLayout, 'function', '횡스크롤 화면 좌표 계약이 필요합니다.');
+  const state = runtime.createActionGameState();
+  const input = runtime.createInputState();
+  runtime.setInputAction(input, 'right', true);
+  stepFrames(runtime, state, input, 240);
+  runtime.setInputAction(input, 'right', false);
+
+  const layout = runtime.createSideScrollSceneLayout(state, 1280);
+  assert.ok(state.world.width >= 4600, '한 장의 배경이 아니라 최소 3.5 화면 길이의 월드여야 합니다.');
+  assert.ok(state.cameraX > 700, '카메라가 실제 월드 진행을 따라가야 합니다.');
+  assert.ok(layout.playerScreenX >= 340 && layout.playerScreenX <= 440, '플레이어는 카메라 추적점 근처에 남아야 합니다.');
+  assert.equal(layout.landmarks[0].screenX, layout.landmarks[0].worldX - state.cameraX);
+  assert.ok(Math.abs(layout.farBackgroundX) < state.cameraX * 0.25, '원경은 지면보다 느리게 움직여야 합니다.');
+
+  const mobileState = runtime.createActionGameState();
+  const mobileInput = runtime.createInputState();
+  runtime.setInputAction(mobileInput, 'right', true);
+  for (let frame = 0; frame < 240; frame += 1) runtime.stepActionGame(mobileState, mobileInput, 1 / 60, 640);
+  assert.equal(mobileState.player.x - mobileState.cameraX, 640, '세로 화면에서는 중앙 크롭 안에 플레이어가 남아야 합니다.');
+});
+
 test('공격이 닿는 거리에서는 접촉 피해 없이 드론을 상대할 수 있다', () => {
   const runtime = getRuntime();
   const state = runtime.createActionGameState();
