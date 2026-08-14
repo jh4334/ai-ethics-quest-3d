@@ -934,7 +934,8 @@ a:focus-visible {
   }
 
   .chapter-mark strong {
-    font-size: 0.82rem;
+    grid-column: 1 / -1;
+    font-size: 0.75rem;
   }
 
   .chapter-mark {

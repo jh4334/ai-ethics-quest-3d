@@ -214,7 +214,7 @@ async function runProfile(profile) {
   assert.equal(layout.scrollWidth <= layout.width, true);
   assert.equal(layout.endingRowsVisible, true);
   assert.equal(layout.chapterTitle, 'WHITEOUT/H-17');
-  assert.equal(layout.chapterTitleClipped, false);
+  assert.equal(layout.chapterTitleClipped, false, `${profile.id}: chapter title must fit inside the HUD`);
   if (profile.touch) {
     assert.equal(layout.touchVisible, true);
     assert.equal(layout.buttons.filter(({ width, height }) => width > 0 && height > 0).every(({ width, height }) => width >= 44 && height >= 44), true);
