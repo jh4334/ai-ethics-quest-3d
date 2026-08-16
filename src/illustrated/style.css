@@ -453,6 +453,12 @@ a:focus-visible {
   transform: translateX(-50%);
 }
 
+.objective-prompt span {
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: keep-all;
+}
+
 .objective-prompt kbd {
   min-width: 54px;
   min-height: 32px;
@@ -504,6 +510,8 @@ a:focus-visible {
   font-size: 0.8rem;
   font-weight: 700;
   line-height: 1.4;
+  overflow-wrap: break-word;
+  word-break: keep-all;
 }
 
 .ethics-rule.is-warning {
@@ -650,12 +658,16 @@ a:focus-visible {
 .report-list strong {
   color: var(--amber-bright);
   font-size: 0.75rem;
+  overflow-wrap: break-word;
+  word-break: keep-all;
 }
 
 .report-list span {
   color: var(--text-secondary);
   font-size: 0.75rem;
   line-height: 1.45;
+  overflow-wrap: break-word;
+  word-break: keep-all;
 }
 
 .help-button {

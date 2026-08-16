@@ -18,51 +18,51 @@
         "cameraX": 857,
         "playerScreenX": 360
       },
-      "elapsedMs": 16212
+      "elapsedMs": 15915
     },
     {
       "chapter": 2,
       "evidence": 3,
       "decision": "생성 표시를 붙이고 확산을 멈춘다",
       "scroll": {
-        "playerX": 1074,
-        "cameraX": 714,
+        "playerX": 1080,
+        "cameraX": 720,
         "playerScreenX": 360
       },
-      "elapsedMs": 16265
+      "elapsedMs": 15944
     },
     {
       "chapter": 3,
       "evidence": 3,
       "decision": "피해를 알리고 회복 지원을 연결한다",
       "scroll": {
-        "playerX": 1074,
-        "cameraX": 714,
+        "playerX": 1080,
+        "cameraX": 720,
         "playerScreenX": 360
       },
-      "elapsedMs": 16009
+      "elapsedMs": 15847
     },
     {
       "chapter": 4,
       "evidence": 3,
       "decision": "출처와 날짜를 나란히 보여 준다",
       "scroll": {
-        "playerX": 1074,
-        "cameraX": 714,
+        "playerX": 1080,
+        "cameraX": 720,
         "playerScreenX": 360
       },
-      "elapsedMs": 16098
+      "elapsedMs": 15984
     },
     {
       "chapter": 5,
       "evidence": 3,
       "decision": "중요 결정마다 사람 재검토를 둔다",
       "scroll": {
-        "playerX": 1080,
-        "cameraX": 720,
+        "playerX": 1074,
+        "cameraX": 714,
         "playerScreenX": 360
       },
-      "elapsedMs": 18491
+      "elapsedMs": 18404
     },
     {
       "chapter": 6,
@@ -73,7 +73,7 @@
         "cameraX": 720,
         "playerScreenX": 360
       },
-      "elapsedMs": 17594
+      "elapsedMs": 17386
     }
   ],
   "saveBeforeReload": {

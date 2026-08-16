@@ -14,33 +14,33 @@
       "evidence": 3,
       "decision": "원본을 제한된 감사함에 잠근다",
       "scroll": {
-        "playerX": 1239,
-        "cameraX": 599,
+        "playerX": 1217,
+        "cameraX": 577,
         "playerScreenX": 640
       },
-      "elapsedMs": 16255
+      "elapsedMs": 16179
     },
     {
       "chapter": 2,
       "evidence": 3,
       "decision": "복사본을 내리고 피해자에게 알린다",
       "scroll": {
-        "playerX": 1080,
-        "cameraX": 440,
+        "playerX": 1074,
+        "cameraX": 434,
         "playerScreenX": 640
       },
-      "elapsedMs": 15864
+      "elapsedMs": 16101
     },
     {
       "chapter": 3,
       "evidence": 3,
       "decision": "재공유를 잠그고 당사자와 먼저 상의한다",
       "scroll": {
-        "playerX": 1080,
-        "cameraX": 440,
+        "playerX": 1074,
+        "cameraX": 434,
         "playerScreenX": 640
       },
-      "elapsedMs": 15519
+      "elapsedMs": 15797
     },
     {
       "chapter": 4,
@@ -51,7 +51,7 @@
         "cameraX": 440,
         "playerScreenX": 640
       },
-      "elapsedMs": 15726
+      "elapsedMs": 16086
     },
     {
       "chapter": 5,
@@ -62,18 +62,18 @@
         "cameraX": 440,
         "playerScreenX": 640
       },
-      "elapsedMs": 18364
+      "elapsedMs": 18249
     },
     {
       "chapter": 6,
       "evidence": 3,
       "decision": "증거를 봉인 감사함에 보존한다",
       "scroll": {
-        "playerX": 1074,
-        "cameraX": 434,
+        "playerX": 1080,
+        "cameraX": 440,
         "playerScreenX": 640
       },
-      "elapsedMs": 17332
+      "elapsedMs": 16849
     }
   ],
   "saveBeforeReload": {
