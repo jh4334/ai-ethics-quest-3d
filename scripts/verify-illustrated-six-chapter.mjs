@@ -67,6 +67,88 @@ async function teleport(page, selector, offset = -64) {
   await page.waitForTimeout(80);
 }
 
+async function advanceIntro(page) {
+  for (let step = 0; step < 6; step += 1) {
+    const phase = await page.locator('[data-illustrated-game]').getAttribute('data-game-phase');
+    if (phase === 'playing') return;
+    await page.locator('[data-story-next]').click();
+  }
+  throw new Error('chapter intro did not enter playing phase');
+}
+
+async function clearChapterEnemies(page, profile, chapterNumber, pointerSeed) {
+  const enemyCount = await page.evaluate(() => window.__illustratedAction.getState().enemies.length);
+  for (let index = 0; index < enemyCount; index += 1) {
+    await teleport(page, { collection: 'enemies', index });
+    await action(page, profile, 'trace', pointerSeed + index * 10);
+  }
+  for (let index = 0; index < enemyCount; index += 1) {
+    await teleport(page, { collection: 'enemies', index });
+    for (let hit = 0; hit < 4; hit += 1) {
+      const defeated = await page.evaluate((targetIndex) => window.__illustratedAction.getState().enemies[targetIndex].defeated, index);
+      if (defeated) break;
+      await action(page, profile, 'attack', pointerSeed + index * 10 + hit + 1);
+    }
+    const guardian = await page.evaluate((targetIndex) => window.__illustratedAction.getState().enemies[targetIndex], index);
+    assert.equal(guardian.defeated, true, `chapter ${chapterNumber} guardian ${index + 1} remained at ${guardian.hp} HP`);
+  }
+}
+
+async function collectChapterEvidence(page, profile, chapterNumber, pointerSeed) {
+  const evidenceCount = await page.evaluate(() => window.__illustratedAction.getState().evidence.length);
+  for (let index = 0; index < evidenceCount; index += 1) {
+    await teleport(page, { collection: 'evidence', index }, 0);
+    await action(page, profile, 'trace', pointerSeed + index);
+    const traceState = await page.evaluate((targetIndex) => {
+      const state = window.__illustratedAction.getState();
+      return { collected: state.evidence[targetIndex].collected, event: state.lastEvent, message: state.message };
+    }, index);
+    assert.equal(traceState.collected, true, `chapter ${chapterNumber} evidence ${index + 1} failed: ${traceState.event} / ${traceState.message}`);
+  }
+}
+
+async function clearSignalBoss(page, profile, chapterNumber, pointerSeed) {
+  await teleport(page, 'boss');
+  for (let step = 0; step < 18; step += 1) {
+    const boss = await page.evaluate(() => {
+      const { hp, traced, staggered, phaseIndex } = window.__illustratedAction.getState().boss;
+      return { hp, traced, staggered, phaseIndex };
+    });
+    if (boss.hp === 0 || boss.staggered) return;
+    await action(page, profile, boss.traced ? 'attack' : 'trace', pointerSeed + step);
+  }
+  throw new Error(`chapter ${chapterNumber} SIGNAL boss did not stagger`);
+}
+
+async function clearApprovalBoss(page, profile, pointerSeed) {
+  await teleport(page, 'boss', -360);
+  await page.evaluate(() => { window.__illustratedAction.getState().projectiles.length = 0; });
+  for (let hit = 0; hit < 12; hit += 1) {
+    const hp = await page.evaluate(() => window.__illustratedAction.getState().boss.hp);
+    if (hp === 0) return;
+    await page.evaluate(() => {
+      const state = window.__illustratedAction.getState();
+      state.projectiles.length = 0;
+      state.player.x = state.boss.x - 360;
+      state.player.y = state.world.groundY;
+      state.player.invulnerable = 10;
+      state.boss.attackCooldown = 0;
+    });
+    await page.waitForFunction(() => window.__illustratedAction.getState().projectiles.some(({ active, kind }) => active && kind === 'approval-stamp'));
+    await page.evaluate(() => {
+      const state = window.__illustratedAction.getState();
+      const stamp = state.projectiles.find(({ active, kind }) => active && kind === 'approval-stamp');
+      state.player.x = stamp.x + (stamp.vx < 0 ? -90 : 90);
+      state.player.y = state.world.groundY;
+      state.player.facing = stamp.vx < 0 ? 1 : -1;
+      state.player.invulnerable = 1;
+    });
+    await action(page, profile, 'trace', pointerSeed + hit * 2);
+    await action(page, profile, 'attack', pointerSeed + hit * 2 + 1);
+  }
+  throw new Error('chapter 5 reviewed approval boss did not stagger');
+}
+
 async function completeChapter(page, profile, chapterNumber, pointerSeed) {
   const start = Date.now();
   await page.waitForFunction(() => document.querySelector('[data-illustrated-game]').dataset.gamePhase === 'playing');
@@ -84,31 +166,15 @@ async function completeChapter(page, profile, chapterNumber, pointerSeed) {
   assert.ok(scroll.cameraX > (profile.touch ? 350 : 650), `chapter ${chapterNumber} camera did not follow: ${scroll.cameraX}`);
   assert.ok(scroll.playerScreenX >= trackingX - 20 && scroll.playerScreenX <= trackingX + 20, `chapter ${chapterNumber} player left tracking lane: ${scroll.playerScreenX}`);
   await page.screenshot({ path: path.join(evidenceDir, `${profile.id}-chapter-${chapterNumber}-scroll.png`) });
-  for (let index = 0; index < 2; index += 1) {
-    await teleport(page, { collection: 'enemies', index });
-    await action(page, profile, 'attack', pointerSeed + index * 5);
-    await action(page, profile, 'attack', pointerSeed + index * 5 + 1);
-    const guardian = await page.evaluate((targetIndex) => window.__illustratedAction.getState().enemies[targetIndex], index);
-    assert.equal(guardian.defeated, true, `chapter ${chapterNumber} guardian ${index + 1} remained at ${guardian.hp} HP`);
-    await teleport(page, { collection: 'evidence', index }, 0);
-    await action(page, profile, 'trace', pointerSeed + index * 5 + 2);
-    const traceState = await page.evaluate((targetIndex) => {
-      const state = window.__illustratedAction.getState();
-      return { collected: state.evidence[targetIndex].collected, event: state.lastEvent, message: state.message };
-    }, index);
-    assert.equal(traceState.collected, true, `chapter ${chapterNumber} evidence ${index + 1} failed: ${traceState.event} / ${traceState.message}`);
-  }
-
-  await teleport(page, 'boss');
-  for (let hit = 0; hit < 7; hit += 1) {
-    if (Number(await page.locator('[data-illustrated-game]').getAttribute('data-boss-hp')) === 0) break;
-    await action(page, profile, 'attack', pointerSeed + 20 + hit);
-  }
+  await clearChapterEnemies(page, profile, chapterNumber, pointerSeed);
+  await collectChapterEvidence(page, profile, chapterNumber, pointerSeed + 80);
+  if (chapterNumber === 5) await clearApprovalBoss(page, profile, pointerSeed + 100);
+  else await clearSignalBoss(page, profile, chapterNumber, pointerSeed + 100);
   await page.waitForFunction(() => Number(document.querySelector('[data-illustrated-game]').dataset.bossHp) === 0);
   await teleport(page, 'boss', -70);
-  await action(page, profile, 'trace', pointerSeed + 30);
+  await action(page, profile, 'trace', pointerSeed + 140);
   await page.waitForFunction(() => document.querySelector('[data-illustrated-game]').dataset.gamePhase === 'choice');
-  await page.locator('[data-choice-options] button').first().click();
+  await page.locator('[data-choice-options] button').nth(profile.choiceIndex).click();
   await page.waitForFunction(() => document.querySelector('[data-illustrated-game]').dataset.gamePhase === 'result');
   const result = {
     chapter: chapterNumber,
@@ -154,9 +220,7 @@ async function runProfile(profile) {
   assert.equal(await page.locator('script[src*="reboot"], script[src="/src/main.js"]').count(), 0);
   await page.screenshot({ path: path.join(evidenceDir, `${profile.id}-title.png`) });
   await page.locator('[data-new-game]').click();
-  await page.locator('[data-story-next]').click();
-  await page.locator('[data-story-next]').click();
-  await page.waitForFunction(() => document.querySelector('[data-illustrated-game]').dataset.gamePhase === 'playing');
+  await advanceIntro(page);
 
   const xBefore = Number(await page.locator('[data-illustrated-game]').getAttribute('data-player-x'));
   if (profile.touch) {
@@ -176,10 +240,7 @@ async function runProfile(profile) {
   const chapters = [];
   for (let chapterNumber = 1; chapterNumber <= 6; chapterNumber += 1) {
     chapters.push(await completeChapter(page, profile, chapterNumber, 100 + chapterNumber * 50));
-    if (chapterNumber < 6) {
-      await page.locator('[data-story-next]').click();
-      await page.locator('[data-story-next]').click();
-    }
+    if (chapterNumber < 6) await advanceIntro(page);
   }
 
   await page.waitForFunction(() => document.querySelector('[data-illustrated-game]').dataset.gamePhase === 'complete');
@@ -246,8 +307,8 @@ async function makeComparison() {
 
 try {
   await mkdir(evidenceDir, { recursive: true });
-  const desktop = await runProfile({ id: 'desktop-1440x900', viewport: { width: 1440, height: 900 }, touch: false });
-  const mobile = await runProfile({ id: 'mobile-390x844', viewport: { width: 390, height: 844 }, touch: true });
+  const desktop = await runProfile({ id: 'desktop-1440x900', viewport: { width: 1440, height: 900 }, touch: false, choiceIndex: 0 });
+  const mobile = await runProfile({ id: 'mobile-390x844', viewport: { width: 390, height: 844 }, touch: true, choiceIndex: 1 });
   await makeComparison();
   const summary = {
     baseUrl,
