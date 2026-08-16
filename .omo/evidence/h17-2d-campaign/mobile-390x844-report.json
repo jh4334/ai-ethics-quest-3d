@@ -5,102 +5,109 @@
       "width": 390,
       "height": 844
     },
-    "touch": true
+    "touch": true,
+    "choiceIndex": 1
   },
   "chapters": [
     {
       "chapter": 1,
-      "evidence": 2,
-      "decision": "민감정보를 가리고 맥락을 보존한다",
+      "evidence": 3,
+      "decision": "원본을 제한된 감사함에 잠근다",
       "scroll": {
         "playerX": 1217,
         "cameraX": 577,
         "playerScreenX": 640
       },
-      "elapsedMs": 7171
+      "elapsedMs": 16179
     },
     {
       "chapter": 2,
-      "evidence": 2,
-      "decision": "생성 표시를 붙이고 확산을 멈춘다",
+      "evidence": 3,
+      "decision": "복사본을 내리고 피해자에게 알린다",
       "scroll": {
         "playerX": 1074,
         "cameraX": 434,
         "playerScreenX": 640
       },
-      "elapsedMs": 7647
+      "elapsedMs": 16101
     },
     {
       "chapter": 3,
-      "evidence": 2,
-      "decision": "피해를 알리고 회복 지원을 연결한다",
-      "scroll": {
-        "playerX": 1080,
-        "cameraX": 440,
-        "playerScreenX": 640
-      },
-      "elapsedMs": 7734
-    },
-    {
-      "chapter": 4,
-      "evidence": 2,
-      "decision": "출처와 날짜를 나란히 보여 준다",
+      "evidence": 3,
+      "decision": "재공유를 잠그고 당사자와 먼저 상의한다",
       "scroll": {
         "playerX": 1074,
         "cameraX": 434,
         "playerScreenX": 640
       },
-      "elapsedMs": 7614
+      "elapsedMs": 15797
+    },
+    {
+      "chapter": 4,
+      "evidence": 3,
+      "decision": "왜 추천됐는지 경로를 함께 공개한다",
+      "scroll": {
+        "playerX": 1080,
+        "cameraX": 440,
+        "playerScreenX": 640
+      },
+      "elapsedMs": 16086
     },
     {
       "chapter": 5,
-      "evidence": 2,
-      "decision": "중요 결정마다 사람 재검토를 둔다",
+      "evidence": 3,
+      "decision": "이의제기부터 열고 승인 이유를 통지한다",
       "scroll": {
         "playerX": 1080,
         "cameraX": 440,
         "playerScreenX": 640
       },
-      "elapsedMs": 8016
+      "elapsedMs": 18249
     },
     {
       "chapter": 6,
-      "evidence": 2,
-      "decision": "개인정보를 가린 뒤 공개 심리를 연다",
+      "evidence": 3,
+      "decision": "증거를 봉인 감사함에 보존한다",
       "scroll": {
         "playerX": 1080,
         "cameraX": 440,
         "playerScreenX": 640
       },
-      "elapsedMs": 8348
+      "elapsedMs": 16849
     }
   ],
   "saveBeforeReload": {
     "version": 3,
     "chapterIndex": 5,
     "unlockedChapter": 5,
-    "checkpointX": 2400,
+    "checkpointX": 4020,
     "evidenceIds": [
       "chapter-1:request",
       "chapter-1:error-table",
+      "chapter-1:permission-log",
       "chapter-2:credit",
       "chapter-2:origin",
+      "chapter-2:alteration-map",
       "chapter-3:context",
       "chapter-3:spread",
+      "chapter-3:harm-notice",
       "chapter-4:source-a",
       "chapter-4:counter-source",
+      "chapter-4:recommendation-path",
       "chapter-5:model-role",
       "chapter-5:human-signature",
+      "chapter-5:appeal-window",
       "chapter-6:redacted-package",
+      "chapter-6:responsibility-chain",
       "chapter-6:appeal-right"
     ],
     "decisions": {
-      "chapter-1": "protect-context",
-      "chapter-2": "label-and-freeze",
-      "chapter-3": "notify-and-repair",
-      "chapter-4": "paired-sources",
-      "chapter-5": "human-review",
-      "chapter-6": "public-hearing"
+      "chapter-1": "open-raw",
+      "chapter-2": "remove-and-notify",
+      "chapter-3": "quiet-freeze",
+      "chapter-4": "open-recommendation-path",
+      "chapter-5": "appeal-first",
+      "chapter-6": "sealed-audit"
     },
     "completed": true
   },
@@ -109,74 +116,87 @@
     "title": "H-17 조사 기록",
     "summary": "사라진 학생 하루(H-17)의 기록을 따라 6개 장의 결정 경로를 확인했다.",
     "ending": {
-      "id": "public-hearing",
-      "title": "하루의 이름이 명단으로 돌아왔다",
-      "summary": "민감정보를 가린 증거로 공개 심리가 열렸다. 루멘의 계산과 사람의 승인이 함께 검토됐다. 피해 회복 지원과 출처 대조, 사람 재검토가 함께 시행됐다.",
-      "cost": "학교는 느려져도 중요한 결정을 사람이 다시 확인해야 한다."
+      "id": "sealed-audit",
+      "title": "증거는 하루의 시간을 기다린다",
+      "summary": "WHITEOUT은 멈췄고 증거는 훼손 없이 봉인됐다. 원본은 제한 감사함에 보존되고 모든 접근이 기록됐다. 복제본을 내리고 피해자에게 확산 사실을 먼저 알렸다. 재공유를 잠그고 회복 방식은 하루의 선택을 기다렸다. 서로 다른 추천 경로와 누락 자료가 함께 공개됐다. 결정 이유 통지와 이의제기 창구가 먼저 복구됐다.",
+      "cost": "추가 피해는 막았지만 같은 결정 구조를 공개적으로 고치는 일은 남았다."
     },
     "evidenceIds": [
       "chapter-1:request",
       "chapter-1:error-table",
+      "chapter-1:permission-log",
       "chapter-2:credit",
       "chapter-2:origin",
+      "chapter-2:alteration-map",
       "chapter-3:context",
       "chapter-3:spread",
+      "chapter-3:harm-notice",
       "chapter-4:source-a",
       "chapter-4:counter-source",
+      "chapter-4:recommendation-path",
       "chapter-5:model-role",
       "chapter-5:human-signature",
+      "chapter-5:appeal-window",
       "chapter-6:redacted-package",
+      "chapter-6:responsibility-chain",
       "chapter-6:appeal-right"
     ],
     "totalRespawns": 0,
+    "ethicsEvents": {
+      "blindActions": 0,
+      "exposure": 0,
+      "reflections": 0,
+      "spread": 0,
+      "automaticApprovals": 0
+    },
     "chapters": [
       {
         "id": "chapter-1",
         "title": "명단에서 사라진 아이",
         "topic": "개인정보·편향",
-        "decision": "민감정보를 가리고 맥락을 보존한다",
-        "consequence": "삭제 요청과 오판 근거가 분리 보관됐다.",
-        "cost": "확인은 느려지지만 하루의 사생활을 지킨다."
+        "decision": "원본을 제한된 감사함에 잠근다",
+        "consequence": "원본 접근 기록이 남고 공개는 하루의 확인을 기다린다.",
+        "cost": "즉시 공개는 못 하지만 훼손되지 않은 원본을 남긴다."
       },
       {
         "id": "chapter-2",
         "title": "거짓 영상의 주인",
         "topic": "저작권·딥페이크",
-        "decision": "생성 표시를 붙이고 확산을 멈춘다",
-        "consequence": "최초 파일과 생성 표시가 한 묶음으로 보존됐다.",
-        "cost": "복사본은 남아 조사 시간이 들지만 변조 경로를 검증할 수 있다."
+        "decision": "복사본을 내리고 피해자에게 알린다",
+        "consequence": "확산은 중단됐고 원본 해시는 감사함에 남았다.",
+        "cost": "공개 증거는 줄지만 추가 피해를 먼저 막는다."
       },
       {
         "id": "chapter-3",
         "title": "웃음이 만든 폭풍",
         "topic": "디지털 발자국",
-        "decision": "피해를 알리고 회복 지원을 연결한다",
-        "consequence": "삭제, 확산 중단, 피해 통지가 순서대로 기록됐다.",
-        "cost": "문제를 공개적으로 인정해야 하지만 하루가 혼자 감당하지 않는다."
+        "decision": "재공유를 잠그고 당사자와 먼저 상의한다",
+        "consequence": "추가 확산은 멈췄고 회복 절차는 하루의 선택을 기다린다.",
+        "cost": "공개 사과는 늦어지지만 하루가 회복 방식을 고를 수 있다."
       },
       {
         "id": "chapter-4",
         "title": "두 개의 진실",
         "topic": "출처·필터버블",
-        "decision": "출처와 날짜를 나란히 보여 준다",
-        "consequence": "추천 밖의 자료가 원본 시간선에 연결됐다.",
-        "cost": "단순한 한 줄 결론은 포기하지만 검증 경로가 생긴다."
+        "decision": "왜 추천됐는지 경로를 함께 공개한다",
+        "consequence": "두 학교의 추천 경로와 누락 자료가 공개됐다.",
+        "cost": "시스템 설명이 길어지지만 각자가 왜 다른 화면을 봤는지 알 수 있다."
       },
       {
         "id": "chapter-5",
         "title": "아무도 결정하지 않는 밤",
         "topic": "자동 결정·인간 검토",
-        "decision": "중요 결정마다 사람 재검토를 둔다",
-        "consequence": "AI 추천 뒤에 이름 있는 검토 단계가 추가됐다.",
-        "cost": "처리는 느려지지만 당사자의 설명을 듣고 책임자가 남는다."
+        "decision": "이의제기부터 열고 승인 이유를 통지한다",
+        "consequence": "결정 이유 통지와 이의제기 창구가 복구됐다.",
+        "cost": "기존 결정도 다시 봐야 하지만 잘못된 제재를 바로잡을 길이 생긴다."
       },
       {
         "id": "chapter-6",
         "title": "마지막 증언",
         "topic": "설명·이의제기",
-        "decision": "개인정보를 가린 뒤 공개 심리를 연다",
-        "consequence": "하루의 이름과 인간 재검토, 결정 이유 통지, 이의제기권이 돌아왔다.",
-        "cost": "학교는 잘못을 공개하고 다시 검토해야 하지만 모두가 결정 이유를 물을 수 있다."
+        "decision": "증거를 봉인 감사함에 보존한다",
+        "consequence": "증거는 훼손 없이 남았고 하루가 공개 시점을 결정한다.",
+        "cost": "즉시 공개 피해는 막지만 공동체의 설명과 사과는 늦어진다."
       }
     ]
   },

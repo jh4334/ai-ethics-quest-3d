@@ -1,33 +1,8 @@
+import { createActorRenderer, drawImageCell } from './sideScrollActors.js';
 import { createSideScrollSceneLayout } from './sideScrollLayout.js';
 
 const GROUND_TILE_WIDTH = 256;
 const GROUND_Y = 560;
-
-function drawImageCell(context, image, cell, frame) {
-  if (!image.complete || image.naturalWidth === 0) return;
-  const sourceWidth = image.naturalWidth / cell.columns;
-  const sourceHeight = image.naturalHeight / cell.rows;
-  context.save();
-  context.globalAlpha = frame.alpha ?? 1;
-  let drawX = frame.x;
-  if ((frame.facing ?? 1) < 0) {
-    context.translate(frame.x + frame.width, 0);
-    context.scale(-1, 1);
-    drawX = 0;
-  }
-  context.drawImage(
-    image,
-    cell.column * sourceWidth,
-    cell.row * sourceHeight,
-    sourceWidth,
-    sourceHeight,
-    drawX,
-    frame.y,
-    frame.width,
-    frame.height
-  );
-  context.restore();
-}
 
 function pingPong(value, range) {
   if (range <= 0) return 0;
@@ -50,6 +25,8 @@ export function createSideScrollRenderer({ context, images, palette, width = 128
     context.restore();
   }
 
+  const actors = createActorRenderer({ context, images, palette, width, drawGlow });
+
   function drawBackground(state, layout) {
     context.fillStyle = palette.surfaceNight;
     context.fillRect(0, 0, width, height);
@@ -58,14 +35,12 @@ export function createSideScrollRenderer({ context, images, palette, width = 128
       context.imageSmoothingEnabled = true;
       context.imageSmoothingQuality = 'high';
       const farSourceWidth = image.naturalWidth * 0.82;
-      const farRange = image.naturalWidth - farSourceWidth;
-      const farSourceX = pingPong(Math.abs(layout.farBackgroundX) + state.chapterIndex * 61, farRange);
+      const farSourceX = pingPong(Math.abs(layout.farBackgroundX) + state.chapterIndex * 61, image.naturalWidth - farSourceWidth);
       context.drawImage(image, farSourceX, 0, farSourceWidth, image.naturalHeight, 0, 0, width, height);
       context.save();
       context.globalAlpha = 0.22;
       const midSourceWidth = image.naturalWidth * 0.7;
-      const midRange = image.naturalWidth - midSourceWidth;
-      const midSourceX = pingPong(Math.abs(layout.midBackgroundX) + state.chapterIndex * 113, midRange);
+      const midSourceX = pingPong(Math.abs(layout.midBackgroundX) + state.chapterIndex * 113, image.naturalWidth - midSourceWidth);
       context.drawImage(image, midSourceX, image.naturalHeight * 0.42, midSourceWidth, image.naturalHeight * 0.58, 0, 270, width, 300);
       context.restore();
     }
@@ -122,7 +97,8 @@ export function createSideScrollRenderer({ context, images, palette, width = 128
   }
 
   function drawEvidence(state) {
-    for (const evidence of state.evidence) {
+    for (let index = 0; index < state.evidence.length; index += 1) {
+      const evidence = state.evidence[index];
       if (evidence.collected) continue;
       const x = evidence.x - state.cameraX;
       if (x < -140 || x > width + 140) continue;
@@ -130,7 +106,7 @@ export function createSideScrollRenderer({ context, images, palette, width = 128
       const available = guardian?.defeated;
       const bob = Math.sin(state.time * 2.4 + evidence.x * 0.01) * 7;
       drawGlow(x, 474 + bob, available ? 92 : 58, available ? palette.evidenceGlow : palette.lockedGlow);
-      drawImageCell(context, images.evidence, { columns: 3, rows: 2, column: state.chapterIndex % 3, row: Math.floor(state.chapterIndex / 3) }, {
+      drawImageCell(context, images.evidence, { columns: 3, rows: 2, column: index % 3, row: state.chapterIndex % 2 }, {
         x: x - 62,
         y: 402 + bob,
         width: 124,
@@ -149,89 +125,15 @@ export function createSideScrollRenderer({ context, images, palette, width = 128
     }
   }
 
-  function drawEnemyHealth(enemy, x) {
-    context.fillStyle = palette.healthSurface;
-    context.fillRect(x - 43, 430, 86, 9);
-    context.fillStyle = palette.danger;
-    context.fillRect(x - 40, 433, 80 * (enemy.hp / enemy.maxHp), 3);
-  }
-
-  function drawEnemies(state) {
-    for (const enemy of state.enemies) {
-      if (enemy.defeated) continue;
-      const x = enemy.x - state.cameraX;
-      if (x < -150 || x > width + 150) continue;
-      drawGlow(x, 513, 58, palette.enemyGlow, 0.28);
-      drawImageCell(context, images.sprites, { columns: 4, rows: 2, column: 1, row: 1 }, {
-        x: x - 64, y: 438, width: 128, height: 128, facing: state.player.x < enemy.x ? -1 : 1, alpha: enemy.hitFlash > 0 ? 0.55 : 1
-      });
-      drawEnemyHealth(enemy, x);
-    }
-  }
-
-  function drawBoss(state) {
-    if (!state.boss.active) return;
-    const x = state.boss.x - state.cameraX;
-    if (x < -280 || x > width + 280) return;
-    drawGlow(x, 438, state.boss.staggered ? 170 : 120, palette.bossGlow, state.boss.staggered ? 0.7 : 0.28);
-    drawImageCell(context, images.sprites, { columns: 4, rows: 2, column: state.boss.staggered ? 3 : 2, row: 1 }, {
-      x: x - 125, y: 296, width: 250, height: 250, facing: -1, alpha: state.boss.hitFlash > 0 ? 0.55 : 1
-    });
-    context.fillStyle = palette.bossSurface;
-    context.fillRect(x - 104, 272, 208, 16);
-    context.fillStyle = state.boss.staggered ? palette.cyan : palette.danger;
-    context.fillRect(x - 100, 277, 200 * (state.boss.hp / state.boss.maxHp), 6);
-    context.font = '800 16px Pretendard, system-ui, sans-serif';
-    context.textAlign = 'center';
-    context.fillStyle = palette.textPrimary;
-    context.fillText(state.boss.label, x, 260);
-  }
-
-  function drawProjectiles(state) {
-    for (const projectile of state.projectiles) {
-      const x = projectile.x - state.cameraX;
-      drawGlow(x, projectile.y, 48, palette.projectileGlow, 0.36);
-      drawImageCell(context, images.sprites, { columns: 4, rows: 2, column: 1, row: 1 }, {
-        x: x - 34, y: projectile.y - 34, width: 68, height: 68, facing: -1, alpha: 0.8
-      });
-    }
-  }
-
-  function drawPlayer(state, layout) {
-    const player = state.player;
-    const moving = Math.abs(player.vx) > 1;
-    let column = moving ? 1 : 0;
-    if (!player.onGround) column = 2;
-    if (player.attackTimer > 0) column = 3;
-    const runBob = moving && player.onGround ? Math.sin(state.time * 15) * 3 : 0;
-    drawGlow(layout.playerScreenX, player.y - 15, 92, palette.playerGlow, 0.2);
-    const flicker = player.invulnerable > 0 && Math.floor(state.time * 16) % 2 === 0;
-    drawImageCell(context, images.sprites, { columns: 4, rows: 2, column, row: 0 }, {
-      x: layout.playerScreenX - 82,
-      y: player.y - 166 + runBob,
-      width: 164,
-      height: 164,
-      facing: player.facing,
-      alpha: flicker ? 0.42 : 1
-    });
-    const dotBob = Math.sin(state.time * 3.2) * 5;
-    drawImageCell(context, images.sprites, { columns: 4, rows: 2, column: 0, row: 1 }, {
-      x: layout.playerScreenX - player.facing * 74 - 30,
-      y: player.y - 138 + dotBob,
-      width: 60,
-      height: 60
-    });
-  }
-
   return (state) => {
     const layout = createSideScrollSceneLayout(state, width);
     drawBackground(state, layout);
     drawLandmarks(state, layout);
     drawGround(layout);
     drawEvidence(state);
-    drawEnemies(state);
-    drawBoss(state);
-    drawProjectiles(state);
-    drawPlayer(state, layout);
+    actors.drawEnemies(state);
+    actors.drawBoss(state);
+    actors.drawProjectiles(state);
+    actors.drawPlayer(state, layout);
   };
 }

@@ -78,6 +78,8 @@ test('이동·점프·공격은 고정틱에서 실제 플레이 상태를 바�
   const enemy = state.enemies[0];
   state.player.x = enemy.x - 42;
   state.player.y = state.world.groundY;
+  tap(runtime, state, input, 'trace', 2);
+  state.player.attackCooldown = 0;
   const hpBefore = enemy.hp;
   tap(runtime, state, input, 'attack');
   assert.ok(enemy.hp < hpBefore);
@@ -115,13 +117,15 @@ test('공격이 닿는 거리에서는 접촉 피해 없이 드론을 상대할 
   state.player.y = state.world.groundY;
   const hpBefore = state.player.hp;
 
+  tap(runtime, state, input, 'trace', 2);
+  state.player.attackCooldown = 0;
   tap(runtime, state, input, 'attack');
 
   assert.equal(state.player.hp, hpBefore);
-  assert.equal(enemy.hp, 1);
+  assert.equal(enemy.hp, 2);
 });
 
-test('각 장의 두 증거와 보스를 통과하면 선택을 기록하고 다음 장을 연다', () => {
+test('각 장의 세 증거와 3단계 보스를 통과하면 선택을 기록하고 다음 장을 연다', () => {
   const runtime = getRuntime();
   const state = runtime.createActionGameState();
   const input = runtime.createInputState();
@@ -131,18 +135,26 @@ test('각 장의 두 증거와 보스를 통과하면 선택을 기록하고 다
     const enemy = state.enemies.find(({ id }) => id === evidence.enemyId);
     state.player.x = enemy.x - 42;
     state.player.y = state.world.groundY;
-    while (enemy.hp > 0) tap(runtime, state, input, 'attack');
+    tap(runtime, state, input, 'trace', 2);
+    while (enemy.hp > 0) {
+      state.player.attackCooldown = 0;
+      tap(runtime, state, input, 'attack', 2);
+    }
 
     state.player.x = evidence.x;
     tap(runtime, state, input, 'trace', 2);
   }
 
-  assert.equal(state.collectedEvidence.length, 2);
+  assert.equal(state.collectedEvidence.length, 3);
   assert.equal(state.boss.active, true);
 
   state.player.x = state.boss.x - 58;
   state.player.y = state.world.groundY;
-  while (state.boss.hp > 0) tap(runtime, state, input, 'attack');
+  while (state.boss.hp > 0) {
+    if (!state.boss.traced) tap(runtime, state, input, 'trace', 2);
+    state.player.attackCooldown = 0;
+    tap(runtime, state, input, 'attack', 2);
+  }
   assert.equal(state.boss.staggered, true);
 
   tap(runtime, state, input, 'trace', 2);
@@ -201,7 +213,7 @@ test('저장은 6장 체크포인트·증거·선택만 남기고 런타임 전�
 
   const reloaded = runtime.createActionGameState(saved);
   assert.equal(reloaded.player.x, 930);
-  assert.equal(reloaded.player.hp, 4);
+  assert.equal(reloaded.player.hp, 5);
   assert.equal(reloaded.boss.hp, 0);
   assert.deepEqual(reloaded.collectedEvidence, ['chapter-1:request']);
   assert.equal(reloaded.decisions['chapter-1'], 'protect-context');

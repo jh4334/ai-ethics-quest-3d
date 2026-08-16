@@ -5,93 +5,100 @@
       "width": 1440,
       "height": 900
     },
-    "touch": false
+    "touch": false,
+    "choiceIndex": 0
   },
   "chapters": [
     {
       "chapter": 1,
-      "evidence": 2,
+      "evidence": 3,
       "decision": "민감정보를 가리고 맥락을 보존한다",
       "scroll": {
-        "playerX": 1201,
-        "cameraX": 841,
+        "playerX": 1217,
+        "cameraX": 857,
         "playerScreenX": 360
       },
-      "elapsedMs": 7281
+      "elapsedMs": 15915
     },
     {
       "chapter": 2,
-      "evidence": 2,
+      "evidence": 3,
       "decision": "생성 표시를 붙이고 확산을 멈춘다",
       "scroll": {
         "playerX": 1080,
         "cameraX": 720,
         "playerScreenX": 360
       },
-      "elapsedMs": 7618
+      "elapsedMs": 15944
     },
     {
       "chapter": 3,
-      "evidence": 2,
+      "evidence": 3,
       "decision": "피해를 알리고 회복 지원을 연결한다",
       "scroll": {
         "playerX": 1080,
         "cameraX": 720,
         "playerScreenX": 360
       },
-      "elapsedMs": 7609
+      "elapsedMs": 15847
     },
     {
       "chapter": 4,
-      "evidence": 2,
+      "evidence": 3,
       "decision": "출처와 날짜를 나란히 보여 준다",
       "scroll": {
         "playerX": 1080,
         "cameraX": 720,
         "playerScreenX": 360
       },
-      "elapsedMs": 7587
+      "elapsedMs": 15984
     },
     {
       "chapter": 5,
-      "evidence": 2,
+      "evidence": 3,
       "decision": "중요 결정마다 사람 재검토를 둔다",
       "scroll": {
         "playerX": 1074,
         "cameraX": 714,
         "playerScreenX": 360
       },
-      "elapsedMs": 8115
+      "elapsedMs": 18404
     },
     {
       "chapter": 6,
-      "evidence": 2,
+      "evidence": 3,
       "decision": "개인정보를 가린 뒤 공개 심리를 연다",
       "scroll": {
         "playerX": 1080,
         "cameraX": 720,
         "playerScreenX": 360
       },
-      "elapsedMs": 8303
+      "elapsedMs": 17386
     }
   ],
   "saveBeforeReload": {
     "version": 3,
     "chapterIndex": 5,
     "unlockedChapter": 5,
-    "checkpointX": 2400,
+    "checkpointX": 4020,
     "evidenceIds": [
       "chapter-1:request",
       "chapter-1:error-table",
+      "chapter-1:permission-log",
       "chapter-2:credit",
       "chapter-2:origin",
+      "chapter-2:alteration-map",
       "chapter-3:context",
       "chapter-3:spread",
+      "chapter-3:harm-notice",
       "chapter-4:source-a",
       "chapter-4:counter-source",
+      "chapter-4:recommendation-path",
       "chapter-5:model-role",
       "chapter-5:human-signature",
+      "chapter-5:appeal-window",
       "chapter-6:redacted-package",
+      "chapter-6:responsibility-chain",
       "chapter-6:appeal-right"
     ],
     "decisions": {
@@ -111,24 +118,37 @@
     "ending": {
       "id": "public-hearing",
       "title": "하루의 이름이 명단으로 돌아왔다",
-      "summary": "민감정보를 가린 증거로 공개 심리가 열렸다. 루멘의 계산과 사람의 승인이 함께 검토됐다. 피해 회복 지원과 출처 대조, 사람 재검토가 함께 시행됐다.",
+      "summary": "민감정보를 가린 증거로 공개 심리가 열렸다. 루멘의 계산과 사람의 승인이 함께 검토됐다. 민감정보를 가린 맥락 기록이 이후 조사에 사용됐다. 생성 표시와 최초 파일이 복제본의 출처를 드러냈다. 피해 통지와 회복 지원이 삭제 절차에 함께 연결됐다. 상반된 출처와 날짜가 한 화면에서 교차 검증됐다. 중요 결정마다 이름 있는 사람의 재검토가 추가됐다.",
       "cost": "학교는 느려져도 중요한 결정을 사람이 다시 확인해야 한다."
     },
     "evidenceIds": [
       "chapter-1:request",
       "chapter-1:error-table",
+      "chapter-1:permission-log",
       "chapter-2:credit",
       "chapter-2:origin",
+      "chapter-2:alteration-map",
       "chapter-3:context",
       "chapter-3:spread",
+      "chapter-3:harm-notice",
       "chapter-4:source-a",
       "chapter-4:counter-source",
+      "chapter-4:recommendation-path",
       "chapter-5:model-role",
       "chapter-5:human-signature",
+      "chapter-5:appeal-window",
       "chapter-6:redacted-package",
+      "chapter-6:responsibility-chain",
       "chapter-6:appeal-right"
     ],
     "totalRespawns": 0,
+    "ethicsEvents": {
+      "blindActions": 0,
+      "exposure": 0,
+      "reflections": 0,
+      "spread": 0,
+      "automaticApprovals": 0
+    },
     "chapters": [
       {
         "id": "chapter-1",

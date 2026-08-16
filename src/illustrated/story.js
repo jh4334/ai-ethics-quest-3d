@@ -63,6 +63,8 @@ export function resolveChoice(choice) {
 export {
   ACTION_EVIDENCE,
   CAMPAIGN_CHAPTERS,
+  CAMPAIGN_MECHANICS,
+  CAMPAIGN_WORLD,
   advanceChapter,
   createActionGameState,
   getCampaignEnding,
