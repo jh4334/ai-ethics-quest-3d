@@ -72,7 +72,7 @@ export function spawnMirroredSignal(state, sourceX) {
     speed: 470,
     height: 42
   }, 'enemy');
-  projectile.x = sourceX + direction * 160;
+  projectile.x = sourceX - direction * 160;
   state.projectiles.push(projectile);
 }
 

@@ -96,6 +96,23 @@ test('2장 카피캣은 출처 확인 전 플레이어 SIGNAL을 복제해 되�
   assert.ok(enemy.hp < hpBefore, '제작 이력을 확인한 뒤에만 복제체를 끊을 수 있어야 합니다.');
 });
 
+test('2장 복제 SIGNAL은 고정 틱 뒤 플레이어에게 되돌아온다', () => {
+  const state = createChapterState(1);
+  const input = createInputState();
+  const enemy = state.enemies[0];
+  state.player.x = enemy.x - 42;
+  state.player.y = state.world.groundY;
+  for (const target of state.enemies) target.attackCooldown = 999;
+  const playerHpBefore = state.player.hp;
+  const enemyHpBefore = enemy.hp;
+
+  tap(state, input, 'attack', 0);
+  for (let frame = 0; frame < 45; frame += 1) stepActionGame(state, input, 1 / 60);
+
+  assert.equal(enemy.hp, enemyHpBefore, '출처 확인 전 SIGNAL은 카피캣에게 피해를 주면 안 됩니다.');
+  assert.equal(state.player.hp, playerHpBefore - 1, '복제된 SIGNAL이 플레이어에게 돌아와야 합니다.');
+});
+
 test('4장은 반대 출처 두 개를 모두 TRACE해야 추천 방패를 열 수 있다', () => {
   const state = createChapterState(3);
   const input = createInputState();
