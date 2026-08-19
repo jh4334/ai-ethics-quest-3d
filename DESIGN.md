@@ -1,5 +1,7 @@
 # H-17 2D 캠페인 디자인 시스템
 
+> **2026-08-19 게임 리디자인:** 조작, 난이도, 전투 대체 규칙, 6장 스토리와 구현 순서는 [`docs/design/H17-쉬운-횡스크롤-리디자인.md`](docs/design/H17-쉬운-횡스크롤-리디자인.md)를 단일 기준으로 사용한다. 이 문서의 색상·타이포그래피·레이아웃·접근성·횡스크롤 카메라 규칙은 계속 유효하지만, 아래 6.1–6.3의 TRACE/SIGNAL 전투 설계는 새 기준으로 대체한다.
+
 ## 0. Research Log
 
 - Embedded refs: `docs/design/concepts/gameplay-screen-v3.webp`와 `art-direction-v3.webp`를 비교해 후자를 공간·재질 기준, 전자를 HUD·캐릭터 크기·행동 프롬프트 기준으로 선택했다.
