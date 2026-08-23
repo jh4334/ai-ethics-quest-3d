@@ -1,6 +1,7 @@
 import { getStorybookChapter, STORYBOOK_CHAPTERS } from './content.js';
+import { createAdventureState, normalizeAdventureState } from './adventureGame.js';
 export const STORYBOOK_SAVE_KEY = 'ethics-quest-storybook3d-v1';
-export const STORYBOOK_SAVE_VERSION = 1;
+export const STORYBOOK_SAVE_VERSION = 2;
 
 function clampInteger(value, min, max) {
   const number = Number.isInteger(value) ? value : min;
@@ -46,6 +47,7 @@ export function createStorybookState(saved = {}) {
     unlockedChapter: Math.max(chapterIndex, clampInteger(saved.unlockedChapter, 0, STORYBOOK_CHAPTERS.length - 1)),
     discoveries: cleanDiscoveries(saved.discoveries),
     decisions: cleanDecisions(saved.decisions),
+    adventure: normalizeAdventureState(saved.adventure, chapterIndex),
     completed
   };
 }
@@ -91,7 +93,12 @@ export function advanceSpread(state) {
     return copyState(state, { completed: true, phase: 'complete' });
   }
   const chapterIndex = state.chapterIndex + 1;
-  return copyState(state, { chapterIndex, spreadIndex: 0, unlockedChapter: Math.max(state.unlockedChapter, chapterIndex) });
+  return copyState(state, {
+    chapterIndex,
+    spreadIndex: 0,
+    unlockedChapter: Math.max(state.unlockedChapter, chapterIndex),
+    adventure: createAdventureState(chapterIndex)
+  });
 }
 
 export function previousSpread(state) {
@@ -104,7 +111,26 @@ export function previousSpread(state) {
 export function selectStorybookChapter(state, index) {
   const chapterIndex = clampInteger(index, 0, STORYBOOK_CHAPTERS.length - 1);
   if (chapterIndex > state.unlockedChapter) return state;
-  return copyState(state, { chapterIndex, spreadIndex: 0, phase: 'reading' });
+  return copyState(state, {
+    chapterIndex,
+    spreadIndex: 0,
+    phase: 'reading',
+    adventure: chapterIndex === state.chapterIndex ? state.adventure : createAdventureState(chapterIndex)
+  });
+}
+
+export function updateStorybookAdventure(state, adventure) {
+  if (state.phase !== 'reading' || adventure.chapterIndex !== state.chapterIndex) return state;
+  const chapter = getStorybookChapter(state.chapterIndex);
+  const discoveries = {
+    ...state.discoveries,
+    [chapter.id]: [...adventure.clues]
+  };
+  return copyState(state, {
+    adventure,
+    discoveries,
+    spreadIndex: adventure.phase === 'choice' ? 2 : 1
+  });
 }
 
 export function serializeStorybookState(state) {
