@@ -126,6 +126,14 @@ export const CHARACTER_ROSTER = Object.freeze({
   }),
   'student-a': createProfile({ id: 'student-a', label: '학생 A', body: 'male', outfit: 'peasant', scale: 0.88, tint: '#3d6c64' }),
   'student-b': createProfile({ id: 'student-b', label: '학생 B', body: 'female', outfit: 'peasant', scale: 0.86, tint: '#72576f' }),
+  'storybook-reader': createProfile({
+    body: 'male', hair: 'simpleParted', hairTint: '#20283b', id: 'storybook-reader', label: '기록자',
+    outfit: 'peasant', outfitTint: '#52678c', scale: 0.86, silhouette: 'storybook-reader-soft-coat', tint: '#52678c'
+  }),
+  'storybook-haru': createProfile({
+    body: 'female', hair: 'long', hairTint: '#36283b', id: 'storybook-haru', label: '하루',
+    outfit: 'peasant', outfitTint: '#9a6f78', scale: 0.84, silhouette: 'storybook-haru-soft-coat', tint: '#9a6f78'
+  }),
   // 적 5종은 몸·의상만으로는 겹치므로 장별 역할이 한눈에 읽히는 고유 실루엣을 액세서리로 만든다.
   eraser: createProfile({ accessory: 'wide-arm-panels', id: 'eraser', label: '삭제자', body: 'male', outfit: 'ranger', scale: 1.02, silhouette: 'eraser-wide-arm-panels', tint: '#582d44', library: 'ual2', animations: UAL2_ENEMY }),
   stamper: createProfile({ accessory: 'stamp-head', id: 'stamper', label: '도장꾼', body: 'female', outfit: 'ranger', scale: 1, silhouette: 'stamper-stamp-head', tint: '#8a3d35', library: 'ual2', animations: UAL2_ENEMY }),

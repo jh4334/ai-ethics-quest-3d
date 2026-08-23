@@ -3,150 +3,72 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="description" content="사라진 학생 하루의 기록과 AI 결정 경로를 되찾는 6장 2D 횡스크롤 액션 게임" />
-  <meta name="theme-color" content="#050918" />
+  <meta name="description" content="사라진 친구 하루의 금빛 실을 따라가는 6장 3D 팝업 동화" />
+  <meta name="theme-color" content="#09122c" />
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icon.svg" type="image/svg+xml" />
-  <title>사라진 학생 H-17 — 2D 횡스크롤</title>
+  <title>하루와 사라진 이름 — 기록의 섬 H-17</title>
 </head>
 <body>
-  <a class="skip-link" href="#game-stage">게임 화면으로 건너뛰기</a>
-  <main class="illustrated-game" data-illustrated-game data-game-phase="title" data-chapter="1" aria-label="사라진 학생 H-17 2D 횡스크롤 게임">
-    <section class="game-shell" aria-describedby="game-instructions">
-      <header class="game-hud" data-game-hud>
-        <div class="chapter-mark">
-          <span class="chapter-kicker" data-chapter-number>1장</span>
-          <strong data-chapter-time>00:17</strong>
-          <small data-chapter-topic>개인정보·편향</small>
-        </div>
-        <div class="mission-copy">
-          <span>현재 임무</span>
-          <strong data-mission>삭제 요청서와 기울어진 점수표를 복구하라</strong>
-          <p data-zone>출석 기록길</p>
-        </div>
-        <ol class="chapter-rail" data-chapter-rail aria-label="1장부터 6장까지 진행">
-          <li><button type="button" data-chapter-button="0" aria-label="1장 명단에서 사라진 아이">1</button></li>
-          <li><button type="button" data-chapter-button="1" aria-label="2장 거짓 영상의 주인" disabled>2</button></li>
-          <li><button type="button" data-chapter-button="2" aria-label="3장 웃음이 만든 폭풍" disabled>3</button></li>
-          <li><button type="button" data-chapter-button="3" aria-label="4장 두 개의 진실" disabled>4</button></li>
-          <li><button type="button" data-chapter-button="4" aria-label="5장 아무도 결정하지 않는 밤" disabled>5</button></li>
-          <li><button type="button" data-chapter-button="5" aria-label="6장 마지막 증언" disabled>6</button></li>
-        </ol>
-        <div class="health" data-health aria-label="기록 안정도 4">
-          <span aria-hidden="true">4 / 4</span>
-          <small>기록 안정도</small>
-        </div>
-      </header>
-
-      <section class="action-viewport" id="game-stage" data-action-viewport>
-        <canvas class="action-canvas" data-action-canvas width="1280" height="720" role="img" aria-label="달빛 부유섬의 황금 발자국을 따라가는 2D 횡스크롤 장면"></canvas>
-        <p class="canvas-fallback">Canvas 2D를 지원하는 브라우저가 필요합니다.</p>
-
-        <section class="title-screen" data-title-screen aria-labelledby="game-title">
-          <p class="title-kicker">6장 미스터리 액션</p>
-          <h1 id="game-title">사라진 학생<br /><span>H-17</span></h1>
-          <p class="title-logline">학교가 지운 친구 하루. AI의 계산 뒤에 숨은 사람의 결정을 추적한다.</p>
-          <div class="title-actions">
-            <button type="button" data-new-game>새 게임</button>
-            <button type="button" data-continue-game>이어하기</button>
-          </div>
-          <p class="title-controls">이동 A·D / 점프 Space / SIGNAL J / TRACE E</p>
-        </section>
-
-        <div class="objective-prompt" data-objective-prompt aria-live="polite">
-          <kbd>D</kbd><span>황금 발자국을 따라 오른쪽으로 이동</span>
-        </div>
-
-        <aside class="ethics-rule" data-ethics-rule aria-live="polite">
-          <span class="ethics-rule__kicker">이번 장의 AI 윤리 규칙</span>
-          <strong data-ethics-state>◇ 미확인</strong>
-          <p data-ethics-lesson>판단 전에 근거와 책임을 확인합니다.</p>
-          <small data-ethics-cost>실패 비용 없음</small>
-        </aside>
-
-        <aside class="story-panel" data-story-panel hidden aria-live="polite">
-          <p class="story-speaker" data-story-speaker>도트</p>
-          <p class="story-line" data-story-line></p>
-          <button class="story-next" type="button" data-story-next>계속</button>
-        </aside>
-
-        <section class="choice-panel" data-choice-panel hidden aria-live="polite">
-          <p class="choice-kicker">결정 경로</p>
-          <h2 data-choice-prompt></h2>
-          <div class="choice-options" data-choice-options></div>
-        </section>
-
-        <section class="result-panel" data-result-panel hidden aria-live="polite">
-          <p class="result-kicker" data-result-kicker>장 기록 완료</p>
-          <h2 data-result-title></h2>
-          <p data-result-line></p>
-          <p class="result-cost" data-result-cost></p>
-          <button type="button" data-next-chapter>다음 장으로</button>
-        </section>
-
-        <section class="ending-panel" data-ending-panel hidden aria-live="polite">
-          <p class="ending-kicker">H-17 조사 완료</p>
-          <h1 data-ending-title></h1>
-          <p data-ending-line></p>
-          <p class="ending-cost" data-ending-cost></p>
-          <ol class="report-list" data-report-list aria-label="장별 결정 기록"></ol>
-          <div class="ending-actions">
-            <button type="button" data-print-report>조사 기록 인쇄</button>
-            <button type="button" data-restart>처음부터 다시 하기</button>
-          </div>
-        </section>
-
-        <button class="help-button" type="button" data-game-help aria-expanded="false">조작</button>
-      </section>
-
-      <nav class="touch-controls" data-touch-controls aria-label="모바일 게임 조작">
-        <div class="touch-move">
-          <button type="button" data-control="left" aria-label="왼쪽 이동">왼쪽</button>
-          <button type="button" data-control="right" aria-label="오른쪽 이동">오른쪽</button>
-        </div>
-        <div class="touch-actions">
-          <button type="button" data-control="jump">점프</button>
-          <button type="button" data-control="attack">SIGNAL</button>
-          <button class="trace-control" type="button" data-control="trace">TRACE</button>
-        </div>
-      </nav>
-
-      <p class="game-instructions sr-only" id="game-instructions">
-        A와 D 또는 방향키로 이동하고 Space로 점프합니다. J로 SIGNAL 공격을 하고 E로 증거를 TRACE합니다.
-      </p>
-      <p class="sr-only" data-live-status aria-live="polite"></p>
-    </section>
-
-    <dialog class="help-dialog" data-help-dialog>
-      <div class="help-heading">
-        <span>H-17 현장 매뉴얼</span>
-        <button type="button" data-help-close>닫기</button>
+  <a class="skip-link" href="#storybook-stage">동화 장면으로 건너뛰기</a>
+  <main class="storybook" data-storybook-root data-phase="title" data-chapter="1" aria-label="하루와 사라진 이름 3D 팝업 동화">
+    <canvas id="storybook-stage" data-storybook-canvas role="img" aria-label="열린 책 위에 떠오른 밤의 기록 섬 3D 장면"></canvas>
+    <header class="storybook-hud" data-storybook-hud>
+      <div class="book-brand"><span>기록의 섬 H-17</span><strong data-hud-title>빈자리의 서랍</strong></div>
+      <ol class="chapter-rail" data-chapter-rail aria-label="동화 1장부터 6장"></ol>
+      <button class="round-button" type="button" data-help-open aria-label="읽는 방법 열기">?</button>
+    </header>
+    <section class="title-screen" data-title-screen aria-labelledby="storybook-title">
+      <div class="title-copy">
+        <p class="eyebrow">6장 3D 팝업 미스터리 동화</p>
+        <h1 id="storybook-title">하루와<br /><span>사라진 이름</span></h1>
+        <p>아무도 기억하지 못하는 빈자리. 밤 00:17에 도착한 금빛 책갈피를 펼쳐, 하루의 이름이 사라진 길을 따라가세요.</p>
+        <div class="title-actions"><button type="button" data-new-book>첫 장 펼치기</button><button type="button" data-continue-book>이어 읽기</button></div>
+        <small>싸우거나 실패하지 않습니다. 빛나는 물건 두 개를 살펴보고 마음이 가는 길을 고르면 됩니다.</small>
       </div>
-      <h2>네 가지만 기억하세요</h2>
-      <ul>
-        <li><kbd>A</kbd><kbd>D</kbd> 또는 방향키: 이동</li>
-        <li><kbd>Space</kbd>: 점프</li>
-        <li><kbd>J</kbd>: 가까운 적과 파동을 지우는 SIGNAL</li>
-        <li><kbd>E</kbd>: 빛나는 증거와 열린 코어 TRACE</li>
-      </ul>
-      <p>쓰러져도 찾은 증거는 사라지지 않습니다. 각 장의 선택에는 서로 다른 비용이 있고 선악 점수는 없습니다.</p>
-    </dialog>
-
-    <section class="primitive-showcase" data-primitive-showcase hidden aria-label="컴포넌트 상태 확인">
-      <h2>H-17 UI 상태 확인</h2>
-      <button type="button">기본 버튼</button>
-      <button type="button" disabled>잠긴 버튼</button>
-      <div class="objective-prompt"><kbd>E</kbd><span>TRACE 가능한 상태</span></div>
-      <p class="showcase-note">모바일·태블릿·데스크톱에서 동일한 토큰과 44px 조작 기준을 확인합니다.</p>
+      <div class="title-seal" aria-hidden="true"><span>00:17</span><i></i></div>
     </section>
+    <section class="reading-ui" data-reading-ui hidden aria-live="polite">
+      <aside class="story-card">
+        <p class="spread-label"><span data-chapter-label>1장</span><b data-spread-label>첫 번째 펼침면</b></p>
+        <h1 data-spread-title>이름표에 난 구멍</h1>
+        <p class="story-text" data-spread-text></p>
+        <blockquote><strong data-speaker>도트</strong><span data-quote></span></blockquote>
+        <p class="clue-progress" data-clue-progress hidden>빛나는 물건 <b>0 / 2</b></p>
+      </aside>
+      <div class="clue-layer" data-clue-layer aria-label="장면 속 단서"></div>
+      <section class="choice-panel" data-choice-panel hidden aria-labelledby="choice-heading">
+        <p class="eyebrow">둘 다 무언가를 지키는 길</p>
+        <h2 id="choice-heading">어떤 흔적을 남길까?</h2>
+        <div class="choice-list" data-choice-list></div>
+        <div class="choice-result" data-choice-result hidden>
+          <p><b>지킨 것</b><span data-choice-value></span></p><p><b>치른 것</b><span data-choice-cost></span></p>
+        </div>
+      </section>
+      <nav class="page-controls" aria-label="펼침면 이동">
+        <button type="button" data-previous-page><span aria-hidden="true">←</span> 이전</button>
+        <span data-page-count>1 / 18</span>
+        <button type="button" data-next-page>다음 <span aria-hidden="true">→</span></button>
+      </nav>
+      <p class="scene-hint" data-scene-hint>장면을 좌우로 끌어 작은 무대를 둘러볼 수 있어요.</p>
+    </section>
+    <section class="ending-screen" data-ending-screen hidden aria-labelledby="ending-title">
+      <p class="eyebrow">금빛 실의 마지막 매듭</p><h1 id="ending-title" data-ending-title></h1><p data-ending-text></p>
+      <ol class="reading-report" data-reading-report aria-label="여섯 장에서 고른 길"></ol>
+      <div class="ending-actions"><button type="button" data-print-report>나의 독서 기록 인쇄</button><button type="button" data-restart-book>처음부터 다시 펼치기</button></div>
+    </section>
+    <section class="webgl-fallback" data-webgl-fallback hidden role="alert" aria-labelledby="webgl-title">
+      <p class="eyebrow">책을 펼치지 못했어요</p><h1 id="webgl-title">이 기기에서 3D 장면을 시작할 수 없습니다.</h1>
+      <p>브라우저의 하드웨어 가속을 켜거나 최신 브라우저로 다시 열어 보세요. 이야기는 2D 보존판에서도 계속 읽을 수 있습니다.</p><a href="./illustrated.html">2D 보존판 열기</a>
+    </section>
+    <dialog class="help-dialog" data-help-dialog>
+      <div class="dialog-heading"><strong>책 읽는 방법</strong><button type="button" data-help-close>닫기</button></div>
+      <ul><li><kbd>←</kbd><kbd>→</kbd> 또는 아래 버튼으로 펼침면을 넘깁니다.</li><li>금빛으로 숨 쉬는 물건을 눌러 하루의 흔적을 읽습니다.</li><li>장면을 좌우로 끌면 열린 책을 조금씩 둘러볼 수 있습니다.</li><li>선택에는 정답이 없습니다. 지킨 것과 치른 것이 함께 기록됩니다.</li></ul>
+      <p class="archive-links"><a href="./illustrated.html">2D 보존판</a><a href="./reboot.html">이전 3D 캠페인</a><a href="./legacy.html">초기 버전</a></p>
+    </dialog>
+    <p class="sr-only" data-live-status aria-live="polite"></p>
   </main>
-  <script type="module" src="/src/illustrated/entry.js"></script>
-  <script>
-    if ('serviceWorker' in navigator && window.location.port !== '5173') {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
-      });
-    }
-  </script>
+  <script type="module" src="/src/storybook3d/entry.js"></script>
+  <script>if ('serviceWorker' in navigator && window.location.port !== '5173') window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));</script>
 </body>
 </html>

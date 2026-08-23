@@ -1,13 +1,13 @@
 {
-  "name": "사라진 학생 H-17 — 2D 이야기",
-  "short_name": "사라진 학생 H-17",
-  "description": "사라진 친구 하루의 기록과 AI 결정 경로를 추적하는 6장 2D 횡스크롤 액션",
+  "name": "하루와 사라진 이름 — 3D 팝업 동화",
+  "short_name": "하루와 사라진 이름",
+  "description": "금빛 실을 따라 사라진 친구 하루의 이름을 되찾는 6장 3D 팝업 동화",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#050918",
-  "theme_color": "#050918",
+  "background_color": "#09122c",
+  "theme_color": "#09122c",
   "icons": [
     {
       "src": "./icon.svg",

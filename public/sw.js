@@ -2,7 +2,7 @@
 // 전략: 페이지 이동(navigate)은 네트워크 우선(새 배포 즉시 반영) + 실패 시 캐시 폴백,
 // 해시 파일명 에셋(/assets/)은 캐시 우선(불변 파일이라 재다운로드 불필요).
 const CACHE_PREFIX = 'ethics-quest-h17-';
-const CACHE = `${CACHE_PREFIX}v14-2d`;
+const CACHE = `${CACHE_PREFIX}v15-storybook3d`;
 const LAZY_CACHE = `${CACHE_PREFIX}environment`;
 const ENTRY_DOCUMENTS = ['./index.html', './illustrated.html'];
 const ARCHIVE_DOCUMENTS = ['./reboot.html', './legacy.html'];
