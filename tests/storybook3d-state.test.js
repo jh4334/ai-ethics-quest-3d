@@ -64,6 +64,32 @@ test('저장 데이터는 개인정보 입력 없이 마지막 펼침면과 발�
   assert.doesNotMatch(saved, /name|email|phone|nickname/i);
 });
 
+test('v1 동화 저장은 v2 모험 저장으로 바뀌어도 발견과 결정을 잃지 않는다', () => {
+  const firstChapter = STORYBOOK_CHAPTERS[0];
+  const oldSave = {
+    version: 1,
+    phase: 'reading',
+    chapterIndex: 0,
+    spreadIndex: 2,
+    unlockedChapter: 1,
+    discoveries: { [firstChapter.id]: firstChapter.clues.map((clue) => clue.id) },
+    decisions: {
+      [firstChapter.id]: {
+        choiceId: firstChapter.choices[0].id,
+        value: firstChapter.choices[0].value,
+        cost: firstChapter.choices[0].cost
+      }
+    }
+  };
+
+  const restored = createStorybookState(oldSave);
+  assert.equal(restored.version, 2);
+  assert.deepEqual(restored.discoveries[firstChapter.id], oldSave.discoveries[firstChapter.id]);
+  assert.equal(restored.decisions[firstChapter.id].choiceId, oldSave.decisions[firstChapter.id].choiceId);
+  assert.equal(restored.adventure.chapterIndex, 0);
+  assert.equal(restored.adventure.phase, 'explore');
+});
+
 test('마지막 장의 선택 뒤 이야기가 완결된다', () => {
   const decisions = Object.fromEntries(STORYBOOK_CHAPTERS.slice(0, 5).map((chapter) => [
     chapter.id,
