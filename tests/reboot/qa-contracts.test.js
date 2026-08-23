@@ -21,6 +21,7 @@ test('QA fixture는 튜토리얼부터 보스 전 단계와 복구 화면까지 
 test('로컬과 CI는 같은 Playwright Chromium 설치 및 중첩 테스트 명령을 사용한다', () => {
   const pkg = JSON.parse(readFileSync(new URL('package.json', rootUrl), 'utf8'));
   const workflow = readFileSync(new URL('.github/workflows/pages.yml', rootUrl), 'utf8');
+  const illustratedQa = readFileSync(new URL('scripts/verify-illustrated-six-chapter.mjs', rootUrl), 'utf8');
   assert.equal(pkg.devDependencies['@playwright/test'], '1.62.0');
   assert.equal(pkg.scripts.test, 'node tests/run-node-tests.mjs');
   assert.equal(pkg.scripts['browser:install'], 'playwright install chromium');
@@ -28,6 +29,7 @@ test('로컬과 CI는 같은 Playwright Chromium 설치 및 중첩 테스트 명
   assert.match(workflow, /npm run e2e/);
   assert.match(workflow, /npm run qa:2d/);
   assert.match(workflow, /node tests\/reboot-e2e\/previewServer\.mjs[\s\S]*npm run qa:2d/);
+  assert.match(illustratedQa, /127\.0\.0\.1:8899\/illustrated\.html\?testHook=1/);
 });
 
 test('서비스 워커는 2D 기본 문서만 사전 캐시하고 3D 보관 경로는 필요할 때 제공한다', () => {
