@@ -44,7 +44,7 @@ npm run e2e
 - 진행은 새 키 `ethics-quest-storybook3d-v1`에만 저장하며 기존 2D/3D 저장을 건드리지 않음
 - WebGL 실패 시 설명과 2D 보존판 링크 제공
 - 첫 온라인 로드 뒤 서비스워커로 오프라인 재실행 가능
-- Quaternius·Kenney CC0 GLTF와 프로젝트 고유 절차형 랜드마크 사용
+- Kenney Mini Characters·Kenney/Quaternius 환경 CC0 GLTF와 프로젝트 고유 절차형 랜드마크 사용
 - 전체 출처와 사용 위치: [ASSET_LICENSES.md](ASSET_LICENSES.md)
 
 이야기 기준은 [동화책 스토리 바이블](docs/design/H17-AI-윤리-동화책-스토리바이블.md), 구현 기준은 [3D 동화책 제작 플랜](docs/design/H17-3D-동화책-제작-플랜.md)을 참고하세요.

@@ -1,5 +1,6 @@
 // GitHub Pages의 저장소 하위 경로에서도 현재 문서를 기준으로 에셋을 찾는다.
 const ASSET_ROOT = './assets/reboot/characters';
+const STORYBOOK_ASSET_ROOT = './assets/storybook3d/characters';
 
 export const CHARACTER_ASSET_PATHS = Object.freeze({
   animationLibrary1: `${ASSET_ROOT}/animations/ual1-standard.glb`,
@@ -14,7 +15,9 @@ export const CHARACTER_ASSET_PATHS = Object.freeze({
   malePeasant: `${ASSET_ROOT}/outfits/Male_Peasant.gltf`,
   maleRanger: `${ASSET_ROOT}/outfits/Male_Ranger.gltf`,
   maleStudent: `${ASSET_ROOT}/outfits/Player_Student.gltf`,
-  rpgRanger: `${ASSET_ROOT}/rpg/Ranger-runtime.glb`
+  rpgRanger: `${ASSET_ROOT}/rpg/Ranger-runtime.glb`,
+  storybookHaru: `${STORYBOOK_ASSET_ROOT}/haru-mini.glb`,
+  storybookReader: `${STORYBOOK_ASSET_ROOT}/reader-mini.glb`
 });
 
 export const BODY_ASSETS = Object.freeze({
@@ -58,6 +61,9 @@ const UAL2_ENEMY = Object.freeze({
   hit: 'Hit_Knockback',
   idle: 'Idle_FoldArms_Loop',
   move: 'Zombie_Walk_Fwd_Loop'
+});
+const STORYBOOK_MINI = Object.freeze({
+  action: 'interact-right', defeat: 'emote-no', hit: 'emote-no', idle: 'idle', move: 'walk'
 });
 const DEFAULT_PRESENTATION = Object.freeze({
   hairEmissive: 0.14,
@@ -127,12 +133,12 @@ export const CHARACTER_ROSTER = Object.freeze({
   'student-a': createProfile({ id: 'student-a', label: '학생 A', body: 'male', outfit: 'peasant', scale: 0.88, tint: '#3d6c64' }),
   'student-b': createProfile({ id: 'student-b', label: '학생 B', body: 'female', outfit: 'peasant', scale: 0.86, tint: '#72576f' }),
   'storybook-reader': createProfile({
-    body: 'male', hair: 'simpleParted', hairTint: '#20283b', id: 'storybook-reader', label: '기록자',
-    outfit: 'peasant', outfitTint: '#52678c', scale: 0.86, silhouette: 'storybook-reader-soft-coat', tint: '#52678c'
+    animations: STORYBOOK_MINI, body: 'male', id: 'storybook-reader', label: '기록자', outfit: 'peasant', scale: 1.08,
+    silhouette: 'storybook-reader-mini-child', standaloneAsset: CHARACTER_ASSET_PATHS.storybookReader, tint: '#8198c7'
   }),
   'storybook-haru': createProfile({
-    body: 'female', hair: 'long', hairTint: '#36283b', id: 'storybook-haru', label: '하루',
-    outfit: 'peasant', outfitTint: '#9a6f78', scale: 0.84, silhouette: 'storybook-haru-soft-coat', tint: '#9a6f78'
+    animations: STORYBOOK_MINI, body: 'female', id: 'storybook-haru', label: '하루', outfit: 'peasant', scale: 1.06,
+    silhouette: 'storybook-haru-mini-child', standaloneAsset: CHARACTER_ASSET_PATHS.storybookHaru, tint: '#c98f9e'
   }),
   // 적 5종은 몸·의상만으로는 겹치므로 장별 역할이 한눈에 읽히는 고유 실루엣을 액세서리로 만든다.
   eraser: createProfile({ accessory: 'wide-arm-panels', id: 'eraser', label: '삭제자', body: 'male', outfit: 'ranger', scale: 1.02, silhouette: 'eraser-wide-arm-panels', tint: '#582d44', library: 'ual2', animations: UAL2_ENEMY }),

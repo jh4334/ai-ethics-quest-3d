@@ -5,48 +5,48 @@
       "chapter": 1,
       "metrics": {
         "assetFailures": [],
-        "drawCalls": 51,
-        "triangles": 24869
+        "drawCalls": 44,
+        "triangles": 6309
       }
     },
     {
       "chapter": 2,
       "metrics": {
         "assetFailures": [],
-        "drawCalls": 48,
-        "triangles": 23627
+        "drawCalls": 41,
+        "triangles": 5067
       }
     },
     {
       "chapter": 3,
       "metrics": {
         "assetFailures": [],
-        "drawCalls": 52,
-        "triangles": 23219
+        "drawCalls": 45,
+        "triangles": 4659
       }
     },
     {
       "chapter": 4,
       "metrics": {
         "assetFailures": [],
-        "drawCalls": 56,
-        "triangles": 24099
+        "drawCalls": 49,
+        "triangles": 5539
       }
     },
     {
       "chapter": 5,
       "metrics": {
         "assetFailures": [],
-        "drawCalls": 47,
-        "triangles": 24677
+        "drawCalls": 40,
+        "triangles": 6117
       }
     },
     {
       "chapter": 6,
       "metrics": {
         "assetFailures": [],
-        "drawCalls": 75,
-        "triangles": 47707
+        "drawCalls": 62,
+        "triangles": 8103
       }
     }
   ],

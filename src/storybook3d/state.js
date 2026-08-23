@@ -1,5 +1,4 @@
 import { getStorybookChapter, STORYBOOK_CHAPTERS } from './content.js';
-
 export const STORYBOOK_SAVE_KEY = 'ethics-quest-storybook3d-v1';
 export const STORYBOOK_SAVE_VERSION = 1;
 
@@ -111,4 +110,3 @@ export function selectStorybookChapter(state, index) {
 export function serializeStorybookState(state) {
   return JSON.stringify(createStorybookState(state));
 }
-

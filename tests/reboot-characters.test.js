@@ -79,6 +79,20 @@ test('main cast identity metadata separates three visible humans from the DOT au
   assert.equal(getCharacterProfile('dot').outfit, null);
 });
 
+test('storybook children use dedicated licensed mini-character GLBs', () => {
+  const profiles = ['storybook-reader', 'storybook-haru'].map(getCharacterProfile);
+  assert.deepEqual(profiles.map(({ identity }) => identity.silhouette), [
+    'storybook-reader-mini-child',
+    'storybook-haru-mini-child'
+  ]);
+  for (const profile of profiles) {
+    assert.equal(profile.outfit, 'peasant');
+    assert.match(profile.standaloneAsset, /^\.\/assets\/storybook3d\/characters\/.+-mini\.glb$/);
+    assert.equal(profile.animations.idle, 'idle');
+    assert.equal(profile.animations.action, 'interact-right');
+  }
+});
+
 test('enemy roster gives each of the five foes a distinct accessory-driven silhouette', () => {
   // Given: 장별 적 5종(삭제자·도장꾼·복제자·추천자·승인관)의 프로필.
   const enemyIds = ['eraser', 'stamper', 'copycat', 'recommender', 'approval'];

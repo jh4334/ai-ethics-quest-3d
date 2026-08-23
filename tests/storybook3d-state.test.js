@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-
 import { STORYBOOK_CHAPTERS } from '../src/storybook3d/content.js';
 import {
   advanceSpread,
@@ -89,4 +88,3 @@ test('마지막 장의 선택 뒤 이야기가 완결된다', () => {
   assert.equal(state.completed, true);
   assert.equal(Object.keys(state.decisions).length, 6);
 });
-
