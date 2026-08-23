@@ -28,7 +28,7 @@ test('2장 카피캣이 실제 키보드 SIGNAL을 복제해 플레이어에게 
     }));
   }, { key: SAVE_KEY });
 
-  await page.goto('/?testHook=1', { waitUntil: 'domcontentloaded' });
+  await page.goto('/illustrated.html?testHook=1', { waitUntil: 'domcontentloaded' });
   const game = page.locator('[data-illustrated-game]');
   await expect(game).toHaveAttribute('data-game-phase', 'title');
   await page.locator('[data-continue-game]').click();

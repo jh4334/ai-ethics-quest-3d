@@ -20,6 +20,8 @@ const REQUIRED_CHARACTER_IDS = [
   'yoonseo',
   'student-a',
   'student-b',
+  'storybook-reader',
+  'storybook-haru',
   'eraser',
   'stamper',
   'copycat',
