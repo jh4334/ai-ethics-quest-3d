@@ -83,10 +83,10 @@ async function clearChapterEnemies(page, profile, chapterNumber, pointerSeed) {
     await action(page, profile, 'trace', pointerSeed + index * 10);
   }
   for (let index = 0; index < enemyCount; index += 1) {
-    await teleport(page, { collection: 'enemies', index });
     for (let hit = 0; hit < 4; hit += 1) {
       const defeated = await page.evaluate((targetIndex) => window.__illustratedAction.getState().enemies[targetIndex].defeated, index);
       if (defeated) break;
+      await teleport(page, { collection: 'enemies', index });
       await action(page, profile, 'attack', pointerSeed + index * 10 + hit + 1);
     }
     const guardian = await page.evaluate((targetIndex) => window.__illustratedAction.getState().enemies[targetIndex], index);
