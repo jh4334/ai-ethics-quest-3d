@@ -27,6 +27,12 @@
 | `public/assets/reboot/environment/materials/wood/*` | 실내 목재 바닥 PBR 재질 | ambientCG, [ambientCG Wood Floor 041](https://ambientcg.com/view?id=WoodFloor041), [공식 1K JPG ZIP](https://ambientcg.com/get?file=WoodFloor041_1K-JPG.zip), 2026-08-08 내려받음 | CC0 1.0. ZIP SHA-256 `E7364EF32A8DB269B2475E76A7E1832ECA82BDF6574191CD96B1CDB2B362CDC6`. 원본 1K Color·NormalGL·Roughness JPG만 선별 복사했으며 파일명·바이너리는 변경하지 않음 |
 | `public/assets/reboot/environment/materials/asphalt/*` | 캠퍼스 도로 PBR 재질 | ambientCG, [ambientCG Asphalt 009](https://ambientcg.com/view?id=Asphalt009), [공식 1K JPG ZIP](https://ambientcg.com/get?file=Asphalt009_1K-JPG.zip), 2026-08-08 내려받음 | CC0 1.0. ZIP SHA-256 `3282415AFAD2C74A4665FF191481545138C33C963B4EE0D7E7D292B66B1B4C7E`. 원본 1K Color·NormalGL·Roughness JPG만 선별 복사했으며 파일명·바이너리는 변경하지 않음 |
 
+## 3D 팝업 동화 런타임 재사용
+
+- `src/storybook3d/*`는 위 표의 `characters/base`, `characters/outfits`, `animations/ual1-standard.glb`, `environment/building`, `environment/furniture`, `environment/nature`, `environment/quaternius-stylized-nature`를 사용한다.
+- 출처와 라이선스는 위 각 행과 동일하며 모두 CC0 1.0 또는 프로젝트 전용 생성 텍스처다. 바이너리는 변경하지 않고 동화 팔레트, 배치, 대기·상호작용 애니메이션만 런타임에서 조정한다.
+- 열린 책, 금빛 실, 유리 등불, 저울나무, 종이새, 3초 시계탑, 반딧불 벽은 프로젝트 코드로 직접 저작한 Three.js 메시이며 외부 파일이 아니다.
+
 ## 디자인 참고 전용
 
 아래 파일은 런타임에 로드하지 않으며 구현 기준으로만 보관한다.
