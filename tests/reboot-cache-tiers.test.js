@@ -100,7 +100,7 @@ test('Given the canonical 3D storybook and 2D archive, When the worker installs,
   assert.ok(harness.addedAssets.includes(illustratedAsset));
   assert.equal(harness.networkRequests.includes('./reboot-assets.json'), false);
   assert.equal(harness.addedAssets.includes(environmentAsset), false);
-  assert.ok(harness.openedCaches.every((key) => key === 'ethics-quest-h17-v15-storybook3d'));
+  assert.ok(harness.openedCaches.every((key) => key === 'ethics-quest-h17-v16-topdown-storybook'));
 });
 
 test('Given app and unrelated cache generations, When the storybook cache activates, Then old H-17 shells are removed', async () => {
@@ -174,5 +174,5 @@ test('Given a non-environment app asset misses, When the worker fetches it, Then
 
   assert.equal(response.ok, true);
   assert.deepEqual(harness.cachedRequests, [url]);
-  assert.ok(harness.openedCaches.includes('ethics-quest-h17-v15-storybook3d'));
+  assert.ok(harness.openedCaches.includes('ethics-quest-h17-v16-topdown-storybook'));
 });
