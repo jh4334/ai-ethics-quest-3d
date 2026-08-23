@@ -20,6 +20,8 @@ const REQUIRED_CHARACTER_IDS = [
   'yoonseo',
   'student-a',
   'student-b',
+  'storybook-reader',
+  'storybook-haru',
   'eraser',
   'stamper',
   'copycat',
@@ -75,6 +77,20 @@ test('main cast identity metadata separates three visible humans from the DOT au
   assert.equal(getCharacterProfile('dot').identity.kind, 'audit-drone');
   assert.equal(getCharacterProfile('dot').body, null);
   assert.equal(getCharacterProfile('dot').outfit, null);
+});
+
+test('storybook children use dedicated licensed mini-character GLBs', () => {
+  const profiles = ['storybook-reader', 'storybook-haru'].map(getCharacterProfile);
+  assert.deepEqual(profiles.map(({ identity }) => identity.silhouette), [
+    'storybook-reader-mini-child',
+    'storybook-haru-mini-child'
+  ]);
+  for (const profile of profiles) {
+    assert.equal(profile.outfit, 'peasant');
+    assert.match(profile.standaloneAsset, /^\.\/assets\/storybook3d\/characters\/.+-mini\.glb$/);
+    assert.equal(profile.animations.idle, 'idle');
+    assert.equal(profile.animations.action, 'interact-right');
+  }
 });
 
 test('enemy roster gives each of the five foes a distinct accessory-driven silhouette', () => {

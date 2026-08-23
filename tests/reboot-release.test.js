@@ -4,14 +4,15 @@ import test from 'node:test';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('canonical 2D root, preserved 3D routes, and service worker form one release boundary', () => {
+test('canonical 3D storybook root, preserved rollback routes, and service worker form one release boundary', () => {
   const index = read('index.html');
   const legacy = read('legacy.html');
   const sw = read('public/sw.js');
   const manifest = JSON.parse(read('public/reboot-assets.json'));
-  assert.match(index, /data-action-canvas/);
-  assert.match(index, /src="\/src\/illustrated\/entry\.js"/);
-  assert.doesNotMatch(index, /location\.replace|reboot\.html/);
+  assert.match(index, /data-storybook-canvas/);
+  assert.match(index, /src="\/src\/storybook3d\/entry\.js"/);
+  assert.match(index, /illustrated\.html/);
+  assert.doesNotMatch(index, /data-action-canvas|location\.replace/);
   assert.match(legacy, /src="\/src\/main\.js"/);
   assert.match(sw, /ENTRY_DOCUMENTS = \['\.\/index\.html', '\.\/illustrated\.html'\]/);
   assert.match(sw, /ARCHIVE_DOCUMENTS = \['\.\/reboot\.html', '\.\/legacy\.html'\]/);
@@ -20,7 +21,7 @@ test('canonical 2D root, preserved 3D routes, and service worker form one releas
   assert.ok(manifest.some((path) => path.includes('/environment/materials/')));
 });
 
-test('release docs record the exact non-destructive rollback and current six-chapter 2D campaign', () => {
+test('release docs record the exact non-destructive rollback and current six-chapter 3D storybook', () => {
   const release = read('docs/reboot/release.md');
   const readme = read('README.md');
   assert.match(release, /pre-reboot-fa1ac50/);
@@ -30,7 +31,7 @@ test('release docs record the exact non-destructive rollback and current six-cha
   assert.match(release, /h17\.null\.save\.v4/);
   assert.match(release, /h17\.legacy\.v3\.backup/);
   assert.doesNotMatch(release, /git reset --hard|localStorage\.clear\(\)/);
-  for (const title of ['명단에서 사라진 아이', '거짓 영상의 주인', '웃음이 만든 폭풍', '두 개의 진실', '아무도 결정하지 않는 밤', '마지막 증언']) {
+  for (const title of ['빈자리의 서랍', '저울나무가 기운 쪽', '이름을 삼킨 축제', '목소리를 입은 종이새', '손 없는 도장', '하얀 방의 반딧불']) {
     assert.match(readme, new RegExp(title));
   }
 });

@@ -89,21 +89,21 @@ function createServiceWorkerHarness({ cacheKeys = [], cachedAssetUrls = [], defe
   };
 }
 
-test('Given the canonical 2D entries, When the worker installs, Then only the 2D shell blocks first use', async () => {
-  // Given: one install of the direct 2D release.
+test('Given the canonical 3D storybook and 2D archive, When the worker installs, Then only entry shells block first use', async () => {
+  // Given: one install of the direct storybook release.
   const harness = createServiceWorkerHarness();
 
   // When: the real install listener completes.
   await harness.dispatch('install');
 
-  // Then: the illustrated shell is installed without pulling the 3D archive manifest.
+  // Then: entry shells are installed without pulling the archived 3D manifest.
   assert.ok(harness.addedAssets.includes(illustratedAsset));
   assert.equal(harness.networkRequests.includes('./reboot-assets.json'), false);
   assert.equal(harness.addedAssets.includes(environmentAsset), false);
-  assert.ok(harness.openedCaches.every((key) => key === 'ethics-quest-h17-v14-2d'));
+  assert.ok(harness.openedCaches.every((key) => key === 'ethics-quest-h17-v15-storybook3d'));
 });
 
-test('Given app and unrelated cache generations, When the 2D cache activates, Then old H-17 shells are removed', async () => {
+test('Given app and unrelated cache generations, When the storybook cache activates, Then old H-17 shells are removed', async () => {
   // Given: two old app caches, the current cache, and another product cache.
   const harness = createServiceWorkerHarness({
     cacheKeys: [
@@ -119,7 +119,7 @@ test('Given app and unrelated cache generations, When the 2D cache activates, Th
   assert.deepEqual(harness.deletedCaches.sort(), ['ethics-quest-h17-v11', 'ethics-quest-h17-v12', 'ethics-quest-h17-v13']);
 });
 
-test('Given archived 3D cache entries, When the 2D cache activates, Then obsolete archive files are pruned', async () => {
+test('Given archived 3D cache entries, When the storybook cache activates, Then obsolete archive files are pruned', async () => {
   // Given: one lazy environment response and one removed bundle entry in the current cache.
   const environmentUrl = 'https://school.example/ai-ethics/assets/reboot/environment/building/wall.glb';
   const staleUrl = 'https://school.example/ai-ethics/assets/removed.js';
@@ -128,7 +128,7 @@ test('Given archived 3D cache entries, When the 2D cache activates, Then obsolet
   // When: activate reconciles current-cache entries against the complete manifest.
   await harness.dispatch('activate');
 
-  // Then: neither file belongs to the canonical 2D entry set.
+  // Then: neither file belongs to the canonical entry set.
   assert.deepEqual(new Set(harness.deletedEntries), new Set([environmentUrl, staleUrl]));
 });
 
@@ -174,5 +174,5 @@ test('Given a non-environment app asset misses, When the worker fetches it, Then
 
   assert.equal(response.ok, true);
   assert.deepEqual(harness.cachedRequests, [url]);
-  assert.ok(harness.openedCaches.includes('ethics-quest-h17-v14-2d'));
+  assert.ok(harness.openedCaches.includes('ethics-quest-h17-v15-storybook3d'));
 });

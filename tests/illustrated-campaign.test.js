@@ -9,8 +9,8 @@ import {
   serializeActionGame
 } from '../src/illustrated/story.js';
 
-test('기본 문서는 리디렉션 없이 2D 캔버스 게임을 직접 연다', () => {
-  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+test('2D 보존 문서는 리디렉션 없이 캔버스 게임을 직접 연다', () => {
+  const html = readFileSync(new URL('../illustrated.html', import.meta.url), 'utf8');
   assert.match(html, /data-action-canvas/);
   assert.match(html, /src="\/src\/illustrated\/entry\.js"/);
   assert.doesNotMatch(html, /location\.replace|reboot\.html/);

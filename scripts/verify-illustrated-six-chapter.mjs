@@ -4,7 +4,7 @@ import path from 'node:path';
 import { chromium } from '@playwright/test';
 import sharp from 'sharp';
 
-const baseUrl = process.env.ILLUSTRATED_QA_URL ?? 'http://127.0.0.1:8899/?testHook=1';
+const baseUrl = process.env.ILLUSTRATED_QA_URL ?? 'http://127.0.0.1:8899/illustrated.html?testHook=1';
 const evidenceDir = path.resolve('.omo/evidence/h17-2d-campaign');
 const referencePath = path.resolve('docs/design/concepts/gameplay-screen-v3.webp');
 const browser = await chromium.launch({ headless: true });
@@ -215,7 +215,7 @@ async function runProfile(profile) {
   });
   await page.goto(baseUrl, { waitUntil: 'networkidle' });
   await page.locator('[data-action-canvas]').waitFor({ state: 'visible' });
-  assert.equal(new URL(page.url()).pathname, '/');
+  assert.equal(new URL(page.url()).pathname, '/illustrated.html');
   assert.equal(await page.locator('canvas').count(), 1);
   assert.equal(await page.locator('script[src*="reboot"], script[src="/src/main.js"]').count(), 0);
   await page.screenshot({ path: path.join(evidenceDir, `${profile.id}-title.png`) });
