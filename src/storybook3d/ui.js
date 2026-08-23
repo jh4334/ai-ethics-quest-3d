@@ -1,12 +1,19 @@
-import { canAdvanceSpread } from './state.js';
+import { getAdventureObjective } from './adventureGame.js';
 import { STORYBOOK_CHAPTERS, STORYBOOK_ENDING } from './content.js';
-
-const SPREAD_NAMES = ['첫 번째 펼침면', '두 번째 펼침면', '세 번째 펼침면'];
 
 function one(root, selector) {
   const element = root.querySelector(selector);
-  if (!element) throw new Error(`3D 동화 UI가 없습니다: ${selector}`);
+  if (!element) throw new Error(`3D 모험 UI가 없습니다: ${selector}`);
   return element;
+}
+
+function promptFor(adventure) {
+  if (adventure.phase === 'choice') return '두 길은 서로 다른 것을 지킵니다. 얻는 것과 치르는 것을 함께 읽어 보세요.';
+  if (adventure.lastEvent === 'gate-locked') return '두 흔적과 두 문양을 찾은 뒤 섬 중앙에서 기억 열쇠를 주우세요.';
+  if (adventure.gateOpen) return 'J로 금빛 실을 휘두르고, 공격이 올 때 K로 거울잎을 드세요.';
+  if (adventure.hasKey) return '북쪽 기록문 가까이에서 E를 누르세요.';
+  if (adventure.puzzleSolved && adventure.clues.length === 2) return '섬 중앙의 금빛 열쇠 가까이에서 E를 누르세요.';
+  return 'WASD로 움직이고 빛나는 대상 가까이에서 E를 누르세요.';
 }
 
 export function createStorybookUi(root, handlers, { hasSave = false } = {}) {
@@ -15,12 +22,10 @@ export function createStorybookUi(root, handlers, { hasSave = false } = {}) {
   const endingScreen = one(root, '[data-ending-screen]');
   const fallback = one(root, '[data-webgl-fallback]');
   const rail = one(root, '[data-chapter-rail]');
-  const clueLayer = one(root, '[data-clue-layer]');
   const choicePanel = one(root, '[data-choice-panel]');
   const choiceList = one(root, '[data-choice-list]');
   const choiceResult = one(root, '[data-choice-result]');
-  const previousButton = one(root, '[data-previous-page]');
-  const nextButton = one(root, '[data-next-page]');
+  const continueChapter = one(root, '[data-continue-chapter]');
   const helpDialog = one(root, '[data-help-dialog]');
   const liveStatus = one(root, '[data-live-status]');
 
@@ -39,34 +44,14 @@ export function createStorybookUi(root, handlers, { hasSave = false } = {}) {
   const continueButton = one(root, '[data-continue-book]');
   continueButton.disabled = !hasSave;
   continueButton.addEventListener('click', handlers.continueBook);
-  previousButton.addEventListener('click', handlers.previousPage);
-  nextButton.addEventListener('click', handlers.nextPage);
+  continueChapter.addEventListener('click', handlers.continueChapter);
   one(root, '[data-help-open]').addEventListener('click', () => helpDialog.showModal());
   one(root, '[data-help-close]').addEventListener('click', () => helpDialog.close());
   one(root, '[data-print-report]').addEventListener('click', () => window.print());
   one(root, '[data-restart-book]').addEventListener('click', handlers.restartBook);
 
-  function renderClues(state, chapter) {
-    clueLayer.replaceChildren();
-    if (state.spreadIndex !== 1) return;
-    const found = state.discoveries[chapter.id];
-    for (const [index, clue] of chapter.clues.entries()) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'clue-button';
-      button.dataset.clueId = clue.id;
-      button.dataset.discovered = String(found.includes(clue.id));
-      button.setAttribute('aria-label', clue.label);
-      const number = document.createElement('span');
-      number.textContent = String(index + 1);
-      button.append(number);
-      button.addEventListener('click', () => handlers.inspectClue(clue.id));
-      clueLayer.append(button);
-    }
-  }
-
   function renderChoices(state, chapter) {
-    const visible = state.spreadIndex === 2;
+    const visible = state.adventure.phase === 'choice';
     choicePanel.hidden = !visible;
     choiceList.replaceChildren();
     if (!visible) return;
@@ -80,6 +65,8 @@ export function createStorybookUi(root, handlers, { hasSave = false } = {}) {
       choiceList.append(button);
     }
     choiceResult.hidden = !decision;
+    continueChapter.hidden = !decision;
+    continueChapter.textContent = state.chapterIndex === STORYBOOK_CHAPTERS.length - 1 ? '마지막 기록 남기기' : '다음 섬으로';
     if (decision) {
       one(root, '[data-choice-value]').textContent = decision.value;
       one(root, '[data-choice-cost]').textContent = decision.cost;
@@ -97,7 +84,7 @@ export function createStorybookUi(root, handlers, { hasSave = false } = {}) {
       const title = document.createElement('strong');
       const detail = document.createElement('span');
       title.textContent = `${index + 1}장 · ${chapter.title}`;
-      detail.textContent = decision ? `${decision.value} / 비용: ${decision.cost}` : '아직 고르지 않은 길';
+      detail.textContent = decision ? `${decision.value} / 치른 것: ${decision.cost}` : '아직 고르지 않은 길';
       item.append(title, detail);
       report.append(item);
     }
@@ -105,35 +92,30 @@ export function createStorybookUi(root, handlers, { hasSave = false } = {}) {
 
   function render(state) {
     const chapter = STORYBOOK_CHAPTERS[state.chapterIndex];
-    const spread = chapter.spreads[state.spreadIndex];
+    const adventure = state.adventure;
     root.dataset.phase = state.phase;
     root.dataset.chapter = String(state.chapterIndex + 1);
+    root.dataset.adventurePhase = adventure.phase;
     titleScreen.hidden = state.phase !== 'title';
     readingUi.hidden = state.phase !== 'reading';
     endingScreen.hidden = state.phase !== 'complete';
     one(root, '[data-hud-title]').textContent = chapter.title;
-
     [...rail.querySelectorAll('button')].forEach((button, index) => {
       button.disabled = index > state.unlockedChapter;
       button.dataset.state = index === state.chapterIndex ? 'current' : (state.decisions[STORYBOOK_CHAPTERS[index].id] ? 'complete' : 'locked');
+      if (index === state.chapterIndex) button.setAttribute('aria-current', 'step');
+      else button.removeAttribute('aria-current');
     });
     if (state.phase === 'complete') renderEnding(state);
     if (state.phase !== 'reading') return;
-
     one(root, '[data-chapter-label]').textContent = `${state.chapterIndex + 1}장`;
-    one(root, '[data-spread-label]').textContent = SPREAD_NAMES[state.spreadIndex];
-    one(root, '[data-spread-title]').textContent = spread.title;
-    one(root, '[data-spread-text]').textContent = spread.text;
-    one(root, '[data-speaker]').textContent = spread.speaker;
-    one(root, '[data-quote]').textContent = spread.quote;
-    one(root, '[data-page-count]').textContent = `${state.chapterIndex * 3 + state.spreadIndex + 1} / 18`;
-    const clueProgress = one(root, '[data-clue-progress]');
-    clueProgress.hidden = state.spreadIndex !== 1;
-    clueProgress.querySelector('b').textContent = `${state.discoveries[chapter.id].length} / ${chapter.clues.length}`;
-    previousButton.disabled = state.chapterIndex === 0 && state.spreadIndex === 0;
-    nextButton.disabled = !canAdvanceSpread(state);
-    nextButton.firstChild.textContent = state.spreadIndex === 2 ? (state.chapterIndex === 5 ? '마지막 장 덮기 ' : '다음 장 ') : '다음 ';
-    renderClues(state, chapter);
+    one(root, '[data-objective]').textContent = getAdventureObjective(adventure);
+    one(root, '[data-health]').textContent = `${'◆ '.repeat(adventure.player.health)}${'◇ '.repeat(adventure.player.maxHealth - adventure.player.health)}`.trim();
+    one(root, '[data-health]').setAttribute('aria-label', `생명 불씨 ${adventure.player.health}개`);
+    one(root, '[data-key-state]').textContent = adventure.hasKey ? '◆ 기억 열쇠 보유' : '◇ 기억 열쇠 없음';
+    one(root, '[data-speaker]').textContent = adventure.phase === 'choice' ? chapter.spreads[2].speaker : '도트';
+    one(root, '[data-story-text]').textContent = adventure.message;
+    one(root, '[data-action-prompt]').textContent = promptFor(adventure);
     renderChoices(state, chapter);
   }
 
@@ -143,27 +125,11 @@ export function createStorybookUi(root, handlers, { hasSave = false } = {}) {
       requestAnimationFrame(() => { liveStatus.textContent = message; });
     },
     render,
-    setHint(level) { root.dataset.hintLevel = String(level); },
     showFallback(message) {
       fallback.hidden = false;
       fallback.querySelector('p:not(.eyebrow)').textContent = message;
       titleScreen.hidden = true;
       readingUi.hidden = true;
-    },
-    syncHotspots(positions) {
-      const compact = clueLayer.clientWidth <= 760;
-      const insetX = compact ? 108 : 48;
-      const minY = compact ? 150 : 72;
-      const maxY = compact
-        ? Math.max(minY, clueLayer.clientHeight - 330)
-        : Math.max(minY, clueLayer.clientHeight - 86);
-      for (const position of positions) {
-        const button = clueLayer.querySelector(`[data-clue-id="${position.id}"]`);
-        if (!button) continue;
-        button.style.left = `${Math.min(clueLayer.clientWidth - insetX, Math.max(insetX, position.x))}px`;
-        button.style.top = `${Math.min(maxY, Math.max(minY, position.y))}px`;
-        button.dataset.discovered = String(position.discovered);
-      }
     }
   });
 }
